@@ -1,0 +1,485 @@
+# AI-RULES.md
+
+# Automotive Business Platform
+## AI Development Rules
+
+**Version:** 1.0
+**Status:** Approved
+**Audience:** AI Coding Agents, Engineers
+
+---
+
+# 1. Naming Conventions
+
+## General Rules
+
+- Use PascalCase for class names, interface names, and public properties.
+- Use camelCase for local variables and private fields.
+- Use kebab-case for file names in markdown documentation.
+- Use SCREAMING_SNAKE_CASE for constants.
+
+## Domain Entities
+
+- Use singular nouns for entity names: `Vehicle`, `WorkOrder`, `StockItem`.
+- Use plural nouns for collection names: `vehicles`, `workOrders`.
+- Prefix interfaces with `I`: `IRepository`, `IService`.
+
+## Events
+
+- Use past tense for event names: `VehicleCreated`, `WorkOrderCompleted`.
+- Events describe what happened, not what should happen.
+
+## Files
+
+- One class per file.
+- File name matches class name.
+- Markdown files use kebab-case: `repair-activity.md`.
+
+---
+
+# 2. Folder Structure
+
+## Architecture Layers
+
+```
+application-template/
+├── kernels/                    # Platform Kernels
+├── domains/                    # Industry Domains
+│   └── automotive/             # Automotive Domain Pack
+├── business-contexts/          # Business Contexts
+├── assemblies/                 # Product Assemblies
+├── services/                   # Platform Services
+├── AI-GUIDE.md                 # Architecture guide
+├── AI-RULES.md                 # This file
+└── README.md                   # Project overview
+```
+
+## Within Each Layer
+
+Each business context, domain, or kernel should follow:
+
+```
+component/
+├── README.md                   # Specification
+├── entities/                   # Entity definitions
+├── events/                     # Domain events
+├── contracts/                  # Public contracts
+└── rules/                      # Business rules
+```
+
+---
+
+# 3. Dependency Injection Rules
+
+## Constructor Injection
+
+- Use constructor injection for all dependencies.
+- Never use service locator pattern.
+- Never use static methods for business logic.
+
+```csharp
+public class VehicleService
+{
+    private readonly IVehicleRepository _repository;
+
+    public VehicleService(IVehicleRepository repository)
+    {
+        _repository = repository;
+    }
+}
+```
+
+## Dependency Direction
+
+See `dependency-rules.md` for the full dependency matrix.
+
+**Quick rule:** Dependencies always point downward. Higher layers consume lower layers. Lower layers never depend on higher layers.
+
+```
+Assemblies → Business Contexts → Domains → Services → Kernels
+```
+
+## Interface Segregation
+
+- Prefer small, focused interfaces.
+- Never expose operations a consumer doesn't need.
+- Split large interfaces into smaller ones.
+
+---
+
+# 4. MediatR/CQRS Usage
+
+## When to Adopt
+
+MediatR and CQRS patterns are recommended for:
+
+- Request/Response operations
+- Command/Query separation
+- Event-driven architectures
+- Decoupling handlers from controllers
+
+## Command Pattern
+
+```csharp
+public record CreateWorkOrderCommand(
+    Guid VehicleId,
+    string Description
+) : IRequest<Guid>;
+```
+
+## Query Pattern
+
+```csharp
+public record GetWorkOrderQuery(
+    Guid WorkOrderId
+) : IRequest<WorkOrderDto>;
+```
+
+## Handler Pattern
+
+```csharp
+public class CreateWorkOrderHandler
+    : IRequestHandler<CreateWorkOrderCommand, Guid>
+{
+    public async Task<Guid> Handle(
+        CreateWorkOrderCommand request,
+        CancellationToken cancellationToken)
+    {
+        // Implementation
+    }
+}
+```
+
+## When NOT to Use
+
+- Simple CRUD operations
+- Direct database access
+- Utility functions
+
+---
+
+# 5. Entity Design Guidelines
+
+## Entity Rules
+
+- Every entity has a unique identity.
+- Entities are mutable.
+- Entities encapsulate business rules.
+- Entities do not expose public setters.
+
+## Value Object Rules
+
+- Value objects are immutable.
+- Value objects have no identity.
+- Value objects are compared by value.
+- Value objects can be nested.
+
+## Aggregate Rules
+
+- Aggregates enforce consistency boundaries.
+- Aggregates reference other aggregates by identity only.
+- Aggregates publish events on state changes.
+- One entity is the aggregate root.
+
+## Entity Example
+
+```csharp
+public class Vehicle
+{
+    public Guid Id { get; private set; }
+    public string Make { get; private set; }
+    public string Model { get; private set; }
+    public int Year { get; private set; }
+
+    private Vehicle() { }
+
+    public static Vehicle Create(string make, string model, int year)
+    {
+        return new Vehicle
+        {
+            Id = Guid.NewGuid(),
+            Make = make,
+            Model = model,
+            Year = year
+        };
+    }
+}
+```
+
+---
+
+# 6. Event Naming Conventions
+
+## Event Names
+
+- Use past tense: `Created`, `Updated`, `Deleted`, `Completed`.
+- Events describe what happened.
+- Events are immutable.
+- Events contain all necessary data.
+
+## Event Structure
+
+```csharp
+public record WorkOrderCompletedEvent(
+    Guid WorkOrderId,
+    Guid VehicleId,
+    DateTime CompletedAt
+);
+```
+
+## Event Rules
+
+- One event per significant state change.
+- Events are named in past tense.
+- Events contain enough data for consumers.
+- Events are serialized to JSON.
+
+---
+
+# 7. Testing Expectations
+
+## Unit Tests
+
+- Test one behavior per test.
+- Use descriptive test names.
+- Arrange/Act/Assert pattern.
+- Mock external dependencies.
+
+```csharp
+[Fact]
+public void CreateWorkOrder_ShouldReturnValidId()
+{
+    // Arrange
+    var vehicleId = Guid.NewGuid();
+
+    // Act
+    var workOrder = WorkOrder.Create(vehicleId, "Oil change");
+
+    // Assert
+    Assert.NotEqual(Guid.Empty, workOrder.Id);
+}
+```
+
+## Integration Tests
+
+- Test complete workflows.
+- Use real databases where possible.
+- Test event publishing.
+- Test contract compliance.
+
+## Architecture Tests
+
+- Verify dependency direction.
+- Verify layer boundaries.
+- Verify naming conventions.
+
+---
+
+# 8. Error Handling
+
+## Exception Types
+
+- Use domain-specific exceptions.
+- Never throw generic exceptions.
+- Include meaningful error messages.
+
+```csharp
+public class WorkOrderNotFoundException
+    : Exception
+{
+    public WorkOrderNotFoundException(Guid id)
+        : base($"Work order {id} not found")
+    {
+    }
+}
+```
+
+## Result Pattern
+
+Consider using Result pattern for operations that can fail:
+
+```csharp
+public record Result<T>(
+    bool IsSuccess,
+    T? Value,
+    string? Error
+);
+```
+
+## Error Handling Rules
+
+- Log all exceptions.
+- Never swallow exceptions silently.
+- Return meaningful error messages to consumers.
+- Use structured logging.
+
+---
+
+# 9. Logging
+
+## Log Levels
+
+- `Trace`: Detailed diagnostic information.
+- `Debug`: Debugging information.
+- `Information`: General information.
+- `Warning`: Potentially harmful situations.
+- `Error`: Error events.
+- `Critical`: Fatal events.
+
+## Structured Logging
+
+```csharp
+_logger.LogInformation(
+    "Work order {WorkOrderId} created for vehicle {VehicleId}",
+    workOrder.Id,
+    vehicleId);
+```
+
+## What to Log
+
+- Business events
+- Error conditions
+- Performance metrics
+- Security events
+
+## What NOT to Log
+
+- Passwords
+- Credit card numbers
+- Personal identification numbers
+- Sensitive business data
+
+---
+
+# 10. API Design
+
+## RESTful Conventions
+
+- Use nouns for resources.
+- Use HTTP verbs for operations.
+- Return appropriate status codes.
+
+## Status Codes
+
+- `200 OK`: Successful operation.
+- `201 Created`: Resource created.
+- `204 No Content`: Successful deletion.
+- `400 Bad Request`: Invalid input.
+- `401 Unauthorized`: Authentication required.
+- `403 Forbidden`: Insufficient permissions.
+- `404 Not Found`: Resource not found.
+- `500 Internal Server Error`: Server error.
+
+## API Versioning
+
+- Version APIs in URL: `/api/v1/vehicles`.
+- Support multiple versions during transition.
+- Deprecate old versions gracefully.
+
+---
+
+# 11. Database Migration Practices
+
+## Migration Rules
+
+- One migration per change.
+- Migrations must be reversible.
+- Test migrations before applying.
+- Back up data before production migrations.
+
+## Naming Conventions
+
+- Use descriptive migration names.
+- Include timestamp: `20240101_AddVehicleTable`.
+- One change per migration.
+
+## Data Migrations
+
+- Separate schema changes from data changes.
+- Test data migrations thoroughly.
+- Have rollback plan.
+
+## Production Migrations
+
+- Schedule downtime for migrations.
+- Notify stakeholders.
+- Monitor after migration.
+
+---
+
+# 12. Architecture Validation
+
+## Rules to Validate
+
+1. Dependencies point downward.
+2. No circular dependencies.
+3. Entities have unique identities.
+4. Events use past tense.
+5. Business logic stays in correct layer.
+6. Assemblies contain no business logic.
+
+## Validation Tools
+
+- Architecture tests
+- Static analysis
+- Code reviews
+- AI-assisted validation
+
+---
+
+# 13. AI Agent Guidelines
+
+## When Generating Code
+
+1. Check existing code patterns first.
+2. Follow naming conventions.
+3. Respect layer boundaries.
+4. Never duplicate business logic.
+5. Use existing entities before creating new ones.
+
+## When Modifying Code
+
+1. Understand existing architecture.
+2. Preserve layer boundaries.
+3. Update related documentation.
+4. Add tests for new behavior.
+5. Verify dependency direction.
+
+## When Reviewing Code
+
+1. Check layer compliance.
+2. Verify naming conventions.
+3. Validate dependency direction.
+4. Ensure test coverage.
+5. Review documentation.
+
+---
+
+# 14. Documentation Requirements
+
+## Required Documentation
+
+- Entity specifications
+- Event definitions
+- API contracts
+- Business rules
+- Architecture decisions
+
+## Documentation Standards
+
+- Use markdown format.
+- Follow existing templates.
+- Keep documentation current.
+- Include examples.
+
+---
+
+# 15. Guiding Principle
+
+These rules exist to ensure architectural integrity.
+
+AI agents should follow these rules to maintain consistency.
+
+When uncertain, preserve the architecture over convenience.
+
+The architecture is the source of truth.
