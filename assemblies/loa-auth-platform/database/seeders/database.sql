@@ -1,5 +1,3 @@
-CREATE DATABASE IF NOT EXISTS `loa_auth` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
 USE `loa_auth`;
 
 CREATE TABLE `users` (
