@@ -110,12 +110,17 @@ docker compose down -v               # stop + delete DB volume (fresh start)
 | `JWT_SECRET` | dev value (32+ chars) | random 32+ chars | **Yes** |
 | `JWT_ACCESS_TTL` | `15` | `15` | No |
 | `JWT_REFRESH_TTL` | `10080` | `10080` | No |
+| `CORS_ALLOWED_ORIGINS` | LOA origins | `https://auth.loa.edu.ph,https://consult.loa.edu.ph,https://cert.loa.edu.ph` | Yes |
+| `L5_SWAGGER_OPEN_API_SPEC_VERSION` | `3.1.0` | `3.1.0` | No |
+| `CACHE_STORE` | `file` | `file` | Yes |
 | `MAIL_MAILER` | `smtp` | `smtp` | No |
 | `MAIL_HOST` | `mailpit` | SMTP host | No |
 | `MAIL_PORT` | `1025` | SMTP port | No |
 | `MAIL_FROM_ADDRESS` | `noreply@loa.edu.ph` | `noreply@loa.edu.ph` | Yes |
 
 `JWT_SECRET` must be the **same value in every LOA app** (shared HMAC-SHA256 signing). It must never be committed.
+
+`CORS_ALLOWED_ORIGINS` must be a comma-separated string of origins, not a nested array or JSON value. After changing it, run `php artisan config:clear` followed by `php artisan config:cache`.
 
 ---
 

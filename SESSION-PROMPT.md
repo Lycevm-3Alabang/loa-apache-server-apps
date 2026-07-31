@@ -33,7 +33,7 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-07-31
+### Date: 2026-08-01
 
 ### Completed
 - RefreshToken spec promoted to **Final** (`kernels/identity/entities/refresh-token.md` + PROJECT.md status)
@@ -56,18 +56,30 @@ Then:
 - PHP 8.3 + Laravel 12 upgrade (Laravel 11 EOL Jul 2026, security advisories)
 - All verified: `php -l` passed, 9 migrations ran, `refresh_tokens` schema confirmed (indexes, FK)
 - PROJECT.md tracker + Decisions Log + assembly READMEs updated
+- Auth Web UI spec promoted to **Final** and expanded with implementation, security, rate-limit, session, and deployment details
+- Auth Web UI implemented:
+  - Blade login, forgot-password, and reset-password forms with CSRF protection
+  - Safe allowlisted redirect with JWT pair delivered in the URL fragment
+  - Shared password-reset notification service and reset/change email templates
+  - `POST /api/v1/auth/password/change-request` with JWT authentication
+  - Email+IP password-reset throttling with generic anti-enumeration responses
+  - Laravel web, mail, cache, and session configuration plus sessions migration
+- PROJECT.md implementation tracker updated for the Auth Web UI and SMTP/mail items
+- Investigated deployed logs and hardened deployment fixes:
+  - CORS spec promoted to **Final**; origin parsing now always produces a flat trimmed string list
+  - Production deployment docs now clear/rebuild config cache and regenerate Swagger docs
+  - OpenAPI default corrected to 3.1.0; CORS, cache, and Swagger environment variables documented
+  - Seeder/autoload files verified; route-list command documented with Laravel 12-compatible `--path`
 
 ### In Progress
 - Nothing — last session ended clean
 
 ### Next Action
-- Implement Auth Web UI (login/forgot/change pages + SMTP mail) per `assemblies/loa-auth-platform/web-ui.md` (spec is Draft — complete to Final first), OR
-- Deploy to auth.loa.edu.ph (Phase 1 final task: `php -l`, JWT_SECRET + MAIL_* env, run migrations, cPanel)
+- Deploy the corrected release to auth.loa.edu.ph, clear/rebuild config cache, regenerate Swagger docs, run migrations, and seed the admin account
 
 ### Backlog / Known Gaps
-- Auth Web UI implementation (Blade pages, mail config, redirect logic) — spec is Draft
 - Education Domain + Business Contexts still use flat structure (no `entities/`, `events/`, `rules/` subdirs)
-- Auth code not linted (PHP not on PATH) — run `php -l` before deploy (now verified via Docker)
+- Auth Web UI code not linted in this session (PHP is not on PATH) — run `php -l` before deploy
 - JWT_SECRET not configured (env) — required before deploy
 - Production environment: cPanel cron for `schedule:run`, MySQL host, MAIL SMTP credentials
 
@@ -85,3 +97,4 @@ Then:
 | 2026-07-31 | Auth Web UI spec (login redirect, forgot/change password, email, CSRF) + rule unification | Implement RefreshToken or Auth Web UI or deploy |
 | 2026-07-31 | RefreshToken spec → Final; model + migration + IdentityService wiring | Auth Web UI or deploy auth |
 | 2026-07-31 | Docker local dev (php:8.3, nginx, mysql, mailpit); Rule 7 disable endpoint + Rule 8 pruning; Laravel 12 upgrade; all verified | Auth Web UI or deploy auth |
+| 2026-08-01 | Auth Web UI implemented; deployed CORS/Swagger/seeder issues investigated and deployment safeguards added | Deploy corrected auth release |

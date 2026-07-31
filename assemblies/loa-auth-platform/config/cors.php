@@ -1,5 +1,12 @@
 <?php
 
+$configuredOrigins = (string) env('CORS_ALLOWED_ORIGINS', '');
+$defaultOrigins = [
+    'https://consult.loa.edu.ph',
+    'https://cert.loa.edu.ph',
+    'https://auth.loa.edu.ph',
+];
+
 return [
 
     /*
@@ -16,13 +23,9 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => env('CORS_ALLOWED_ORIGINS')
-        ? explode(',', env('CORS_ALLOWED_ORIGINS'))
-        : [
-            'https://consult.loa.edu.ph',
-            'https://cert.loa.edu.ph',
-            'https://auth.loa.edu.ph',
-        ],
+    'allowed_origins' => $configuredOrigins !== ''
+        ? array_values(array_filter(array_map('trim', explode(',', $configuredOrigins))))
+        : $defaultOrigins,
 
     'allowed_origins_patterns' => [],
 

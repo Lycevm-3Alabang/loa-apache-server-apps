@@ -2,7 +2,7 @@
 ## Product Assembly Component Specification
 
 **Version:** 1.0
-**Status:** Draft
+**Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -246,3 +246,151 @@ No body. Uses the authenticated user; sends the change-password email to that us
 | "Email not registered" response | User enumeration | Generic success always |
 | A separate change-password code path | Duplicated logic | Shared `/reset-password` flow |
 | Long-lived web session as auth state | Breaks stateless JWT model | Session only for CSRF |
+
+---
+
+# 12. Implementation Inventory
+
+## 12.1 Blade Templates
+
+All views live in `resources/views/`.
+
+| View | Path | Purpose |
+|------|------|---------|
+| Login form | `resources/views/login.blade.php` | Email + password form, error display, redirect param passthrough |
+| Forgot password form | `resources/views/forgot-password.blade.php` | Email input + success message |
+| Reset password form | `resources/views/reset-password.blade.php` | Read-only email, new password + confirm, token-hidden input |
+| Reset password email (forgot) | `resources/views/emails/reset-password.blade.php` | Mailable template for forgot flow |
+| Change password email | `resources/views/emails/change-password.blade.php` | Mailable template for change flow |
+
+## 12.2 Web Controllers
+
+| Controller | Methods | Routes |
+|------------|---------|--------|
+| `WebAuthController` | `showLogin`, `login`, `showForgotPassword`, `sendResetLinkEmail` | `GET|POST /login`, `GET|POST /forgot-password` |
+| `WebResetController` | `showResetForm`, `reset` | `GET|POST /reset-password` |
+
+The existing `AuthController` handles the JSON API layer only (`/api/v1/auth/*`). Web routes are separate.
+
+## 12.3 New API Endpoint
+
+| Route | Controller Method | Auth | Response |
+|-------|-------------------|------|----------|
+| `POST /api/v1/auth/password/change-request` | `AuthController::changePasswordRequest` | `jwt.auth` | `204` (no body) |
+
+Uses the authenticated user's email; sends a `change-password` email linking to `/reset-password`.
+
+---
+
+# 13. Form Field Specifications
+
+## 13.1 Login Form
+
+| Field | Name | Type | Rules |
+|-------|------|------|-------|
+| Email | `email` | text | `required|email` |
+| Password | `password` | password | `required|string` |
+
+## 13.2 Forgot Password Form
+
+| Field | Name | Type | Rules |
+|-------|------|------|-------|
+| Email | `email` | text | `required|email` |
+
+## 13.3 Reset Password Form
+
+| Field | Name | Type | Rules |
+|-------|------|------|-------|
+| Token | `token` | hidden | `required|string` (from URL query param) |
+| Email | `email` | text (read-only) | `required|email` (from URL query param) |
+| New Password | `password` | password | `required|string|min:8\|confirmed\|regex:/[A-Z]/\|regex:/[a-z]/\|regex:/[0-9]/` |
+| Confirm Password | `password_confirmation` | password | `required|string` (must match `password`) |
+
+Validation rule notation: `min:8` (8 chars), `confirmed` (matches `password_confirmation`), regex enforces at least one uppercase, one lowercase, one digit.
+
+---
+
+# 14. Rate Limiting
+
+## 14.1 Forgot Password
+
+| Route | Throttle | Config |
+|-------|----------|--------|
+| `POST /forgot-password` | 1 request per 60 seconds per email+IP | `PasswordResetThrottle` middleware, applied in `routes/web.php` |
+| `POST /api/v1/auth/password/forgot` (API) | 1 request per 60 seconds per email+IP | `PasswordResetThrottle` middleware |
+
+`PasswordResetThrottle` uses Laravel's `RateLimiter` with a key derived from the normalized email and client IP. When rate-limited, it returns the same generic success message. Never reveal the throttle condition to the caller.
+
+## 14.2 Login
+
+Login uses the Identity Kernel's brute-force protection (`maxAttempts = 5`, `lockoutMinutes = 30`). No additional web-layer throttle needed; the lockout message must be surfaced as a generic "Invalid credentials" error.
+
+---
+
+# 15. Session & CSRF Configuration
+
+## 15.1 Session Lifetime
+
+Sessions exist solely to carry the CSRF token. Configure `SESSION_LIFETIME` in `.env`:
+
+| Variable | Local | Production |
+|----------|-------|------------|
+| `SESSION_DRIVER` | `database` | `file` (cPanel, no Redis) |
+| `SESSION_LIFETIME` | `5` (minutes) | `5` (minutes) |
+| `SESSION_EXPIRE_ON_CLOSE` | `true` | `true` |
+| `SESSION_HTTP_ONLY` | `true` | `true` |
+| `SESSION_SECURE` | `false` (HTTP locally) | `true` (HTTPS in production) |
+| `SESSION_SAME_SITE` | `lax` | `lax` |
+
+## 15.2 CSRF
+
+Web routes use Laravel's default `web` middleware group, which includes `VerifyCsrfToken`. Every form includes `@csrf`. No exceptions.
+
+---
+
+# 16. Deployment Considerations
+
+## 16.1 Environment Variables
+
+Add to `.env` for the web UI layer:
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `APP_URL` | `https://auth.loa.edu.ph` | Base URL for email links |
+| `SESSION_DRIVER` | `file` | cPanel has no Redis |
+| `SESSION_SECURE` | `true` | HTTPS in production only |
+| `AUTH_REDIRECT_URL` | `https://consult.loa.edu.ph` | Fallback redirect |
+| `AUTH_ALLOWED_REDIRECTS` | `https://consult.loa.edu.ph,https://cert.loa.edu.ph` | Comma-separated origin allowlist |
+| `MAIL_*` | (see section 7) | SMTP credentials |
+| `JWT_SECRET` | (same as other apps) | Required for token signing |
+
+## 16.2 Production Routing
+
+On cPanel, the document root is `public/`. The `index.php` inside `public/` handles both `/api/v1/*` (JSON) and `/login`, `/forgot-password`, `/reset-password` (web). A single Laravel app serves both surfaces.
+
+## 16.3 Post-Deploy Verification
+
+| Check | Expected |
+|-------|----------|
+| `GET /login` | 200, returns login form HTML |
+| `POST /login` (valid) | 302 → `{appUrl}#access_token=...&refresh_token=...` |
+| `POST /forgot-password` (any email) | 200, generic success message |
+| `GET /reset-password?token=...&email=...` | 200, returns form with pre-filled email |
+| `POST /reset-password` (valid token + password) | 302 → `/login` |
+| Mailpit (local) | Emails captured, links contain raw token in query param |
+| SMTP (prod) | Forgot/change emails delivered with correct links |
+
+---
+
+# 17. Dependency References
+
+This spec relies on the following existing Final specs:
+
+| Spec | Role |
+|------|------|
+| `kernels/identity/rules/account-status.md` | Status check before password validation in login |
+| `kernels/identity/rules/password-reset-flow.md` | Token generation, hashing, single-use, 60-min expiry |
+| `kernels/identity/rules/token-lifecycle.md` | Refresh token revocation on password reset/change |
+| `kernels/identity/entities/refresh-token.md` | `revokeAllRefreshTokens` on disable |
+| `kernels/identity/entities/password-reset-token.md` | Token storage, expiry, used_at fields |
+| `kernels/identity/README.md` (IdentityService) | `login()`, `requestPasswordReset()`, `resetPassword()` contracts |

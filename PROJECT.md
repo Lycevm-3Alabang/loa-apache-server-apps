@@ -66,11 +66,11 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 
 | Layer | Component | Spec | Status |
 |-------|-----------|------|--------|
-| Service | CORS | `services/cors/README.md` | ✅ Draft |
+| Service | CORS | `services/cors/README.md` | ✅ Final |
 | Service | API Documentation | `services/api-documentation/README.md` | ✅ Final |
 | Service | Database Seeder | `assemblies/loa-auth-platform/database/seeders/seeder-spec.md` | ✅ Final |
 | Assembly | LOA Auth Platform | `assemblies/loa-auth-platform/README.md` | ✅ Scaffolded |
-| Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Draft |
+| Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Final |
 | Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Draft |
 | Assembly | LOA Cert Platform | `assemblies/loa-cert-platform/README.md` | ✅ Draft |
 
@@ -116,10 +116,10 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Auth Web UI spec | ✅ Done | `assemblies/loa-auth-platform/web-ui.md` — login redirect, forgot/change password, email |
 | OpenAPI/Swagger UI | ✅ Done | `darkaonline/l5-swagger`, PHP 8 attributes, 12 endpoints, `/api/docs` |
 | Database seeder | ⬜ Not started | `loa-auth-admin` group + permissions + admin user from `.env` |
-| Login page (web) | ⬜ Not started | Blade form; post-login redirect via fragment per web-ui.md |
-| Forgot password page (web) | ⬜ Not started | Email form + reset link email |
-| Change password page (web) | ⬜ Not started | Shared `/reset-password` form, token-validated |
-| SMTP/mail config + email templates | ⬜ Not started | MAIL_* env, reset-password + change-password Blade templates |
+| Login page (web) | ✅ Done | Blade form; post-login redirect via fragment per web-ui.md |
+| Forgot password page (web) | ✅ Done | Email form + reset link email |
+| Change password page (web) | ✅ Done | Shared `/reset-password` form, token-validated |
+| SMTP/mail config + email templates | ✅ Done | MAIL_* env, reset-password + change-password Blade templates |
 | Deploy to auth.loa.edu.ph | ⬜ Not started | |
 
 ### Bugs Found & Fixed (2026-07-31)

@@ -10,7 +10,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [App\Http\Controllers\AuthController::class, 'logout']);
         Route::get('/me', [App\Http\Controllers\AuthController::class, 'me'])->middleware('jwt.auth');
         Route::put('/password', [App\Http\Controllers\AuthController::class, 'updatePassword'])->middleware('jwt.auth');
-        Route::post('/password/forgot', [App\Http\Controllers\AuthController::class, 'forgotPassword']);
+        Route::post('/password/forgot', [App\Http\Controllers\AuthController::class, 'forgotPassword'])
+            ->middleware('password.reset.throttle');
+        Route::post('/password/change-request', [App\Http\Controllers\AuthController::class, 'changePasswordRequest'])
+            ->middleware('jwt.auth');
         Route::post('/password/reset', [App\Http\Controllers\AuthController::class, 'resetPassword']);
         Route::get('/verify', [App\Http\Controllers\AuthController::class, 'verify']);
     });

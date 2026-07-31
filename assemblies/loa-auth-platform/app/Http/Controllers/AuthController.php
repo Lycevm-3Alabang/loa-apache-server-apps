@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\IdentityService;
+use App\Services\PasswordResetNotificationService;
 use App\Services\JWTService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -51,11 +52,17 @@ class AuthController extends Controller
 {
     private IdentityService $identity;
     private JWTService $jwt;
+    private PasswordResetNotificationService $passwordResetNotifications;
 
-    public function __construct(IdentityService $identity, JWTService $jwt)
+    public function __construct(
+        IdentityService $identity,
+        JWTService $jwt,
+        PasswordResetNotificationService $passwordResetNotifications,
+    )
     {
         $this->identity = $identity;
         $this->jwt = $jwt;
+        $this->passwordResetNotifications = $passwordResetNotifications;
     }
 
     #[OA\Post(
@@ -347,9 +354,25 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $this->identity->requestPasswordReset($request->input('email'));
+        $this->passwordResetNotifications->sendForgotPasswordLink($request->input('email'));
 
         return response()->json(['message' => 'If the email exists, a reset link has been sent']);
+    }
+
+    #[OA\Post(
+        path: "/api/v1/auth/password/change-request",
+        tags: ["Auth"],
+        summary: "Send a password change link to the authenticated user",
+        responses: [
+            new OA\Response(response: 204, description: "Change password link sent"),
+            new OA\Response(response: 401, description: "Unauthorized", content: new OA\JsonContent(ref: "#/components/schemas/Error")),
+        ]
+    )]
+    public function changePasswordRequest(Request $request)
+    {
+        $this->passwordResetNotifications->sendChangePasswordLink($request->user());
+
+        return response()->json(null, 204);
     }
 
     #[OA\Post(

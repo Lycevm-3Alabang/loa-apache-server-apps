@@ -3,7 +3,7 @@
 ## Platform Service Specification
 
 **Version:** 1.0
-**Status:** Draft
+**Status:** Final
 **Layer:** Platform Service
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -176,3 +176,41 @@ The CORS Service answers one question:
 It does not determine who may call or what they may do.
 
 Those responsibilities belong to the Identity Kernel and Business Contexts.
+
+---
+
+# 11. Configuration Contract
+
+## 11.1 Environment Variable
+
+`CORS_ALLOWED_ORIGINS` is a comma-separated string of origins. Each entry must be a single origin with no path:
+
+```env
+CORS_ALLOWED_ORIGINS=https://auth.loa.edu.ph,https://consult.loa.edu.ph,https://cert.loa.edu.ph
+```
+
+The application trims entries and removes empty values before passing them to the CORS library. The resulting `allowed_origins` value is always a flat `string[]`.
+
+The application must never wrap the origin list in another array. The CORS library iterates each entry as a string and wildcard normalization will fail if an entry is itself an array.
+
+## 11.2 Configuration Cache
+
+After changing `config/cors.php` or `CORS_ALLOWED_ORIGINS`, clear and rebuild Laravel's configuration cache:
+
+```bash
+php artisan config:clear
+php artisan config:cache
+```
+
+Deploy the source change before rebuilding the cache. A stale `bootstrap/cache/config.php` can preserve an invalid nested-array configuration even after `config/cors.php` is corrected.
+
+## 11.3 Runtime Contract
+
+The resolved configuration must satisfy:
+
+```php
+is_array(config('cors.allowed_origins')) === true;
+array_filter(config('cors.allowed_origins'), 'is_string') === config('cors.allowed_origins');
+```
+
+`supports_credentials` remains `false`; LOA applications use bearer tokens rather than cookies.

@@ -110,6 +110,9 @@ cd ~/loa-auth-platform
 # Install production dependencies
 composer install --no-dev --optimize-autoloader
 
+# Clear stale configuration before rebuilding it
+php artisan config:clear
+
 # Generate application key (only if APP_KEY is not set)
 php artisan key:generate
 
@@ -118,6 +121,12 @@ php artisan migrate --force
 
 # Seed the database (first deploy only)
 php artisan db:seed --force
+
+# Rebuild the production configuration cache after .env is configured
+php artisan config:cache
+
+# Regenerate the OpenAPI document from the deployed controller attributes
+php artisan l5-swagger:generate
 
 # Set up the cron scheduler
 crontab -e
@@ -155,20 +164,25 @@ Set these in cPanel → "Environment Variables" or in the `.env` file:
 | `JWT_SECRET` | random 32+ chars | **Yes** |
 | `JWT_ACCESS_TTL` | `15` | No |
 | `JWT_REFRESH_TTL` | `10080` | No |
+| `CORS_ALLOWED_ORIGINS` | `https://auth.loa.edu.ph,https://consult.loa.edu.ph,https://cert.loa.edu.ph` | Yes |
+| `CACHE_STORE` | `file` | Yes |
 | `ADMIN_EMAIL` | admin email | Yes |
 | `ADMIN_PASSWORD` | admin password | Yes |
 | `ADMIN_NAME` | `Super Admin` | Yes |
 
 `JWT_SECRET` must match the value used in all other LOA apps. It must never be committed to version control.
 
+`CORS_ALLOWED_ORIGINS` is a comma-separated origin list. Do not use nested brackets or JSON syntax. If the cache store is set to `database`, the `cache` and `cache_locks` tables must exist before running cache commands; `file` is the default production setting.
+
 ---
 
 ## 3. Post-Deploy Verification
 
 1. Visit `https://auth.loa.edu.ph` in a browser
-2. Run `php artisan optimize` on the server (clears caches, boosts performance)
-3. Verify the admin user exists: `php artisan tinker` → `App\Models\User::where('email', env('ADMIN_EMAIL'))->first()`
-4. Confirm the cron is working: wait 1 minute and check `php artisan schedule:list`
+2. Verify the API routes: `php artisan route:list --path=api`
+3. Verify the generated OpenAPI document: `php artisan l5-swagger:generate`
+4. Verify the admin user exists: `php artisan tinker` → `App\Models\User::where('email', env('ADMIN_EMAIL'))->first()`
+5. Confirm the cron is working: wait 1 minute and check `php artisan schedule:list`
 
 ---
 
