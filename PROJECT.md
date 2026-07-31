@@ -68,6 +68,7 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 |-------|-----------|------|--------|
 | Service | CORS | `services/cors/README.md` | ✅ Draft |
 | Service | API Documentation | `services/api-documentation/README.md` | ✅ Final |
+| Service | Database Seeder | `assemblies/loa-auth-platform/database/seeders/seeder-spec.md` | ✅ Final |
 | Assembly | LOA Auth Platform | `assemblies/loa-auth-platform/README.md` | ✅ Scaffolded |
 | Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Draft |
 | Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Draft |
@@ -113,6 +114,8 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | PHP 8.3 + Laravel 12 upgrade | ✅ Done | L11 EOL (security advisories Jul 2026), L12 API-compatible |
 | CORS configuration | ✅ Done | `config/cors.php` per `services/cors/README.md`, LOA subdomains + env override |
 | Auth Web UI spec | ✅ Done | `assemblies/loa-auth-platform/web-ui.md` — login redirect, forgot/change password, email |
+| OpenAPI/Swagger UI | ✅ Done | `darkaonline/l5-swagger`, PHP 8 attributes, 12 endpoints, `/api/docs` |
+| Database seeder | ⬜ Not started | `loa-auth-admin` group + permissions + admin user from `.env` |
 | Login page (web) | ⬜ Not started | Blade form; post-login redirect via fragment per web-ui.md |
 | Forgot password page (web) | ⬜ Not started | Email form + reset link email |
 | Change password page (web) | ⬜ Not started | Shared `/reset-password` form, token-validated |
@@ -302,3 +305,5 @@ loa-apache-server-apps/
 | 2026-07-31 | RefreshToken spec promoted to Final + implemented | Model, migration `2026_07_30_000009`, IdentityService wiring; rotation/revocation per spec |
 | 2026-07-31 | Upgrade to Laravel 12 + PHP 8.3 | L11 EOL with security advisories (Jul 2026); L12 API-compatible, requires PHP ^8.3; scaffold code unchanged |
 | 2026-07-31 | Auth Web UI spec | Login page + redirect (fragment token handoff, allowlist), unified forgot/change password flow, SMTP email |
+| 2026-07-31 | OpenAPI/Swagger UI | `darkaonline/l5-swagger` v11, PHP 8 Attributes, serves at `/api/docs` |
+| 2026-07-31 | Master admin seeder | `loa-auth-admin` group + all permissions + admin user from `.env`, idempotent, run after migrations |
