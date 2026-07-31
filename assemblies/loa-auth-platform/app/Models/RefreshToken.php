@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class LoginAttempt extends Model
+class RefreshToken extends Model
 {
     use HasFactory;
 
@@ -14,19 +14,21 @@ class LoginAttempt extends Model
     protected $keyType = 'string';
     protected $primaryKey = 'id';
 
-    public $timestamps = false;
-
     protected $fillable = [
         'user_id',
-        'email_attempted',
-        'ip_address',
-        'success',
-        'attempted_at',
+        'jti',
+        'expires_at',
+        'revoked_at',
+        'replaced_by',
+    ];
+
+    protected $hidden = [
+        'jti',
     ];
 
     protected $casts = [
-        'success' => 'boolean',
-        'attempted_at' => 'datetime',
+        'expires_at' => 'datetime',
+        'revoked_at' => 'datetime',
     ];
 
     protected static function boot(): void
@@ -43,5 +45,25 @@ class LoginAttempt extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function replacedBy()
+    {
+        return $this->belongsTo(RefreshToken::class, 'replaced_by');
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at->isPast();
+    }
+
+    public function isRevoked(): bool
+    {
+        return $this->revoked_at !== null;
+    }
+
+    public function isValid(): bool
+    {
+        return !$this->isExpired() && !$this->isRevoked();
     }
 }

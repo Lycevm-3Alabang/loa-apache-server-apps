@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\AuthorizationService;
 use App\Services\IdentityService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -50,5 +51,24 @@ class UserController extends Controller
             'permissions' => $this->authorization->getPermissions($user->id),
             'created_at' => $user->created_at,
         ]);
+    }
+
+    public function updateStatus(Request $request, string $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:active,disabled',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $this->identity->setUserStatus($id, $request->input('status'));
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        return response()->json(['message' => 'User status updated']);
     }
 }

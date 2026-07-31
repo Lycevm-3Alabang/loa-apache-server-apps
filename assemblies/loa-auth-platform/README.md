@@ -136,9 +136,14 @@ POST   /api/v1/auth/password/reset
 GET    /api/v1/auth/verify
 GET    /api/v1/users
 GET    /api/v1/users/{id}
+PATCH  /api/v1/users/{id}/status   (admin, `users.manage`) — set status `active`|`disabled`; disabling revokes all refresh tokens
 ```
 
 All API endpoints return JSON.
+
+`PATCH /users/{id}/status` enforces `kernels/identity/rules/account-status.md` transitions:
+- `active` → `disabled`: account can no longer authenticate; **all refresh tokens revoked** (`kernels/identity/entities/refresh-token.md` rule 7)
+- `disabled` → `active`: re-enable (also clears lock state)
 
 ## Web UI Surface
 
@@ -159,7 +164,7 @@ See `web-ui.md` for the complete web UI specification (login redirect, forgot/ch
 
 # 10. Deployment
 
-The LOA Auth Platform is deployed as a standalone Laravel 11 application.
+The LOA Auth Platform is deployed as a standalone Laravel 12 application.
 
 Deployment configuration:
 

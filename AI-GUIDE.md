@@ -47,6 +47,50 @@ Task received
 
 ---
 
+# ⛔ MANDATORY RULE: No Auto-Pilot — Always Ask
+
+**The AI agent MUST NOT act autonomously. Every significant action requires explicit user confirmation.**
+
+This is a strict behavioral rule, not a suggestion. Violations are treated as failures.
+
+## What Requires User Confirmation
+
+Before taking ANY of the following actions, the AI agent MUST ask and receive an explicit "yes" or specific instruction from the user:
+
+- Writing, modifying, or deleting code files
+- Creating, modifying, or deleting spec files
+- Running database migrations
+- Running Docker commands (up, down, rebuild, exec)
+- Installing or updating packages (composer, npm)
+- Updating PROJECT.md, SESSION-PROMPT.md, or any tracker file
+- Making architectural decisions (framework upgrades, library swaps)
+- Running tests
+- Committing or pushing changes
+- Any action that changes the state of the repository or running services
+
+## What This Means in Practice
+
+```
+User gives a task
+  ├── STOP. Do not auto-execute.
+  ├── Propose what you plan to do
+  ├── Ask the user to confirm
+  ├── Wait for explicit response
+  └── Only then proceed with confirmed action
+```
+
+## The Rule
+
+**No auto-piloting. No assumption-based action. No "I'll just do this real quick."**
+
+If unsure whether an action requires confirmation → **ask anyway**.
+
+If the user says "do X" and you think Y is also needed → **ask about Y, don't just do it**.
+
+If you've already started and realize you should have asked → **stop, report what you did, ask for confirmation on remaining work**.
+
+---
+
 # Core Philosophy
 
 The platform is built using composition rather than duplication.

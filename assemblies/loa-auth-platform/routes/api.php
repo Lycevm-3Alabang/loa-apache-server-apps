@@ -19,4 +19,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/', [App\Http\Controllers\UserController::class, 'index']);
         Route::get('/{id}', [App\Http\Controllers\UserController::class, 'show']);
     });
+
+    Route::prefix('users')->middleware(['jwt.auth', 'jwt.permission:users.manage'])->group(function () {
+        Route::patch('/{id}/status', [App\Http\Controllers\UserController::class, 'updateStatus']);
+    });
 });

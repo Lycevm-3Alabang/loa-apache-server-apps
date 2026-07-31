@@ -71,6 +71,10 @@ class AuthController extends Controller
                 return response()->json(['message' => 'Account is locked'], 423);
             }
 
+            if ($e->getMessage() === 'Account is disabled') {
+                return response()->json(['message' => 'Account is disabled'], 403);
+            }
+
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 

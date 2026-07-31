@@ -56,7 +56,7 @@ class AuthorizationService
 
         $userPermissions = $user->userPermissions()
             ->where('granted', true)
-            ->pluck('permission.key');
+            ->pluck('permissions.key');
 
         return $groupPermissions->merge($userPermissions)->unique()->toArray();
     }

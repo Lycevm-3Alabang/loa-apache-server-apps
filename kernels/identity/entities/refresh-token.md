@@ -2,6 +2,10 @@
 
 ## Identity Kernel
 
+**Version:** 1.0
+**Status:** Final
+**Layer:** Platform Kernel
+
 ### Purpose
 
 Persists refresh tokens in the database so they can be validated, rotated, and revoked per the token lifecycle rule.

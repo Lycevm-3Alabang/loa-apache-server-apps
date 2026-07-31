@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\LoginAttempt;
 use App\Models\PasswordResetToken;
+use App\Models\RefreshToken;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
@@ -45,6 +46,11 @@ class IdentityService
             throw new \Exception('Account is locked');
         }
 
+        if ($user && $user->status === 'disabled') {
+            $this->recordAttempt(null, $email, $ipAddress, false);
+            throw new \Exception('Account is disabled');
+        }
+
         if (!$user || !Hash::check($password, $user->password)) {
             $this->recordAttempt($user?->id, $email, $ipAddress, false);
 
@@ -69,18 +75,24 @@ class IdentityService
             throw new \Exception('Invalid refresh token');
         }
 
+        $record = RefreshToken::where('jti', hash('sha256', $claims['jti'] ?? ''))->first();
+
+        if (!$record || !$record->isValid()) {
+            throw new \Exception('Invalid refresh token');
+        }
+
         $user = User::find($claims['sub']);
 
         if (!$user || !$user->isActive()) {
             throw new \Exception('User not found or inactive');
         }
 
-        return $this->generateTokenPair($user);
+        return $this->generateTokenPair($user, $record);
     }
 
     public function logout(string $refreshToken): void
     {
-        $this->jwt->validate($refreshToken);
+        $this->revokeRefreshToken($refreshToken);
     }
 
     public function getUser(string $userId): User
@@ -92,6 +104,32 @@ class IdentityService
         }
 
         return $user;
+    }
+
+    public function setUserStatus(string $userId, string $status): void
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            throw new \Exception('User not found');
+        }
+
+        if (!in_array($status, ['active', 'disabled'], true)) {
+            throw new \InvalidArgumentException('Invalid status');
+        }
+
+        if ($status === 'disabled') {
+            $user->update(['status' => 'disabled']);
+            $this->revokeAllRefreshTokens($user->id);
+
+            return;
+        }
+
+        $user->update([
+            'status' => 'active',
+            'failed_attempts' => 0,
+            'locked_until' => null,
+        ]);
     }
 
     public function updatePassword(string $userId, string $oldPassword, string $newPassword): void
@@ -109,6 +147,8 @@ class IdentityService
         $user->update([
             'password' => Hash::make($newPassword),
         ]);
+
+        $this->revokeAllRefreshTokens($user->id);
     }
 
     public function requestPasswordReset(string $email): ?string
@@ -162,9 +202,11 @@ class IdentityService
         PasswordResetToken::where('user_id', $user->id)
             ->where('id', '!=', $token->id)
             ->update(['used_at' => now()]);
+
+        $this->revokeAllRefreshTokens($user->id);
     }
 
-    private function generateTokenPair(User $user): array
+    private function generateTokenPair(User $user, ?RefreshToken $previous = null): array
     {
         $claims = [
             'sub' => $user->id,
@@ -174,12 +216,54 @@ class IdentityService
             'permissions' => $this->authorization->getPermissions($user->id),
         ];
 
+        $accessToken = $this->jwt->generateAccessToken($claims);
+        $refreshToken = $this->jwt->generateRefreshToken($claims);
+
+        $refreshClaims = $this->jwt->validate($refreshToken);
+
+        $record = RefreshToken::create([
+            'user_id' => $user->id,
+            'jti' => hash('sha256', $refreshClaims['jti'] ?? ''),
+            'expires_at' => now()->addMinutes(config('jwt.refresh_ttl', 10080)),
+        ]);
+
+        if ($previous) {
+            $previous->update([
+                'revoked_at' => now(),
+                'replaced_by' => $record->id,
+            ]);
+        }
+
         return [
-            'access_token' => $this->jwt->generateAccessToken($claims),
-            'refresh_token' => $this->jwt->generateRefreshToken($claims),
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshToken,
             'token_type' => 'Bearer',
             'expires_in' => config('jwt.access_ttl', 15) * 60,
         ];
+    }
+
+    private function revokeRefreshToken(string $refreshToken): void
+    {
+        $claims = $this->jwt->validate($refreshToken);
+
+        if (!$claims || ($claims['type'] ?? '') !== 'refresh') {
+            return;
+        }
+
+        $record = RefreshToken::where('jti', hash('sha256', $claims['jti'] ?? ''))
+            ->whereNull('revoked_at')
+            ->first();
+
+        if ($record) {
+            $record->update(['revoked_at' => now()]);
+        }
+    }
+
+    private function revokeAllRefreshTokens(string $userId): void
+    {
+        RefreshToken::where('user_id', $userId)
+            ->whereNull('revoked_at')
+            ->update(['revoked_at' => now()]);
     }
 
     private function recordAttempt(?string $userId, string $email, string $ipAddress, bool $success): void
@@ -203,6 +287,8 @@ class IdentityService
                 'status' => 'locked',
                 'locked_until' => now()->addMinutes($this->lockoutMinutes),
             ]);
+
+            $this->revokeAllRefreshTokens($user->id);
         } else {
             $user->update(['failed_attempts' => $attempts]);
         }

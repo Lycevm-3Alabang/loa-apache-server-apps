@@ -36,28 +36,40 @@ Then:
 ### Date: 2026-07-31
 
 ### Completed
-- RefreshToken entity spec created (`kernels/identity/entities/refresh-token.md`)
-- `RefreshTokenRepository` + `TokenService.revokeAllRefreshTokens()` added to `kernels/identity/contracts/interfaces.md`
-- Identity Kernel README updated (RefreshToken core concept + TokenService contract)
-- Auth Web UI spec created (`assemblies/loa-auth-platform/web-ui.md`): login page + post-login redirect (URL-fragment token handoff, `AUTH_ALLOWED_REDIRECTS` allowlist), unified forgot/change-password flow, CSRF + one-time token validation, SMTP email templates
-- Auth assembly README updated (web UI surface + `POST /auth/password/change-request` endpoint + hybrid JSON/web note)
-- `password-reset-flow.md` rule updated (forgot = change, one flow two entry points)
-- PROJECT.md tracker updated
+- RefreshToken spec promoted to **Final** (`kernels/identity/entities/refresh-token.md` + PROJECT.md status)
+- RefreshToken implemented per spec:
+  - `app/Models/RefreshToken.php` (UUID PK, jti hidden/hashed, isValid() helper, belongsTo user + replacedBy)
+  - Migration `2026_07_30_000009_create_refresh_tokens_table.php` (unique jti, `replaced_by` FK nullOnDelete, user_id/revoked_at + expires_at indexes)
+  - `User::refreshTokens()` hasMany relation added
+  - `IdentityService` wiring: record issued on login, rotated on refresh (old revoked + `replaced_by` set), revoked on logout / password change / password reset / account lock (`revokeAllRefreshTokens`)
+- Account disable endpoint (rule 7):
+  - `IdentityService::setUserStatus()` — disables user, revokes all refresh tokens; re-enables from lock
+  - `UserController::updateStatus()` — PATCH /users/{id}/status, users.manage permission
+- Refresh token pruning (rule 8):
+  - `PruneRefreshTokens` command (`refresh-tokens:prune`) — purges expired/revoked >30 days
+  - `routes/console.php` — `Schedule::command('refresh-tokens:prune')->daily()`
+- Docker local dev environment (`environment.md` spec):
+  - `docker-compose.yml` — php:8.3-fpm, nginx:1.27, mysql:8.0, mailpit, scheduler service
+  - `docker/php/Dockerfile` — PHP 8.3 + pdo_mysql, bcmath, zip + composer
+  - `docker/nginx/default.conf` — fastcgi to app:9000, root public/
+  - `.env` — local DB/JWT/MAIL config
+- PHP 8.3 + Laravel 12 upgrade (Laravel 11 EOL Jul 2026, security advisories)
+- All verified: `php -l` passed, 9 migrations ran, `refresh_tokens` schema confirmed (indexes, FK)
+- PROJECT.md tracker + Decisions Log + assembly READMEs updated
 
 ### In Progress
 - Nothing — last session ended clean
 
 ### Next Action
-- **Implement RefreshToken** (Phase 1 gap): model + migration + wire into IdentityService.refresh()/logout()/updatePassword()/resetPassword(), per the new spec, OR
-- Implement Auth Web UI (login/forgot/change pages + SMTP mail), OR
-- Deploy to auth.loa.edu.ph (Phase 1 final task)
+- Implement Auth Web UI (login/forgot/change pages + SMTP mail) per `assemblies/loa-auth-platform/web-ui.md` (spec is Draft — complete to Final first), OR
+- Deploy to auth.loa.edu.ph (Phase 1 final task: `php -l`, JWT_SECRET + MAIL_* env, run migrations, cPanel)
 
 ### Backlog / Known Gaps
-- RefreshToken implementation (model + migration + service wiring) — spec is Final-ready
 - Auth Web UI implementation (Blade pages, mail config, redirect logic) — spec is Draft
 - Education Domain + Business Contexts still use flat structure (no `entities/`, `events/`, `rules/` subdirs)
-- Auth code not linted (PHP not on PATH) — run `php -l` before deploy
+- Auth code not linted (PHP not on PATH) — run `php -l` before deploy (now verified via Docker)
 - JWT_SECRET not configured (env) — required before deploy
+- Production environment: cPanel cron for `schedule:run`, MySQL host, MAIL SMTP credentials
 
 ### Open Questions
 - None pending (redirect mechanism decision documented in web-ui.md: URL fragment + allowlist)
@@ -71,3 +83,5 @@ Then:
 | 2026-07-31 | Identity events/rules specs; auth controllers; middleware; CORS spec+impl; spec-first mandate | Deploy auth or start Phase 2 |
 | 2026-07-31 | RefreshToken entity spec + contract + README/PROJECT updates | Implement RefreshToken or deploy auth or Phase 2 |
 | 2026-07-31 | Auth Web UI spec (login redirect, forgot/change password, email, CSRF) + rule unification | Implement RefreshToken or Auth Web UI or deploy |
+| 2026-07-31 | RefreshToken spec → Final; model + migration + IdentityService wiring | Auth Web UI or deploy auth |
+| 2026-07-31 | Docker local dev (php:8.3, nginx, mysql, mailpit); Rule 7 disable endpoint + Rule 8 pruning; Laravel 12 upgrade; all verified | Auth Web UI or deploy auth |

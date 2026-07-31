@@ -2,8 +2,8 @@
 ## Project Tracker
 
 **Started:** 2026-07-30
-**Last Updated:** 2026-07-31 18:00
-**Target:** cPanel (PHP 8.2+ / MySQL 8)
+**Last Updated:** 2026-07-31 11:30
+**Target:** cPanel (PHP 8.3+ / MySQL 8 / Laravel 12)
 
 ---
 
@@ -31,7 +31,7 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Kernel | Permission | `kernels/identity/entities/permission.md` | ✅ Draft |
 | Kernel | LoginAttempt | `kernels/identity/entities/login-attempt.md` | ✅ Draft |
 | Kernel | PasswordResetToken | `kernels/identity/entities/password-reset-token.md` | ✅ Draft |
-| Kernel | RefreshToken | `kernels/identity/entities/refresh-token.md` | ✅ Draft |
+| Kernel | RefreshToken | `kernels/identity/entities/refresh-token.md` | ✅ Final |
 | Kernel | Contracts | `kernels/identity/contracts/interfaces.md` | ✅ Draft |
 | Kernel | Events (15) | `kernels/identity/events/` | ✅ Draft |
 | Kernel | Business Rules (8) | `kernels/identity/rules/` | ✅ Draft |
@@ -80,7 +80,7 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Laravel project scaffold | ✅ Done | Laravel 11 skeleton, cPanel-ready |
+| Laravel project scaffold | ✅ Done | Laravel 12 skeleton, cPanel-ready |
 | Identity Kernel spec | ✅ Done | User, UserGroup, Permission, JWT, LoginAttempt, PasswordResetToken |
 | User model + migrations | ✅ Done | UUID PK, status, failed_attempts, locked_until |
 | UserGroup model + migrations | ✅ Done | Flexible grouping (replaces Role) |
@@ -98,14 +98,18 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | JWT claims | ✅ Done | Token includes `groups` + `permissions` |
 | Department model + migrations | ⬜ Not started | Moved to Education Domain |
 | Register endpoint | ✅ Done | Validates password policy, 201 response |
-| Login endpoint | ✅ Done | Returns access + refresh tokens, 423 on lock |
+| Login endpoint | ✅ Done | Returns access + refresh tokens, 423 on lock, 403 on disabled |
 | Refresh endpoint | ✅ Done | Rotates token pair |
 | Logout endpoint | ✅ Done | 204 response |
 | Password reset flow | ✅ Done | Forgot + reset endpoints, hashed tokens |
 | User profile endpoint | ✅ Done | `GET /auth/me` + `PUT /auth/password` |
 | User list endpoint (admin) | ✅ Done | Requires `users.view` permission |
 | Verify endpoint | ✅ Done | Public token validation for consumers |
-| Refresh token revocation | 🔶 Spec'd, impl pending | Spec: `kernels/identity/entities/refresh-token.md` + `RefreshTokenRepository` contract; needs model, migration, IdentityService/TokenService wiring |
+| Refresh token revocation | ✅ Done | Model + migration + IdentityService wiring (issue on login, rotate on refresh, revoke on logout/password change/reset/lock) |
+| Account disable endpoint | ✅ Done | PATCH /users/{id}/status, users.manage permission, revokes all refresh tokens |
+| Refresh token pruning | ✅ Done | PruneRefreshTokens command + daily schedule via routes/console.php |
+| Local Docker dev environment | ✅ Done | docker-compose.yml, php:8.3-fpm, nginx, mysql, mailpit, scheduler |
+| PHP 8.3 + Laravel 12 upgrade | ✅ Done | L11 EOL (security advisories Jul 2026), L12 API-compatible |
 | CORS configuration | ✅ Done | `config/cors.php` per `services/cors/README.md`, LOA subdomains + env override |
 | Auth Web UI spec | ✅ Done | `assemblies/loa-auth-platform/web-ui.md` — login redirect, forgot/change password, email |
 | Login page (web) | ⬜ Not started | Blade form; post-login redirect via fragment per web-ui.md |
@@ -113,6 +117,18 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Change password page (web) | ⬜ Not started | Shared `/reset-password` form, token-validated |
 | SMTP/mail config + email templates | ⬜ Not started | MAIL_* env, reset-password + change-password Blade templates |
 | Deploy to auth.loa.edu.ph | ⬜ Not started | |
+
+### Bugs Found & Fixed (2026-07-31)
+
+These pre-existing bugs were discovered during Docker testing and fixed in this session:
+
+| Bug | Location | Fix |
+|-----|----------|-----|
+| CORS config nesting | `config/cors.php` | Removed double-wrapped `array_values(array_filter([...]))` — was producing array-of-arrays instead of flat array |
+| No UUID generation | User, RefreshToken, PasswordResetToken, LoginAttempt models | Added `boot()` + `creating` listener to auto-generate `Str::uuid()` on create |
+| Wrong table name in pluck | `AuthorizationService::getPermissions()` | `pluck('permission.key')` → `pluck('permissions.key')` (table is plural) |
+| Disabled users could log in | `IdentityService::login()` | Added `status === 'disabled'` check before password validation (per `account-status.md` rule) |
+| Login endpoint no 403 | `AuthController::login()` | Added catch for "Account is disabled" → 403 response |
 
 ## Phase 2: Consult App
 
@@ -186,9 +202,9 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 
 | App | Subdomain | Database | Framework | Purpose |
 |-----|-----------|----------|-----------|---------|
-| Auth | auth.loa.edu.ph | loa_auth | Laravel 11 | JWT token service, user management |
-| Consult | consult.loa.edu.ph | loa_consult | Laravel 11 | Consultation booking, faculty evaluation |
-| Cert | cert.loa.edu.ph | loa_cert | Laravel 11 | Certificate issuance, verification |
+| Auth | auth.loa.edu.ph | loa_auth | Laravel 12 | JWT token service, user management |
+| Consult | consult.loa.edu.ph | loa_consult | Laravel 12 | Consultation booking, faculty evaluation |
+| Cert | cert.loa.edu.ph | loa_cert | Laravel 12 | Certificate issuance, verification |
 
 ---
 
@@ -245,11 +261,16 @@ loa-apache-server-apps/
 │       └── template.md
 ├── assemblies/
 │   ├── loa-auth-platform/              # Auth app (scaffolded)
+│   │   ├── app/Console/Commands/       # PruneRefreshTokens, TestAuth (test only)
 │   │   ├── app/Http/Controllers/
-│   │   ├── app/Models/                 # User, UserGroup, Permission, etc.
+│   │   ├── app/Models/                 # User, UserGroup, Permission, RefreshToken, etc.
 │   │   ├── app/Services/               # JWTService, IdentityService, AuthorizationService
-│   │   ├── database/migrations/        # 8 migrations
+│   │   ├── database/migrations/        # 9 migrations (incl. refresh_tokens)
+│   │   ├── docker/                     # php/Dockerfile, nginx/default.conf
+│   │   ├── docker-compose.yml          # Local dev stack (PHP 8.3, nginx, MySQL, mailpit)
+│   │   ├── environment.md              # Local + deployed tooling spec
 │   │   ├── routes/api.php
+│   │   ├── routes/console.php          # Scheduler (refresh-tokens:prune daily)
 │   │   ├── config/jwt.php
 │   │   └── composer.json
 │   ├── loa-consult-platform/README.md  # Consult assembly spec
@@ -277,4 +298,6 @@ loa-apache-server-apps/
 | 2026-07-31 | Event spec files (15) | Per-event spec under kernels/identity/events/ |
 | 2026-07-31 | Business rule spec files (8) | Per-rule spec under kernels/identity/rules/ |
 | 2026-07-31 | RefreshToken entity spec | DB-backed refresh tokens (jti hashed, single-use, rotation + revocation) per token-lifecycle.md |
+| 2026-07-31 | RefreshToken spec promoted to Final + implemented | Model, migration `2026_07_30_000009`, IdentityService wiring; rotation/revocation per spec |
+| 2026-07-31 | Upgrade to Laravel 12 + PHP 8.3 | L11 EOL with security advisories (Jul 2026); L12 API-compatible, requires PHP ^8.3; scaffold code unchanged |
 | 2026-07-31 | Auth Web UI spec | Login page + redirect (fragment token handoff, allowlist), unified forgot/change password flow, SMTP email |

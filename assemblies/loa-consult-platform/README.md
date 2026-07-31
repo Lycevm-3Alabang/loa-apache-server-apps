@@ -200,7 +200,7 @@ GET    /api/v1/reports/sentiment
 
 # 10. Deployment
 
-The LOA Consult Platform is deployed as a standalone Laravel 11 application.
+The LOA Consult Platform is deployed as a standalone Laravel 12 application.
 
 Deployment configuration:
 

@@ -16,15 +16,13 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => array_values(array_filter([
-        env('CORS_ALLOWED_ORIGINS')
-            ? explode(',', env('CORS_ALLOWED_ORIGINS'))
-            : [
-                'https://consult.loa.edu.ph',
-                'https://cert.loa.edu.ph',
-                'https://auth.loa.edu.ph',
-            ],
-    ])),
+    'allowed_origins' => env('CORS_ALLOWED_ORIGINS')
+        ? explode(',', env('CORS_ALLOWED_ORIGINS'))
+        : [
+            'https://consult.loa.edu.ph',
+            'https://cert.loa.edu.ph',
+            'https://auth.loa.edu.ph',
+        ],
 
     'allowed_origins_patterns' => [],
 

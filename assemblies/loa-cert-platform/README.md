@@ -194,7 +194,7 @@ PUT    /api/v1/admin/users/{id}/role
 
 # 11. Deployment
 
-The LOA Cert Platform is deployed as a standalone Laravel 11 application.
+The LOA Cert Platform is deployed as a standalone Laravel 12 application.
 
 Deployment configuration:
 

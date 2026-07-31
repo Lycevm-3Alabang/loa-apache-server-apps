@@ -456,6 +456,37 @@ Before generating or modifying code:
 3. If the spec is missing or Draft → STOP. Write the spec first or ask the user.
 4. Only then write code that matches the spec
 
+## ⛔ No Auto-Pilot — Always Ask
+
+**The AI agent MUST NOT act autonomously. Every significant action requires explicit user confirmation.**
+
+This is a strict behavioral rule, not a suggestion. Violations are treated as failures.
+
+### What Requires User Confirmation
+
+Before taking ANY of the following actions, the AI agent MUST ask and receive an explicit "yes" or specific instruction from the user:
+
+- Writing, modifying, or deleting code files
+- Creating, modifying, or deleting spec files
+- Running database migrations
+- Running Docker commands (up, down, rebuild, exec)
+- Installing or updating packages (composer, npm)
+- Updating PROJECT.md, SESSION-PROMPT.md, or any tracker file
+- Making architectural decisions (framework upgrades, library swaps)
+- Running tests
+- Committing or pushing changes
+- Any action that changes the state of the repository or running services
+
+### The Rule
+
+**No auto-piloting. No assumption-based action. No "I'll just do this real quick."**
+
+If unsure whether an action requires confirmation → **ask anyway**.
+
+If the user says "do X" and you think Y is also needed → **ask about Y, don't just do it**.
+
+If you've already started and realize you should have asked → **stop, report what you did, ask for confirmation on remaining work**.
+
 ## When Generating Code
 
 1. **Check the spec exists and is Final before writing code**
