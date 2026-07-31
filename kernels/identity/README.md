@@ -186,6 +186,26 @@ Tokens for password reset flow.
 
 ---
 
+### RefreshToken
+
+Persists refresh tokens for validation, rotation, and revocation.
+
+**Attributes:**
+- id
+- user_id
+- jti (hashed JWT ID)
+- expires_at
+- revoked_at (nullable)
+- replaced_by (nullable)
+- created_at
+
+**Invariants:**
+- jti is stored hashed (never raw)
+- Refresh tokens are single-use (rotated on every refresh)
+- A revoked or rotated token is permanently rejected
+
+---
+
 ## 4. Business Rules
 
 ### Authentication
@@ -279,6 +299,7 @@ revokeGroupPermission(groupId, permissionKey) → void
 generateTokenPair(user) → TokenPair
 validateToken(token) → Claims
 revokeRefreshToken(token) → void
+revokeAllRefreshTokens(userId) → void
 ```
 
 ### UserGroupService

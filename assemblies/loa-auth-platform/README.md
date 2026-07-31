@@ -43,6 +43,7 @@ The LOA Auth Platform owns:
 - group-based access control
 - user profile management
 - audit logging for authentication events
+- browser-based authentication UI (see `web-ui.md`)
 
 The LOA Auth Platform does not own consultation, evaluation, or certificate business logic.
 
@@ -130,13 +131,29 @@ POST   /api/v1/auth/logout
 GET    /api/v1/auth/me
 PUT    /api/v1/auth/password
 POST   /api/v1/auth/password/forgot
+POST   /api/v1/auth/password/change-request
 POST   /api/v1/auth/password/reset
 GET    /api/v1/auth/verify
 GET    /api/v1/users
 GET    /api/v1/users/{id}
 ```
 
-All endpoints return JSON.
+All API endpoints return JSON.
+
+## Web UI Surface
+
+Browser-facing routes (HTML forms, not JSON):
+
+```
+GET  /login
+POST /login
+GET  /forgot-password
+POST /forgot-password
+GET  /reset-password
+POST /reset-password
+```
+
+See `web-ui.md` for the complete web UI specification (login redirect, forgot/change password flows, token validation, email templates).
 
 ---
 

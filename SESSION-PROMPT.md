@@ -36,30 +36,31 @@ Then:
 ### Date: 2026-07-31
 
 ### Completed
-- Identity Kernel fully spec'd: README, 5 entities, contracts, 15 events, 8 business rules
-- `loa-auth-platform` assembly README cleaned up (removed Organization Kernel references)
-- `services/cors/README.md` spec created; `config/cors.php` implemented
-- Mandatory "Specs Before Code" rule added to AGENT.md, AI-GUIDE.md, AI-RULES.md, PROJECT.md
-- Auth app controllers implemented (AuthController 9 endpoints + UserController 2)
-- JWT + Permission middleware created (`jwt.auth`, `jwt.permission:{key}`)
-- IdentityService: added `getUser()`, `updatePassword()`, tokens now carry `groups` + `permissions` claims
-- `config/cors.php` created (LOA subdomains + env override)
+- RefreshToken entity spec created (`kernels/identity/entities/refresh-token.md`)
+- `RefreshTokenRepository` + `TokenService.revokeAllRefreshTokens()` added to `kernels/identity/contracts/interfaces.md`
+- Identity Kernel README updated (RefreshToken core concept + TokenService contract)
+- Auth Web UI spec created (`assemblies/loa-auth-platform/web-ui.md`): login page + post-login redirect (URL-fragment token handoff, `AUTH_ALLOWED_REDIRECTS` allowlist), unified forgot/change-password flow, CSRF + one-time token validation, SMTP email templates
+- Auth assembly README updated (web UI surface + `POST /auth/password/change-request` endpoint + hybrid JSON/web note)
+- `password-reset-flow.md` rule updated (forgot = change, one flow two entry points)
+- PROJECT.md tracker updated
 
 ### In Progress
 - Nothing — last session ended clean
 
 ### Next Action
-- **Deploy to auth.loa.edu.ph** (Phase 1 final task), OR
-- Start Phase 2 (Consult App) spec work
+- **Implement RefreshToken** (Phase 1 gap): model + migration + wire into IdentityService.refresh()/logout()/updatePassword()/resetPassword(), per the new spec, OR
+- Implement Auth Web UI (login/forgot/change pages + SMTP mail), OR
+- Deploy to auth.loa.edu.ph (Phase 1 final task)
 
 ### Backlog / Known Gaps
-- Refresh token revocation — needs `RefreshToken` entity spec + contract + migration (tracked in PROJECT.md)
+- RefreshToken implementation (model + migration + service wiring) — spec is Final-ready
+- Auth Web UI implementation (Blade pages, mail config, redirect logic) — spec is Draft
 - Education Domain + Business Contexts still use flat structure (no `entities/`, `events/`, `rules/` subdirs)
 - Auth code not linted (PHP not on PATH) — run `php -l` before deploy
 - JWT_SECRET not configured (env) — required before deploy
 
 ### Open Questions
-- None pending
+- None pending (redirect mechanism decision documented in web-ui.md: URL fragment + allowlist)
 
 ---
 
@@ -68,3 +69,5 @@ Then:
 | Date | Work Done | Next Action |
 |------|-----------|-------------|
 | 2026-07-31 | Identity events/rules specs; auth controllers; middleware; CORS spec+impl; spec-first mandate | Deploy auth or start Phase 2 |
+| 2026-07-31 | RefreshToken entity spec + contract + README/PROJECT updates | Implement RefreshToken or deploy auth or Phase 2 |
+| 2026-07-31 | Auth Web UI spec (login redirect, forgot/change password, email, CSRF) + rule unification | Implement RefreshToken or Auth Web UI or deploy |

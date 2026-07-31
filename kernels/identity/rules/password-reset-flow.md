@@ -28,6 +28,19 @@ Defines the secure process for password reset via email token.
    └── Publish PasswordResetCompleted
 ```
 
+### Unified Forgot / Change Flow
+
+Forget-password and change-password are the **same flow** with different triggers and email copy.
+
+| Aspect | Forgot Password | Change Password |
+|--------|-----------------|-----------------|
+| Trigger | unauthenticated | authenticated |
+| Entry | `/forgot-password` form | `POST /api/v1/auth/password/change-request` |
+| Email template | reset-password | change-password |
+| Token + consumer form | same | same |
+
+Both produce a `PasswordResetToken` consumed by the same `/reset-password` form. No duplicated logic.
+
 ### Token Properties
 
 | Property | Value |

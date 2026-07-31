@@ -31,6 +31,7 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Kernel | Permission | `kernels/identity/entities/permission.md` | ✅ Draft |
 | Kernel | LoginAttempt | `kernels/identity/entities/login-attempt.md` | ✅ Draft |
 | Kernel | PasswordResetToken | `kernels/identity/entities/password-reset-token.md` | ✅ Draft |
+| Kernel | RefreshToken | `kernels/identity/entities/refresh-token.md` | ✅ Draft |
 | Kernel | Contracts | `kernels/identity/contracts/interfaces.md` | ✅ Draft |
 | Kernel | Events (15) | `kernels/identity/events/` | ✅ Draft |
 | Kernel | Business Rules (8) | `kernels/identity/rules/` | ✅ Draft |
@@ -67,6 +68,7 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 |-------|-----------|------|--------|
 | Service | CORS | `services/cors/README.md` | ✅ Draft |
 | Assembly | LOA Auth Platform | `assemblies/loa-auth-platform/README.md` | ✅ Scaffolded |
+| Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Draft |
 | Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Draft |
 | Assembly | LOA Cert Platform | `assemblies/loa-cert-platform/README.md` | ✅ Draft |
 
@@ -103,8 +105,13 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | User profile endpoint | ✅ Done | `GET /auth/me` + `PUT /auth/password` |
 | User list endpoint (admin) | ✅ Done | Requires `users.view` permission |
 | Verify endpoint | ✅ Done | Public token validation for consumers |
-| Refresh token revocation | ⬜ Backlog | Needs RefreshToken entity spec + contract + migration (token-lifecycle.md requires it) |
+| Refresh token revocation | 🔶 Spec'd, impl pending | Spec: `kernels/identity/entities/refresh-token.md` + `RefreshTokenRepository` contract; needs model, migration, IdentityService/TokenService wiring |
 | CORS configuration | ✅ Done | `config/cors.php` per `services/cors/README.md`, LOA subdomains + env override |
+| Auth Web UI spec | ✅ Done | `assemblies/loa-auth-platform/web-ui.md` — login redirect, forgot/change password, email |
+| Login page (web) | ⬜ Not started | Blade form; post-login redirect via fragment per web-ui.md |
+| Forgot password page (web) | ⬜ Not started | Email form + reset link email |
+| Change password page (web) | ⬜ Not started | Shared `/reset-password` form, token-validated |
+| SMTP/mail config + email templates | ⬜ Not started | MAIL_* env, reset-password + change-password Blade templates |
 | Deploy to auth.loa.edu.ph | ⬜ Not started | |
 
 ## Phase 2: Consult App
@@ -269,3 +276,5 @@ loa-apache-server-apps/
 | 2026-07-31 | Identity Kernel v2.0 | Universal grouping, not role-based |
 | 2026-07-31 | Event spec files (15) | Per-event spec under kernels/identity/events/ |
 | 2026-07-31 | Business rule spec files (8) | Per-rule spec under kernels/identity/rules/ |
+| 2026-07-31 | RefreshToken entity spec | DB-backed refresh tokens (jti hashed, single-use, rotation + revocation) per token-lifecycle.md |
+| 2026-07-31 | Auth Web UI spec | Login page + redirect (fragment token handoff, allowlist), unified forgot/change password flow, SMTP email |

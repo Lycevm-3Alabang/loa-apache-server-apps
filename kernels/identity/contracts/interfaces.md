@@ -68,6 +68,20 @@ interface PasswordResetTokenRepository
 }
 ```
 
+### RefreshTokenRepository
+
+```php
+interface RefreshTokenRepository
+{
+    public function findByJtiHash(string $jtiHash): ?RefreshToken;
+    public function create(array $data): RefreshToken;
+    public function revoke(string $tokenId): void;
+    public function revokeAllForUser(string $userId): void;
+    public function revokeRotated(string $tokenId, string $replacedById): void;
+    public function prune(int $days): void;
+}
+```
+
 ### TokenService
 
 ```php
@@ -76,6 +90,7 @@ interface TokenService
     public function generateTokenPair(User $user): TokenPair;
     public function validateToken(string $token): ?TokenClaims;
     public function revokeRefreshToken(string $token): void;
+    public function revokeAllRefreshTokens(string $userId): void;
 }
 ```
 
