@@ -18,6 +18,35 @@ When uncertain, AI should preserve architectural integrity over implementation c
 
 ---
 
+# ⛔ MANDATORY RULE: Specs Before Code
+
+**The AI agent MUST check for and read the spec before writing ANY code.**
+
+This is a hard requirement. Violations are treated as failures.
+
+## The Rule
+
+```
+Task received
+  ├── Search repo for relevant spec (.md file)
+  ├── No spec found      → WRITE THE SPEC FIRST (or ask the user)
+  ├── Spec found, Draft  → COMPLETE THE SPEC FIRST
+  └── Spec found, Final  → write code that matches the spec exactly
+```
+
+## Non-Negotiable Checklist
+
+- [ ] I searched `kernels/`, `domains/`, `business-contexts/`, `services/`, `assemblies/` for a spec
+- [ ] I read the entire relevant spec file(s)
+- [ ] I confirmed the concept is NOT already owned by another layer
+- [ ] The spec is Final (not Draft) before I write production code
+- [ ] My code matches the spec's concepts, rules, and contracts
+- [ ] No spec exists → I did NOT code; I wrote the spec or asked first
+
+**If the task has no spec and no prior user discussion, the AI agent MUST ask before writing any code.**
+
+---
+
 # Core Philosophy
 
 The platform is built using composition rather than duplication.
@@ -444,6 +473,24 @@ When generating code, consult the relevant architectural specification before in
 # Code Generation Guide
 
 **This is not a code repository.** It is a reference that code repositories use.
+
+---
+
+## ⛔ Step 0: Check the Spec First
+
+**Before ANY code generation, the AI agent MUST locate and read the relevant spec.**
+
+Search order:
+
+1. `kernels/` — is it a canonical concept?
+2. `domains/` — is it reusable industry knowledge?
+3. `services/` — is it a technical capability?
+4. `business-contexts/` — is it a business process?
+5. `assemblies/` — is it a deployable app?
+
+If the spec is missing or Draft, the AI agent MUST NOT generate code. Write the spec first or ask the user.
+
+**No spec. No code. Ever.**
 
 ---
 

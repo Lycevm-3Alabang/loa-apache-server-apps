@@ -117,6 +117,7 @@ The Education Domain Pack currently defines the following Domains.
 ```
 Education
 
+├── Department
 ├── Course
 ├── Semester
 ├── Subject
@@ -132,6 +133,7 @@ Each Domain owns one architectural responsibility.
 
 | Domain | Responsibility |
 |----------|---------------|
+| Department | Represents academic units and organizational structure. |
 | Course | Represents academic programs offered by the institution. |
 | Semester | Represents academic terms and evaluation periods. |
 | Subject | Represents individual courses taught within a program. |

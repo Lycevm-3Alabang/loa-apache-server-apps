@@ -24,12 +24,10 @@ It does not own consultation workflows, evaluation logic, certificate generation
 
 # 2. Kernels Included
 
-The LOA Auth Platform relies on the following Platform Kernels:
+The LOA Auth Platform relies on the following Platform Kernel:
 
 ```
 Identity
-    ↓
-Organization
 ```
 
 ---
@@ -42,9 +40,8 @@ The LOA Auth Platform owns:
 - authentication (login, logout, token refresh)
 - JWT token issuance and validation
 - password management (hashing, reset)
-- role-based access control
+- group-based access control
 - user profile management
-- department and course reference data
 - audit logging for authentication events
 
 The LOA Auth Platform does not own consultation, evaluation, or certificate business logic.
@@ -81,14 +78,6 @@ Owns digital identities:
 - credential metadata
 - identity lifecycle (active, disabled)
 - token versioning
-
-## Organization Kernel
-
-Owns organizational structure:
-
-- departments
-- department courses
-- organizational hierarchy
 
 ---
 

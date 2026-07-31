@@ -54,6 +54,7 @@ Examples include:
 
 | Platform Service | Responsibility |
 |------------------|---------------|
+| CORS | Which origins may call LOA APIs from a browser? |
 | Notification | How do we deliver messages to users? |
 | Storage | How do we persist and retrieve files? |
 | Search | How do we find information quickly? |
@@ -255,6 +256,7 @@ The Business Platform currently defines the following Platform Services.
 ```
 Platform Services
 
+├── CORS
 ├── Notification
 ├── Storage
 ├── PDF Generation

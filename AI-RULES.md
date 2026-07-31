@@ -9,6 +9,24 @@
 
 ---
 
+# ⛔ RULE 0: Specs Before Code — MANDATORY
+
+**The AI agent MUST check for the spec before writing ANY code.**
+
+| Situation | Required Action |
+|-----------|-----------------|
+| No spec exists | Write the spec FIRST, or ask the user. Do NOT code. |
+| Spec is Draft | Complete the spec FIRST. Do NOT code. |
+| Spec is Final | Read it completely, then code exactly to it. |
+| Concept owned elsewhere | Reference by contract/ID. Do NOT duplicate. |
+
+**Violating this rule is a failure.** "I didn't see the spec" is not an excuse — searching for the spec is part of the task.
+
+The spec is the source of truth. The code must match the spec, never the reverse.
+
+---
+
+
 # 1. Naming Conventions
 
 ## General Rules
@@ -429,29 +447,41 @@ _logger.LogInformation(
 
 # 13. AI Agent Guidelines
 
+## ⛔ Mandatory Spec Check
+
+Before generating or modifying code:
+
+1. Search `kernels/`, `domains/`, `business-contexts/`, `services/`, `assemblies/` for the relevant spec
+2. Read the ENTIRE spec
+3. If the spec is missing or Draft → STOP. Write the spec first or ask the user.
+4. Only then write code that matches the spec
+
 ## When Generating Code
 
-1. Check existing code patterns first.
-2. Follow naming conventions.
-3. Respect layer boundaries.
-4. Never duplicate business logic.
-5. Use existing entities before creating new ones.
+1. **Check the spec exists and is Final before writing code**
+2. Check existing code patterns first.
+3. Follow naming conventions.
+4. Respect layer boundaries.
+5. Never duplicate business logic.
+6. Use existing entities before creating new ones.
 
 ## When Modifying Code
 
-1. Understand existing architecture.
-2. Preserve layer boundaries.
-3. Update related documentation.
-4. Add tests for new behavior.
-5. Verify dependency direction.
+1. **Re-read the spec before changing code**
+2. Understand existing architecture.
+3. Preserve layer boundaries.
+4. Update related documentation.
+5. Add tests for new behavior.
+6. Verify dependency direction.
 
 ## When Reviewing Code
 
-1. Check layer compliance.
-2. Verify naming conventions.
-3. Validate dependency direction.
-4. Ensure test coverage.
-5. Review documentation.
+1. **Verify the code matches the spec**
+2. Check layer compliance.
+3. Verify naming conventions.
+4. Validate dependency direction.
+5. Ensure test coverage.
+6. Review documentation.
 
 ---
 
