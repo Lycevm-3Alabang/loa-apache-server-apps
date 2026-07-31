@@ -67,6 +67,7 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Layer | Component | Spec | Status |
 |-------|-----------|------|--------|
 | Service | CORS | `services/cors/README.md` | ✅ Draft |
+| Service | API Documentation | `services/api-documentation/README.md` | ✅ Final |
 | Assembly | LOA Auth Platform | `assemblies/loa-auth-platform/README.md` | ✅ Scaffolded |
 | Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Draft |
 | Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Draft |

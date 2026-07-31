@@ -4,6 +4,7 @@
     "description": "LOA Auth Platform - JWT token service and user management",
     "require": {
         "php": "^8.3",
+        "darkaonline/l5-swagger": "^11.1",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9"
