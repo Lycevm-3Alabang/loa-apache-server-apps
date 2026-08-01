@@ -14,4 +14,7 @@ return [
             'https://consult.loa.edu.ph,https://cert.loa.edu.ph',
         )),
     ))),
+
+    'encryption_key' => env('ENCRYPTION_KEY', ''),
+    'encryption_key_previous' => env('ENCRYPTION_KEY_PREVIOUS', ''),
 ];

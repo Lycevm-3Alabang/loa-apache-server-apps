@@ -99,15 +99,96 @@ An unlisted host is **never** followed. Open redirects are a security violation.
 
 The login form includes a **"New here? Create an account"** link pointing to `/register`. The registration form includes a **"Already have an account? Sign in"** link pointing to `/login`.
 
+### Redirect Splash Screen
+
+After successful login with a valid tenant redirect, the user sees an intermediate **redirect splash page** before being sent to the target app.
+
+- Route: `GET /redirect` (session-authenticated, ephemeral)
+- Displays: "Redirecting to **{app_url}**..." with the tenant's `app_url` or the resolved redirect origin
+- Auto-redirects via JavaScript after 2 seconds, or provides a manual "Click here if not redirected" link
+- Purpose: prevents token leakage in referrer headers, gives the user visibility into where they're going, and provides a fallback if JavaScript is disabled
+- The splash page is server-rendered, uses the public auth layout (not admin layout)
+- After redirect, the session is invalidated (one-time use)
+
 ### Token Delivery
 
 ```
-302 Location: {appUrl}#access_token=...&refresh_token=...&token_type=Bearer&expires_in=...
+{targetUrl}#payload={encrypted_base64url}
 ```
 
-- Tokens travel in the fragment (never the query string) so they are not written to server logs or sent in the Referer header.
-- The target app's frontend reads the fragment, stores tokens securely, and strips the fragment from the URL.
-- Tokens are delivered **only** to the tenant context (non-admin with valid redirect).
+- The entire fragment is a single encrypted payload, not raw query params.
+- Payload is JSON containing tokens + metadata, encrypted with AES-256-GCM.
+- Encrypted payload is base64url-encoded (no padding) for URL safety.
+- The target app decrypts the payload with the shared secret to extract tokens and metadata.
+
+### Encrypted Payload Structure
+
+**Plaintext JSON (before encryption):**
+
+```json
+{
+  "access_token": "...",
+  "refresh_token": "...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "user": {
+    "id": "...",
+    "email": "...",
+    "name": "..."
+  },
+  "tenant": {
+    "id": "...",
+    "slug": "..."
+  },
+  "iat": 1754000000,
+  "exp": 1754000900
+}
+```
+
+**Encrypted delivery:**
+
+```
+#payload=eyJ2ZXJzaW9uIjoxLCJub25jZSI6Ii4uLiIsImV0aCI6Ii4uLiIsImNpcGhlciI6Ii4uLiJ9...
+```
+
+### Encryption Spec
+
+| Parameter | Value |
+|-----------|-------|
+| Algorithm | AES-256-GCM |
+| Key | `ENCRYPTION_KEY` env var (32 bytes / 256 bits, hex-encoded) |
+| Nonce | 12 bytes, random per payload |
+| Auth tag | 16 bytes (GCM default) |
+| Encoding | `base64url(nonce + auth_tag + ciphertext)` — no padding |
+
+**Wire format:**
+
+```
+[12 bytes nonce][16 bytes auth tag][N bytes ciphertext]
+```
+
+All concatenated, then base64url-encoded.
+
+### Why AES-GCM
+
+- **Confidentiality**: tokens are encrypted, not visible in browser history, logs, or referrer headers
+- **Integrity**: GCM auth tag ensures the payload is not tampered with
+- **Authenticity**: only parties with the shared secret can create valid payloads
+- **No signature needed**: GCM provides both encryption and authentication in one step
+- **Attack prevention**: prevents token injection, replay, and tampering — if an attacker modifies the payload, decryption fails and the target app rejects it
+
+### Key Rotation
+
+- `ENCRYPTION_KEY` is shared between Auth, Consult, and Cert apps
+- On key rotation: accept payloads encrypted with the previous key for a grace period (configurable via `ENCRYPTION_KEY_PREVIOUS`)
+- The splash page encrypts with the current key only
+
+### Error Handling
+
+If decryption fails (tampered payload, wrong key, expired):
+- Target app shows a generic error page
+- No token data is exposed
+- User is redirected to login
 
 ### Admin Session
 
@@ -266,9 +347,12 @@ MAIL_FROM_NAME="LOA Platform"
 
 ```
 AUTH_ADMIN_GROUP=loa-auth-admin
+ENCRYPTION_KEY=<hex-encoded-32-byte-key>
 ```
 
 - `AUTH_ADMIN_GROUP` — the user-group whose members are platform admins (dashboard access).
+- `ENCRYPTION_KEY` — shared AES-256 key for encrypting redirect payloads (hex-encoded, 64 chars). Generate with: `openssl rand -hex 32`
+- `ENCRYPTION_KEY_PREVIOUS` — (optional) previous key for graceful rotation. Accept payloads encrypted with this key during rotation grace period.
 - Tenant redirect origins are stored per tenant (`tenants.redirect_origins`) and resolved by `TenantService::resolveTenantByRedirectOrigin` (see `kernels/identity/tenancy.md`).
 - `AUTH_ALLOWED_REDIRECTS` — **bootstrap fallback only**, used when no tenants are provisioned. Not the primary mechanism.
 - `AUTH_REDIRECT_URL` — **deprecated.** No longer used to decide the login destination. Kept only for backwards compatibility; the login destination is resolved strictly per the decision table in section 4.1.
@@ -280,10 +364,11 @@ AUTH_ADMIN_GROUP=loa-auth-admin
 ```
 GET  /login                 Login form
 POST /login                 Authenticate + resolve destination (admin session / tenant redirect / reject)
+GET  /redirect              Redirect splash page (tenant users)
 GET  /register              Registration form
 POST /register              Create account + redirect to login
 GET  /forgot-password       Forgot password form
-POST /forgot-password       Send reset email
+POST /forgot-password       Send reset link
 GET  /reset-password        Change password form (token-validated)
 POST /reset-password        Update password + revoke refresh tokens
 ```

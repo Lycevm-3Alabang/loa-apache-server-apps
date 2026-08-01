@@ -29,6 +29,10 @@ Route::get('/reset-password', [WebResetController::class, 'showResetForm'])
     ->name('password.reset');
 Route::post('/reset-password', [WebResetController::class, 'reset']);
 
+Route::get('/redirect', [WebAuthController::class, 'showRedirect'])
+    ->name('auth.redirect')
+    ->middleware('auth:web');
+
 Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::get('/users', [WebAdminController::class, 'index'])->name('admin.users');
     Route::get('/users/create', [WebAdminController::class, 'create'])->name('admin.users.create');
