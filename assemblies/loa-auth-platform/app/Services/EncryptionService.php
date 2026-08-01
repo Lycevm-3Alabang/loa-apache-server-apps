@@ -4,18 +4,29 @@ namespace App\Services;
 
 class EncryptionService
 {
-    private string $key;
+    private ?string $key;
     private ?string $previousKey;
 
     public function __construct()
     {
-        $this->key = $this->decodeKey(config('auth-web.encryption_key', ''));
-        $previousKey = config('auth-web.encryption_key_previous', '');
-        $this->previousKey = $previousKey !== '' ? $this->decodeKey($previousKey) : null;
+        $rawKey = config('auth-web.encryption_key', '');
+        $this->key = $rawKey !== '' ? $this->decodeKey($rawKey) : null;
+
+        $rawPrevious = config('auth-web.encryption_key_previous', '');
+        $this->previousKey = $rawPrevious !== '' ? $this->decodeKey($rawPrevious) : null;
+    }
+
+    public function isConfigured(): bool
+    {
+        return $this->key !== null;
     }
 
     public function encrypt(array $payload): string
     {
+        if ($this->key === null) {
+            throw new \RuntimeException('ENCRYPTION_KEY is not configured');
+        }
+
         $plaintext = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         $nonce = random_bytes(12);
@@ -41,6 +52,10 @@ class EncryptionService
 
     public function decrypt(string $encoded): ?array
     {
+        if ($this->key === null) {
+            return null;
+        }
+
         $decoded = base64_decode(strtr($encoded, '-_', '+/') . '==', true);
 
         if ($decoded === false || strlen($decoded) < 29) {

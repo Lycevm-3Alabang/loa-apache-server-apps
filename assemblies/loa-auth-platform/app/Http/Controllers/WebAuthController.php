@@ -86,27 +86,34 @@ class WebAuthController extends Controller
 
         $fragment = http_build_query($tokens, '', '&', PHP_QUERY_RFC3986);
 
-        $payload = [
-            'access_token' => $tokens['access_token'],
-            'refresh_token' => $tokens['refresh_token'],
-            'token_type' => $tokens['token_type'],
-            'expires_in' => $tokens['expires_in'],
-            'user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'name' => $user->name,
-            ],
-            'tenant' => $tenant ? [
-                'id' => $tenant->id,
-                'slug' => $tenant->slug,
-            ] : null,
-            'iat' => time(),
-            'exp' => time() + $tokens['expires_in'],
-        ];
+        if ($this->encryption->isConfigured()) {
+            $payload = [
+                'access_token' => $tokens['access_token'],
+                'refresh_token' => $tokens['refresh_token'],
+                'token_type' => $tokens['token_type'],
+                'expires_in' => $tokens['expires_in'],
+                'user' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'name' => $user->name,
+                ],
+                'tenant' => $tenant ? [
+                    'id' => $tenant->id,
+                    'slug' => $tenant->slug,
+                ] : null,
+                'iat' => time(),
+                'exp' => time() + $tokens['expires_in'],
+            ];
 
-        $encrypted = $this->encryption->encrypt($payload);
+            $encrypted = $this->encryption->encrypt($payload);
 
-        $request->session()->put('redirect_payload', $encrypted);
+            $request->session()->put('redirect_payload', $encrypted);
+        } else {
+            $fragment = http_build_query($tokens, '', '&', PHP_QUERY_RFC3986);
+
+            $request->session()->put('redirect_fragment', $fragment);
+        }
+
         $request->session()->put('redirect_url', $target);
 
         return redirect()->route('auth.redirect');
@@ -120,16 +127,22 @@ class WebAuthController extends Controller
     public function showRedirect(Request $request): View|RedirectResponse
     {
         $encrypted = $request->session()->pull('redirect_payload');
+        $fragment = $request->session()->pull('redirect_fragment');
         $url = $request->session()->pull('redirect_url');
 
-        if (!$encrypted || !$url) {
+        if ((!$encrypted && !$fragment) || !$url) {
             return redirect()->route('login');
+        }
+
+        if ($encrypted) {
+            $fullUrl = $url.'#payload='.$encrypted;
+        } else {
+            $fullUrl = $url.'#'.$fragment;
         }
 
         return view('redirect', [
             'url' => $url,
-            'payload' => $encrypted,
-            'full_url' => $url.'#payload='.$encrypted,
+            'full_url' => $fullUrl,
         ]);
     }
 
