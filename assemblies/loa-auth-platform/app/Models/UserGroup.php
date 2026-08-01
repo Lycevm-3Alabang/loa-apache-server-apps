@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class UserGroup extends Model
@@ -16,7 +17,13 @@ class UserGroup extends Model
     protected $fillable = [
         'name',
         'description',
+        'tenant_id',
     ];
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 
     public function users(): BelongsToMany
     {
@@ -26,6 +33,6 @@ class UserGroup extends Model
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class, 'user_group_permission')
-            ->withPivot('granted');
+            ->withPivot('granted', 'tenant_id');
     }
 }

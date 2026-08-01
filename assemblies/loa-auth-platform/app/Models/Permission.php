@@ -22,12 +22,12 @@ class Permission extends Model
     public function userGroups(): BelongsToMany
     {
         return $this->belongsToMany(UserGroup::class, 'user_group_permission')
-            ->withPivot('granted');
+            ->withPivot('granted', 'tenant_id');
     }
 
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'user_permission')
-            ->withPivot('granted');
+            ->withPivot('granted', 'tenant_id');
     }
 }

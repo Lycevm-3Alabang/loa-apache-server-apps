@@ -8,7 +8,7 @@ use App\Models\UserGroup;
 
 class AuthorizationService
 {
-    public function hasPermission(string $userId, string $permissionKey): bool
+    public function hasPermission(string $userId, string $permissionKey, ?string $tenantId = null): bool
     {
         $user = User::find($userId);
 
@@ -22,23 +22,22 @@ class AuthorizationService
             return false;
         }
 
-        $userPermission = $user->userPermissions()
-            ->where('permission_id', $permission->id)
-            ->first();
+        $override = $this->findUserOverride($user, $permission, $tenantId);
 
-        if ($userPermission) {
-            return $userPermission->pivot->granted;
+        if ($override !== null) {
+            return $override;
         }
 
-        return $user->userGroups()
-            ->whereHas('permissions', function ($q) use ($permission) {
-                $q->where('permission_id', $permission->id)
-                  ->wherePivot('granted', true);
-            })
-            ->exists();
+        $grants = $this->applicableGroupGrants($user, $permission, $tenantId);
+
+        if (in_array(false, $grants, true)) {
+            return false;
+        }
+
+        return in_array(true, $grants, true);
     }
 
-    public function getPermissions(string $userId): array
+    public function getPermissions(string $userId, ?string $tenantId = null): array
     {
         $user = User::find($userId);
 
@@ -47,21 +46,47 @@ class AuthorizationService
         }
 
         $groupPermissions = $user->userGroups()
-            ->with('permissions')
+            ->where(function ($q) use ($tenantId) {
+                $this->scopeTenant($q, $tenantId, 'user_groups.tenant_id');
+            })
+            ->with(['permissions' => function ($q) use ($tenantId) {
+                $q->where(function ($q2) use ($tenantId) {
+                    $this->scopeTenant($q2, $tenantId, 'user_group_permission.tenant_id');
+                });
+            }])
             ->get()
-            ->flatMap->permissions
+            ->flatMap(fn (UserGroup $group) => $group->permissions);
+
+        $granted = $groupPermissions
             ->filter(fn ($p) => $p->pivot->granted)
             ->pluck('key')
             ->unique();
 
-        $userPermissions = $user->userPermissions()
-            ->where('granted', true)
-            ->pluck('permissions.key');
+        $denied = $groupPermissions
+            ->filter(fn ($p) => !$p->pivot->granted)
+            ->pluck('key')
+            ->unique();
 
-        return $groupPermissions->merge($userPermissions)->unique()->toArray();
+        $keys = $granted->diff($denied);
+
+        $userPermissions = $user->userPermissions()
+            ->where(function ($q) use ($tenantId) {
+                $this->scopeTenant($q, $tenantId, 'user_permission.tenant_id');
+            })
+            ->get();
+
+        foreach ($userPermissions as $userPermission) {
+            if ($userPermission->pivot->granted) {
+                $keys->push($userPermission->key);
+            } else {
+                $keys = $keys->reject(fn ($key) => $key === $userPermission->key);
+            }
+        }
+
+        return $keys->unique()->values()->toArray();
     }
 
-    public function getGroups(string $userId): array
+    public function getGroups(string $userId, ?string $tenantId = null): array
     {
         $user = User::find($userId);
 
@@ -69,7 +94,12 @@ class AuthorizationService
             return [];
         }
 
-        return $user->userGroups()->pluck('name')->toArray();
+        return $user->userGroups()
+            ->where(function ($q) use ($tenantId) {
+                $this->scopeTenant($q, $tenantId, 'user_groups.tenant_id');
+            })
+            ->pluck('name')
+            ->toArray();
     }
 
     public function addToGroup(string $userId, string $groupId): void
@@ -96,7 +126,7 @@ class AuthorizationService
         $user->userGroups()->detach($groupId);
     }
 
-    public function grantGroupPermission(string $groupId, string $permissionKey): void
+    public function grantGroupPermission(string $groupId, string $permissionKey, ?string $tenantId = null): void
     {
         $group = UserGroup::find($groupId);
         $permission = Permission::where('key', $permissionKey)->first();
@@ -106,11 +136,14 @@ class AuthorizationService
         }
 
         $group->permissions()->syncWithoutDetaching([
-            $permission->id => ['granted' => true],
+            $permission->id => [
+                'granted' => true,
+                'tenant_id' => $tenantId,
+            ],
         ]);
     }
 
-    public function revokeGroupPermission(string $groupId, string $permissionKey): void
+    public function revokeGroupPermission(string $groupId, string $permissionKey, ?string $tenantId = null): void
     {
         $group = UserGroup::find($groupId);
         $permission = Permission::where('key', $permissionKey)->first();
@@ -119,6 +152,54 @@ class AuthorizationService
             return;
         }
 
-        $group->permissions()->detach($permission->id);
+        $existing = $group->permissions()
+            ->wherePivot('permission_id', $permission->id)
+            ->where(fn ($q) => $this->scopeTenant($q, $tenantId, 'user_group_permission.tenant_id'))
+            ->first();
+
+        if ($existing) {
+            $group->permissions()->detach($permission->id);
+        }
+    }
+
+    private function findUserOverride(User $user, Permission $permission, ?string $tenantId): ?bool
+    {
+        $override = $user->userPermissions()
+            ->where('permission_id', $permission->id)
+            ->where(fn ($q) => $this->scopeTenant($q, $tenantId, 'user_permission.tenant_id'))
+            ->first();
+
+        if (!$override) {
+            return null;
+        }
+
+        return (bool) $override->pivot->granted;
+    }
+
+    private function applicableGroupGrants(User $user, Permission $permission, ?string $tenantId): array
+    {
+        return $user->userGroups()
+            ->where(function ($q) use ($tenantId) {
+                $this->scopeTenant($q, $tenantId, 'user_groups.tenant_id');
+            })
+            ->with(['permissions' => function ($q) use ($permission, $tenantId) {
+                $q->where('permission_id', $permission->id)
+                    ->where(function ($q2) use ($tenantId) {
+                        $this->scopeTenant($q2, $tenantId, 'user_group_permission.tenant_id');
+                    });
+            }])
+            ->get()
+            ->flatMap(fn (UserGroup $group) => $group->permissions)
+            ->map(fn ($p) => (bool) $p->pivot->granted)
+            ->all();
+    }
+
+    private function scopeTenant($query, ?string $tenantId, string $column): void
+    {
+        if ($tenantId === null) {
+            $query->whereNull($column);
+        } else {
+            $query->where(fn ($q) => $q->whereNull($column)->orWhere($column, $tenantId));
+        }
     }
 }

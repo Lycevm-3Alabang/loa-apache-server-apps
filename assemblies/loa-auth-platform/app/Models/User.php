@@ -3,11 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Str;
 
-class User extends Model
+class User extends Authenticatable
 {
     use HasFactory;
 
@@ -49,10 +49,15 @@ class User extends Model
         return $this->belongsToMany(UserGroup::class, 'user_user_group');
     }
 
+    public function tenants(): BelongsToMany
+    {
+        return $this->belongsToMany(Tenant::class, 'user_tenants')->withTimestamps();
+    }
+
     public function userPermissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class, 'user_permission')
-            ->withPivot('granted');
+            ->withPivot('granted', 'tenant_id');
     }
 
     public function loginAttempts()

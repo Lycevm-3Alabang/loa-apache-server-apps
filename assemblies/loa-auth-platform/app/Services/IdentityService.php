@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\LoginAttempt;
 use App\Models\PasswordResetToken;
 use App\Models\RefreshToken;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
@@ -37,7 +38,7 @@ class IdentityService
         ]);
     }
 
-    public function login(string $email, string $password, string $ipAddress): array
+    public function login(string $email, string $password, string $ipAddress, ?Tenant $tenant = null): array
     {
         $user = User::where('email', $email)->first();
 
@@ -61,10 +62,15 @@ class IdentityService
             throw new \Exception('Invalid credentials');
         }
 
+        if ($tenant && !$tenant->isActive()) {
+            $this->recordAttempt($user->id, $email, $ipAddress, false);
+            throw new \Exception('Invalid credentials');
+        }
+
         $this->recordAttempt($user->id, $email, $ipAddress, true);
         $this->resetFailedAttempts($user);
 
-        return $this->generateTokenPair($user);
+        return $this->generateTokenPair($user, null, $tenant);
     }
 
     public function refresh(string $refreshToken): array
@@ -87,7 +93,17 @@ class IdentityService
             throw new \Exception('User not found or inactive');
         }
 
-        return $this->generateTokenPair($user, $record);
+        $tenant = null;
+
+        if (isset($claims['tenant']['id'])) {
+            $tenant = Tenant::find($claims['tenant']['id']);
+
+            if (!$tenant || !$tenant->isActive()) {
+                throw new \Exception('Tenant unavailable');
+            }
+        }
+
+        return $this->generateTokenPair($user, $record, $tenant);
     }
 
     public function logout(string $refreshToken): void
@@ -206,15 +222,22 @@ class IdentityService
         $this->revokeAllRefreshTokens($user->id);
     }
 
-    private function generateTokenPair(User $user, ?RefreshToken $previous = null): array
+    private function generateTokenPair(User $user, ?RefreshToken $previous = null, ?Tenant $tenant = null): array
     {
         $claims = [
             'sub' => $user->id,
             'email' => $user->email,
             'name' => $user->name,
-            'groups' => $this->authorization->getGroups($user->id),
-            'permissions' => $this->authorization->getPermissions($user->id),
+            'groups' => $this->authorization->getGroups($user->id, $tenant?->id),
+            'permissions' => $this->authorization->getPermissions($user->id, $tenant?->id),
         ];
+
+        if ($tenant) {
+            $claims['tenant'] = [
+                'id' => $tenant->id,
+                'slug' => $tenant->slug,
+            ];
+        }
 
         $accessToken = $this->jwt->generateAccessToken($claims);
         $refreshToken = $this->jwt->generateRefreshToken($claims);

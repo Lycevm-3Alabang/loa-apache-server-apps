@@ -2,7 +2,7 @@
 
 ## Platform Kernel Specification
 
-**Version:** 2.0
+**Version:** 3.0
 **Status:** Draft
 **Layer:** Platform Kernel
 **Audience:** Architects, Engineers, AI Development Agents
@@ -18,6 +18,7 @@ It answers:
 > **"Who is this?"**
 > **"What groups do they belong to?"**
 > **"What can they do?"**
+> **"In which tenant are they acting?"** (v3.0 — see `tenancy.md`)
 
 It does not own business workflows, consultation logic, evaluation, or certificate generation.
 
@@ -38,6 +39,7 @@ It does not own business workflows, consultation logic, evaluation, or certifica
 - JWT token issuance and validation
 - Password reset flow
 - Login attempt tracking
+- **Tenant scoping** (v3.0): `Tenant` entity, `UserTenant` membership, tenant-scoped groups and grants — see `tenancy.md`
 
 ### Does Not Own
 
@@ -136,10 +138,12 @@ Maps user groups to permissions.
 - user_group_id
 - permission_id
 - granted (boolean)
+- tenant_id (nullable — `NULL` = platform-wide, set = scoped to a tenant)
 
 **Invariants:**
-- One permission per group
+- One permission per group (per scope)
 - Can grant or deny
+- Grants are tenant-scoped in v3.0 (`tenancy.md` §3.4)
 
 ---
 
@@ -228,14 +232,16 @@ Persists refresh tokens for validation, rotation, and revocation.
 ### Permission Resolution
 
 ```
-User permissions = 
-  (Group permissions from Group 1)
-  ∪ (Group permissions from Group 2)
+User permissions (tenant T) =
+  (Group permissions from Group 1, scoped to T or platform-wide)
+  ∪ (Group permissions from Group 2, scoped to T or platform-wide)
   ∪ ...
-  ± (User overrides)
+  ± (User overrides scoped to T or platform-wide)
 ```
 
 **Deny wins:** If any group denies a permission, user-level override can grant it.
+
+In v3.0, resolution always takes an explicit tenant scope (see `tenancy.md` §7); platform-global grants (`tenant_id IS NULL`) apply in every tenant.
 
 ### Token Lifecycle
 
@@ -313,6 +319,23 @@ deleteGroup(groupId) → void
 getGroupMembers(groupId) → User[]
 getGroupPermissions(groupId) → Permission[]
 ```
+
+### TenantService (v3.0)
+
+```
+createTenant(data) → Tenant
+updateTenant(tenantId, data) → Tenant
+suspendTenant(tenantId) → void
+activateTenant(tenantId) → void
+getTenant(tenantId) → Tenant
+getTenantBySlug(slug) → Tenant
+resolveTenantByRedirectOrigin(origin) → ?Tenant
+addUserToTenant(userId, tenantId) → void
+removeUserFromTenant(userId, tenantId) → void
+isMember(userId, tenantId) → boolean
+```
+
+Full tenancy model: `kernels/identity/tenancy.md`.
 
 ---
 

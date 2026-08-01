@@ -1,7 +1,7 @@
 # LOA Auth Platform — Web UI
 ## Product Assembly Component Specification
 
-**Version:** 1.1
+**Version:** 1.2
 **Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -12,11 +12,12 @@
 
 Browser-based authentication UI for the LOA platform ecosystem:
 
-- login page (email + password)
+- login page (email + password) with destination resolution
 - registration page (name, email, password)
-- post-login redirect to a configured application URL
+- post-login destination: admin session dashboard or tenant-app token redirect
 - forgot password page (email link to change-password form)
 - change password page (email-confirmed, token-validated)
+- admin user-management dashboard (see `admin-dashboard.md`)
 
 The Auth Platform remains the single source of truth for identity. This spec adds a web surface on top of the existing stateless JWT API.
 
@@ -28,7 +29,8 @@ The Auth Platform remains the single source of truth for identity. This spec add
 
 - login web form
 - registration web form (name, email, password)
-- redirect resolution after successful login
+- destination resolution after successful login (admin session / tenant redirect / reject)
+- admin web session lifecycle (establish on admin login, destroy on logout)
 - forgot password web form
 - email-notification triggers for reset/change links
 - change-password form (one-time token validation)
@@ -46,17 +48,18 @@ The Auth Platform remains the single source of truth for identity. This spec add
 
 The Auth Platform keeps its stateless JWT API (`/api/v1/*`) for machine consumers (Consult, Cert).
 
-The web UI (`/login`, `/register`, `/forgot-password`, `/reset-password`) runs on Laravel web routes:
+The web UI (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/admin/*`) runs on Laravel web routes:
 
-- minimal session exists **only** to carry the CSRF token (Laravel default `web` middleware)
-- authentication state after login is the JWT pair, not the web session
-- no cross-app session sharing
+- for non-admin visitors, the web session exists **only** to carry the CSRF token (Laravel default `web` middleware)
+- for platform admins, the web session **also** carries the authenticated admin identity (web guard), so the user-management dashboard is server-rendered
+- tenant apps authenticate with the JWT pair delivered in the URL fragment; no cross-app session sharing
+- non-admin visitors never receive a web authentication session
 
 ---
 
 # 4. Flows
 
-## 4.1 Login → Redirect
+## 4.1 Login → Destination
 
 ### Routes
 
@@ -70,19 +73,31 @@ POST /login
 1. User visits `GET /login`.
 2. User submits email + password.
 3. System validates via `IdentityService.login()` (respects account lockout and brute-force rules).
-4. On success: `302` redirect to the resolved application URL with the token pair in the **URL fragment**.
-5. On failure: re-render the form with a generic "Invalid credentials" error. Never reveal whether the email exists or whether the account is locked.
+4. On success, the destination is resolved (below). The destination is **never** an implicit default.
+5. On failure: re-render the form with a generic "Invalid credentials" error. Never reveal whether the email exists, whether the account is locked, or whether the account is admin-only.
+
+### Destination Decision
+
+| User | Context | Destination |
+|------|---------|-------------|
+| Platform admin | any | Establish admin web session → `302` to `/admin/users` (user management) |
+| Non-admin | tenant (valid `?redirect=`) | `302` to tenant URL with token pair in the **URL fragment** |
+| Non-admin | direct (no/invalid `?redirect=`) | Reject: re-render form with generic error; revoke the just-issued tokens |
+
+**Platform admin** = the authenticated user belongs to the group named by `auth-web.admin_group` (default `loa-auth-admin`). Membership is read from the database (`User::inGroup()`), never from token claims (claims can be stale).
+
+**Tenant context** = an explicit `?redirect=` query parameter whose origin matches an **active tenant's** `redirect_origins` (resolved via `TenantService::resolveTenantByRedirectOrigin`, see `kernels/identity/tenancy.md` §5.1). `AUTH_ALLOWED_REDIRECTS` remains only as a bootstrap fallback for deployments without tenants. There is **no implicit tenant fallback**: absent or unlisted `redirect` means direct access, so non-admin logins are rejected.
 
 ### Redirect Target Resolution
 
-The login form includes a **"New here? Create an account"** link pointing to `/register`. The registration form includes a **"Already have an account? Sign in"** link pointing to `/login`.
-
 | Source | Rule |
 |--------|------|
-| `?redirect=` query param | Host must match an entry in `AUTH_ALLOWED_REDIRECTS` allowlist |
-| No param / invalid param | Fall back to `AUTH_REDIRECT_URL` default |
+| `?redirect=` query param | Origin must match an entry in `AUTH_ALLOWED_REDIRECTS` allowlist → tenant context |
+| No param / invalid param | Direct access → non-admins rejected |
 
 An unlisted host is **never** followed. Open redirects are a security violation.
+
+The login form includes a **"New here? Create an account"** link pointing to `/register`. The registration form includes a **"Already have an account? Sign in"** link pointing to `/login`.
 
 ### Token Delivery
 
@@ -92,6 +107,18 @@ An unlisted host is **never** followed. Open redirects are a security violation.
 
 - Tokens travel in the fragment (never the query string) so they are not written to server logs or sent in the Referer header.
 - The target app's frontend reads the fragment, stores tokens securely, and strips the fragment from the URL.
+- Tokens are delivered **only** to the tenant context (non-admin with valid redirect).
+
+### Admin Session
+
+- On admin login the controller establishes a Laravel **web session**: `Auth::guard('web')->login($user)`, then regenerates the session ID (session-fixation prevention), then redirects to `admin.users`.
+- Admins do **not** receive tokens via fragment on web login; the dashboard is server-rendered and session-authenticated (see `admin-dashboard.md`).
+- An already-session-authenticated admin visiting `GET /login` is redirected straight to `admin.users`.
+- Admin logout: `POST /admin/logout` destroys the session (see `admin-dashboard.md`).
+
+### Rejected Login Cleanup
+
+When a non-admin logs in without a valid tenant redirect, the controller revokes the just-issued refresh token via `IdentityService::logout($tokens['refresh_token'])` before re-rendering the form, so no orphan refresh-token row is left behind.
 
 ---
 
@@ -238,11 +265,13 @@ MAIL_FROM_NAME="LOA Platform"
 # 8. Configuration
 
 ```
-AUTH_REDIRECT_URL=https://consult.loa.edu.ph
-AUTH_ALLOWED_REDIRECTS=https://consult.loa.edu.ph,https://cert.loa.edu.ph
+AUTH_ADMIN_GROUP=loa-auth-admin
 ```
 
-Redirect allowlist entries are full origins (scheme + host), matched strictly.
+- `AUTH_ADMIN_GROUP` — the user-group whose members are platform admins (dashboard access).
+- Tenant redirect origins are stored per tenant (`tenants.redirect_origins`) and resolved by `TenantService::resolveTenantByRedirectOrigin` (see `kernels/identity/tenancy.md`).
+- `AUTH_ALLOWED_REDIRECTS` — **bootstrap fallback only**, used when no tenants are provisioned. Not the primary mechanism.
+- `AUTH_REDIRECT_URL` — **deprecated.** No longer used to decide the login destination. Kept only for backwards compatibility; the login destination is resolved strictly per the decision table in section 4.1.
 
 ---
 
@@ -250,13 +279,21 @@ Redirect allowlist entries are full origins (scheme + host), matched strictly.
 
 ```
 GET  /login                 Login form
-POST /login                 Authenticate + redirect
+POST /login                 Authenticate + resolve destination (admin session / tenant redirect / reject)
 GET  /register              Registration form
 POST /register              Create account + redirect to login
 GET  /forgot-password       Forgot password form
 POST /forgot-password       Send reset email
 GET  /reset-password        Change password form (token-validated)
 POST /reset-password        Update password + revoke refresh tokens
+```
+
+Admin routes (session-authenticated; full spec in `admin-dashboard.md`):
+
+```
+GET    /admin/users              User management list (search + status filter)
+POST   /admin/users/{id}/status  Enable / disable a user
+POST   /admin/logout             Destroy admin session
 ```
 
 ## New API Endpoint
@@ -271,8 +308,10 @@ No body. Uses the authenticated user; sends the change-password email to that us
 
 # 10. Security Checklist
 
-- [ ] Open-redirect prevention via `AUTH_ALLOWED_REDIRECTS`
-- [ ] Tokens delivered via URL fragment only
+- [ ] Open-redirect prevention via `AUTH_ALLOWED_REDIRECTS` (strict origin match)
+- [ ] No implicit tenant fallback — direct access is admin-only
+- [ ] Non-admin direct logins rejected with generic error (no admin-only disclosure)
+- [ ] Tokens delivered via URL fragment only, and only to tenant contexts
 - [ ] Generic errors (no user enumeration, no lockout disclosure)
 - [ ] Reset requests rate-limited (1/60s per email)
 - [ ] Reset tokens single-use, 60-minute expiry, hashed at rest
@@ -280,6 +319,8 @@ No body. Uses the authenticated user; sends the change-password email to that us
 - [ ] No raw token in database; raw token only in the emailed link
 - [ ] Registration rejects duplicate emails with generic error (no enumeration)
 - [ ] Registration rate-limited to prevent mass account creation
+- [ ] Admin session ID regenerated on login and logout (session-fixation prevention)
+- [ ] Admin dashboard routes gated by web guard + admin group check (see `admin-dashboard.md`)
 
 ---
 
@@ -288,11 +329,13 @@ No body. Uses the authenticated user; sends the change-password email to that us
 | Pattern | Why It's Wrong | Correct Approach |
 |---------|----------------|------------------|
 | Tokens in query string | Logged by servers, leaked via Referer | URL fragment |
-| Following any `redirect=` value | Open redirect vulnerability | Allowlist check, fallback default |
+| Following any `redirect=` value | Open redirect vulnerability | Allowlist check, reject on mismatch |
+| Falling back to a default tenant on direct login | Non-admins could silently enter tenant apps without an explicit request | No implicit fallback; direct access is admin-only |
 | "Email not registered" response | User enumeration | Generic success always |
+| Revealing that an account is non-admin | Admin-only disclosure | Generic "Invalid credentials" |
 | A separate change-password code path | Duplicated logic | Shared `/reset-password` flow |
-| Long-lived web session as auth state | Breaks stateless JWT model | Session only for CSRF |
-| Revealing "email already registered" details | User enumeration | Generic error on duplicate email |
+| Long-lived web session as auth state for tenant users | Breaks stateless JWT model | Session only for CSRF; admin session for dashboard only |
+| Granting non-admins a web auth session | Scope escalation | Only platform admins ever get a web session |
 
 ---
 
@@ -398,20 +441,22 @@ Prevents mass account creation. Uses the same generic "Please wait and try again
 
 ## 15.1 Session Lifetime
 
-Sessions exist solely to carry the CSRF token. Configure `SESSION_LIFETIME` in `.env`:
+Sessions carry the CSRF token for all visitors and, for platform admins, the authenticated web identity. Admin sessions therefore need a meaningful lifetime.
 
 | Variable | Local | Production |
 |----------|-------|------------|
-| `SESSION_DRIVER` | `database` | `file` (cPanel, no Redis) |
-| `SESSION_LIFETIME` | `5` (minutes) | `5` (minutes) |
+| `SESSION_DRIVER` | `database` | `database` (preferred; `file` also works on cPanel) |
+| `SESSION_LIFETIME` | `120` | `480` (minutes — admin sessions) |
 | `SESSION_EXPIRE_ON_CLOSE` | `true` | `true` |
 | `SESSION_HTTP_ONLY` | `true` | `true` |
 | `SESSION_SECURE` | `false` (HTTP locally) | `true` (HTTPS in production) |
 | `SESSION_SAME_SITE` | `lax` | `lax` |
 
+`SESSION_SECURE=true` requires the subdomain to be served over HTTPS; otherwise the session cookie is dropped by the browser and every POST fails with 419 "Page Expired".
+
 ## 15.2 CSRF
 
-Web routes use Laravel's default `web` middleware group, which includes `VerifyCsrfToken`. Every form includes `@csrf`. No exceptions.
+Web routes use Laravel's default `web` middleware group, which includes `VerifyCsrfToken`. Every form includes `@csrf`, including the admin dashboard forms. No exceptions.
 
 ---
 
@@ -424,23 +469,30 @@ Add to `.env` for the web UI layer:
 | Variable | Value | Notes |
 |----------|-------|-------|
 | `APP_URL` | `https://auth.loa.edu.ph` | Base URL for email links |
-| `SESSION_DRIVER` | `file` | cPanel has no Redis |
+| `SESSION_DRIVER` | `database` | Preferred; `file` also works on cPanel |
+| `SESSION_LIFETIME` | `480` | Admin sessions |
 | `SESSION_SECURE` | `true` | HTTPS in production only |
-| `AUTH_REDIRECT_URL` | `https://consult.loa.edu.ph` | Fallback redirect |
-| `AUTH_ALLOWED_REDIRECTS` | `https://consult.loa.edu.ph,https://cert.loa.edu.ph` | Comma-separated origin allowlist |
+| `AUTH_ALLOWED_REDIRECTS` | `https://consult.loa.edu.ph,https://cert.loa.edu.ph` | Comma-separated origin allowlist (tenant contexts) |
+| `AUTH_ADMIN_GROUP` | `loa-auth-admin` | User-group treated as platform admins |
 | `MAIL_*` | (see section 7) | SMTP credentials |
 | `JWT_SECRET` | (same as other apps) | Required for token signing |
 
+`AUTH_REDIRECT_URL` is deprecated and not required.
+
 ## 16.2 Production Routing
 
-On cPanel, the document root is `public/`. The `index.php` inside `public/` handles both `/api/v1/*` (JSON) and `/login`, `/forgot-password`, `/reset-password` (web). A single Laravel app serves both surfaces.
+On cPanel, the document root is `public/`. The `index.php` inside `public/` handles both `/api/v1/*` (JSON) and `/login`, `/forgot-password`, `/reset-password`, `/admin/*` (web). A single Laravel app serves both surfaces.
 
 ## 16.3 Post-Deploy Verification
 
 | Check | Expected |
 |-------|----------|
 | `GET /login` | 200, returns login form HTML |
-| `POST /login` (valid) | 302 → `{appUrl}#access_token=...&refresh_token=...` |
+| `POST /login` (admin credentials) | 302 → `/admin/users`; admin session cookie set |
+| `POST /login` (non-admin + valid `?redirect=`) | 302 → `{appUrl}#access_token=...&refresh_token=...` |
+| `POST /login` (non-admin, direct) | 200, re-renders form with generic "Invalid credentials" |
+| `GET /admin/users` (no session) | 302 → `/login` |
+| `GET /admin/users` (admin session) | 200, user list renders |
 | `GET /register` | 200, returns registration form HTML |
 | `POST /register` (valid) | 302 → `/login` with success flash message |
 | `POST /register` (duplicate email) | 200, re-renders form with generic "already exists" error |
@@ -464,3 +516,4 @@ This spec relies on the following existing Final specs:
 | `kernels/identity/entities/refresh-token.md` | `revokeAllRefreshTokens` on disable |
 | `kernels/identity/entities/password-reset-token.md` | Token storage, expiry, used_at fields |
 | `kernels/identity/README.md` (IdentityService) | `login()`, `requestPasswordReset()`, `resetPassword()` contracts |
+| `admin-dashboard.md` | User-management dashboard: routes, access model, actions |

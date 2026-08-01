@@ -34,6 +34,26 @@ docker compose exec app php artisan migrate --force
 docker compose exec app php artisan db:seed --force
 ```
 
+### Rebuild the stack
+
+After code changes (new migrations, model updates, view changes):
+
+```bash
+docker compose down
+docker compose up -d --build
+docker compose exec -T app php artisan migrate --force
+# Local dev (Docker)
+docker compose exec -T app php artisan db:seed
+
+# cPanel (no terminal)
+# Import database/seeders/database.sql via phpMyAdmin — seeds are already embedded
+
+# cPanel (with SSH)
+php artisan db:seed --force
+```
+
+`--build` rebuilds the Docker image from the Dockerfile. The `down` + `up -d --build` cycle ensures a clean start with the latest code. Migrations run automatically on boot via the entrypoint, but the explicit `migrate --force` confirms nothing is pending.
+
 ### Common Docker commands
 
 ```bash
@@ -173,6 +193,39 @@ Set these in cPanel → "Environment Variables" or in the `.env` file:
 `JWT_SECRET` must match the value used in all other LOA apps. It must never be committed to version control.
 
 `CORS_ALLOWED_ORIGINS` is a comma-separated origin list. Do not use nested brackets or JSON syntax. If the cache store is set to `database`, the `cache` and `cache_locks` tables must exist before running cache commands; `file` is the default production setting.
+
+### 2.7 No-Terminal Deployment (cPanel GUI only)
+
+Use this path when SSH / Terminal is not available on the cPanel account. Everything is done through the cPanel web interfaces: MySQL, phpMyAdmin, File Manager, Subdomains, and Cron Jobs. No `artisan` or `composer` commands are run on the server.
+
+**What replaces the terminal commands:**
+
+| Terminal command (Section 2.4) | No-terminal equivalent |
+|--------------------------------|------------------------|
+| `composer install` | Upload a prebuilt `vendor/` from a local machine (auth dependencies are pure PHP; a Windows-built vendor runs on Linux). |
+| `php artisan migrate` | Import `database/seeders/database.sql` via phpMyAdmin. |
+| `php artisan db:seed` | Already included in `database/seeders/database.sql` (admin group, permissions, admin user). |
+| `php artisan key:generate` | Set `APP_KEY` to a locally generated value of the form `base64:<32 random bytes>`. |
+| `php artisan config:cache` | Skip — optional optimization only. |
+| `php artisan l5-swagger:generate` | Skip — only regenerates the OpenAPI document. |
+
+The SQL dump must be kept in sync with the migrations. It currently covers all 10 tables including `sessions` (web UI). If a migration is added, regenerate or extend the dump; verify every table and the admin user exist.
+
+**Steps:**
+
+1. **MySQL Databases** (cPanel → MySQL Databases): create the `loa_auth` database and a database user; grant the user all privileges on `loa_auth`.
+2. **Import schema + seed** (cPanel → phpMyAdmin): select the `loa_auth` database → Import → choose `database/seeders/database.sql` from the distro folder. This creates all tables and seeds the `loa-auth-admin` group, all permissions, and the admin user. Admin credentials come from the dump (default `admin@loa.edu.ph` / `Admin123!` — change after first login).
+3. **Upload files** (FileZilla/SFTP — a GUI client, no terminal): upload the distro folder contents **plus** the prebuilt `vendor/` directory into `~/loa-auth-platform/`. The distro excludes `vendor`, `.env`, and `*.md` files by design, so those must be added manually.
+4. **Create `.env`** (cPanel → File Manager → Edit): copy `assemblies/loa-auth-platform/.env.example` and fill in the production values from Section 2.6. Required at minimum: `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY`, `APP_URL`, `DB_*`, `JWT_SECRET`, `ADMIN_*`. `APP_KEY` and `JWT_SECRET` can be generated locally with any tool (no PHP required), e.g. `openssl rand -base64 48` or Node.js `crypto.randomBytes()`.
+5. **File permissions** (cPanel → File Manager → right-click → Change Permissions): `storage/` and `bootstrap/cache` must be writable by PHP (directories 755/775, files 644).
+6. **Subdomain** (cPanel → Subdomains): point `auth.loa.edu.ph` at document root `~/loa-auth-platform/public`.
+7. **Scheduled jobs** (cPanel → Cron Jobs): add `* * * * * php /home/<user>/loa-auth-platform/artisan schedule:run >> /dev/null 2>&1` (replace `<user>` with the cPanel username).
+
+**Verification (GUI only):**
+
+- Visit `https://auth.loa.edu.ph/login` — the login form must render without a 500 error.
+- Log in with the admin credentials from the dump, then change the password via `POST /api/v1/auth/password/change-request` or the web reset flow.
+- Optionally open phpMyAdmin and confirm all tables were created with rows (especially `user_groups`, `permissions`, `users`).
 
 ---
 

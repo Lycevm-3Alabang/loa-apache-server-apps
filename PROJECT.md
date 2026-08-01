@@ -25,7 +25,8 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 
 | Layer | Component | Spec | Status |
 |-------|-----------|------|--------|
-| Kernel | Identity | `kernels/identity/README.md` | ✅ v2.0 (UserGroup model) |
+| Kernel | Identity | `kernels/identity/README.md` | ✅ v3.0 Draft (tenancy layer) |
+| Kernel | Tenancy | `kernels/identity/tenancy.md` | ✅ Final — implemented |
 | Kernel | User | `kernels/identity/entities/user.md` | ✅ Draft |
 | Kernel | UserGroup | `kernels/identity/entities/user-group.md` | ✅ Draft |
 | Kernel | Permission | `kernels/identity/entities/permission.md` | ✅ Draft |
@@ -70,7 +71,8 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Service | API Documentation | `services/api-documentation/README.md` | ✅ Final |
 | Service | Database Seeder | `assemblies/loa-auth-platform/database/seeders/seeder-spec.md` | ✅ Final |
 | Assembly | LOA Auth Platform | `assemblies/loa-auth-platform/README.md` | ✅ Scaffolded |
-| Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Final |
+| Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Final (v1.2 — destination resolution) — implemented |
+| Assembly | LOA Admin Dashboard | `assemblies/loa-auth-platform/admin-dashboard.md` | ✅ Final (v1 + v2 implemented) |
 | Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Draft |
 | Assembly | LOA Cert Platform | `assemblies/loa-cert-platform/README.md` | ✅ Draft |
 
@@ -115,11 +117,19 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | CORS configuration | ✅ Done | `config/cors.php` per `services/cors/README.md`, LOA subdomains + env override |
 | Auth Web UI spec | ✅ Done | `assemblies/loa-auth-platform/web-ui.md` — login redirect, forgot/change password, email |
 | OpenAPI/Swagger UI | ✅ Done | `darkaonline/l5-swagger`, PHP 8 attributes, 12 endpoints, `/api/docs` |
-| Database seeder | ⬜ Not started | `loa-auth-admin` group + permissions + admin user from `.env` |
+| Database seeder | ✅ Done | `database/seeders/database.sql` rebuilt from migration schema, verified import parity (admin + loa-auth-admin group) |
 | Login page (web) | ✅ Done | Blade form; post-login redirect via fragment per web-ui.md |
 | Forgot password page (web) | ✅ Done | Email form + reset link email |
 | Change password page (web) | ✅ Done | Shared `/reset-password` form, token-validated |
 | SMTP/mail config + email templates | ✅ Done | MAIL_* env, reset-password + change-password Blade templates |
+| Tenants (v3.0) | ✅ Done | `tenants` + `user_tenants` tables (migrations 000011–000012), Tenant model, TenantService CRUD + redirect-origin resolution |
+| Tenant-scoped groups/grants | ✅ Done | Migrations 000013–000015, `user_groups.tenant_id` + scope-unique pivots, `AuthorizationService` tenant scoping |
+| Tenant JWT claims + middleware | ✅ Done | `tenant {id, slug}` claim, `jwt.tenant` middleware, suspended tenant rejection (login + refresh + verify) |
+| Login destination resolution | ✅ Done | Admin → session dashboard; non-admin + valid redirect → tenant fragment redirect; non-admin direct → reject + revoke tokens |
+| Admin dashboard v1 | ✅ Done | `WebAdminController`, `web.admin` middleware, `/admin/users` (list, search, enable/disable), self-disable guard, admin layout |
+| Admin dashboard v2 (tenant mgmt) | ✅ Done | Tenant CRUD, groups, per-group permissions, members (add/remove), suspend/activate; `admin-dashboard.md` promoted to Final |
+| Admin session login/logout | ✅ Done | `WebAuthController` admin flow, session auth, logout route, dashboard access control |
+| Admin web UI spec | ✅ Done | `assemblies/loa-auth-platform/admin-dashboard.md` — v1 + v2 implemented, Final |
 | Deploy to auth.loa.edu.ph | ⬜ Not started | |
 
 ### Bugs Found & Fixed (2026-07-31)
@@ -307,3 +317,9 @@ loa-apache-server-apps/
 | 2026-07-31 | Auth Web UI spec | Login page + redirect (fragment token handoff, allowlist), unified forgot/change password flow, SMTP email |
 | 2026-07-31 | OpenAPI/Swagger UI | `darkaonline/l5-swagger` v11, PHP 8 Attributes, serves at `/api/docs` |
 | 2026-07-31 | Master admin seeder | `loa-auth-admin` group + all permissions + admin user from `.env`, idempotent, run after migrations |
+| 2026-08-01 | Login destination resolution (web-ui.md v1.2) | Admin login → admin session dashboard; non-admin + valid `?redirect=` → tenant fragment redirect; non-admin direct → reject with generic error; no implicit tenant fallback |
+| 2026-08-01 | Admin Dashboard spec (Draft) | Server-rendered, session-authenticated user management (list, search, enable/disable); `web.admin` group gate; self-disable forbidden |
+| 2026-08-01 | Identity Kernel v3.0 tenancy | Tenants = external client organizations (per user); `tenants` + `user_tenants` tables; tenant-scoped groups (`user_groups.tenant_id`); tenant-scoped grants (`user_group_permission.tenant_id`); `tenant` JWT claim + `jwt.tenant` middleware; login redirect resolved from `tenants.redirect_origins` instead of env |
+| 2026-08-01 | Admin dashboard v2 tenant admin | Platform admins manage tenants, per-tenant groups, per-endpoint grants, membership via `/admin/tenants/*` |
+| 2026-08-01 | Tenancy + admin dashboard implemented (v3.0) | Migrations 000011–000015 applied; TenantService, tenant-scoped AuthorizationService, `tenant` claim + `jwt.tenant`, login destination matrix, WebAdminController + `web.admin` middleware + `/admin/users`; `database.sql` rebuilt from migration schema (verified structural parity) |
+| 2026-08-01 | Admin dashboard v2 implemented | Tenant CRUD (`/admin/tenants/*`), groups + per-group permissions, member add/remove, suspend/activate; `admin-dashboard.md` promoted to Final |

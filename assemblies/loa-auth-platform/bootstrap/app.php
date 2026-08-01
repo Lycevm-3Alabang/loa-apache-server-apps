@@ -15,7 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'jwt.auth' => \App\Http\Middleware\JwtMiddleware::class,
             'jwt.permission' => \App\Http\Middleware\PermissionMiddleware::class,
+            'jwt.tenant' => \App\Http\Middleware\JwtTenantMiddleware::class,
             'password.reset.throttle' => \App\Http\Middleware\PasswordResetThrottle::class,
+            'web.admin' => \App\Http\Middleware\WebAdminMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -11,8 +11,9 @@ Flexible grouping mechanism for organizing users. Universal across all applicati
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | integer | PK | Unique identifier |
-| name | string | unique, required | Group identifier |
+| name | string | required | Group identifier |
 | description | string | nullable | Human-readable description |
+| tenant_id | uuid | nullable FK | `NULL` = platform-global; set = tenant-scoped (v3.0) |
 | created_at | timestamp | auto | Creation time |
 
 ### Naming Convention
@@ -33,14 +34,16 @@ Flexible grouping mechanism for organizing users. Universal across all applicati
 
 ### Invariants
 
-1. Name must be unique
+1. Name uniqueness is scoped: `(tenant_id, name)` for tenant groups; globally unique for platform groups (`tenant_id IS NULL`)
 2. Groups are universal (not app-specific)
 3. A user can belong to multiple groups
+4. Tenant groups only apply within their tenant (`kernels/identity/tenancy.md` §3.3)
 
 ### Relationships
 
 - belongsToMany User (via user_user_group)
 - belongsToMany Permission (via user_group_permission)
+- belongsTo Tenant (nullable)
 
 ### Factory
 

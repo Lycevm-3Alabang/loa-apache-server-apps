@@ -38,11 +38,13 @@ Fine-grained access control mapped to endpoints or pages.
 1. Key must be unique
 2. Key follows naming convention
 3. Endpoint pattern is optional (some permissions are page-based)
+4. Permission definitions are a **global catalog**; tenant scoping is applied to **grants**, not definitions (`tenancy.md` §3.4)
 
 ### Relationships
 
 - belongsToMany Role (via role_permission)
 - belongsToMany User (via user_permission)
+- Grants are tenant-scoped via `user_group_permission.tenant_id` / `user_permission.tenant_id` (v3.0)
 
 ### Factory
 

@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\PasswordResetNotificationService;
+use App\Models\Tenant;
+use App\Models\User;
 use App\Services\IdentityService;
+use App\Services\PasswordResetNotificationService;
+use App\Services\TenantService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
@@ -14,11 +18,16 @@ class WebAuthController extends Controller
     public function __construct(
         private readonly IdentityService $identity,
         private readonly PasswordResetNotificationService $passwordResetNotifications,
+        private readonly TenantService $tenants,
     ) {
     }
 
-    public function showLogin(Request $request): View
+    public function showLogin(Request $request): View|RedirectResponse
     {
+        if (Auth::guard('web')->check()) {
+            return redirect()->route('admin.users');
+        }
+
         return view('login', [
             'redirect' => $this->resolveRedirect($request->query('redirect')),
         ]);
@@ -38,11 +47,15 @@ class WebAuthController extends Controller
                 ->withErrors($validator);
         }
 
+        $target = $this->resolveRedirect($request->input('redirect'));
+        $tenant = $this->resolveTenant($target);
+
         try {
             $tokens = $this->identity->login(
                 $request->string('email')->toString(),
                 $request->string('password')->toString(),
                 $request->ip(),
+                $tenant,
             );
         } catch (\Throwable) {
             return back()
@@ -50,10 +63,28 @@ class WebAuthController extends Controller
                 ->withErrors(['credentials' => 'Invalid credentials']);
         }
 
-        $target = $this->resolveRedirect($request->input('redirect'));
+        $user = User::where('email', $request->string('email')->toString())->first();
+
+        if ($this->isAdmin($user)) {
+            $this->identity->logout($tokens['refresh_token']);
+
+            Auth::guard('web')->login($user);
+            $request->session()->regenerate();
+
+            return redirect()->route('admin.users');
+        }
+
+        if (!$tenant || !$this->tenants->isMember($user->id, $tenant->id)) {
+            $this->identity->logout($tokens['refresh_token']);
+
+            return back()
+                ->withInput($request->except('password'))
+                ->withErrors(['credentials' => 'Invalid credentials']);
+        }
+
         $fragment = http_build_query($tokens, '', '&', PHP_QUERY_RFC3986);
 
-        return redirect()->away($this->removeFragment($target).'#'.$fragment);
+        return redirect()->away($target.'#'.$fragment);
     }
 
     public function showRegister(): View
@@ -114,35 +145,72 @@ class WebAuthController extends Controller
         return back()->with('status', 'If the email exists, a reset link has been sent.');
     }
 
-    private function resolveRedirect(?string $candidate): string
+    private function isAdmin(?User $user): bool
     {
-        $default = (string) config('auth-web.redirect_url');
+        if (!$user) {
+            return false;
+        }
+
+        return $user->inGroup((string) config('auth-web.admin_group'));
+    }
+
+    private function resolveRedirect(?string $candidate): ?string
+    {
         $candidate = is_string($candidate) ? trim($candidate) : '';
 
         if ($candidate === '' || !filter_var($candidate, FILTER_VALIDATE_URL)) {
-            return $default;
+            return null;
         }
 
-        $parts = parse_url($candidate);
+        $origin = $this->extractOrigin($candidate);
+
+        if ($origin === null) {
+            return null;
+        }
+
+        if ($this->tenants->resolveTenantByRedirectOrigin($origin)) {
+            return $this->removeFragment($candidate);
+        }
+
+        if (in_array($origin, $this->allowedOrigins(), true)) {
+            return $this->removeFragment($candidate);
+        }
+
+        return null;
+    }
+
+    private function resolveTenant(?string $target): ?Tenant
+    {
+        if (!$target) {
+            return null;
+        }
+
+        return $this->tenants->resolveTenantByRedirectOrigin($this->extractOrigin($target) ?? '');
+    }
+
+    private function extractOrigin(string $url): ?string
+    {
+        $parts = parse_url($url);
+
         if (!$parts || empty($parts['scheme']) || empty($parts['host'])) {
-            return $default;
+            return null;
         }
 
         $origin = strtolower($parts['scheme']).'://'.strtolower($parts['host']);
+
         if (isset($parts['port'])) {
             $origin .= ':'.$parts['port'];
         }
 
-        $allowed = array_map(
+        return $origin;
+    }
+
+    private function allowedOrigins(): array
+    {
+        return array_map(
             static fn (string $url): string => rtrim(strtolower($url), '/'),
             (array) config('auth-web.allowed_redirects', []),
         );
-
-        if (!in_array($origin, $allowed, true)) {
-            return $default;
-        }
-
-        return $this->removeFragment($candidate);
     }
 
     private function removeFragment(string $url): string

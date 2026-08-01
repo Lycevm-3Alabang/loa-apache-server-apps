@@ -36,55 +36,35 @@ Then:
 ### Date: 2026-08-01
 
 ### Completed
-- RefreshToken spec promoted to **Final** (`kernels/identity/entities/refresh-token.md` + PROJECT.md status)
-- RefreshToken implemented per spec:
-  - `app/Models/RefreshToken.php` (UUID PK, jti hidden/hashed, isValid() helper, belongsTo user + replacedBy)
-  - Migration `2026_07_30_000009_create_refresh_tokens_table.php` (unique jti, `replaced_by` FK nullOnDelete, user_id/revoked_at + expires_at indexes)
-  - `User::refreshTokens()` hasMany relation added
-  - `IdentityService` wiring: record issued on login, rotated on refresh (old revoked + `replaced_by` set), revoked on logout / password change / password reset / account lock (`revokeAllRefreshTokens`)
-- Account disable endpoint (rule 7):
-  - `IdentityService::setUserStatus()` — disables user, revokes all refresh tokens; re-enables from lock
-  - `UserController::updateStatus()` — PATCH /users/{id}/status, users.manage permission
-- Refresh token pruning (rule 8):
-  - `PruneRefreshTokens` command (`refresh-tokens:prune`) — purges expired/revoked >30 days
-  - `routes/console.php` — `Schedule::command('refresh-tokens:prune')->daily()`
-- Docker local dev environment (`environment.md` spec):
-  - `docker-compose.yml` — php:8.3-fpm, nginx:1.27, mysql:8.0, mailpit, scheduler service
-  - `docker/php/Dockerfile` — PHP 8.3 + pdo_mysql, bcmath, zip + composer
-  - `docker/nginx/default.conf` — fastcgi to app:9000, root public/
-  - `.env` — local DB/JWT/MAIL config
-- PHP 8.3 + Laravel 12 upgrade (Laravel 11 EOL Jul 2026, security advisories)
-- All verified: `php -l` passed, 9 migrations ran, `refresh_tokens` schema confirmed (indexes, FK)
-- PROJECT.md tracker + Decisions Log + assembly READMEs updated
-- Auth Web UI spec promoted to **Final** and expanded with implementation, security, rate-limit, session, and deployment details
-- Auth Web UI implemented:
-  - Blade login, forgot-password, and reset-password forms with CSRF protection
-  - Safe allowlisted redirect with JWT pair delivered in the URL fragment
-  - Shared password-reset notification service and reset/change email templates
-  - `POST /api/v1/auth/password/change-request` with JWT authentication
-  - Email+IP password-reset throttling with generic anti-enumeration responses
-  - Laravel web, mail, cache, and session configuration plus sessions migration
-- PROJECT.md implementation tracker updated for the Auth Web UI and SMTP/mail items
-- Investigated deployed logs and hardened deployment fixes:
-  - CORS spec promoted to **Final**; origin parsing now always produces a flat trimmed string list
-  - Production deployment docs now clear/rebuild config cache and regenerate Swagger docs
-  - OpenAPI default corrected to 3.1.0; CORS, cache, and Swagger environment variables documented
-  - Seeder/autoload files verified; route-list command documented with Laravel 12-compatible `--path`
+- **Admin dashboard v2 implemented** (`admin-dashboard.md` promoted to Final):
+  - Tenant CRUD: list (`GET /admin/tenants`), create form (`GET /admin/tenants/create`), store (`POST /admin/tenants`), show (`GET /admin/tenants/{tenant}`), suspend/activate (`POST /admin/tenants/{tenant}/status`)
+  - Tenant groups: list + create (`GET/POST /admin/tenants/{tenant}/groups`), per-group permission grant/revoke (`POST /admin/tenants/{tenant}/groups/{group}/permissions`)
+  - Tenant members: add/remove (`POST /admin/tenants/{tenant}/members` with `action=add|remove`)
+  - Controller: `WebAdminController` v2 methods (tenantsIndex/Create/Store/Show/Status/Groups/GroupsStore/GroupsPermissions/MembersStore)
+  - Views: `admin/tenants/index.blade.php`, `create.blade.php`, `show.blade.php`, `groups.blade.php`
+  - Admin layout updated with Tenants nav link
+  - CSS additions for forms, detail cards, permission grid, inline forms
+- **Identity Kernel v3.0 tenancy fully implemented** (previous session): migrations, TenantService, tenant-scoped AuthorizationService, `jwt.tenant`/`web.admin` middleware, login destination
+- **`database.sql` rebuilt from migration schema** (previous session): verified structural parity, clean import
+- Regenerated `loa-auth-dist/` (SQL + all v2 views/controllers)
+- All PHP lints pass; verified pages render (login, tenants list, create form, show, groups)
+- PROJECT.md + SESSION-PROMPT.md updated
 
 ### In Progress
-- Nothing — last session ended clean
+- None — admin dashboard v1 + v2 complete
 
 ### Next Action
-- Deploy the corrected release to auth.loa.edu.ph, clear/rebuild config cache, regenerate Swagger docs, run migrations, and seed the admin account
+- Deploy current auth release (full admin dashboard + tenancy), OR start Phase 2 (Consult App)
 
 ### Backlog / Known Gaps
+- **Admin create user** (spec pending): admin manually creates user account without self-registering; routes `GET /admin/users/create` + `POST /admin/users`; form: email, name, password (optional → auto-generate), status; permission `users.manage`; spec to be added to `admin-dashboard.md` as v3
 - Education Domain + Business Contexts still use flat structure (no `entities/`, `events/`, `rules/` subdirs)
-- Auth Web UI code not linted in this session (PHP is not on PATH) — run `php -l` before deploy
-- JWT_SECRET not configured (env) — required before deploy
+- `JWT_SECRET` not configured (env) — required before deploy
 - Production environment: cPanel cron for `schedule:run`, MySQL host, MAIL SMTP credentials
+- No-terminal deploy requires uploading prebuilt `vendor/` (pure-PHP deps; safe cross-platform)
 
 ### Open Questions
-- None pending (redirect mechanism decision documented in web-ui.md: URL fragment + allowlist)
+- None pending
 
 ---
 
@@ -98,3 +78,7 @@ Then:
 | 2026-07-31 | RefreshToken spec → Final; model + migration + IdentityService wiring | Auth Web UI or deploy auth |
 | 2026-07-31 | Docker local dev (php:8.3, nginx, mysql, mailpit); Rule 7 disable endpoint + Rule 8 pruning; Laravel 12 upgrade; all verified | Auth Web UI or deploy auth |
 | 2026-08-01 | Auth Web UI implemented; deployed CORS/Swagger/seeder issues investigated and deployment safeguards added | Deploy corrected auth release |
+| 2026-08-01 | SQL dump fixed (sessions table + real admin hash); no-terminal DEPLOY.md section; login destination resolution spec'd (web-ui v1.2); Admin Dashboard spec (Draft) | Promote Admin Dashboard to Final + implement, or deploy |
+| 2026-08-01 | Identity Kernel v3.0 tenancy spec (tenants, scoped groups/grants, `jwt.tenant`, claims) + admin-dashboard v2 tenant admin | Review/promote tenancy spec; then implement |
+| 2026-08-01 | Tenancy + admin dashboard v1 implemented and verified (migrations, TenantService, tenant-scoped auth, `jwt.tenant`/`web.admin`, login destination, `/admin/users`); `database.sql` rebuilt from migration schema (parity-checked) | Deploy current auth release, or start admin dashboard v2 |
+| 2026-08-01 | Admin dashboard v2 implemented: tenant CRUD, groups, per-group permissions, members, suspend/activate; `admin-dashboard.md` promoted to Final; dist regenerated | Deploy, or start Phase 2 (Consult App) |
