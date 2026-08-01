@@ -1,6 +1,6 @@
 @extends('layouts.auth')
 
-@section('title', 'Recover your account | LOA Platform')
+@section('title', 'Recover your account | Lyceum of Alabang')
 @section('eyebrow', 'Account recovery')
 @section('heading', 'Reset your password')
 @section('intro', 'Enter your account email and we will send a secure reset link if the account exists.')
@@ -15,11 +15,8 @@
             <span class="field-hint">The link will be valid for 60 minutes.</span>
         </div>
 
-        <button class="button" type="submit">
-            <span>Send recovery link</span>
-            <span class="button-arrow" aria-hidden="true">&rarr;</span>
-        </button>
+        <button class="button" type="submit">Send recovery link</button>
     </form>
 
-    <a class="back-link" href="{{ route('login') }}">&larr; Back to sign in</a>
+    <a class="back-link" href="{{ route('login') }}">Back to sign in</a>
 @endsection

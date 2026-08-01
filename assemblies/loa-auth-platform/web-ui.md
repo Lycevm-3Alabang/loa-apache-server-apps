@@ -1,7 +1,7 @@
 # LOA Auth Platform — Web UI
 ## Product Assembly Component Specification
 
-**Version:** 1.0
+**Version:** 1.1
 **Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -13,6 +13,7 @@
 Browser-based authentication UI for the LOA platform ecosystem:
 
 - login page (email + password)
+- registration page (name, email, password)
 - post-login redirect to a configured application URL
 - forgot password page (email link to change-password form)
 - change password page (email-confirmed, token-validated)
@@ -26,6 +27,7 @@ The Auth Platform remains the single source of truth for identity. This spec add
 ## Owns
 
 - login web form
+- registration web form (name, email, password)
 - redirect resolution after successful login
 - forgot password web form
 - email-notification triggers for reset/change links
@@ -34,7 +36,6 @@ The Auth Platform remains the single source of truth for identity. This spec add
 
 ## Does Not Own
 
-- registration UI (registration stays API-only for now)
 - user dashboard / profile pages
 - application-specific pages (Consult, Cert)
 - any business workflow outside identity
@@ -45,7 +46,7 @@ The Auth Platform remains the single source of truth for identity. This spec add
 
 The Auth Platform keeps its stateless JWT API (`/api/v1/*`) for machine consumers (Consult, Cert).
 
-The web UI (`/login`, `/forgot-password`, `/reset-password`) runs on Laravel web routes:
+The web UI (`/login`, `/register`, `/forgot-password`, `/reset-password`) runs on Laravel web routes:
 
 - minimal session exists **only** to carry the CSRF token (Laravel default `web` middleware)
 - authentication state after login is the JWT pair, not the web session
@@ -73,6 +74,8 @@ POST /login
 5. On failure: re-render the form with a generic "Invalid credentials" error. Never reveal whether the email exists or whether the account is locked.
 
 ### Redirect Target Resolution
+
+The login form includes a **"New here? Create an account"** link pointing to `/register`. The registration form includes a **"Already have an account? Sign in"** link pointing to `/login`.
 
 | Source | Rule |
 |--------|------|
@@ -134,6 +137,45 @@ POST /reset-password
 4. User submits the new password.
 5. System validates the token (exists, not expired, not used), updates the password, and revokes all refresh tokens for the user (`token-lifecycle.md`).
 6. On success: redirect to `/login`.
+
+---
+
+## 4.4 Registration
+
+### Routes
+
+```
+GET  /register
+POST /register
+```
+
+### Steps
+
+1. User visits `GET /register`.
+2. User submits name, email, and password.
+3. System validates the request server-side (see section 13.4).
+4. On validation failure: re-render the form with field-level errors.
+5. On success: call `IdentityService::register(email, password, name)`.
+6. If the email is already registered: re-render the form with a generic "An account with this email already exists" error (anti-enumeration).
+7. On success: redirect to `/login` with a success flash message ("Account created. Please sign in.").
+
+### Visual Direction
+
+The registration page reuses the same split layout as login (dark navy brand panel on the left, light form card on the right). The brand panel content adapts to the registration context:
+
+- Heading: **"Welcome to Connect Hub"**
+- Subheading: **"Create your account to manage bookings and consultations"**
+
+The form card contains:
+
+- Name field
+- Email field
+- Password field (with show/hide toggle)
+- Confirm Password field (with show/hide toggle)
+- "Sign up" primary button
+- "Already have an account? Sign in" link → `/login`
+
+The layout is responsive: on mobile the brand panel stacks above the form card.
 
 ---
 
@@ -209,6 +251,8 @@ Redirect allowlist entries are full origins (scheme + host), matched strictly.
 ```
 GET  /login                 Login form
 POST /login                 Authenticate + redirect
+GET  /register              Registration form
+POST /register              Create account + redirect to login
 GET  /forgot-password       Forgot password form
 POST /forgot-password       Send reset email
 GET  /reset-password        Change password form (token-validated)
@@ -234,6 +278,8 @@ No body. Uses the authenticated user; sends the change-password email to that us
 - [ ] Reset tokens single-use, 60-minute expiry, hashed at rest
 - [ ] CSRF on all web forms
 - [ ] No raw token in database; raw token only in the emailed link
+- [ ] Registration rejects duplicate emails with generic error (no enumeration)
+- [ ] Registration rate-limited to prevent mass account creation
 
 ---
 
@@ -246,6 +292,7 @@ No body. Uses the authenticated user; sends the change-password email to that us
 | "Email not registered" response | User enumeration | Generic success always |
 | A separate change-password code path | Duplicated logic | Shared `/reset-password` flow |
 | Long-lived web session as auth state | Breaks stateless JWT model | Session only for CSRF |
+| Revealing "email already registered" details | User enumeration | Generic error on duplicate email |
 
 ---
 
@@ -258,6 +305,7 @@ All views live in `resources/views/`.
 | View | Path | Purpose |
 |------|------|---------|
 | Login form | `resources/views/login.blade.php` | Email + password form, error display, redirect param passthrough |
+| Registration form | `resources/views/register.blade.php` | Name, email, password, confirm password form with field-level errors |
 | Forgot password form | `resources/views/forgot-password.blade.php` | Email input + success message |
 | Reset password form | `resources/views/reset-password.blade.php` | Read-only email, new password + confirm, token-hidden input |
 | Reset password email (forgot) | `resources/views/emails/reset-password.blade.php` | Mailable template for forgot flow |
@@ -267,7 +315,7 @@ All views live in `resources/views/`.
 
 | Controller | Methods | Routes |
 |------------|---------|--------|
-| `WebAuthController` | `showLogin`, `login`, `showForgotPassword`, `sendResetLinkEmail` | `GET|POST /login`, `GET|POST /forgot-password` |
+| `WebAuthController` | `showLogin`, `login`, `showRegister`, `register`, `showForgotPassword`, `sendResetLinkEmail` | `GET|POST /login`, `GET|POST /register`, `GET|POST /forgot-password` |
 | `WebResetController` | `showResetForm`, `reset` | `GET|POST /reset-password` |
 
 The existing `AuthController` handles the JSON API layer only (`/api/v1/auth/*`). Web routes are separate.
@@ -308,6 +356,17 @@ Uses the authenticated user's email; sends a `change-password` email linking to 
 
 Validation rule notation: `min:8` (8 chars), `confirmed` (matches `password_confirmation`), regex enforces at least one uppercase, one lowercase, one digit.
 
+## 13.4 Registration Form
+
+| Field | Name | Type | Rules |
+|-------|------|------|-------|
+| Name | `name` | text | `required|string|max:255` |
+| Email | `email` | text | `required|email|max:255` |
+| Password | `password` | password | `required|string|min:8\|regex:/[A-Z]/\|regex:/[a-z]/\|regex:/[0-9]/` |
+| Confirm Password | `password_confirmation` | password | `required|string` (must match `password`) |
+
+Password validation is identical to the reset-password form (section 13.3) minus the `confirmed` rule, since confirmation is handled via `password_confirmation` matching in the web form. The API uses `confirmed` if needed; the web controller validates the two fields explicitly and passes only `password` to `IdentityService::register()`.
+
 ---
 
 # 14. Rate Limiting
@@ -324,6 +383,14 @@ Validation rule notation: `min:8` (8 chars), `confirmed` (matches `password_conf
 ## 14.2 Login
 
 Login uses the Identity Kernel's brute-force protection (`maxAttempts = 5`, `lockoutMinutes = 30`). No additional web-layer throttle needed; the lockout message must be surfaced as a generic "Invalid credentials" error.
+
+## 14.3 Registration
+
+| Route | Throttle | Config |
+|-------|----------|--------|
+| `POST /register` | 5 requests per 60 seconds per IP | Laravel `throttle:5,60` middleware in `routes/web.php` |
+
+Prevents mass account creation. Uses the same generic "Please wait and try again" error when throttled.
 
 ---
 
@@ -374,6 +441,9 @@ On cPanel, the document root is `public/`. The `index.php` inside `public/` hand
 |-------|----------|
 | `GET /login` | 200, returns login form HTML |
 | `POST /login` (valid) | 302 → `{appUrl}#access_token=...&refresh_token=...` |
+| `GET /register` | 200, returns registration form HTML |
+| `POST /register` (valid) | 302 → `/login` with success flash message |
+| `POST /register` (duplicate email) | 200, re-renders form with generic "already exists" error |
 | `POST /forgot-password` (any email) | 200, generic success message |
 | `GET /reset-password?token=...&email=...` | 200, returns form with pre-filled email |
 | `POST /reset-password` (valid token + password) | 302 → `/login` |

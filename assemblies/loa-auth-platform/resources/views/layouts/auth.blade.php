@@ -3,37 +3,54 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#12243b">
-    <title>@yield('title', 'LOA Platform')</title>
+    <meta name="theme-color" content="#020618">
+    <title>@yield('title', 'Lyceum of Alabang')</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --ink: #12243b;
-            --ink-soft: #37516d;
-            --muted: #718198;
-            --line: #dce5ef;
-            --paper: #ffffff;
-            --wash: #f3f7fb;
-            --accent: #e36a49;
-            --accent-dark: #c95032;
-            --success: #176b58;
+            --surface: #ffffff;
+            --surface-muted: #f2f2f7;
+            --surface-secondary: #f9f9fb;
+            --text: #1c1c1e;
+            --text-secondary: #3a3a3c;
+            --text-muted: #8e8e93;
+            --border: #d1d1d6;
+            --border-strong: #c6c6c8;
+            --brand-50: #fffbe6;
+            --brand-500: #fcca13;
+            --brand-600: #e0b311;
+            --brand-700: #c49a0e;
             --danger: #a43f3d;
+            --success: #176b58;
+            --slate-950: #020618;
+            --slate-800: #1d293d;
+            --slate-700: #314158;
+            --slate-400: #90a1b9;
+            --slate-300: #cad5e2;
+            --radius-lg: 0.5rem;
+            --radius-xl: 0.75rem;
+            --radius-2xl: 1rem;
+            --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-lg: 0 12px 32px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.04);
             color-scheme: light;
         }
 
         * { box-sizing: border-box; }
-
         html, body { min-height: 100%; }
 
         body {
             margin: 0;
-            background: var(--wash);
-            color: var(--ink);
-            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--surface-muted);
+            color: var(--text);
+            font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             -webkit-font-smoothing: antialiased;
         }
 
-        a { color: var(--accent-dark); text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        a { color: var(--brand-600); text-decoration: none; font-weight: 600; }
+        a:hover { color: var(--brand-700); text-decoration: underline; }
 
         .auth-shell {
             display: grid;
@@ -48,10 +65,8 @@
             justify-content: space-between;
             overflow: hidden;
             padding: clamp(2rem, 5vw, 5rem);
-            background:
-                radial-gradient(circle at 82% 18%, rgba(227, 106, 73, 0.32), transparent 26%),
-                linear-gradient(145deg, #132a43 0%, #102238 55%, #0c1b2c 100%);
-            color: #f7fbff;
+            background: var(--slate-950);
+            color: #f8fafc;
         }
 
         .brand-panel::before,
@@ -59,7 +74,7 @@
             position: absolute;
             content: "";
             pointer-events: none;
-            border: 1px solid rgba(255, 255, 255, 0.11);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             transform: rotate(28deg);
         }
 
@@ -89,9 +104,10 @@
             gap: 0.8rem;
             width: fit-content;
             color: #fff;
-            font-size: 0.78rem;
-            font-weight: 800;
-            letter-spacing: 0.18em;
+            font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
         }
 
@@ -100,10 +116,10 @@
             width: 2.65rem;
             height: 2.65rem;
             place-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            border-radius: 0.85rem;
-            background: rgba(255, 255, 255, 0.11);
-            box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius-xl);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.2);
             font-size: 0.84rem;
             letter-spacing: 0.03em;
         }
@@ -112,25 +128,27 @@
 
         .brand-kicker {
             margin: 0 0 1.25rem;
-            color: #f5ae91;
+            color: var(--brand-500);
             font-size: 0.72rem;
-            font-weight: 800;
-            letter-spacing: 0.18em;
+            font-weight: 700;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
         }
 
         .brand-copy h2 {
             max-width: 26rem;
             margin: 0;
+            font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
             font-size: clamp(2.4rem, 4.4vw, 4.8rem);
             line-height: 0.98;
-            letter-spacing: -0.065em;
+            letter-spacing: -0.04em;
+            font-weight: 700;
         }
 
         .brand-copy p {
             max-width: 25rem;
             margin: 1.6rem 0 0;
-            color: #b8c9da;
+            color: var(--slate-400);
             font-size: 1rem;
             line-height: 1.7;
         }
@@ -139,7 +157,7 @@
             display: flex;
             align-items: center;
             gap: 0.7rem;
-            color: #9fb4c9;
+            color: var(--slate-400);
             font-size: 0.75rem;
         }
 
@@ -147,8 +165,8 @@
             width: 0.45rem;
             height: 0.45rem;
             border-radius: 50%;
-            background: #5bd0a5;
-            box-shadow: 0 0 0 0.3rem rgba(91, 208, 165, 0.13);
+            background: #22c55e;
+            box-shadow: 0 0 0 0.3rem rgba(34, 197, 94, 0.15);
             content: "";
         }
 
@@ -159,43 +177,52 @@
             padding: clamp(1.5rem, 5vw, 5rem);
         }
 
-        .auth-card { width: min(100%, 29rem); }
+        .auth-card {
+            width: min(100%, 24rem);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-2xl);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+        }
 
         .mobile-lockup { display: none; }
 
-        .card-header { margin-bottom: 2rem; }
+        .card-header { margin-bottom: 1.75rem; }
 
         .eyebrow {
-            margin: 0 0 0.9rem;
-            color: var(--accent-dark);
+            margin: 0 0 0.75rem;
+            color: var(--brand-600);
             font-size: 0.7rem;
-            font-weight: 800;
-            letter-spacing: 0.17em;
+            font-weight: 700;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
         }
 
         .card-header h1 {
             margin: 0;
-            color: var(--ink);
-            font-size: clamp(2rem, 4vw, 3rem);
-            line-height: 1.02;
-            letter-spacing: -0.055em;
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+            font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            font-weight: 700;
         }
 
         .card-intro {
             max-width: 26rem;
-            margin: 1rem 0 0;
-            color: var(--muted);
-            font-size: 0.98rem;
-            line-height: 1.65;
+            margin: 0.75rem 0 0;
+            color: var(--text-muted);
+            font-size: 0.9375rem;
+            line-height: 1.6;
         }
 
         .alert {
             margin: 0 0 1.25rem;
-            padding: 0.85rem 1rem;
+            padding: 0.75rem 1rem;
             border: 1px solid;
-            border-radius: 0.8rem;
-            font-size: 0.86rem;
+            border-radius: var(--radius-lg);
+            font-size: 0.875rem;
             line-height: 1.5;
         }
 
@@ -213,33 +240,38 @@
 
         .alert-error ul { margin: 0; padding-left: 1.15rem; }
 
-        .auth-form { display: grid; gap: 1.2rem; }
+        .auth-form { display: grid; gap: 1rem; }
 
-        .field { display: grid; gap: 0.5rem; }
+        .field { display: grid; gap: 0.375rem; }
 
         .field label {
-            color: var(--ink-soft);
-            font-size: 0.78rem;
-            font-weight: 750;
-            letter-spacing: 0.02em;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
         }
 
         .field input {
             width: 100%;
-            min-height: 3.3rem;
-            padding: 0.8rem 0.95rem;
-            border: 1px solid var(--line);
-            border-radius: 0.75rem;
+            height: 2.75rem;
+            padding: 0.625rem 0.875rem;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-xl);
             outline: none;
-            background: var(--paper);
-            color: var(--ink);
-            font: inherit;
-            transition: border-color 160ms ease, box-shadow 160ms ease;
+            background: var(--surface-secondary);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9375rem;
+            transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
         }
 
-        .field input:hover { border-color: #b9c8d8; }
-        .field input:focus { border-color: #6b9abd; box-shadow: 0 0 0 0.23rem rgba(63, 123, 163, 0.14); }
-        .field input[readonly] { background: #eef4f8; color: var(--ink-soft); }
+        .field input::placeholder { color: var(--text-muted); }
+        .field input:hover { border-color: var(--border-strong); }
+        .field input:focus {
+            border-color: var(--brand-500);
+            background: var(--surface);
+            box-shadow: 0 0 0 4px rgba(252, 202, 19, 0.15);
+        }
+        .field input[readonly] { background: var(--surface-muted); color: var(--text-muted); cursor: default; }
 
         .form-row {
             display: flex;
@@ -250,95 +282,65 @@
 
         .field-hint,
         .password-hint {
-            color: var(--muted);
-            font-size: 0.76rem;
+            color: var(--text-muted);
+            font-size: 0.8125rem;
             line-height: 1.5;
         }
 
-        .form-link { font-size: 0.8rem; font-weight: 700; }
-
+        .form-link { font-size: 0.8125rem; font-weight: 600; }
         .password-hint { display: block; margin-top: 0.1rem; }
-
-        .account-chip {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            margin-bottom: 0.2rem;
-            padding: 0.75rem 0.85rem;
-            border: 1px solid var(--line);
-            border-radius: 0.8rem;
-            background: rgba(255, 255, 255, 0.72);
-        }
-
-        .account-chip-icon {
-            display: grid;
-            width: 2rem;
-            height: 2rem;
-            place-items: center;
-            border-radius: 0.6rem;
-            background: #e4eff6;
-            color: #306487;
-            font-size: 0.72rem;
-            font-weight: 800;
-        }
-
-        .account-chip span { display: block; color: var(--muted); font-size: 0.68rem; }
-        .account-chip strong { display: block; margin-top: 0.12rem; color: var(--ink-soft); font-size: 0.82rem; font-weight: 700; overflow-wrap: anywhere; }
 
         .button {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
+            gap: 0.5rem;
             width: 100%;
-            min-height: 3.3rem;
-            padding: 0.8rem 1rem 0.8rem 1.15rem;
-            border: 0;
-            border-radius: 0.75rem;
-            background: var(--accent);
+            height: 2.75rem;
+            padding: 0 1.25rem;
+            border: 1px solid var(--brand-700);
+            border-radius: var(--radius-xl);
+            background: var(--brand-600);
             color: #fff;
             cursor: pointer;
-            font: inherit;
-            font-size: 0.88rem;
-            font-weight: 800;
-            box-shadow: 0 0.8rem 1.5rem rgba(227, 106, 73, 0.2);
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 600;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
             transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
         }
 
-        .button:hover { background: var(--accent-dark); box-shadow: 0 1rem 1.8rem rgba(227, 106, 73, 0.27); transform: translateY(-1px); }
-        .button:focus-visible { outline: 3px solid rgba(63, 123, 163, 0.35); outline-offset: 3px; }
+        .button:hover { background: var(--brand-700); box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+        .button:active { transform: scale(0.97); }
+        .button:focus-visible { outline: 3px solid rgba(252, 202, 19, 0.3); outline-offset: 2px; }
 
         .button-arrow {
-            display: grid;
-            width: 1.8rem;
-            height: 1.8rem;
-            place-items: center;
-            border-radius: 0.5rem;
-            background: rgba(255, 255, 255, 0.18);
-            font-size: 1rem;
+            display: none;
         }
 
-        .back-link { display: inline-block; margin-top: 1.6rem; font-size: 0.82rem; font-weight: 700; }
+        .back-link { display: inline-block; margin-top: 1.25rem; font-size: 0.8125rem; font-weight: 600; }
 
         .card-footer {
-            margin-top: 2.2rem;
-            color: #99a7b7;
-            font-size: 0.72rem;
+            margin-top: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.75rem;
             line-height: 1.5;
+            text-align: center;
         }
 
         @media (max-width: 820px) {
             .auth-shell { grid-template-columns: 1fr; }
             .brand-panel { display: none; }
             .content-panel { align-items: flex-start; padding: 2rem 1.25rem 2.5rem; }
-            .auth-card { width: min(100%, 30rem); margin: 0 auto; }
-            .mobile-lockup { display: inline-flex; align-items: center; gap: 0.65rem; margin-bottom: 3rem; color: var(--ink); font-size: 0.75rem; font-weight: 850; letter-spacing: 0.15em; text-transform: uppercase; }
-            .mobile-lockup .brand-mark { border-color: #c7d5e2; background: #e9f0f5; color: var(--ink); box-shadow: none; }
+            .auth-card { width: min(100%, 30rem); margin: 0 auto; box-shadow: none; border: none; padding: 0; }
+            .mobile-lockup { display: inline-flex; align-items: center; gap: 0.65rem; margin-bottom: 2rem; color: var(--text); font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+            .mobile-lockup .brand-mark { border-color: var(--border); background: var(--surface-muted); color: var(--text); box-shadow: none; }
         }
 
         @media (max-width: 420px) {
             .content-panel { padding-inline: 1rem; }
-            .card-header { margin-bottom: 1.6rem; }
-            .card-header h1 { font-size: 2.15rem; }
+            .card-header { margin-bottom: 1.5rem; }
+            .card-header h1 { font-size: 1.75rem; }
             .form-row { align-items: flex-start; flex-direction: column; gap: 0.35rem; }
         }
 
@@ -357,7 +359,7 @@
 
             <div class="brand-copy">
                 <p class="brand-kicker">One identity. Every platform.</p>
-                <h2>Start where your work begins.</h2>
+                <h2>Lyceum of Alabang Single Sign-On.</h2>
                 <p>Secure access to the LOA digital campus, from consultation to certificates and everything in between.</p>
             </div>
 

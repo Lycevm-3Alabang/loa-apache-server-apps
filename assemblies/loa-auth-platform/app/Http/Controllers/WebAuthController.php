@@ -56,6 +56,42 @@ class WebAuthController extends Controller
         return redirect()->away($this->removeFragment($target).'#'.$fragment);
     }
 
+    public function showRegister(): View
+    {
+        return view('register');
+    }
+
+    public function register(Request $request): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'password' => [
+                'required', 'string', 'min:8',
+                'regex:/[A-Z]/', 'regex:/[a-z]/', 'regex:/[0-9]/',
+            ],
+            'password_confirmation' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withInput($request->except('password', 'password_confirmation'))->withErrors($validator);
+        }
+
+        try {
+            $this->identity->register(
+                $request->string('email')->toString(),
+                $request->string('password')->toString(),
+                $request->string('name')->toString(),
+            );
+        } catch (\Throwable) {
+            return back()
+                ->withInput($request->except('password', 'password_confirmation'))
+                ->withErrors(['email' => 'An account with this email already exists.']);
+        }
+
+        return redirect()->route('login')->with('status', 'Account created. Please sign in.');
+    }
+
     public function showForgotPassword(): View
     {
         return view('forgot-password');

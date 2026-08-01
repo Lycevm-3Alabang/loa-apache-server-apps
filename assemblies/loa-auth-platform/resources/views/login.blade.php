@@ -1,9 +1,9 @@
 @extends('layouts.auth')
 
-@section('title', 'Sign in | LOA Platform')
+@section('title', 'Sign in | Lyceum of Alabang')
 @section('eyebrow', 'Welcome back')
-@section('heading', 'Sign in to LOA')
-@section('intro', 'Use your LOA account to continue to the platform you need.')
+@section('heading', 'Sign in to your account')
+@section('intro', 'Access the LOA digital campus with your credentials.')
 
 @section('content')
     <form class="auth-form" method="post" action="{{ url('/login') }}">
@@ -23,9 +23,8 @@
             <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="Enter your password">
         </div>
 
-        <button class="button" type="submit">
-            <span>Continue securely</span>
-            <span class="button-arrow" aria-hidden="true">&rarr;</span>
-        </button>
+        <button class="button" type="submit">Sign in</button>
     </form>
+
+    <p class="back-link">New here? <a href="{{ route('register') }}">Create an account</a></p>
 @endsection

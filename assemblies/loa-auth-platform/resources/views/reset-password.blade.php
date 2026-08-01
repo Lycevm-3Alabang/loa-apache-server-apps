@@ -1,6 +1,6 @@
 @extends('layouts.auth')
 
-@section('title', 'Choose a new password | LOA Platform')
+@section('title', 'Choose a new password | Lyceum of Alabang')
 @section('eyebrow', 'Secure password reset')
 @section('heading', 'Choose a new password')
 @section('intro', 'Create a strong password for your LOA account. Your existing sessions will be signed out after this change.')
@@ -26,9 +26,6 @@
             <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password" placeholder="Repeat your new password">
         </div>
 
-        <button class="button" type="submit">
-            <span>Update password</span>
-            <span class="button-arrow" aria-hidden="true">&rarr;</span>
-        </button>
+        <button class="button" type="submit">Update password</button>
     </form>
 @endsection

@@ -15,6 +15,10 @@ Route::get('/', function () {
 Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [WebAuthController::class, 'login']);
 
+Route::get('/register', [WebAuthController::class, 'showRegister'])->name('register');
+Route::post('/register', [WebAuthController::class, 'register'])
+    ->middleware('throttle:5,60');
+
 Route::get('/forgot-password', [WebAuthController::class, 'showForgotPassword'])
     ->name('password.forgot');
 Route::post('/forgot-password', [WebAuthController::class, 'sendResetLinkEmail'])
