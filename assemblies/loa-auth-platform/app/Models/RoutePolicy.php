@@ -29,4 +29,8 @@ class RoutePolicy extends Model
     {
         return $this->belongsTo(Claim::class, 'claim_key', 'key');
     }
+
+    protected $attributes = [
+        'filter' => 'all',
+    ];
 }

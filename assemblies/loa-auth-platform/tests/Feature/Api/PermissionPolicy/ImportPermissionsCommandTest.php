@@ -53,6 +53,7 @@ class ImportPermissionsCommandTest extends TestCase
     public function testImportFailsWhenJsonInvalid(): void
     {
         $admin = $this->createAndLoginAdmin();
+        File::ensureDirectoryExists($this->tempDir . '/invalid');
         File::put($this->tempDir . '/invalid/permissions.json', 'not valid json');
 
         $response = $this->artisan('permissions:import', ['app' => 'invalid']);
@@ -63,6 +64,7 @@ class ImportPermissionsCommandTest extends TestCase
     public function testImportFailsWhenMissingRequiredKeys(): void
     {
         $admin = $this->createAndLoginAdmin();
+        File::ensureDirectoryExists($this->tempDir . '/bad');
         File::put($this->tempDir . '/bad/permissions.json', json_encode(['routes' => []]));
 
         $response = $this->artisan('permissions:import', ['app' => 'bad']);
@@ -73,6 +75,7 @@ class ImportPermissionsCommandTest extends TestCase
     public function testImportFailsWhenAppMismatch(): void
     {
         $admin = $this->createAndLoginAdmin();
+        File::ensureDirectoryExists($this->tempDir . '/mismatch');
         File::put($this->tempDir . '/mismatch/permissions.json', json_encode([
             'app' => 'other-app',
             'version' => '1.0',
@@ -87,7 +90,8 @@ class ImportPermissionsCommandTest extends TestCase
     public function testImportDryRunDoesNotSave(): void
     {
         $admin = $this->createAndLoginAdmin();
-        File::put($this->tempDir . '/cert/permissions.json', json_encode([
+        File::ensureDirectoryExists($this->tempDir . '/certificate');
+        File::put($this->tempDir . '/certificate/permissions.json', json_encode([
             'app' => 'certificate',
             'version' => '1.0',
             'routes' => [
@@ -110,7 +114,8 @@ class ImportPermissionsCommandTest extends TestCase
     public function testImportCreatesClaimsAndPolicies(): void
     {
         $admin = $this->createAndLoginAdmin();
-        File::put($this->tempDir . '/cert/permissions.json', json_encode([
+        File::ensureDirectoryExists($this->tempDir . '/certificate');
+        File::put($this->tempDir . '/certificate/permissions.json', json_encode([
             'app' => 'certificate',
             'version' => '1.0',
             'routes' => [
@@ -155,7 +160,8 @@ class ImportPermissionsCommandTest extends TestCase
     public function testImportSkipsRoutesWithMissingFields(): void
     {
         $admin = $this->createAndLoginAdmin();
-        File::put($this->tempDir . '/cert/permissions.json', json_encode([
+        File::ensureDirectoryExists($this->tempDir . '/certificate');
+        File::put($this->tempDir . '/certificate/permissions.json', json_encode([
             'app' => 'certificate',
             'version' => '1.0',
             'routes' => [
@@ -193,7 +199,8 @@ class ImportPermissionsCommandTest extends TestCase
             'filter' => 'none',
         ]);
 
-        File::put($this->tempDir . '/cert/permissions.json', json_encode([
+        File::ensureDirectoryExists($this->tempDir . '/certificate');
+        File::put($this->tempDir . '/certificate/permissions.json', json_encode([
             'app' => 'certificate',
             'version' => '1.0',
             'routes' => [

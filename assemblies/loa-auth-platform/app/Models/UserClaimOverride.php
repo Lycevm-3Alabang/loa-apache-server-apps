@@ -28,4 +28,8 @@ class UserClaimOverride extends Model
     {
         return $this->belongsTo(Claim::class, 'claim_key', 'key');
     }
+
+    protected $attributes = [
+        'granted' => true,
+    ];
 }

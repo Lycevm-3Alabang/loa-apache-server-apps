@@ -20,16 +20,16 @@ class Claim extends Model
 
     public function routePolicies(): HasMany
     {
-        return $this->hasMany(RoutePolicy::class);
+        return $this->hasMany(RoutePolicy::class, 'claim_key', 'key');
     }
 
     public function groupClaims(): HasMany
     {
-        return $this->hasMany(GroupClaim::class);
+        return $this->hasMany(GroupClaim::class, 'claim_key', 'key');
     }
 
     public function userOverrides(): HasMany
     {
-        return $this->hasMany(UserClaimOverride::class);
+        return $this->hasMany(UserClaimOverride::class, 'claim_key', 'key');
     }
 }

@@ -114,7 +114,7 @@ class PermissionPolicyController extends Controller
     public function groupClaimsStore(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'group_id' => 'required|uuid|exists:user_groups,id',
+            'group_id' => 'required|integer|exists:user_groups,id',
             'claim_key' => 'required|string',
             'scope_type' => 'required|in:none,author,scope',
             'scope_id' => 'nullable|string',

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('group_claims', function (Blueprint $table) {
             $table->id();
-            $table->foreignUuid('group_id')->constrained('user_groups')->cascadeOnDelete();
+            $table->foreignId('group_id')->constrained('user_groups')->cascadeOnDelete();
             $table->string('claim_key');
             $table->string('scope_type')->default('none');
             $table->string('scope_id')->nullable();

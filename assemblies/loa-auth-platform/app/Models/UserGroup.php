@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UserGroup extends Model
 {
@@ -34,5 +35,10 @@ class UserGroup extends Model
     {
         return $this->belongsToMany(Permission::class, 'user_group_permission')
             ->withPivot('granted', 'tenant_id');
+    }
+
+    public function groupClaims(): HasMany
+    {
+        return $this->hasMany(GroupClaim::class, 'group_id');
     }
 }
