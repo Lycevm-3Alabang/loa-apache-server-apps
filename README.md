@@ -298,7 +298,77 @@ Start with:
 
 ---
 
-# Repository Structure
+# Testing
+
+## Auth Platform (loa-auth-platform)
+
+### Prerequisites
+
+- PHP 8.3+
+- Composer
+- MySQL or SQLite (for testing)
+
+### Running Tests
+
+```bash
+cd assemblies/loa-auth-platform
+
+# Install dependencies
+composer install
+
+# Run all tests
+php vendor/bin/phpunit
+
+# Run a specific test file
+php vendor/bin/phpunit tests/Feature/Api/PermissionPolicy/ClaimPolicyMiddlewareTest.php
+
+# Run with verbose output
+php vendor/bin/phpunit --verbose
+
+# Run with coverage
+php vendor/bin/phpunit --coverage
+```
+
+### Test Environment
+
+Tests use an in-memory SQLite database. The `.env` file is not required for testing — the `phpunit.xml.dist` sets all necessary environment variables:
+
+- `DB_CONNECTION=sqlite`
+- `DB_DATABASE=:memory:`
+- `JWT_SECRET=test-secret-key-for-testing-only-32chars`
+- `APP_ENV=testing`
+
+### Test Structure
+
+```
+tests/
+├── Feature/
+│   ├── Api/
+│   │   ├── Auth/           # Authentication flow tests
+│   │   ├── Groups/         # Group management tests
+│   │   ├── PermissionPolicy/  # Permission policy tests (new)
+│   │   │   ├── ClaimPolicyMiddlewareTest.php
+│   │   │   ├── ImportPermissionsCommandTest.php
+│   │   │   ├── ModelTest.php
+│   │   │   ├── PermissionPolicyControllerTest.php
+│   │   │   └── PermissionPolicyServiceTest.php
+│   │   ├── UserGroups/     # User group permission tests
+│   │   └── Users/          # User management tests
+│   └── Web/                # Web UI tests
+├── Traits/
+│   ├── RefreshJwtSecret.php
+│   └── WithJwt.php         # JWT generation for tests
+├── CreatesApplication.php
+└── TestCase.php
+```
+
+### Writing New Tests
+
+- Use `RefreshDatabase` trait for database tests
+- Use `WithJwt` trait for JWT-based auth tests
+- Use `WithJwtClaims` trait for claims-based auth tests (new permission model)
+- Extend `Tests\TestCase` for all test classes
+- Follow the existing naming convention: `{FeatureName}Test.php`
 
 ```
 application-template/
