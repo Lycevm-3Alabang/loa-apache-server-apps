@@ -26,4 +26,19 @@ Route::prefix('v1')->group(function () {
     Route::prefix('users')->middleware(['jwt.auth', 'jwt.permission:users.manage'])->group(function () {
         Route::patch('/{id}/status', [App\Http\Controllers\UserController::class, 'updateStatus']);
     });
+
+    Route::middleware(['jwt.auth', 'jwt.permission:users.manage'])->group(function () {
+        Route::get('/groups', [App\Http\Controllers\GroupController::class, 'index']);
+        Route::post('/groups', [App\Http\Controllers\GroupController::class, 'store']);
+        Route::delete('/groups/{id}', [App\Http\Controllers\GroupController::class, 'destroy']);
+        Route::get('/groups/{id}/permissions', [App\Http\Controllers\GroupController::class, 'showPermissions']);
+        Route::post('/groups/{id}/permissions', [App\Http\Controllers\GroupController::class, 'syncPermissions']);
+
+        Route::get('/users/{id}/groups', [App\Http\Controllers\UserGroupController::class, 'indexGroups']);
+        Route::post('/users/{id}/groups', [App\Http\Controllers\UserGroupController::class, 'addGroup']);
+        Route::delete('/users/{id}/groups/{groupId}', [App\Http\Controllers\UserGroupController::class, 'removeGroup']);
+        Route::get('/users/{id}/permissions', [App\Http\Controllers\UserGroupController::class, 'showPermissions']);
+        Route::post('/users/{id}/permissions', [App\Http\Controllers\UserGroupController::class, 'grantPermission']);
+        Route::delete('/users/{id}/permissions/{permissionKey}', [App\Http\Controllers\UserGroupController::class, 'revokePermission']);
+    });
 });

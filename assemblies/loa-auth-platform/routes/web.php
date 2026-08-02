@@ -37,8 +37,21 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::get('/users', [WebAdminController::class, 'index'])->name('admin.users');
     Route::get('/users/create', [WebAdminController::class, 'create'])->name('admin.users.create');
     Route::post('/users', [WebAdminController::class, 'store'])->name('admin.users.store');
+    Route::get('/users/{id}', [WebAdminController::class, 'showUser'])->name('admin.users.show');
+    Route::post('/users/{id}/groups', [WebAdminController::class, 'storeUserGroup'])->name('admin.users.groups.store');
+    Route::post('/users/{id}/groups/{groupId}/remove', [WebAdminController::class, 'removeUserGroup'])->name('admin.users.groups.remove');
+    Route::post('/users/{id}/permissions', [WebAdminController::class, 'storeUserPermission'])->name('admin.users.permissions.store');
+    Route::post('/users/{id}/permissions/{key}/remove', [WebAdminController::class, 'removeUserPermission'])->name('admin.users.permissions.remove');
     Route::post('/users/{id}/status', [WebAdminController::class, 'updateStatus'])->name('admin.users.status');
     Route::post('/logout', [WebAdminController::class, 'logout'])->name('admin.logout');
+
+    Route::get('/groups', [WebAdminController::class, 'groupsIndex'])->name('admin.groups');
+    Route::get('/groups/create', [WebAdminController::class, 'groupsCreate'])->name('admin.groups.create');
+    Route::post('/groups', [WebAdminController::class, 'groupsStore'])->name('admin.groups.store');
+    Route::get('/groups/{group}', [WebAdminController::class, 'groupsShow'])->name('admin.groups.show');
+    Route::post('/groups/{group}/permissions', [WebAdminController::class, 'groupsPermissions'])->name('admin.groups.permissions');
+    Route::post('/groups/{group}/members', [WebAdminController::class, 'groupsMembersStore'])->name('admin.groups.members.store');
+    Route::post('/groups/{group}/members/{userId}/remove', [WebAdminController::class, 'groupsMembersRemove'])->name('admin.groups.members.remove');
 
     // Tenant management (v2)
     Route::get('/tenants', [WebAdminController::class, 'tenantsIndex'])->name('admin.tenants');

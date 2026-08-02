@@ -359,4 +359,218 @@ class WebAdminController extends Controller
             return back()->with('error', 'Unable to update membership.');
         }
     }
+
+    // ─── v4: Group & permission management ──────────────────────────
+
+    public function groupsIndex(): View
+    {
+        $groups = UserGroup::withCount('users')
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.groups.index', ['groups' => $groups]);
+    }
+
+    public function groupsCreate(): View
+    {
+        return view('admin.groups.create');
+    }
+
+    public function groupsStore(Request $request): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $existing = UserGroup::whereNull('tenant_id')
+            ->where('name', $request->input('name'))
+            ->exists();
+
+        if ($existing) {
+            return back()->with('error', 'A group with that name already exists.')->withInput();
+        }
+
+        UserGroup::create([
+            'name' => $request->input('name'),
+            'description' => $request->input('description'),
+            'tenant_id' => null,
+        ]);
+
+        return redirect()->route('admin.groups')->with('status', 'Group created.');
+    }
+
+    public function groupsShow(UserGroup $group): View
+    {
+        $group->load(['users', 'permissions']);
+
+        $allPermissions = Permission::orderBy('key')->get();
+
+        $nonMembers = User::whereNotIn('id', $group->users->pluck('id'))
+            ->orderBy('email')
+            ->get();
+
+        return view('admin.groups.show', [
+            'group' => $group,
+            'allPermissions' => $allPermissions,
+            'nonMembers' => $nonMembers,
+        ]);
+    }
+
+    public function groupsPermissions(Request $request, UserGroup $group): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'integer|exists:permissions,id',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->with('error', 'Invalid permission data.');
+        }
+
+        $allowedIds = $request->input('permissions', []);
+
+        DB::transaction(function () use ($group, $allowedIds) {
+            $allPermissions = Permission::pluck('id');
+
+            foreach ($allPermissions as $permId) {
+                $group->permissions()->updateExistingPivot(
+                    $permId,
+                    ['granted' => in_array($permId, $allowedIds, true), 'tenant_id' => null],
+                );
+            }
+        });
+
+        return back()->with('status', 'Permissions updated.');
+    }
+
+    public function groupsMembersStore(Request $request, UserGroup $group): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        $userId = $request->input('user_id');
+
+        if ($group->users()->where('users.id', $userId)->exists()) {
+            return back()->with('error', 'User is already in this group.');
+        }
+
+        $this->authorization->addToGroup($userId, $group->id);
+
+        return back()->with('status', 'User added to group.');
+    }
+
+    public function groupsMembersRemove(UserGroup $group, string $userId): RedirectResponse
+    {
+        $this->authorization->removeFromGroup($userId, $group->id);
+
+        return back()->with('status', 'User removed from group.');
+    }
+
+    // ─── v4: User detail ───────────────────────────────────────────
+
+    public function showUser(string $id): View
+    {
+        $user = User::findOrFail($id);
+
+        $groups = $user->userGroups()->orderBy('name')->get();
+
+        $effectivePermissions = $this->authorization->getPermissions($user->id);
+
+        $overrides = $user->userPermissions()->get();
+
+        $allGroups = UserGroup::orderBy('name')->get();
+
+        $allPermissions = Permission::orderBy('key')->get();
+
+        return view('admin.users.show', [
+            'user' => $user,
+            'groups' => $groups,
+            'effectivePermissions' => $effectivePermissions,
+            'overrides' => $overrides,
+            'allGroups' => $allGroups,
+            'allPermissions' => $allPermissions,
+        ]);
+    }
+
+    public function storeUserGroup(Request $request, string $id): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'group_id' => 'required|exists:user_groups,id',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        $userId = $id;
+        $groupId = $request->input('group_id');
+
+        try {
+            $this->authorization->addToGroup($userId, $groupId);
+        } catch (\Throwable) {
+            return back()->with('error', 'Unable to add user to group.');
+        }
+
+        return back()->with('status', 'User added to group.');
+    }
+
+    public function removeUserGroup(string $id, string $groupId): RedirectResponse
+    {
+        $this->authorization->removeFromGroup($id, $groupId);
+
+        return back()->with('status', 'User removed from group.');
+    }
+
+    public function storeUserPermission(Request $request, string $id): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'permission_key' => 'required|string|exists:permissions,key',
+            'granted' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        $permission = Permission::where('key', $request->input('permission_key'))->first();
+
+        DB::table('user_permission')->updateOrInsert(
+            [
+                'user_id' => $id,
+                'permission_id' => $permission->id,
+                'tenant_id' => null,
+            ],
+            [
+                'granted' => $request->boolean('granted'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        );
+
+        return back()->with('status', 'Permission override saved.');
+    }
+
+    public function removeUserPermission(string $id, string $key): RedirectResponse
+    {
+        $permission = Permission::where('key', $key)->first();
+
+        if ($permission) {
+            DB::table('user_permission')
+                ->where('user_id', $id)
+                ->where('permission_id', $permission->id)
+                ->delete();
+        }
+
+        return back()->with('status', 'Permission override removed.');
+    }
 }

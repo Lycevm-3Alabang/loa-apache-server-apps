@@ -57,14 +57,15 @@
                                 <td class="muted">{{ $user->locked_until?->format('M j, Y g:i A') ?? '—' }}</td>
                                 <td class="muted">{{ $user->created_at?->format('M j, Y') ?? '—' }}</td>
                                 <td class="row-actions">
+                                    <a class="button" href="{{ route('admin.users.show', $user->id) }}" style="margin-right:0.375rem;">View</a>
                                     @if ($user->status === 'active' && $user->id !== $currentUserId)
-                                        <form method="post" action="{{ route('admin.users.status', $user->id) }}" onsubmit="return confirm('Disable this account?');">
+                                        <form method="post" action="{{ route('admin.users.status', $user->id) }}" onsubmit="return confirm('Disable this account?');" style="display:inline;">
                                             @csrf
                                             <input type="hidden" name="status" value="disabled">
                                             <button class="button button-danger" type="submit">Disable</button>
                                         </form>
                                     @elseif ($user->status === 'disabled')
-                                        <form method="post" action="{{ route('admin.users.status', $user->id) }}">
+                                        <form method="post" action="{{ route('admin.users.status', $user->id) }}" style="display:inline;">
                                             @csrf
                                             <input type="hidden" name="status" value="active">
                                             <button class="button" type="submit">Enable</button>
