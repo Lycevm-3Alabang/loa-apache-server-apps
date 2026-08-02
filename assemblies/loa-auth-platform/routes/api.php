@@ -41,4 +41,26 @@ Route::prefix('v1')->group(function () {
         Route::post('/users/{id}/permissions', [App\Http\Controllers\UserGroupController::class, 'grantPermission']);
         Route::delete('/users/{id}/permissions/{permissionKey}', [App\Http\Controllers\UserGroupController::class, 'revokePermission']);
     });
+
+    Route::prefix('admin/permissions')->middleware(['jwt.auth', 'jwt.permission:users.manage'])->group(function () {
+        Route::get('/claims', [App\Http\Controllers\PermissionPolicyController::class, 'claimsIndex']);
+        Route::post('/claims', [App\Http\Controllers\PermissionPolicyController::class, 'claimsStore']);
+        Route::put('/claims/{claim}', [App\Http\Controllers\PermissionPolicyController::class, 'claimsUpdate']);
+        Route::delete('/claims/{claim}', [App\Http\Controllers\PermissionPolicyController::class, 'claimsDestroy']);
+
+        Route::get('/policies', [App\Http\Controllers\PermissionPolicyController::class, 'routePoliciesIndex']);
+        Route::post('/policies', [App\Http\Controllers\PermissionPolicyController::class, 'routePoliciesStore']);
+        Route::put('/policies/{policy}', [App\Http\Controllers\PermissionPolicyController::class, 'routePoliciesUpdate']);
+        Route::delete('/policies/{policy}', [App\Http\Controllers\PermissionPolicyController::class, 'routePoliciesDestroy']);
+
+        Route::get('/group-claims', [App\Http\Controllers\PermissionPolicyController::class, 'groupClaimsIndex']);
+        Route::post('/group-claims', [App\Http\Controllers\PermissionPolicyController::class, 'groupClaimsStore']);
+        Route::delete('/group-claims/{groupClaim}', [App\Http\Controllers\PermissionPolicyController::class, 'groupClaimsDestroy']);
+
+        Route::get('/user-overrides', [App\Http\Controllers\PermissionPolicyController::class, 'userOverridesIndex']);
+        Route::post('/user-overrides', [App\Http\Controllers\PermissionPolicyController::class, 'userOverridesStore']);
+        Route::delete('/user-overrides/{override}', [App\Http\Controllers\PermissionPolicyController::class, 'userOverridesDestroy']);
+
+        Route::post('/authorize', [App\Http\Controllers\PermissionPolicyController::class, 'authorize']);
+    });
 });

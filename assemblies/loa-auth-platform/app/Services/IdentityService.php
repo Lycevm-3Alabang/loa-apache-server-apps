@@ -13,13 +13,15 @@ class IdentityService
 {
     private JWTService $jwt;
     private AuthorizationService $authorization;
+    private PermissionPolicyService $policy;
     private int $maxAttempts = 5;
     private int $lockoutMinutes = 30;
 
-    public function __construct(JWTService $jwt, AuthorizationService $authorization)
+    public function __construct(JWTService $jwt, AuthorizationService $authorization, PermissionPolicyService $policy)
     {
         $this->jwt = $jwt;
         $this->authorization = $authorization;
+        $this->policy = $policy;
     }
 
     public function register(string $email, string $password, string $name): User
@@ -229,7 +231,8 @@ class IdentityService
             'email' => $user->email,
             'name' => $user->name,
             'groups' => $this->authorization->getGroups($user->id, $tenant?->id),
-            'permissions' => $this->authorization->getPermissions($user->id, $tenant?->id),
+            'permissions' => $this->policy->resolveUserClaims($user->id, $tenant?->id),
+            'scopes' => $this->policy->resolveUserScopes($user->id, $tenant?->id),
         ];
 
         if ($tenant) {

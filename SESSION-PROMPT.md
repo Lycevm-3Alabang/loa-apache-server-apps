@@ -38,33 +38,27 @@ Then:
 ### Date: 2026-08-02
 
 ### Completed
-- **Business Contexts refactored**: Removed 7 automotive template contexts (commercial, crm, finance, fleet, inventory, procurement, workshop); restructured 3 LOA contexts to use `entities/` subdirectories (certificate, consultation, evaluation)
-- **Data-Driven Permission Policy spec** created and promoted to Final (`kernels/identity/entities/data-driven-permission-policy.md`):
-  - JSON import format: `permissions.json` per app (app, version, routes[] with claims + precedence + filter) — declares which endpoints need guarding
-  - Import populates `route_policies` table; Auth Platform admin UI manages policy afterward
-  - Claims vocabulary: `claims` table (resource + action + scope); standard actions `read`/`write`/`admin`; filters `all`/`author`/`scope`/`none`
-  - Group claims (`group_claims` with scope_type/scope_id) + user claim overrides (`user_claim_overrides`, overrides win)
-  - JWT carries `permissions` + `scopes` claims
-  - App-side enforcement: gate (claim ∈ route policy) + filter (apply declared filter type)
+- **Data-Driven Permission Policy spec** finalized (`data-driven-permission-policy.md` → Final v1.0):
+  - JSON import format: `{app, version, routes[]}` with method/path/claims (key, precedence, filter)
+  - Import populates `route_policies`; admin UI manages afterward
+  - Tables: `claims`, `route_policies`, `group_claims`, `user_claim_overrides`
+  - JWT carries `permissions` (claim keys) + `scopes` (from group_claims)
   - `permission-registry.md` and `permission-claims.md` marked SUPERSEDED
-- **Cert Platform SSO spec** (`assemblies/loa-cert-platform/README.md` updated):
-  - Section 10: Added `POST /api/v1/auth/callback` to API surface
-  - Section 11: SSO Redirect and Callback spec (flow overview, redirect to Auth Platform, callback endpoint, encryption contract, session establishment, logout, security requirements, Auth Platform config reference)
-  - Section 12: Frontend Implementation Example (TypeScript callback handler, Laravel callback controller, EncryptionService, route registration, config)
-- **Cert Platform web-ui.md** created (15 sections):
-  - SSO callback flow (fragment detection, extraction, backend callback)
-  - Token lifecycle (storage in memory + httpOnly cookie, refresh flow, expiry detection)
-  - SSO group and permission mapping (permission-based role resolution using `cert.*` permissions)
-  - Return-to-URL routing (sessionStorage capture, post-auth redirect)
-  - Auth guard (route protection, initialization sequence, silent refresh)
-  - HTTP client configuration (Axios interceptor pattern)
-  - Pages, error pages, security checklist, anti-patterns
-- **Auth Platform group-permission-management.md** created (11 sections):
-  - API surface: Group CRUD, Group Permissions, User Groups, User Permission Overrides
-  - Admin UI: User detail page, Group list page, Group detail page
-  - Route summary (API + Admin Web)
-  - Implementation inventory (5 new files, 5 modified files)
-- **admin-dashboard.md** updated — added v4 scope reference to group-permission-management.md
+- **Auth Platform implementation** of data-driven permission policy:
+  - 4 migrations: `claims`, `route_policies`, `group_claims`, `user_claim_overrides`
+  - 4 models: `Claim`, `RoutePolicy`, `GroupClaim`, `UserClaimOverride`
+  - `PermissionPolicyService`: `resolveUserClaims()`, `resolveUserScopes()`, `authorize()`
+  - `ClaimPolicyMiddleware`: dynamic route policy lookup + claim + filter check
+  - `ImportPermissions` command: `php artisan permissions:import {app}` reads `permissions.json`
+  - `PermissionPolicyController`: admin API CRUD for claims, route policies, group claims, user overrides + `/authorize` test endpoint
+  - `IdentityService` updated: JWT now includes `claims` (resolved claim keys) and `scopes`
+  - `bootstrap/app.php`: registered `jwt.claim-policy` middleware alias
+  - `routes/api.php`: added `v1/admin/permissions` API endpoints (claims, policies, group-claims, user-overrides, authorize)
+- **Business Contexts refactored**: Removed 7 automotive template contexts; restructured 3 LOA contexts to use `entities/` subdirectories
+- **Cert Platform SSO spec** (`assemblies/loa-cert-platform/README.md` updated)
+- **Cert Platform web-ui.md** created (15 sections)
+- **Auth Platform group-permission-management.md** created (11 sections)
+- **admin-dashboard.md** updated — added v4 scope reference
 - **Architecture decision confirmed**: SSO-only for LOA users, self-hosted for external users on cert app
 - **Group/permission management implemented**: GroupController, UserGroupController, 3 Blade views, routes — all verified against spec
 - **Admin create user implemented** (v3): WebAdminController::create/store, create.blade.php, routes — spec already Final in admin-dashboard.md §9
@@ -72,22 +66,22 @@ Then:
 ### Key Architecture Decisions
 - **Consultation app**: SSO-only, LOA domains only (`@lyceumalabang.edu.ph`, `@itmlyceumalabang.onmicrosoft.com`)
 - **Cert app**: Any email allowed (must have record in `event_attendees` table)
-- **Permission model**: Claims-based, data-driven — policy stored in DB, managed via Auth Platform admin UI, apps consume via JWT `permissions` + `scopes`
+- **Permission model**: Claims-based, data-driven — policy stored in DB, managed via Auth Platform admin UI, apps consume via JWT `permissions` (claim keys) + `scopes`
 - **Guard surface discovery**: Each app ships `permissions.json` declaring its guarded endpoints + claims; Auth Platform imports it into `route_policies`
-- **SSO flow**: Auth Platform issues JWT with `permissions` array → apps check claims on each endpoint
+- **SSO flow**: Auth Platform issues JWT with `permissions` (claim keys) + `scopes` → apps check claims on each endpoint via `ClaimPolicyMiddleware`
 - **Tenant group membership**: Users MUST be tenant members before being added to tenant groups (enforcement needed — not yet in code)
 
 ### In Progress
 - None
 
 ### Next Action
-- Implement data-driven permission policy in loa-auth-platform:
-  - New tables: `claims`, `route_policies`, `group_claims`, `user_claim_overrides`
-  - JSON import command for `permissions.json` (per app)
-  - Admin UI: claims, route policies, group claims, user overrides
-  - JWT `permissions` + `scopes` claims
-- Create `permissions.json` for each app (cert, consult, auth)
-- Implement Cert Platform SSO integration (from `web-ui.md` and `README.md` Section 11-12)
+- [x] Implement data-driven permission policy in loa-auth-platform (migrations, models, service, middleware, command, controller)
+- [x] Register `jwt.claim-policy` middleware in bootstrap/app.php
+- [x] Add admin API endpoints for claims/policies/group-claims/user-overrides in routes/api.php
+- [x] Update IdentityService to include claims/scopes in JWT
+- [ ] Create `permissions.json` for each app (cert, consult, auth)
+- [ ] Implement Cert Platform SSO integration (from `web-ui.md` and `README.md` Section 11-12)
+- [ ] Run tests and verify (requires PHP environment)
 
 ### Backlog / Known Gaps
 - **Tenant group membership enforcement**: `AuthorizationService::addToGroup()` doesn't check tenant membership — needs validation that user is tenant member before adding to tenant-scoped group
@@ -119,3 +113,5 @@ Then:
 | 2026-08-01 | Admin dashboard v2 implemented: tenant CRUD, groups, per-group permissions, members, suspend/activate; `admin-dashboard.md` promoted to Final; dist regenerated | Deploy, or start Phase 2 (Consult App) |
 | 2026-08-02 | Cert Platform SSO spec (README.md §11-12), web-ui.md created, group-permission-management.md created, architecture decisions (SSO-only for LOA, self-hosted for external, permission-based role mapping) | Implement group/permission API + admin UI |
 | 2026-08-02 | Verified group/permission management already implemented (GroupController, UserGroupController, 3 Blade views, routes); verified admin create user v3 already implemented | Add permission registry, or implement Cert Platform SSO |
+| 2026-08-02 | Data-driven permission policy spec finalized (Final v1.0); old registry/claims specs marked SUPERSEDED | Implement permission policy in loa-auth-platform |
+| 2026-08-02 | Auth Platform implementation complete: 4 migrations, 4 models, PermissionPolicyService, ClaimPolicyMiddleware, ImportPermissions command, PermissionPolicyController, JWT claims/scopes, admin API endpoints, middleware registration | Create permissions.json per app; implement Cert SSO; run tests |
