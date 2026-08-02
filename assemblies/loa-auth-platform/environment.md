@@ -117,10 +117,27 @@ docker compose down -v               # stop + delete DB volume (fresh start)
 | `MAIL_HOST` | `mailpit` | SMTP host | No |
 | `MAIL_PORT` | `1025` | SMTP port | No |
 | `MAIL_FROM_ADDRESS` | `noreply@loa.edu.ph` | `noreply@loa.edu.ph` | Yes |
+| `SESSION_DRIVER` | `file` | `file` | Yes |
+| `SESSION_LIFETIME` | `120` | `480` | No |
+| `SESSION_EXPIRE_ON_CLOSE` | `false` | `true` | No |
+| `SESSION_SECURE` | `false` (HTTP) | `true` (HTTPS) | No |
+| `SESSION_SAME_SITE` | `lax` | `lax` | No |
+| `SESSION_DOMAIN` | — | — | No |
 
 `JWT_SECRET` must be the **same value in every LOA app** (shared HMAC-SHA256 signing). It must never be committed.
 
+The `SESSION_*` variables control the web session that carries the CSRF token between `GET /login` and `POST /login`. They must be set in `.env` (never committed) — see `.env.example` for canonical values. `SESSION_DRIVER` is `file` by default in `config/session.php`; if a deployment overrides it to `database`, the `sessions` table must be migrated, or every login `POST` fails with `419 Page Expired` because the CSRF token is read from a session that does not persist across requests. `SESSION_SECURE` must be `false` for the local HTTP stack (`http://localhost:8080`) and `true` only behind HTTPS — browsers drop a `Secure` cookie over plain HTTP.
+
 `CORS_ALLOWED_ORIGINS` must be a comma-separated string of origins, not a nested array or JSON value. After changing it, run `php artisan config:clear` followed by `php artisan config:cache`.
+
+### Troubleshooting: "Page Expired" / 419 on login
+
+The login form submits a CSRF token sourced from the session cookie. A `419 Page Expired` means the session set on `GET /login` was never returned on `POST /login`:
+
+- **Session driver / table** — confirm `SESSION_DRIVER=file` (or, for `database`, run `php artisan migrate` so the `sessions` table exists). A missing or unwritable session store makes every POST mint a fresh session and regenerate the token, invalidating the form's `_token`.
+- **HTTPS vs HTTP** — set `SESSION_SECURE=false` for `http://localhost:8080`; `true` only behind HTTPS. A `Secure` cookie is not sent over HTTP.
+- **APP_URL** — `url('/login')` builds the form `action` from `APP_URL`; visiting a different host/port than `APP_URL` means the session cookie is not sent on POST.
+- **Cookie domain** — leave `SESSION_DOMAIN` unset (empty) so the cookie matches the exact serving host.
 
 ---
 

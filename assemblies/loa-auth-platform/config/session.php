@@ -3,7 +3,7 @@
 use Illuminate\Support\Str;
 
 return [
-    'driver' => env('SESSION_DRIVER', 'database'),
+    'driver' => env('SESSION_DRIVER', 'file'),
     'lifetime' => (int) env('SESSION_LIFETIME', 5),
     'expire_on_close' => (bool) env('SESSION_EXPIRE_ON_CLOSE', true),
     'encrypt' => false,
