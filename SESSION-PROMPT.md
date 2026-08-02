@@ -39,15 +39,14 @@ Then:
 
 ### Completed
 - **Business Contexts refactored**: Removed 7 automotive template contexts (commercial, crm, finance, fleet, inventory, procurement, workshop); restructured 3 LOA contexts to use `entities/` subdirectories (certificate, consultation, evaluation)
-- **Permission Registry spec** created and promoted to Final (`kernels/identity/entities/permission-registry.md`):
-  - JSON config format: `permissions.json` per app (app, version, permissions[])
-  - Permission entry schema: key, description, endpoints[], page, required
-  - Endpoint entry schema: method, path
-  - Validation contract: build-time scan, conflict detection, database parity check
-  - Seeder contract: reads all `permissions.json` files, upserts to `permissions` table
-  - Naming convention: `{context}.{resource}.{action}`, reserved prefixes (`users.*`, `tenants.*`, `web.*`)
-  - Lifecycle: add/remove/rotate permission workflows
-  - Anti-patterns, security checklist, implementation inventory
+- **Data-Driven Permission Policy spec** created and promoted to Final (`kernels/identity/entities/data-driven-permission-policy.md`):
+  - JSON import format: `permissions.json` per app (app, version, routes[] with claims + precedence + filter) — declares which endpoints need guarding
+  - Import populates `route_policies` table; Auth Platform admin UI manages policy afterward
+  - Claims vocabulary: `claims` table (resource + action + scope); standard actions `read`/`write`/`admin`; filters `all`/`author`/`scope`/`none`
+  - Group claims (`group_claims` with scope_type/scope_id) + user claim overrides (`user_claim_overrides`, overrides win)
+  - JWT carries `permissions` + `scopes` claims
+  - App-side enforcement: gate (claim ∈ route policy) + filter (apply declared filter type)
+  - `permission-registry.md` and `permission-claims.md` marked SUPERSEDED
 - **Cert Platform SSO spec** (`assemblies/loa-cert-platform/README.md` updated):
   - Section 10: Added `POST /api/v1/auth/callback` to API surface
   - Section 11: SSO Redirect and Callback spec (flow overview, redirect to Auth Platform, callback endpoint, encryption contract, session establishment, logout, security requirements, Auth Platform config reference)
@@ -73,18 +72,21 @@ Then:
 ### Key Architecture Decisions
 - **Consultation app**: SSO-only, LOA domains only (`@lyceumalabang.edu.ph`, `@itmlyceumalabang.onmicrosoft.com`)
 - **Cert app**: Any email allowed (must have record in `event_attendees` table)
-- **Permission model**: Both group-level AND individual user-level permissions supported (user overrides win)
-- **SSO flow**: Auth Platform issues JWT with `permissions` array → apps check permissions on each endpoint
+- **Permission model**: Claims-based, data-driven — policy stored in DB, managed via Auth Platform admin UI, apps consume via JWT `permissions` + `scopes`
+- **Guard surface discovery**: Each app ships `permissions.json` declaring its guarded endpoints + claims; Auth Platform imports it into `route_policies`
+- **SSO flow**: Auth Platform issues JWT with `permissions` array → apps check claims on each endpoint
 - **Tenant group membership**: Users MUST be tenant members before being added to tenant groups (enforcement needed — not yet in code)
-- **Permission discovery**: Declarative registry (`permissions.json` per app) — build-time validation, seeder reads registries
 
 ### In Progress
 - None
 
 ### Next Action
-- Implement permission registry: create `permissions.json` for each app (cert, consult, auth)
-- Implement `ValidatePermissions`, `SeedPermissions`, `PrunePermissions` commands
-- Update `PermissionSeeder` to read from registries
+- Implement data-driven permission policy in loa-auth-platform:
+  - New tables: `claims`, `route_policies`, `group_claims`, `user_claim_overrides`
+  - JSON import command for `permissions.json` (per app)
+  - Admin UI: claims, route policies, group claims, user overrides
+  - JWT `permissions` + `scopes` claims
+- Create `permissions.json` for each app (cert, consult, auth)
 - Implement Cert Platform SSO integration (from `web-ui.md` and `README.md` Section 11-12)
 
 ### Backlog / Known Gaps

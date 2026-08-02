@@ -19,4 +19,5 @@ yarn-error.log
 /storage/framework/views/*
 /storage/logs/*
 /bootstrap/cache/*
+/loa_auth
 /tmp/*
