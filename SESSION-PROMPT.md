@@ -72,17 +72,17 @@ Then:
 - **Tenant group membership**: Users MUST be tenant members before being added to tenant groups (enforcement needed — not yet in code)
 
 ### In Progress
-- None
+- [spec] Per-tenant endpoint catalog + level-based permission model (read/write/admin) — `assemblies/loa-auth-platform/tenant-endpoint-catalog.md` (Final v3.1). Aligns the Auth Platform admin surface with the e-consultation path-based RBAC model so the platform is "ready" for tenant apps without touching them yet.
+  - Builds on `tenancy.md` §3.1 (tenants), `permission.md` (endpoint+permission origin), `data-driven-permission-policy.md` §3 (permissions.json import), `group-permission-management.md` §5 (group grants), and `admin-dashboard.md` §3.8 route group.
+  - New table: `tenant_app_endpoint(tenant_id, method, path, label, description, required_level)`. `required_level` ∈ {read, write, admin}; admin ≡ write (update/create/delete).
+  - Admin routes added: `GET/POST/PATCH/DELETE /admin/tenants/{tenant}/endpoints` + `POST .../endpoints/bulk` (import from tenant app's permissions.json) + `/validate`.
+  - Runtime hook: catalog feeds enforcement (closed-by-default: API→403, UI→pass-through + client lock) and publishes resolved `permissions` (`<level>:<path>`) to `GET /api/auth/access` session store.
+  - NOT implemented in code yet (no PHP/TS touched this session — spec-first per AGENT.md).
 
 ### Next Action
-- [x] Implement data-driven permission policy in loa-auth-platform (migrations, models, service, middleware, command, controller)
-- [x] Register `jwt.claim-policy` middleware in bootstrap/app.php
-- [x] Add admin API endpoints for claims/policies/group-claims/user-overrides in routes/api.php
-- [x] Update IdentityService to include claims/scopes in JWT
-- [ ] Create `permissions.json` for each app (cert, consult, auth)
-- [ ] Implement Cert Platform SSO integration (from `web-ui.md` and `README.md` Section 11-12)
-- [x] Write tests for the new permission policy implementation (12 model tests, 9 middleware tests, 20+ controller tests, 12 service tests, 8 command tests)
-- [ ] Run tests and verify (requires PHP environment)
+- [spec] Next spec: `tenant-group-endpoint-grants.md` — group→endpoint grant "tick" (grants `level` per cataloged endpoint, tenant-scoped; deny-wins; per-user overrides). Then wire catalog→grants→session payload end-to-end, ready for tenant apps (e-consultation) to consume.
+- [ ] Create `permissions.json` per app (cert, consult, auth)  [carried over]
+- [ ] Implement Cert Platform SSO integration  [carried over]
 
 ### Backlog / Known Gaps
 - **Tenant group membership enforcement**: `AuthorizationService::addToGroup()` doesn't check tenant membership — needs validation that user is tenant member before adding to tenant-scoped group
