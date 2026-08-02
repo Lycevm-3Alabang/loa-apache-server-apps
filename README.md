@@ -308,7 +308,7 @@ Start with:
 - Composer
 - MySQL or SQLite (for testing)
 
-### Running Tests
+### Running Tests Locally
 
 ```bash
 cd assemblies/loa-auth-platform
@@ -328,6 +328,34 @@ php vendor/bin/phpunit --verbose
 # Run with coverage
 php vendor/bin/phpunit --coverage
 ```
+
+### Running Tests with Docker
+
+The Auth Platform includes a `docker-compose.yml` that sets up the full stack (app, nginx, MySQL, scheduler, mailpit). Tests run inside the `app` container using an in-memory SQLite database.
+
+```bash
+cd assemblies/loa-auth-platform
+
+# Start the full stack (MySQL, app, nginx, scheduler, mailpit)
+docker compose up -d
+
+# Run all tests inside the app container
+docker compose exec app php vendor/bin/phpunit
+
+# Run a specific test file
+docker compose exec app php vendor/bin/phpunit tests/Feature/Api/PermissionPolicy/ClaimPolicyMiddlewareTest.php
+
+# Run with verbose output
+docker compose exec app php vendor/bin/phpunit --verbose
+
+# Run with coverage
+docker compose exec app php vendor/bin/phpunit --coverage
+
+# Stop the stack
+docker compose down
+```
+
+The `phpunit.xml.dist` configures the test environment to use SQLite in-memory (`:memory:`), so no database setup is needed inside the container. The `JWT_SECRET` is set to a test value automatically.
 
 ### Test Environment
 
