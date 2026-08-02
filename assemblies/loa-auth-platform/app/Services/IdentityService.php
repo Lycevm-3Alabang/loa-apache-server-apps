@@ -231,7 +231,10 @@ class IdentityService
             'email' => $user->email,
             'name' => $user->name,
             'groups' => $this->authorization->getGroups($user->id, $tenant?->id),
-            'permissions' => $this->policy->resolveUserClaims($user->id, $tenant?->id),
+            'permissions' => array_merge(
+                $this->policy->resolveUserClaims($user->id, $tenant?->id),
+                $this->policy->resolveUserEndpointPermissions($user->id, $tenant?->id)
+            ),
             'scopes' => $this->policy->resolveUserScopes($user->id, $tenant?->id),
         ];
 

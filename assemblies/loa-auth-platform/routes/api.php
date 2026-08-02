@@ -9,6 +9,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/refresh', [App\Http\Controllers\AuthController::class, 'refresh']);
         Route::post('/logout', [App\Http\Controllers\AuthController::class, 'logout']);
         Route::get('/me', [App\Http\Controllers\AuthController::class, 'me'])->middleware('jwt.auth');
+        Route::get('/access', [App\Http\Controllers\AuthController::class, 'access'])->middleware('jwt.auth');
         Route::put('/password', [App\Http\Controllers\AuthController::class, 'updatePassword'])->middleware('jwt.auth');
         Route::post('/password/forgot', [App\Http\Controllers\AuthController::class, 'forgotPassword'])
             ->middleware('password.reset.throttle');

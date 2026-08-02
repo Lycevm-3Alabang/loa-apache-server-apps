@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuthorizationService;
 use App\Services\IdentityService;
 use App\Services\PasswordResetNotificationService;
 use App\Services\JWTService;
+use App\Services\PermissionPolicyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use OpenApi\Attributes as OA;
@@ -53,16 +55,22 @@ class AuthController extends Controller
     private IdentityService $identity;
     private JWTService $jwt;
     private PasswordResetNotificationService $passwordResetNotifications;
+    private PermissionPolicyService $policy;
+    private AuthorizationService $authorization;
 
     public function __construct(
         IdentityService $identity,
         JWTService $jwt,
         PasswordResetNotificationService $passwordResetNotifications,
+        PermissionPolicyService $policy,
+        AuthorizationService $authorization,
     )
     {
         $this->identity = $identity;
         $this->jwt = $jwt;
         $this->passwordResetNotifications = $passwordResetNotifications;
+        $this->policy = $policy;
+        $this->authorization = $authorization;
     }
 
     #[OA\Post(
@@ -470,6 +478,60 @@ class AuthController extends Controller
             'name' => $claims['name'] ?? null,
             'groups' => $claims['groups'] ?? [],
             'permissions' => $claims['permissions'] ?? [],
+        ]);
+    }
+
+    #[OA\Get(
+        path: "/api/v1/auth/access",
+        tags: ["Auth"],
+        summary: "Get current user's resolved access (groups + endpoint permissions)",
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Resolved access data",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "user", type: "object"),
+                        new OA\Property(property: "tenant", type: "object"),
+                        new OA\Property(property: "groups", type: "array", items: new OA\Items(type: "string")),
+                        new OA\Property(property: "permissions", type: "array", items: new OA\Items(type: "string")),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthorized", content: new OA\JsonContent(ref: "#/components/schemas/Error")),
+        ]
+    )]
+    public function access(Request $request)
+    {
+        $claims = $request->attributes->get('jwt_claims', []);
+        $user = $request->user();
+
+        $tenantId = $claims['tenant']['id'] ?? null;
+        $tenantSlug = $claims['tenant']['slug'] ?? null;
+
+        $tenant = null;
+        if ($tenantId) {
+            $tenant = \App\Models\Tenant::find($tenantId);
+            if (!$tenant || !$tenant->isActive()) {
+                $tenantId = null;
+                $tenantSlug = null;
+            }
+        }
+
+        $groups = $this->authorization->getGroups($user->id, $tenantId);
+        $endpointPermissions = $this->policy->resolveUserEndpointPermissions($user->id, $tenantId);
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'email' => $user->email,
+                'name' => $user->name,
+            ],
+            'tenant' => $tenant
+                ? ['id' => $tenant->id, 'slug' => $tenant->slug, 'name' => $tenant->name]
+                : null,
+            'groups' => $groups,
+            'permissions' => $endpointPermissions,
         ]);
     }
 

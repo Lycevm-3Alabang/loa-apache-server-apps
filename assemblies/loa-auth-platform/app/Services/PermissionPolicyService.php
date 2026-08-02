@@ -5,11 +5,21 @@ namespace App\Services;
 use App\Models\Claim;
 use App\Models\GroupClaim;
 use App\Models\RoutePolicy;
-use App\Models\UserClaimOverride;
+use App\Models\TenantAppEndpoint;
+use App\Models\TenantEndpointGrant;
+use App\Models\TenantEndpointOverride;
 use App\Models\User;
+use App\Models\UserGroup;
 
 class PermissionPolicyService
 {
+    public const LEVEL_ORDINAL = [
+        'none' => 0,
+        'read' => 1,
+        'write' => 2,
+        'admin' => 2,
+        'deny' => -1,
+    ];
     public function resolveUserClaims(string $userId, ?string $tenantId = null): array
     {
         $user = User::find($userId);
@@ -141,6 +151,174 @@ class PermissionPolicyService
             'scope' => ['allowed' => !empty($userScopes)],
             default => ['allowed' => true],
         };
+    }
+
+    public function resolveUserEndpointPermissions(string $userId, ?string $tenantId): array
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            return [];
+        }
+
+        if ($tenantId === null) {
+            $catalogEntries = TenantAppEndpoint::whereNull('tenant_id')->get();
+        } else {
+            $catalogEntries = TenantAppEndpoint::whereNull('tenant_id')
+                ->orWhere('tenant_id', $tenantId)
+                ->get();
+        }
+
+        $groups = $user->userGroups()
+            ->where(fn ($q) => $q->whereNull('user_groups.tenant_id')->orWhere('user_groups.tenant_id', $tenantId))
+            ->get();
+
+        $groupIds = $groups->pluck('id')->all();
+
+        $permissions = [];
+
+        foreach ($catalogEntries as $endpoint) {
+            $effectiveLevel = $this->resolveEffectiveLevelForEndpoint($userId, $endpoint, $tenantId, $groupIds);
+
+            if ($effectiveLevel !== 'none' && $effectiveLevel !== 'deny') {
+                $permissions[] = $effectiveLevel . ':' . $endpoint->path;
+            }
+        }
+
+        return array_values(array_unique($permissions));
+    }
+
+    public function resolveEffectiveLevel(string $userId, ?string $tenantId, string $method, string $path): ?string
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            return null;
+        }
+
+        $endpoint = TenantAppEndpoint::matchPath($method, $path, $tenantId);
+
+        if (!$endpoint) {
+            return null;
+        }
+
+        $groups = $user->userGroups()
+            ->where(fn ($q) => $q->whereNull('user_groups.tenant_id')->orWhere('user_groups.tenant_id', $tenantId))
+            ->get();
+
+        return $this->resolveEffectiveLevelForEndpoint($userId, $endpoint, $tenantId, $groups->pluck('id')->all());
+    }
+
+    public function authorizeEndpoint(string $userId, ?string $tenantId, string $method, string $path): array
+    {
+        $endpoint = TenantAppEndpoint::matchPath($method, $path, $tenantId);
+
+        if (!$endpoint) {
+            return [
+                'allowed' => false,
+                'reason' => 'no_catalog_entry',
+                'message' => 'Endpoint not in catalog (closed-by-default)',
+            ];
+        }
+
+        $requiredLevel = $endpoint->required_level;
+        $effectiveLevel = $this->resolveEffectiveLevel($userId, $tenantId, $method, $path);
+
+        if ($effectiveLevel === null) {
+            return [
+                'allowed' => false,
+                'reason' => 'no_access',
+                'required_level' => $requiredLevel,
+                'effective_level' => 'none',
+            ];
+        }
+
+        if ($effectiveLevel === 'deny') {
+            return [
+                'allowed' => false,
+                'reason' => 'denied',
+                'required_level' => $requiredLevel,
+                'effective_level' => 'deny',
+            ];
+        }
+
+        $requiredOrdinal = self::LEVEL_ORDINAL[$requiredLevel] ?? 0;
+        $effectiveOrdinal = self::LEVEL_ORDINAL[$effectiveLevel] ?? 0;
+
+        if ($effectiveOrdinal < $requiredOrdinal) {
+            return [
+                'allowed' => false,
+                'reason' => 'insufficient_level',
+                'required_level' => $requiredLevel,
+                'effective_level' => $effectiveLevel,
+            ];
+        }
+
+        return [
+            'allowed' => true,
+            'required_level' => $requiredLevel,
+            'effective_level' => $effectiveLevel,
+        ];
+    }
+
+    private function resolveEffectiveLevelForEndpoint(string $userId, TenantAppEndpoint $endpoint, ?string $tenantId, array $groupIds): string
+    {
+        $effectiveLevel = 'none';
+
+        if (!empty($groupIds)) {
+            $grants = TenantEndpointGrant::whereIn('group_id', $groupIds)
+                ->where('method', $endpoint->method)
+                ->where('path', $endpoint->path)
+                ->where(fn ($q) => $q->whereNull('tenant_id')->orWhere('tenant_id', $tenantId))
+                ->get();
+
+            foreach ($grants as $grant) {
+                if ($grant->level === 'deny') {
+                    $effectiveLevel = 'deny';
+                    break 2;
+                }
+
+                $grantOrdinal = self::LEVEL_ORDINAL[$grant->level] ?? 0;
+                $currentOrdinal = self::LEVEL_ORDINAL[$effectiveLevel] ?? 0;
+
+                if ($grantOrdinal > $currentOrdinal) {
+                    $effectiveLevel = $grant->level;
+                }
+            }
+        }
+
+        $override = TenantEndpointOverride::where('user_id', $userId)
+            ->where('method', $endpoint->method)
+            ->where('path', $endpoint->path)
+            ->where(fn ($q) => $q->whereNull('tenant_id')->orWhere('tenant_id', $tenantId))
+            ->first();
+
+        if ($override !== null) {
+            $effectiveLevel = $override->level;
+        }
+
+        return $effectiveLevel;
+    }
+
+    public function levelOrdinal(string $level): int
+    {
+        return self::LEVEL_ORDINAL[$level] ?? 0;
+    }
+
+    public function isPlatformAdmin(string $userId): bool
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            return false;
+        }
+
+        $adminGroup = $user->userGroups()
+            ->whereNull('tenant_id')
+            ->where('name', config('auth-web.admin_group'))
+            ->exists();
+
+        return $adminGroup;
     }
 
     private function scopeTenant($query, ?string $tenantId, string $column): void

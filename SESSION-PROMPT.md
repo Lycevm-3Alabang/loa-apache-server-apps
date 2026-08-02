@@ -80,7 +80,8 @@ Then:
   - NOT implemented in code yet (no PHP/TS touched this session — spec-first per AGENT.md).
 
 ### Next Action
-- [spec] Next spec: `tenant-group-endpoint-grants.md` — group→endpoint grant "tick" (grants `level` per cataloged endpoint, tenant-scoped; deny-wins; per-user overrides). Then wire catalog→grants→session payload end-to-end, ready for tenant apps (e-consultation) to consume.
+- [spec→done] `tenant-group-endpoint-grants.md` created and promoted to Final. Defines `tenant_endpoint_grant` + `tenant_endpoint_override` tables, level vocabulary (read < write == admin, deny-wins, user-override replaces), resolution algorithm, admin routes (`/admin/tenants/{tenant}/groups/{group}/endpoints`), user overrides (`/admin/users/{id}/endpoint-overrides`), `GET /api/v1/auth/access` session store, and enforcement integration with `ClaimPolicyMiddleware`. Two coexisting models: claims-based (auth platform admin API) + level-based (tenant apps).
+- [code] Implement `tenant-endpoint-catalog.md` + `tenant-group-endpoint-grants.md` in code: migration (2 tables), models (2), endpoint grant controller, extend `ClaimPolicyMiddleware` for level-based enforcement, add `GET /api/v1/auth/access` endpoint + admin web/API routes.
 - [ ] Create `permissions.json` per app (cert, consult, auth)  [carried over]
 - [ ] Implement Cert Platform SSO integration  [carried over]
 
@@ -117,3 +118,4 @@ Then:
 | 2026-08-02 | Data-driven permission policy spec finalized (Final v1.0); old registry/claims specs marked SUPERSEDED | Implement permission policy in loa-auth-platform |
 | 2026-08-02 | Auth Platform implementation complete: 4 migrations, 4 models, PermissionPolicyService, ClaimPolicyMiddleware, ImportPermissions command, PermissionPolicyController, JWT claims/scopes, admin API endpoints, middleware registration | Create permissions.json per app; implement Cert SSO; run tests |
 | 2026-08-02 | Tests written: 12 model tests, 9 middleware tests, 20+ controller tests, 12 service tests, 8 command tests; WithJwtClaims trait created | Run tests and verify |
+| 2026-08-02 | Read AGENT.md, AI-GUIDE.md, AI-RULES.md, PROJECT.md, group-permission-management.md, cert web-ui.md, cert README.md, tenant-endpoint-catalog.md, permission-resolution.md, data-driven-permission-policy.md, tenancy.md, README.md, user-group.md, AuthorizationService.php, RoutePolicy.php; summarized all layers + Phase 1-4 status; created `tenant-group-endpoint-grants.md` spec (Draft→Final); updated SESSION-PROMPT.md | Implement tenant-endpoint-catalog.md + tenant-group-endpoint-grants.md in code
