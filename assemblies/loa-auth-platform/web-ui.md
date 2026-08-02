@@ -59,12 +59,12 @@ The web UI (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/admi
 
 # 4. Flows
 
-## 4.1 Login → Destination
+## 4.1 Admin Login
 
 ### Routes
 
 ```
-GET  /login?redirect=<app-url>
+GET  /login
 POST /login
 ```
 
@@ -72,32 +72,53 @@ POST /login
 
 1. User visits `GET /login`.
 2. User submits email + password.
-3. System validates via `IdentityService.login()` (respects account lockout and brute-force rules).
-4. On success, the destination is resolved (below). The destination is **never** an implicit default.
-5. On failure: re-render the form with a generic "Invalid credentials" error. Never reveal whether the email exists, whether the account is locked, or whether the account is admin-only.
+3. System validates via `IdentityService::login()` (respects account lockout and brute-force rules).
+4. On success: check if user is a platform admin (belongs to `loa-auth-admin` group).
+5. If admin: establish web session → `302` to `/admin/users`.
+6. If not admin: reject with generic "Access denied" error (no redirect, no SSO).
+7. On failure: re-render the form with a generic "Invalid credentials" error.
 
-### Destination Decision
+**Platform admin** = the authenticated user belongs to the group named by `auth-web.admin_group` (default `loa-auth-admin`). Membership is read from the database (`User::inGroup()`), never from token claims.
 
-| User | Context | Destination |
-|------|---------|-------------|
-| Platform admin | any | Establish admin web session → `302` to `/admin/users` (user management) |
-| Non-admin | tenant (valid `?redirect=`) | `302` to tenant URL with token pair in the **URL fragment** |
-| Non-admin | direct (no/invalid `?redirect=`) | Reject: re-render form with generic error; revoke the just-issued tokens |
+**This route is admin-only.** Non-admin users attempting to log in here receive a generic error. They should use `/sso/login` instead.
 
-**Platform admin** = the authenticated user belongs to the group named by `auth-web.admin_group` (default `loa-auth-admin`). Membership is read from the database (`User::inGroup()`), never from token claims (claims can be stale).
+---
 
-**Tenant context** = an explicit `?redirect=` query parameter whose origin matches an **active tenant's** `redirect_origins` (resolved via `TenantService::resolveTenantByRedirectOrigin`, see `kernels/identity/tenancy.md` §5.1). `AUTH_ALLOWED_REDIRECTS` remains only as a bootstrap fallback for deployments without tenants. There is **no implicit tenant fallback**: absent or unlisted `redirect` means direct access, so non-admin logins are rejected.
+## 4.2 SSO Login (Tenant Apps)
+
+### Routes
+
+```
+GET  /sso/login?redirect=<app-url>
+POST /sso/login
+```
+
+### Steps
+
+1. User visits `GET /sso/login`.
+2. User submits email + password.
+3. System validates via `IdentityService::login()` (respects account lockout and brute-force rules).
+4. On success: check if user is a platform admin.
+5. If admin: reject with generic error (admins should use `/login`).
+6. If not admin: resolve tenant from `?redirect=` origin, verify tenant membership.
+7. If tenant member: encrypt tokens → redirect to splash page → tenant app.
+8. If not tenant member: reject with generic error.
+9. On failure: re-render the form with a generic "Invalid credentials" error.
+
+**Tenant context** = an explicit `?redirect=` query parameter whose origin matches an **active tenant's** `redirect_origins` (resolved via `TenantService::resolveTenantByRedirectOrigin`). There is **no implicit tenant fallback**: absent or invalid `redirect` means direct access, so logins are rejected.
 
 ### Redirect Target Resolution
 
 | Source | Rule |
 |--------|------|
-| `?redirect=` query param | Origin must match an entry in `AUTH_ALLOWED_REDIRECTS` allowlist → tenant context |
-| No param / invalid param | Direct access → non-admins rejected |
+| `?redirect=` query param | Origin must match a tenant's `redirect_origins` → tenant context |
+| No param / invalid param | Reject — "Access denied" |
 
 An unlisted host is **never** followed. Open redirects are a security violation.
 
-The login form includes a **"New here? Create an account"** link pointing to `/register`. The registration form includes a **"Already have an account? Sign in"** link pointing to `/login`.
+### UI
+
+Minimal login form: email + password + submit. No registration link (use `/sso/register`). No admin branding. Title: "Sign in to LOA Platform".
 
 ### Redirect Splash Screen
 
@@ -248,42 +269,40 @@ POST /reset-password
 
 ---
 
-## 4.4 Registration
+## 4.4 SSO Registration (LOA Domains Only)
 
 ### Routes
 
 ```
-GET  /register
-POST /register
+GET  /sso/register
+POST /sso/register
 ```
 
 ### Steps
 
-1. User visits `GET /register`.
+1. User visits `GET /sso/register`.
 2. User submits name, email, and password.
-3. System validates the request server-side (see section 13.4).
-4. On validation failure: re-render the form with field-level errors.
-5. On success: call `IdentityService::register(email, password, name)`.
-6. If the email is already registered: re-render the form with a generic "An account with this email already exists" error (anti-enumeration).
-7. On success: redirect to `/login` with a success flash message ("Account created. Please sign in.").
+3. System validates the request server-side.
+4. **Domain check**: email must end with `@lyceumalabang.edu.ph` or `@itmlyceumalabang.onmicrosoft.com`. Other domains are rejected with a generic error.
+5. On validation failure: re-render the form with field-level errors.
+6. On success: call `IdentityService::register(email, password, name)`.
+7. If the email is already registered: re-render the form with a generic "An account with this email already exists" error (anti-enumeration).
+8. On success: redirect to `/sso/login` with a success flash message ("Account created. Please sign in.").
 
-### Visual Direction
+### Domain Restriction
 
-The registration page reuses the same split layout as login (dark navy brand panel on the left, light form card on the right). The brand panel content adapts to the registration context:
+Only LOA email domains are allowed to self-register:
 
-- Heading: **"Welcome to Connect Hub"**
-- Subheading: **"Create your account to manage bookings and consultations"**
+| Domain | Type |
+|--------|------|
+| `@lyceumalabang.edu.ph` | LOA primary |
+| `@itmlyceumalabang.onmicrosoft.com` | LOA Microsoft |
 
-The form card contains:
+All other domains are rejected. External users must be pre-provisioned by a platform admin.
 
-- Name field
-- Email field
-- Password field (with show/hide toggle)
-- Confirm Password field (with show/hide toggle)
-- "Sign up" primary button
-- "Already have an account? Sign in" link → `/login`
+### UI
 
-The layout is responsive: on mobile the brand panel stacks above the form card.
+Minimal form: name, email, password, confirm password, submit. Title: "Create your LOA account". Link: "Already have an account? Sign in" → `/sso/login`.
 
 ---
 
@@ -362,11 +381,18 @@ ENCRYPTION_KEY=<hex-encoded-32-byte-key>
 # 9. Web Route Summary
 
 ```
-GET  /login                 Login form
-POST /login                 Authenticate + resolve destination (admin session / tenant redirect / reject)
+# Admin (session-authenticated)
+GET  /login                 Admin login form
+POST /login                 Authenticate admin → /admin/users
+
+# SSO (tenant app redirect)
+GET  /sso/login             SSO login form (minimal: email + password)
+POST /sso/login             Authenticate → encrypt tokens → redirect to tenant app
+GET  /sso/register          SSO registration form (LOA domains only)
+POST /sso/register          Create account → redirect to /sso/login
 GET  /redirect              Redirect splash page (tenant users)
-GET  /register              Registration form
-POST /register              Create account + redirect to login
+
+# Password management
 GET  /forgot-password       Forgot password form
 POST /forgot-password       Send reset link
 GET  /reset-password        Change password form (token-validated)
@@ -393,16 +419,17 @@ No body. Uses the authenticated user; sends the change-password email to that us
 
 # 10. Security Checklist
 
-- [ ] Open-redirect prevention via `AUTH_ALLOWED_REDIRECTS` (strict origin match)
-- [ ] No implicit tenant fallback — direct access is admin-only
-- [ ] Non-admin direct logins rejected with generic error (no admin-only disclosure)
+- [ ] Open-redirect prevention via tenant `redirect_origins` (strict origin match)
+- [ ] `/login` rejects non-admin users (no SSO redirect from admin login)
+- [ ] `/sso/login` rejects admin users (admins use `/login`)
+- [ ] `/sso/login` requires valid `?redirect=` matching a tenant's `redirect_origins`
 - [ ] Tokens delivered via URL fragment only, and only to tenant contexts
 - [ ] Generic errors (no user enumeration, no lockout disclosure)
 - [ ] Reset requests rate-limited (1/60s per email)
 - [ ] Reset tokens single-use, 60-minute expiry, hashed at rest
 - [ ] CSRF on all web forms
 - [ ] No raw token in database; raw token only in the emailed link
-- [ ] Registration rejects duplicate emails with generic error (no enumeration)
+- [ ] SSO registration rejects non-LOA domains
 - [ ] Registration rate-limited to prevent mass account creation
 - [ ] Admin session ID regenerated on login and logout (session-fixation prevention)
 - [ ] Admin dashboard routes gated by web guard + admin group check (see `admin-dashboard.md`)
@@ -414,13 +441,15 @@ No body. Uses the authenticated user; sends the change-password email to that us
 | Pattern | Why It's Wrong | Correct Approach |
 |---------|----------------|------------------|
 | Tokens in query string | Logged by servers, leaked via Referer | URL fragment |
-| Following any `redirect=` value | Open redirect vulnerability | Allowlist check, reject on mismatch |
-| Falling back to a default tenant on direct login | Non-admins could silently enter tenant apps without an explicit request | No implicit fallback; direct access is admin-only |
+| Following any `redirect=` value | Open redirect vulnerability | Tenant `redirect_origins` check, reject on mismatch |
+| Admin login redirecting to tenant apps | Confuses admin and SSO flows | Separate routes: `/login` (admin), `/sso/login` (SSO) |
+| SSO login creating admin sessions | Scope escalation | `/sso/login` rejects admin users |
 | "Email not registered" response | User enumeration | Generic success always |
 | Revealing that an account is non-admin | Admin-only disclosure | Generic "Invalid credentials" |
 | A separate change-password code path | Duplicated logic | Shared `/reset-password` flow |
 | Long-lived web session as auth state for tenant users | Breaks stateless JWT model | Session only for CSRF; admin session for dashboard only |
 | Granting non-admins a web auth session | Scope escalation | Only platform admins ever get a web session |
+| LOA-only registration on `/register` | Confuses SSO and admin registration | SSO registration at `/sso/register` with domain restriction |
 
 ---
 
@@ -432,8 +461,10 @@ All views live in `resources/views/`.
 
 | View | Path | Purpose |
 |------|------|---------|
-| Login form | `resources/views/login.blade.php` | Email + password form, error display, redirect param passthrough |
-| Registration form | `resources/views/register.blade.php` | Name, email, password, confirm password form with field-level errors |
+| Admin login form | `resources/views/login.blade.php` | Email + password form (admin-only, no redirect logic) |
+| SSO login form | `resources/views/sso-login.blade.php` | Minimal email + password form (SSO redirect for tenant apps) |
+| SSO registration form | `resources/views/sso-register.blade.php` | Name, email (LOA domains only), password, confirm password |
+| Redirect splash | `resources/views/redirect.blade.php` | "Redirecting to {app}..." with auto-redirect |
 | Forgot password form | `resources/views/forgot-password.blade.php` | Email input + success message |
 | Reset password form | `resources/views/reset-password.blade.php` | Read-only email, new password + confirm, token-hidden input |
 | Reset password email (forgot) | `resources/views/emails/reset-password.blade.php` | Mailable template for forgot flow |
@@ -443,7 +474,7 @@ All views live in `resources/views/`.
 
 | Controller | Methods | Routes |
 |------------|---------|--------|
-| `WebAuthController` | `showLogin`, `login`, `showRegister`, `register`, `showForgotPassword`, `sendResetLinkEmail` | `GET|POST /login`, `GET|POST /register`, `GET|POST /forgot-password` |
+| `WebAuthController` | `showLogin`, `login` (admin), `showSSOLogin`, `ssoLogin`, `showSSORegister`, `ssoRegister`, `showRedirect`, `showForgotPassword`, `sendResetLinkEmail` | `GET|POST /login`, `GET|POST /sso/login`, `GET|POST /sso/register`, `GET /redirect`, `GET|POST /forgot-password` |
 | `WebResetController` | `showResetForm`, `reset` | `GET|POST /reset-password` |
 
 The existing `AuthController` handles the JSON API layer only (`/api/v1/auth/*`). Web routes are separate.
@@ -512,11 +543,11 @@ Password validation is identical to the reset-password form (section 13.3) minus
 
 Login uses the Identity Kernel's brute-force protection (`maxAttempts = 5`, `lockoutMinutes = 30`). No additional web-layer throttle needed; the lockout message must be surfaced as a generic "Invalid credentials" error.
 
-## 14.3 Registration
+## 14.3 SSO Registration
 
 | Route | Throttle | Config |
 |-------|----------|--------|
-| `POST /register` | 5 requests per 60 seconds per IP | Laravel `throttle:5,60` middleware in `routes/web.php` |
+| `POST /sso/register` | 5 requests per 60 seconds per IP | Laravel `throttle:5,60` middleware in `routes/web.php` |
 
 Prevents mass account creation. Uses the same generic "Please wait and try again" error when throttled.
 
@@ -572,15 +603,19 @@ On cPanel, the document root is `public/`. The `index.php` inside `public/` hand
 
 | Check | Expected |
 |-------|----------|
-| `GET /login` | 200, returns login form HTML |
+| `GET /login` | 200, returns admin login form HTML |
 | `POST /login` (admin credentials) | 302 → `/admin/users`; admin session cookie set |
-| `POST /login` (non-admin + valid `?redirect=`) | 302 → `{appUrl}#access_token=...&refresh_token=...` |
-| `POST /login` (non-admin, direct) | 200, re-renders form with generic "Invalid credentials" |
+| `POST /login` (non-admin) | 200, re-renders form with generic "Access denied" |
+| `GET /sso/login` | 200, returns SSO login form HTML |
+| `POST /sso/login` (non-admin + valid `?redirect=`) | 302 → `/redirect` → `{appUrl}#payload={encrypted}` |
+| `POST /sso/login` (admin) | 200, re-renders form with generic "Access denied" |
+| `POST /sso/login` (non-admin, no redirect) | 200, re-renders form with generic "Access denied" |
+| `GET /sso/register` | 200, returns SSO registration form HTML |
+| `POST /sso/register` (LOA domain) | 302 → `/sso/login` with success flash message |
+| `POST /sso/register` (non-LOA domain) | 200, re-renders form with generic error |
+| `POST /sso/register` (duplicate email) | 200, re-renders form with generic "already exists" error |
 | `GET /admin/users` (no session) | 302 → `/login` |
 | `GET /admin/users` (admin session) | 200, user list renders |
-| `GET /register` | 200, returns registration form HTML |
-| `POST /register` (valid) | 302 → `/login` with success flash message |
-| `POST /register` (duplicate email) | 200, re-renders form with generic "already exists" error |
 | `POST /forgot-password` (any email) | 200, generic success message |
 | `GET /reset-password?token=...&email=...` | 200, returns form with pre-filled email |
 | `POST /reset-password` (valid token + password) | 302 → `/login` |

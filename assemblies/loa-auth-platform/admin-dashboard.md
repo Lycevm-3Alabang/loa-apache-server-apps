@@ -20,6 +20,8 @@ It answers:
 
 **v3 scope:** admin user creation (without self-registration).
 
+**v4 scope:** group and permission administration (see `group-permission-management.md`).
+
 Out of scope for v3: editing user details, group/permission administration from the user form, and triggering password resets from the UI.
 
 ---
@@ -37,7 +39,7 @@ Out of scope for v3: editing user details, group/permission administration from 
 
 - self-service registration (`/register`) — users never create their own accounts via the admin dashboard
 - tenant-app pages (Consult, Cert)
-- group and permission administration
+- group and permission administration (see `group-permission-management.md`)
 - the JWT API surface (`/api/v1/*`)
 
 ---
@@ -60,6 +62,7 @@ The dashboard is **session-authenticated**, not JWT-authenticated.
 |--------|-----|--------|------------|
 | `GET` | `/admin/users` | list (search + status filter) | `admin.users` |
 | `POST` | `/admin/users/{id}/status` | enable / disable a user | `admin.users.status` |
+| `POST` | `/admin/users/{id}/sessions/invalidate` | revoke all web sessions for a user | `admin.users.sessions.invalidate` |
 | `POST` | `/admin/logout` | destroy admin session | `admin.logout` |
 
 All routes require `auth` (web guard) + `web.admin`. All `POST` forms include `@csrf`.
@@ -76,6 +79,7 @@ All routes require `auth` (web guard) + `web.admin`. All `POST` forms include `@
 |--------|----------------|
 | `index(Request $request)` | Paginate users, apply search/status filters, render list |
 | `updateStatus(Request $request, string $id)` | Validate target status, enforce `users.manage`, call `IdentityService::setUserStatus()`, redirect back |
+| `invalidateSessions(Request $request, string $id)` | Validate target user, enforce `users.manage`, call session invalidation, redirect with flash |
 | `logout(Request $request)` | `Auth::guard('web')->logout()`, invalidate + regenerate session, redirect to `/login` |
 
 ## Views
@@ -226,20 +230,72 @@ The form uses the same admin layout as the user list. Success flash message with
 
 ---
 
-# 11. Security Checklist
+# 11. Session Invalidation
+
+Addresses the security scenario: **platform admin credentials compromised**.
+
+When a platform admin's credentials are compromised, the admin can reset their password via `/forgot-password`. However, this only revokes JWT refresh tokens — **web sessions are not revoked**. The attacker's web session remains valid until `SESSION_LIFETIME` expires (default 480 min).
+
+## Routes
+
+| Method | URI | Action | Route name |
+|--------|-----|--------|------------|
+| `POST` | `/admin/users/{id}/sessions/invalidate` | revoke all web sessions for a user | `admin.users.sessions.invalidate` |
+
+Requires `auth` (web guard) + `web.admin` + `users.manage` permission.
+
+## Behavior
+
+- Revokes **all web sessions** for the specified user by deleting their session data from the session store.
+- Does **not** revoke JWT refresh tokens (already handled by `IdentityService::resetPassword()` and `IdentityService::setUserStatus()`).
+- After invalidation, the user is forced to re-authenticate on their next request.
+- **Self-invalidation is forbidden**: an admin cannot invalidate their own sessions (would strand the only admin session).
+- On success: redirect back with flash message. On failure: redirect back with error flash.
+
+## Controller
+
+Add to `WebAdminController`:
+
+| Method | Responsibility |
+|--------|----------------|
+| `invalidateSessions(Request $request, string $id)` | Validate target user, enforce `users.manage`, call session invalidation, redirect with flash |
+
+## Implementation Notes
+
+- Use `Session::handler()->destroy($sessionId)` to invalidate specific sessions.
+- For simplicity, invalidate **all sessions** for a user (not selective).
+- Consider adding a "Last active" column to show when sessions were last used.
+
+## Compromised Credentials Response Playbook
+
+```
+1. Real admin notices unauthorized access
+2. Real admin goes to /forgot-password
+3. Real admin receives email with reset link
+4. Real admin resets password at /reset-password
+5. All JWT refresh tokens are revoked (IdentityService::resetPassword())
+6. Real admin goes to /admin/users/{compromised-id}/sessions/invalidate
+7. Attacker's web session is destroyed
+8. Attacker locked out completely
+```
+
+---
+
+# 12. Security Checklist
 
 - [ ] All admin routes behind `auth` (web guard) + `web.admin` group check
-- [ ] CSRF on every `POST` form (list actions, logout)
+- [ ] CSRF on every `POST` form (list actions, logout, session invalidation)
 - [ ] Session ID regenerated on admin login and on logout (session-fixation prevention)
 - [ ] Non-admins never receive a web auth session
 - [ ] Self-disable forbidden
-- [ ] `users.manage` enforced on status changes (defense in depth)
+- [ ] Self-session-invalidation forbidden
+- [ ] `users.manage` enforced on status changes and session invalidation (defense in depth)
 - [ ] Search/filter responses never leak password hashes or reset tokens
 - [ ] Generic error messages (no enumeration, no account-state disclosure beyond the visible status badge)
 
 ---
 
-# 12. Anti-Patterns
+# 13. Anti-Patterns
 
 | Pattern | Why It's Wrong | Correct Approach |
 |---------|----------------|------------------|
@@ -247,15 +303,16 @@ The form uses the same admin layout as the user list. Success flash message with
 | Any authenticated web user reaching `/admin/*` | Scope escalation | `web.admin` group gate on every admin route |
 | Creating a web session for non-admins | Scope escalation | Only platform admins get a web session |
 | Disabling your own admin account | Locks out the only dashboard session | Forbid self-disable |
-| Managing groups/permissions in v1 | Unnecessary scope | Defer to a future spec |
+| Invalidating your own sessions | Locks out the only admin session | Forbid self-session-invalidation |
+| Managing groups/permissions in v1 | Unnecessary scope | Deferred to `group-permission-management.md` (v4) |
 
 ---
 
-# 13. Implementation Inventory
+# 14. Implementation Inventory
 
 | Item | Detail |
 |------|--------|
-| Controller | `WebAdminController` (`index`, `updateStatus`, `logout`, `tenantsIndex`, `tenantsCreate`, `tenantsStore`, `tenantsShow`, `tenantsStatus`, `tenantsGroups`, `tenantsGroupsStore`, `tenantsGroupsPermissions`, `tenantsMembersStore`, `create`, `store`) |
+| Controller | `WebAdminController` (`index`, `updateStatus`, `invalidateSessions`, `logout`, `tenantsIndex`, `tenantsCreate`, `tenantsStore`, `tenantsShow`, `tenantsStatus`, `tenantsGroups`, `tenantsGroupsStore`, `tenantsGroupsPermissions`, `tenantsMembersStore`, `create`, `store`) |
 | Middleware | `web.admin` (new) — group check using `auth-web.admin_group` |
 | Routes | `routes/web.php` — admin group, `auth` + `web.admin` |
 | Views | `layouts/admin.blade.php`, `admin/users/index.blade.php`, `admin/tenants/index.blade.php`, `admin/tenants/create.blade.php`, `admin/tenants/show.blade.php`, `admin/tenants/groups.blade.php`, `admin/users/create.blade.php` |
@@ -264,7 +321,7 @@ The form uses the same admin layout as the user list. Success flash message with
 
 ---
 
-# 14. Dependency References
+# 15. Dependency References
 
 | Spec | Role |
 |------|------|

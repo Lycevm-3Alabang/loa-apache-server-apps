@@ -19,7 +19,9 @@ Read these files IN ORDER and report your understanding of where we left off:
 3. AI-RULES.md     - coding rules + Rule 0 (specs before code)
 4. PROJECT.md      - project tracker: current status of every layer and phase
 5. SESSION-PROMPT.md - "Last Session Notes" section = exactly where we stopped
-6. kernels/identity/rules/token-lifecycle.md  - the last spec we touched (if still relevant)
+6. assemblies/loa-auth-platform/group-permission-management.md - next spec to implement
+7. assemblies/loa-cert-platform/web-ui.md - cert platform frontend spec
+8. assemblies/loa-cert-platform/README.md - cert platform SSO callback contract
 
 Then:
 - Summarize the current state of each layer (kernels, domains, contexts, services, assemblies)
@@ -33,30 +35,50 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-01
+### Date: 2026-08-02
 
 ### Completed
-- **Admin dashboard v2 implemented** (`admin-dashboard.md` promoted to Final):
-  - Tenant CRUD: list (`GET /admin/tenants`), create form (`GET /admin/tenants/create`), store (`POST /admin/tenants`), show (`GET /admin/tenants/{tenant}`), suspend/activate (`POST /admin/tenants/{tenant}/status`)
-  - Tenant groups: list + create (`GET/POST /admin/tenants/{tenant}/groups`), per-group permission grant/revoke (`POST /admin/tenants/{tenant}/groups/{group}/permissions`)
-  - Tenant members: add/remove (`POST /admin/tenants/{tenant}/members` with `action=add|remove`)
-  - Controller: `WebAdminController` v2 methods (tenantsIndex/Create/Store/Show/Status/Groups/GroupsStore/GroupsPermissions/MembersStore)
-  - Views: `admin/tenants/index.blade.php`, `create.blade.php`, `show.blade.php`, `groups.blade.php`
-  - Admin layout updated with Tenants nav link
-  - CSS additions for forms, detail cards, permission grid, inline forms
-- **Identity Kernel v3.0 tenancy fully implemented** (previous session): migrations, TenantService, tenant-scoped AuthorizationService, `jwt.tenant`/`web.admin` middleware, login destination
-- **`database.sql` rebuilt from migration schema** (previous session): verified structural parity, clean import
-- Regenerated `loa-auth-dist/` (SQL + all v2 views/controllers)
-- All PHP lints pass; verified pages render (login, tenants list, create form, show, groups)
-- PROJECT.md + SESSION-PROMPT.md updated
+- **Cert Platform SSO spec** (`assemblies/loa-cert-platform/README.md` updated):
+  - Section 10: Added `POST /api/v1/auth/callback` to API surface
+  - Section 11: SSO Redirect and Callback spec (flow overview, redirect to Auth Platform, callback endpoint, encryption contract, session establishment, logout, security requirements, Auth Platform config reference)
+  - Section 12: Frontend Implementation Example (TypeScript callback handler, Laravel callback controller, EncryptionService, route registration, config)
+- **Cert Platform web-ui.md** created (15 sections):
+  - SSO callback flow (fragment detection, extraction, backend callback)
+  - Token lifecycle (storage in memory + httpOnly cookie, refresh flow, expiry detection)
+  - SSO group and permission mapping (permission-based role resolution using `cert.*` permissions)
+  - Return-to-URL routing (sessionStorage capture, post-auth redirect)
+  - Auth guard (route protection, initialization sequence, silent refresh)
+  - HTTP client configuration (Axios interceptor pattern)
+  - Pages, error pages, security checklist, anti-patterns
+- **Auth Platform group-permission-management.md** created (11 sections):
+  - API surface: Group CRUD, Group Permissions, User Groups, User Permission Overrides
+  - Admin UI: User detail page, Group list page, Group detail page
+  - Route summary (API + Admin Web)
+  - Implementation inventory (5 new files, 5 modified files)
+- **admin-dashboard.md** updated — added v4 scope reference to group-permission-management.md
+- **Architecture decision confirmed**: SSO-only for LOA users, self-hosted for external users on cert app
+
+### Key Architecture Decisions
+- **Consultation app**: SSO-only, LOA domains only (`@lyceumalabang.edu.ph`, `@itmlyceumalabang.onmicrosoft.com`)
+- **Cert app**: Any email allowed (must have record in `event_attendees` table)
+- **Permission model**: Both group-level AND individual user-level permissions supported (user overrides win)
+- **SSO flow**: Auth Platform issues JWT with `permissions` array → apps check permissions on each endpoint
+- **Tenant group membership**: Users MUST be tenant members before being added to tenant groups (enforcement needed — not yet in code)
+- **Permission discovery**: Currently manual; need a permission registry where apps declare their endpoint-to-permission mapping
 
 ### In Progress
-- None — admin dashboard v1 + v2 complete
+- None — all specs created, awaiting implementation
 
 ### Next Action
-- Deploy current auth release (full admin dashboard + tenancy), OR start Phase 2 (Consult App)
+- Implement Auth Platform group/permission management API + admin UI (from `group-permission-management.md`)
+- Add domain restriction to Auth Platform registration (LOA domains only)
+- Add permission registry for apps to declare their permission requirements
+- Implement Cert Platform SSO integration (from `web-ui.md` and `README.md` Section 11-12)
 
 ### Backlog / Known Gaps
+- **Tenant group membership enforcement**: `AuthorizationService::addToGroup()` doesn't check tenant membership — needs validation that user is tenant member before adding to tenant-scoped group
+- **Permission registry**: Apps need to declare which permissions map to which endpoints (currently manual)
+- **Cert Platform event_attendees check**: External users must exist in `event_attendees` table before registering
 - **Admin create user** (spec pending): admin manually creates user account without self-registering; routes `GET /admin/users/create` + `POST /admin/users`; form: email, name, password (optional → auto-generate), status; permission `users.manage`; spec to be added to `admin-dashboard.md` as v3
 - Education Domain + Business Contexts still use flat structure (no `entities/`, `events/`, `rules/` subdirs)
 - `JWT_SECRET` not configured (env) — required before deploy
@@ -64,7 +86,9 @@ Then:
 - No-terminal deploy requires uploading prebuilt `vendor/` (pure-PHP deps; safe cross-platform)
 
 ### Open Questions
-- None pending
+- Should Auth Platform auto-create preset groups when a new tenant is created?
+- How to handle password sync if user changes password on one system (Auth Platform vs e-cert)?
+- Should the permission registry be a JSON config file per app, or a database table?
 
 ---
 
@@ -82,3 +106,4 @@ Then:
 | 2026-08-01 | Identity Kernel v3.0 tenancy spec (tenants, scoped groups/grants, `jwt.tenant`, claims) + admin-dashboard v2 tenant admin | Review/promote tenancy spec; then implement |
 | 2026-08-01 | Tenancy + admin dashboard v1 implemented and verified (migrations, TenantService, tenant-scoped auth, `jwt.tenant`/`web.admin`, login destination, `/admin/users`); `database.sql` rebuilt from migration schema (parity-checked) | Deploy current auth release, or start admin dashboard v2 |
 | 2026-08-01 | Admin dashboard v2 implemented: tenant CRUD, groups, per-group permissions, members, suspend/activate; `admin-dashboard.md` promoted to Final; dist regenerated | Deploy, or start Phase 2 (Consult App) |
+| 2026-08-02 | Cert Platform SSO spec (README.md §11-12), web-ui.md created, group-permission-management.md created, architecture decisions (SSO-only for LOA, self-hosted for external, permission-based role mapping) | Implement Auth Platform group/permission API + admin UI, add permission registry |
