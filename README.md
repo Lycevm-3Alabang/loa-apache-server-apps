@@ -313,8 +313,8 @@ composer install
 # Run all tests
 php vendor/bin/phpunit
 
-# Run with verbose output
-php vendor/bin/phpunit --verbose
+# Run with testdox output (human-readable)
+php vendor/bin/phpunit --testdox
 
 # Run a specific test file
 php vendor/bin/phpunit tests/Feature/Api/PermissionPolicy/ClaimPolicyMiddlewareTest.php
@@ -394,8 +394,8 @@ docker compose exec app php vendor/bin/phpunit
 # Run a specific test file
 docker compose exec app php vendor/bin/phpunit tests/Feature/Api/PermissionPolicy/ClaimPolicyMiddlewareTest.php
 
-# Run with verbose output
-docker compose exec app php vendor/bin/phpunit --verbose
+# Run with testdox output (human-readable)
+docker compose exec app php vendor/bin/phpunit --testdox
 
 # Run with coverage
 docker compose exec app php vendor/bin/phpunit --coverage
