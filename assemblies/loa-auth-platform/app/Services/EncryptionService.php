@@ -99,12 +99,22 @@ class EncryptionService
         return $payload;
     }
 
-    private function decodeKey(string $hexKey): string
+    private function decodeKey(string $rawKey): string
     {
-        $key = hex2bin($hexKey);
+        if (str_starts_with($rawKey, 'base64:')) {
+            $key = base64_decode(substr($rawKey, 7), true);
+
+            if ($key === false || strlen($key) !== 32) {
+                throw new \RuntimeException('ENCRYPTION_KEY base64 value must decode to 32 bytes');
+            }
+
+            return $key;
+        }
+
+        $key = hex2bin($rawKey);
 
         if ($key === false || strlen($key) !== 32) {
-            throw new \RuntimeException('ENCRYPTION_KEY must be a 64-character hex string (32 bytes)');
+            throw new \RuntimeException('ENCRYPTION_KEY must be a 64-character hex string (32 bytes) or base64: prefixed');
         }
 
         return $key;
