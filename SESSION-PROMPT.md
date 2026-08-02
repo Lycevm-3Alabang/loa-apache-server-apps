@@ -81,6 +81,7 @@ Then:
 - [x] Update IdentityService to include claims/scopes in JWT
 - [ ] Create `permissions.json` for each app (cert, consult, auth)
 - [ ] Implement Cert Platform SSO integration (from `web-ui.md` and `README.md` Section 11-12)
+- [x] Write tests for the new permission policy implementation (12 model tests, 9 middleware tests, 20+ controller tests, 12 service tests, 8 command tests)
 - [ ] Run tests and verify (requires PHP environment)
 
 ### Backlog / Known Gaps
@@ -115,3 +116,4 @@ Then:
 | 2026-08-02 | Verified group/permission management already implemented (GroupController, UserGroupController, 3 Blade views, routes); verified admin create user v3 already implemented | Add permission registry, or implement Cert Platform SSO |
 | 2026-08-02 | Data-driven permission policy spec finalized (Final v1.0); old registry/claims specs marked SUPERSEDED | Implement permission policy in loa-auth-platform |
 | 2026-08-02 | Auth Platform implementation complete: 4 migrations, 4 models, PermissionPolicyService, ClaimPolicyMiddleware, ImportPermissions command, PermissionPolicyController, JWT claims/scopes, admin API endpoints, middleware registration | Create permissions.json per app; implement Cert SSO; run tests |
+| 2026-08-02 | Tests written: 12 model tests, 9 middleware tests, 20+ controller tests, 12 service tests, 8 command tests; WithJwtClaims trait created | Run tests and verify |
