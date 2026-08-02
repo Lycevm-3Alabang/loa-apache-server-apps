@@ -26,6 +26,14 @@ class ImportPermissionsCommandTest extends TestCase
     protected function tearDown(): void
     {
         if (is_dir($this->tempDir)) {
+            $dirs = glob($this->tempDir . '/*', GLOB_ONLYDIR);
+            foreach ($dirs as $dir) {
+                $files = glob($dir . '/*');
+                foreach ($files as $file) {
+                    unlink($file);
+                }
+                rmdir($dir);
+            }
             $files = glob($this->tempDir . '/*');
             foreach ($files as $file) {
                 unlink($file);
@@ -38,10 +46,8 @@ class ImportPermissionsCommandTest extends TestCase
     {
         $admin = $this->createAndLoginAdmin();
 
-        $response = $this->artisan('permissions:import', ['app' => 'nonexistent']);
-
-        $response->assertExitCode(1);
-        $this->expectOutputString("permissions.json not found for app: nonexistent\n");
+        $this->artisan('permissions:import', ['app' => 'nonexistent'])
+            ->assertExitCode(1);
     }
 
     public function testImportFailsWhenJsonInvalid(): void

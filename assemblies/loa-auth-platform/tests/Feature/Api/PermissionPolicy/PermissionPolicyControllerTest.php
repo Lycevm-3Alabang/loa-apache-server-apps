@@ -274,8 +274,11 @@ class PermissionPolicyControllerTest extends TestCase
     {
         $admin = $this->createAdmin();
         $user = User::factory()->create();
+        $group = UserGroup::factory()->create();
+        $user->userGroups()->syncWithoutDetaching([$group->id]);
         $this->createClaim('certificate.read');
         $this->createRoutePolicy('certificate', 'GET', 'api/v1/certificates', 'certificate.read');
+        $this->createGroupClaim($group, 'certificate.read');
 
         $response = $this->postJson('/api/v1/admin/permissions/authorize', [
             'user_id' => $user->id,
@@ -310,8 +313,11 @@ class PermissionPolicyControllerTest extends TestCase
     {
         $admin = $this->createAdmin();
         $user = User::factory()->create();
+        $group = UserGroup::factory()->create();
+        $user->userGroups()->syncWithoutDetaching([$group->id]);
         $this->createClaim('certificate.read');
         $this->createRoutePolicy('certificate', 'GET', 'api/v1/certificates', 'certificate.read', 'scope');
+        $this->createGroupClaim($group, 'certificate.read');
 
         $response = $this->postJson('/api/v1/admin/permissions/authorize', [
             'user_id' => $user->id,

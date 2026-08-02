@@ -166,7 +166,15 @@ class PermissionPolicyServiceTest extends TestCase
     public function testAuthorizeReturnsAllowedWhenClaimPresent(): void
     {
         $user = User::factory()->create();
+        $group = UserGroup::factory()->create();
+        $user->userGroups()->syncWithoutDetaching([$group->id]);
+
         Claim::create(['key' => 'certificate.read', 'description' => 'Read certificates']);
+        GroupClaim::create([
+            'group_id' => $group->id,
+            'claim_key' => 'certificate.read',
+            'scope_type' => 'none',
+        ]);
         \App\Models\RoutePolicy::create([
             'app' => 'certificate',
             'method' => 'GET',
@@ -183,7 +191,15 @@ class PermissionPolicyServiceTest extends TestCase
     public function testAuthorizeReturnsDeniedWhenFilterDenies(): void
     {
         $user = User::factory()->create();
+        $group = UserGroup::factory()->create();
+        $user->userGroups()->syncWithoutDetaching([$group->id]);
+
         Claim::create(['key' => 'certificate.read', 'description' => 'Read certificates']);
+        GroupClaim::create([
+            'group_id' => $group->id,
+            'claim_key' => 'certificate.read',
+            'scope_type' => 'none',
+        ]);
         \App\Models\RoutePolicy::create([
             'app' => 'certificate',
             'method' => 'GET',
