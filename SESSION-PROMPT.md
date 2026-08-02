@@ -38,6 +38,16 @@ Then:
 ### Date: 2026-08-02
 
 ### Completed
+- **Business Contexts refactored**: Removed 7 automotive template contexts (commercial, crm, finance, fleet, inventory, procurement, workshop); restructured 3 LOA contexts to use `entities/` subdirectories (certificate, consultation, evaluation)
+- **Permission Registry spec** created and promoted to Final (`kernels/identity/entities/permission-registry.md`):
+  - JSON config format: `permissions.json` per app (app, version, permissions[])
+  - Permission entry schema: key, description, endpoints[], page, required
+  - Endpoint entry schema: method, path
+  - Validation contract: build-time scan, conflict detection, database parity check
+  - Seeder contract: reads all `permissions.json` files, upserts to `permissions` table
+  - Naming convention: `{context}.{resource}.{action}`, reserved prefixes (`users.*`, `tenants.*`, `web.*`)
+  - Lifecycle: add/remove/rotate permission workflows
+  - Anti-patterns, security checklist, implementation inventory
 - **Cert Platform SSO spec** (`assemblies/loa-cert-platform/README.md` updated):
   - Section 10: Added `POST /api/v1/auth/callback` to API surface
   - Section 11: SSO Redirect and Callback spec (flow overview, redirect to Auth Platform, callback endpoint, encryption contract, session establishment, logout, security requirements, Auth Platform config reference)
@@ -66,20 +76,20 @@ Then:
 - **Permission model**: Both group-level AND individual user-level permissions supported (user overrides win)
 - **SSO flow**: Auth Platform issues JWT with `permissions` array → apps check permissions on each endpoint
 - **Tenant group membership**: Users MUST be tenant members before being added to tenant groups (enforcement needed — not yet in code)
-- **Permission discovery**: Currently manual; need a permission registry where apps declare their endpoint-to-permission mapping
+- **Permission discovery**: Declarative registry (`permissions.json` per app) — build-time validation, seeder reads registries
 
 ### In Progress
 - None
 
 ### Next Action
-- Add permission registry for apps to declare their permission requirements
+- Implement permission registry: create `permissions.json` for each app (cert, consult, auth)
+- Implement `ValidatePermissions`, `SeedPermissions`, `PrunePermissions` commands
+- Update `PermissionSeeder` to read from registries
 - Implement Cert Platform SSO integration (from `web-ui.md` and `README.md` Section 11-12)
 
 ### Backlog / Known Gaps
 - **Tenant group membership enforcement**: `AuthorizationService::addToGroup()` doesn't check tenant membership — needs validation that user is tenant member before adding to tenant-scoped group
-- **Permission registry**: Apps need to declare which permissions map to which endpoints (currently manual)
 - **Cert Platform event_attendees check**: External users must exist in `event_attendees` table before registering
-- Education Domain + Business Contexts still use flat structure (no `entities/`, `events/`, `rules/` subdirs)
 - `JWT_SECRET` not configured (env) — required before deploy
 - Production environment: cPanel cron for `schedule:run`, MySQL host, MAIL SMTP credentials
 - No-terminal deploy requires uploading prebuilt `vendor/` (pure-PHP deps; safe cross-platform)

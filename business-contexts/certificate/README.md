@@ -126,6 +126,13 @@ Organization
 User Membership
 ```
 
+Entity specifications are in `entities/`:
+
+| Aggregate | Spec |
+|-----------|------|
+| Certificate | `entities/certificate.md` |
+| Certificate Template | `entities/template.md` |
+
 ---
 
 # 7. Relationships

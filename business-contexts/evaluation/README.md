@@ -119,6 +119,13 @@ Rubric Item
 Rating Scale
 ```
 
+Entity specifications are in `entities/`:
+
+| Aggregate | Spec |
+|-----------|------|
+| Evaluation | `entities/evaluation.md` |
+| Rubric | `entities/rubric.md` |
+
 ---
 
 # 7. Relationships

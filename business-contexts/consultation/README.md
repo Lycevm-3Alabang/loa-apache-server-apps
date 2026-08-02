@@ -114,6 +114,13 @@ Appointment File
 Faculty Availability Rule
 ```
 
+Entity specifications are in `entities/`:
+
+| Aggregate | Spec |
+|-----------|------|
+| Appointment | `entities/appointment.md` |
+| Faculty Availability Rule | `entities/availability.md` |
+
 ---
 
 # 7. Relationships
