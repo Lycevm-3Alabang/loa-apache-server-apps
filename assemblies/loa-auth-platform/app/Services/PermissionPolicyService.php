@@ -9,6 +9,7 @@ use App\Models\TenantAppEndpoint;
 use App\Models\TenantEndpointGrant;
 use App\Models\TenantEndpointOverride;
 use App\Models\User;
+use App\Models\UserClaimOverride;
 use App\Models\UserGroup;
 
 class PermissionPolicyService
@@ -275,7 +276,7 @@ class PermissionPolicyService
             foreach ($grants as $grant) {
                 if ($grant->level === 'deny') {
                     $effectiveLevel = 'deny';
-                    break 2;
+                    break;
                 }
 
                 $grantOrdinal = self::LEVEL_ORDINAL[$grant->level] ?? 0;

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\EndpointGrantController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -63,5 +64,24 @@ Route::prefix('v1')->group(function () {
         Route::delete('/user-overrides/{override}', [App\Http\Controllers\PermissionPolicyController::class, 'userOverridesDestroy']);
 
         Route::post('/authorize', [App\Http\Controllers\PermissionPolicyController::class, 'authorize']);
+    });
+
+    Route::prefix('admin/tenants')->middleware(['jwt.auth', 'jwt.permission:users.manage'])->group(function () {
+        Route::get('/{tenant}/endpoints', [EndpointGrantController::class, 'catalogIndex']);
+        Route::post('/{tenant}/endpoints', [EndpointGrantController::class, 'catalogStore']);
+        Route::post('/{tenant}/endpoints/bulk', [EndpointGrantController::class, 'catalogBulk']);
+        Route::patch('/{tenant}/endpoints', [EndpointGrantController::class, 'catalogUpdate']);
+        Route::delete('/{tenant}/endpoints', [EndpointGrantController::class, 'catalogDestroy']);
+        Route::get('/{tenant}/endpoints/validate', [EndpointGrantController::class, 'catalogValidate']);
+
+        Route::get('/{tenant}/groups/{group}/endpoints', [EndpointGrantController::class, 'groupGrantsIndex']);
+        Route::post('/{tenant}/groups/{group}/endpoints', [EndpointGrantController::class, 'groupGrantStore']);
+        Route::delete('/{tenant}/groups/{group}/endpoints', [EndpointGrantController::class, 'groupGrantDestroy']);
+    });
+
+    Route::prefix('admin/users')->middleware(['jwt.auth', 'jwt.permission:users.manage'])->group(function () {
+        Route::get('/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverridesIndex']);
+        Route::post('/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverrideStore']);
+        Route::delete('/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverrideDestroy']);
     });
 });

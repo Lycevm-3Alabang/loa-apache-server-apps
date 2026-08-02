@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\EndpointGrantController;
 use App\Http\Controllers\WebAdminController;
 use App\Http\Controllers\WebAuthController;
 use App\Http\Controllers\WebResetController;
@@ -63,4 +64,22 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::post('/tenants/{tenant}/groups', [WebAdminController::class, 'tenantsGroupsStore'])->name('admin.tenants.groups.store');
     Route::post('/tenants/{tenant}/groups/{group}/permissions', [WebAdminController::class, 'tenantsGroupsPermissions'])->name('admin.tenants.groups.permissions');
     Route::post('/tenants/{tenant}/members', [WebAdminController::class, 'tenantsMembersStore'])->name('admin.tenants.members');
+
+    // Tenant endpoint catalog
+    Route::get('/tenants/{tenant}/endpoints', [EndpointGrantController::class, 'catalogIndex'])->name('admin.tenants.endpoints');
+    Route::post('/tenants/{tenant}/endpoints', [EndpointGrantController::class, 'catalogStore'])->name('admin.tenants.endpoints.store');
+    Route::post('/tenants/{tenant}/endpoints/bulk', [EndpointGrantController::class, 'catalogBulk'])->name('admin.tenants.endpoints.import');
+    Route::patch('/tenants/{tenant}/endpoints', [EndpointGrantController::class, 'catalogUpdate'])->name('admin.tenants.endpoints.update');
+    Route::delete('/tenants/{tenant}/endpoints', [EndpointGrantController::class, 'catalogDestroy'])->name('admin.tenants.endpoints.destroy');
+    Route::get('/tenants/{tenant}/endpoints/validate', [EndpointGrantController::class, 'catalogValidate'])->name('admin.tenants.endpoints.validate');
+
+    // Group endpoint grants
+    Route::get('/tenants/{tenant}/groups/{group}/endpoints', [EndpointGrantController::class, 'groupGrantsIndex'])->name('admin.tenants.groups.endpoints');
+    Route::post('/tenants/{tenant}/groups/{group}/endpoints', [EndpointGrantController::class, 'groupGrantStore'])->name('admin.tenants.groups.endpoints.grant');
+    Route::delete('/tenants/{tenant}/groups/{group}/endpoints', [EndpointGrantController::class, 'groupGrantDestroy'])->name('admin.tenants.groups.endpoints.revoke');
+
+    // User endpoint overrides
+    Route::get('/users/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverridesIndex'])->name('admin.users.endpoint-overrides');
+    Route::post('/users/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverrideStore'])->name('admin.users.endpoint-overrides.upsert');
+    Route::delete('/users/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverrideDestroy'])->name('admin.users.endpoint-overrides.delete');
 });
