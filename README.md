@@ -300,6 +300,55 @@ Start with:
 
 # Testing
 
+## Running All Tests for an Assembly
+
+Each assembly has its own test suite. To run all tests for an assembly:
+
+```bash
+cd assemblies/<assembly-name>
+
+# Install dependencies
+composer install
+
+# Run all tests
+php vendor/bin/phpunit
+
+# Run with verbose output
+php vendor/bin/phpunit --verbose
+
+# Run a specific test file
+php vendor/bin/phpunit tests/Feature/Api/PermissionPolicy/ClaimPolicyMiddlewareTest.php
+
+# Run with coverage
+php vendor/bin/phpunit --coverage
+```
+
+### Docker
+
+If the assembly includes a `docker-compose.yml`:
+
+```bash
+cd assemblies/<assembly-name>
+
+# Start the full stack
+docker compose up -d
+
+# Run all tests inside the app container
+docker compose exec app php vendor/bin/phpunit
+
+# Run a specific test file
+docker compose exec app php vendor/bin/phpunit tests/Feature/Api/PermissionPolicy/ClaimPolicyMiddlewareTest.php
+
+# Stop the stack
+docker compose down
+```
+
+### Test Environment
+
+Tests use an in-memory SQLite database (configured in `phpunit.xml.dist`). No database setup is needed. The `JWT_SECRET` is set to a test value automatically.
+
+---
+
 ## Auth Platform (loa-auth-platform)
 
 ### Prerequisites
@@ -356,15 +405,6 @@ docker compose down
 ```
 
 The `phpunit.xml.dist` configures the test environment to use SQLite in-memory (`:memory:`), so no database setup is needed inside the container. The `JWT_SECRET` is set to a test value automatically.
-
-### Test Environment
-
-Tests use an in-memory SQLite database. The `.env` file is not required for testing — the `phpunit.xml.dist` sets all necessary environment variables:
-
-- `DB_CONNECTION=sqlite`
-- `DB_DATABASE=:memory:`
-- `JWT_SECRET=test-secret-key-for-testing-only-32chars`
-- `APP_ENV=testing`
 
 ### Test Structure
 
