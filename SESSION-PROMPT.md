@@ -57,6 +57,8 @@ Then:
   - Implementation inventory (5 new files, 5 modified files)
 - **admin-dashboard.md** updated — added v4 scope reference to group-permission-management.md
 - **Architecture decision confirmed**: SSO-only for LOA users, self-hosted for external users on cert app
+- **Group/permission management implemented**: GroupController, UserGroupController, 3 Blade views, routes — all verified against spec
+- **Admin create user implemented** (v3): WebAdminController::create/store, create.blade.php, routes — spec already Final in admin-dashboard.md §9
 
 ### Key Architecture Decisions
 - **Consultation app**: SSO-only, LOA domains only (`@lyceumalabang.edu.ph`, `@itmlyceumalabang.onmicrosoft.com`)
@@ -67,11 +69,9 @@ Then:
 - **Permission discovery**: Currently manual; need a permission registry where apps declare their endpoint-to-permission mapping
 
 ### In Progress
-- None — all specs created, awaiting implementation
+- None
 
 ### Next Action
-- Implement Auth Platform group/permission management API + admin UI (from `group-permission-management.md`)
-- Add domain restriction to Auth Platform registration (LOA domains only)
 - Add permission registry for apps to declare their permission requirements
 - Implement Cert Platform SSO integration (from `web-ui.md` and `README.md` Section 11-12)
 
@@ -79,7 +79,6 @@ Then:
 - **Tenant group membership enforcement**: `AuthorizationService::addToGroup()` doesn't check tenant membership — needs validation that user is tenant member before adding to tenant-scoped group
 - **Permission registry**: Apps need to declare which permissions map to which endpoints (currently manual)
 - **Cert Platform event_attendees check**: External users must exist in `event_attendees` table before registering
-- **Admin create user** (spec pending): admin manually creates user account without self-registering; routes `GET /admin/users/create` + `POST /admin/users`; form: email, name, password (optional → auto-generate), status; permission `users.manage`; spec to be added to `admin-dashboard.md` as v3
 - Education Domain + Business Contexts still use flat structure (no `entities/`, `events/`, `rules/` subdirs)
 - `JWT_SECRET` not configured (env) — required before deploy
 - Production environment: cPanel cron for `schedule:run`, MySQL host, MAIL SMTP credentials
@@ -106,4 +105,5 @@ Then:
 | 2026-08-01 | Identity Kernel v3.0 tenancy spec (tenants, scoped groups/grants, `jwt.tenant`, claims) + admin-dashboard v2 tenant admin | Review/promote tenancy spec; then implement |
 | 2026-08-01 | Tenancy + admin dashboard v1 implemented and verified (migrations, TenantService, tenant-scoped auth, `jwt.tenant`/`web.admin`, login destination, `/admin/users`); `database.sql` rebuilt from migration schema (parity-checked) | Deploy current auth release, or start admin dashboard v2 |
 | 2026-08-01 | Admin dashboard v2 implemented: tenant CRUD, groups, per-group permissions, members, suspend/activate; `admin-dashboard.md` promoted to Final; dist regenerated | Deploy, or start Phase 2 (Consult App) |
-| 2026-08-02 | Cert Platform SSO spec (README.md §11-12), web-ui.md created, group-permission-management.md created, architecture decisions (SSO-only for LOA, self-hosted for external, permission-based role mapping) | Implement Auth Platform group/permission API + admin UI, add permission registry |
+| 2026-08-02 | Cert Platform SSO spec (README.md §11-12), web-ui.md created, group-permission-management.md created, architecture decisions (SSO-only for LOA, self-hosted for external, permission-based role mapping) | Implement group/permission API + admin UI |
+| 2026-08-02 | Verified group/permission management already implemented (GroupController, UserGroupController, 3 Blade views, routes); verified admin create user v3 already implemented | Add permission registry, or implement Cert Platform SSO |

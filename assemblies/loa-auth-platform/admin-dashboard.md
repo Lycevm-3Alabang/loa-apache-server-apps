@@ -2,7 +2,7 @@
 ## Product Assembly Component Specification
 
 **Version:** 3.0
-**Status:** Final (v1 + v2 implemented; v3 spec added)
+**Status:** Final (v1 + v2 + v3 + v4 implemented)
 **Layer:** Product Assembly (`loa-auth-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 

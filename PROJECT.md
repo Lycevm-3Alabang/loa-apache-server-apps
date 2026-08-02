@@ -2,7 +2,7 @@
 ## Project Tracker
 
 **Started:** 2026-07-30
-**Last Updated:** 2026-07-31 11:30
+**Last Updated:** 2026-08-02
 **Target:** cPanel (PHP 8.3+ / MySQL 8 / Laravel 12)
 
 ---
@@ -130,6 +130,8 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Admin dashboard v2 (tenant mgmt) | ✅ Done | Tenant CRUD, groups, per-group permissions, members (add/remove), suspend/activate; `admin-dashboard.md` promoted to Final |
 | Admin session login/logout | ✅ Done | `WebAuthController` admin flow, session auth, logout route, dashboard access control |
 | Admin web UI spec | ✅ Done | `assemblies/loa-auth-platform/admin-dashboard.md` — v1 + v2 implemented, Final |
+| Admin create user (v3) | ✅ Done | `WebAdminController::create/store`, `admin/users/create.blade.php`, routes — spec Final in admin-dashboard.md §9 |
+| Group/permission management (v4) | ✅ Done | `GroupController`, `UserGroupController`, 3 Blade views, API + admin routes — spec in group-permission-management.md |
 | Deploy to auth.loa.edu.ph | ⬜ Not started | |
 
 ### Bugs Found & Fixed (2026-07-31)
