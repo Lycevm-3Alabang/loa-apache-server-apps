@@ -1,3 +1,13 @@
 loa-auth-dist/
 loa-auth-dist.zip
 *.zip
+
+# PHPUnit
+.phpunit.cache/
+
+# Laravel
+storage/framework/cache/data/
+storage/framework/sessions/
+storage/framework/views/
+storage/logs/
+bootstrap/cache/
