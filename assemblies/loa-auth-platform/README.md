@@ -265,3 +265,42 @@ It does not define:
 - domain-specific logic
 
 Those responsibilities belong to Business Contexts and Product Assemblies.
+
+---
+
+# 15. Testing
+
+## Running Tests
+
+### Prerequisites
+
+- PHP 8.3+
+- Composer
+
+### Local (SQLite in-memory)
+
+```bash
+cd assemblies/loa-auth-platform
+composer install
+php vendor/bin/phpunit
+```
+
+### Docker
+
+```bash
+cd assemblies/loa-auth-platform
+
+# Start the full stack
+docker compose up -d
+
+# Run all tests inside the app container
+docker compose exec app php vendor/bin/phpunit
+
+# Run a specific test file
+docker compose exec app php vendor/bin/phpunit tests/Feature/Api/PermissionPolicy/ClaimPolicyMiddlewareTest.php
+
+# Stop the stack
+docker compose down
+```
+
+Tests use an in-memory SQLite database (configured in `phpunit.xml.dist`). No database setup is needed.
