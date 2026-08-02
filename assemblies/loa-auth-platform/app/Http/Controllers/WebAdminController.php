@@ -436,13 +436,16 @@ class WebAdminController extends Controller
 
         DB::transaction(function () use ($group, $allowedIds) {
             $allPermissions = Permission::pluck('id');
+            $syncData = [];
 
             foreach ($allPermissions as $permId) {
-                $group->permissions()->updateExistingPivot(
-                    $permId,
-                    ['granted' => in_array($permId, $allowedIds, true), 'tenant_id' => null],
-                );
+                $syncData[$permId] = [
+                    'granted' => in_array($permId, $allowedIds, true),
+                    'tenant_id' => null,
+                ];
             }
+
+            $group->permissions()->sync($syncData);
         });
 
         return back()->with('status', 'Permissions updated.');
@@ -552,8 +555,6 @@ class WebAdminController extends Controller
             ],
             [
                 'granted' => $request->boolean('granted'),
-                'created_at' => now(),
-                'updated_at' => now(),
             ],
         );
 

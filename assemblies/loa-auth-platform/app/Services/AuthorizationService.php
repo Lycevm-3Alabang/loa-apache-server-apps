@@ -152,14 +152,12 @@ class AuthorizationService
             return;
         }
 
-        $existing = $group->permissions()
-            ->wherePivot('permission_id', $permission->id)
-            ->where(fn ($q) => $this->scopeTenant($q, $tenantId, 'user_group_permission.tenant_id'))
-            ->first();
-
-        if ($existing) {
-            $group->permissions()->detach($permission->id);
-        }
+        $group->permissions()->syncWithoutDetaching([
+            $permission->id => [
+                'granted' => false,
+                'tenant_id' => $tenantId,
+            ],
+        ]);
     }
 
     private function findUserOverride(User $user, Permission $permission, ?string $tenantId): ?bool

@@ -167,8 +167,6 @@ class UserGroupController extends Controller
             ],
             [
                 'granted' => $request->boolean('granted'),
-                'created_at' => now(),
-                'updated_at' => now(),
             ],
         );
 

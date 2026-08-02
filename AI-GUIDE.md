@@ -18,6 +18,61 @@ When uncertain, AI should preserve architectural integrity over implementation c
 
 ---
 
+# ⛔ MANDATORY RULE: Run Tests Before Commit
+
+**The AI agent MUST run the test suite after any code change and before committing.**
+
+This is a hard requirement. Violations are treated as failures.
+
+## The Rule
+
+```
+Code changed
+  ├── Run the full test suite
+  ├── All tests pass  → proceed (commit, continue, etc.)
+  ├── Some tests fail → FIX the failures before proceeding
+  └── Tests not available → ask the user how to verify
+```
+
+## How to Run Tests
+
+Each assembly may have its own test runner. Check the assembly's README or `phpunit.xml.dist` for the correct command.
+
+For Laravel assemblies using Docker:
+
+```bash
+docker compose exec app php vendor/bin/phpunit
+```
+
+For a single test file:
+
+```bash
+docker compose exec app php vendor/bin/phpunit tests/Feature/Api/Auth/LoginTest.php
+```
+
+For a specific test method:
+
+```bash
+docker compose exec app php vendor/bin/phpunit --filter testLoginSuccess
+```
+
+For testdox output (human-readable summary):
+
+```bash
+docker compose exec app php vendor/bin/phpunit --testdox
+```
+
+## Non-Negotiable Checklist
+
+- [ ] I ran the test suite after my code change
+- [ ] All tests pass (zero failures, zero errors)
+- [ ] If I broke a test, I fixed it before moving on
+- [ ] If tests are slow, I ran at least the affected test file
+
+**No code change is complete until tests pass.**
+
+---
+
 # ⛔ MANDATORY RULE: Specs Before Code
 
 **The AI agent MUST check for and read the spec before writing ANY code.**
