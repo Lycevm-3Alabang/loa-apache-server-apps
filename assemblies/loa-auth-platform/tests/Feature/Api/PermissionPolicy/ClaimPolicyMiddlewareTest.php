@@ -8,12 +8,24 @@ use App\Models\User;
 use App\Models\UserGroup;
 use App\Models\GroupClaim;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 use Tests\Traits\WithJwtClaims;
 
 class ClaimPolicyMiddlewareTest extends TestCase
 {
     use RefreshDatabase, WithJwtClaims;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Route::middleware(['jwt.auth', 'jwt.claim-policy'])
+            ->group(function () {
+                Route::get('/api/v1/certificates', fn () => response()->json(['ok' => true]));
+                Route::post('/api/v1/certificates', fn () => response()->json(['ok' => true]));
+            });
+    }
 
     public function testRouteWithoutPolicyPasses(): void
     {

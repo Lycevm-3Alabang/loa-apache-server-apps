@@ -3,20 +3,12 @@
 namespace App\Http\Middleware;
 
 use App\Models\RoutePolicy;
-use App\Services\PermissionPolicyService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class ClaimPolicyMiddleware
 {
-    private PermissionPolicyService $policy;
-
-    public function __construct(PermissionPolicyService $policy)
-    {
-        $this->policy = $policy;
-    }
-
     public function handle(Request $request, Closure $next): Response
     {
         $claims = $request->attributes->get('jwt_claims');
@@ -25,8 +17,8 @@ class ClaimPolicyMiddleware
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $userId = $claims['sub'];
-        $tenantId = $claims['tenant']['id'] ?? null;
+        $userClaims = $claims['permissions'] ?? [];
+        $userScopes = $claims['scopes'] ?? [];
 
         $method = $request->method();
         $path = $request->path();
@@ -38,9 +30,6 @@ class ClaimPolicyMiddleware
         if ($routePolicies->isEmpty()) {
             return $next($request);
         }
-
-        $userClaims = $this->policy->resolveUserClaims($userId, $tenantId);
-        $userScopes = $this->policy->resolveUserScopes($userId, $tenantId);
 
         foreach ($routePolicies as $routePolicy) {
             if (!in_array($routePolicy->claim_key, $userClaims, true)) {
