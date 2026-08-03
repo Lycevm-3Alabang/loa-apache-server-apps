@@ -38,20 +38,24 @@ Then:
 ### Date: 2026-08-03
 
 ### Completed
-- **Group priority resolution spec'd** (`user_groups.priority`; specs only — no code):
-  - `kernels/identity/entities/user-group.md`: added `priority` attribute (int, default 10, **1 = highest** — lower value wins) + invariant #5
-  - `assemblies/loa-auth-platform/tenant-group-endpoint-grants.md` → **Final v1.1**: new §3.3 *Group Priority* + §4 resolution algorithm rewritten — highest-precedence (lowest value) group wins; **`deny` wins only when priorities tie**; different priorities → higher-precedence group wins, a lower-precedence `deny` does NOT override; user overrides apply last
-  - `kernels/identity/rules/permission-resolution.md`: added endpoint-model specialization note (priority-wins); claims model stays union/OR
-- **Endpoint catalog admin UI navigation fixed**:
-  - Tenant show page now has "Manage endpoints" button → `admin.tenants.endpoints.manage`
-  - `group-endpoints.blade.php` "Back to catalog"/"Add endpoints first" links fixed to point at the blade page (were pointing at the JSON API)
-  - `tenant-endpoint-catalog.md` → **Final v3.2**: documents the web-vs-API route split (`/endpoints` = JSON, `/endpoints/manage` = blade) + tenant-show entry point
+- **Group priority implemented** (code complete, all 143 tests pass):
+  - Migration `2026_08_03_000023_add_priority_to_user_groups_table.php` adds `priority` column (int, default 10)
+  - `UserGroup` model: `priority` added to `$fillable`
+  - `PermissionPolicyService::resolveEffectiveLevelForEndpoint()` rewritten — sorts grants by group priority, lowest value wins, `deny` only on priority ties
+  - Admin UI: priority field in group create forms (platform + tenant), priority column in groups index, priority shown in group detail
+  - `WebAdminController`: `groupsStore` + `tenantsGroupsStore` validate priority
+  - `UserGroupFactory`, `database.sql` seed, `AdminGroupsTest` all updated
+- **Access Config Import/Export spec written** (`access-config-import-export.md` Draft v1.0):
+  - JSON schema for groups (with priority), grants, user overrides
+  - Template download, export, import (preview + confirm) API contracts
+  - Import logic: group upsert by name, grant upsert, "none" level deletes rows
+  - Admin UI: download template, export, import dialog with preview
 
 ### In Progress
-- Group priority implementation (spec Final; code not started)
+- (none)
 
 ### Next Action
-- [ ] **PRIORITY**: Implement group priority — migration adds `user_groups.priority` (int, default 10, 1 = highest), model fillable, update endpoint-level resolution logic (highest-precedence group wins, `deny` only on priority ties), admin group UI priority field
+- [ ] Implement Access Config Import/Export (`AccessConfigController`, routes, admin UI)
 - [ ] Implement Cert Platform SSO integration  [carried over]
 
 ### Backlog / Known Gaps
@@ -91,3 +95,4 @@ Then:
 | 2026-08-02 | Added Admin UI §6 to `tenant-endpoint-catalog.md` (endpoint catalog list, create form, bulk import, validate, delete with force) and Admin UI §8 to `tenant-group-endpoint-grants.md` (group endpoint grants page, user endpoint overrides page); updated Implementation Inventory and Dependency References in both specs; updated SESSION-PROMPT.md | Build Blade views for tenant endpoint catalog + group/user endpoint grants |
 | 2026-08-02 | Implemented tenant endpoint catalog + group endpoint grants: 3 migrations, 3 models, EndpointGrantController, ClaimPolicyMiddleware extension, GET /api/v1/auth/access endpoint, admin web + API routes, 3 Blade views. Fixed ImportPermissionsCommandTest (Artisan::call() to resolve SQLite :memory: isolation). All 143 tests pass. Clarified: permissions.json per app not needed — bulk import API already accepts the JSON format as payload. | Implement Cert Platform SSO |
 | 2026-08-03 | Group priority resolution spec'd: `user_groups.priority` (int, default 10, 1 = highest); `tenant-group-endpoint-grants.md` → Final v1.1 (§3.3 Group Priority + §4 algorithm — highest-precedence wins, `deny` only on priority ties); `user-group.md` + `permission-resolution.md` updated. Endpoint catalog admin UI navigation fixed + `tenant-endpoint-catalog.md` → Final v3.2 (web/API split, entry point). | Implement group priority in code |
+| 2026-08-03 | Implemented group priority: migration, model, resolution logic, admin UI, tests (143 pass); committed + pushed. Wrote `access-config-import-export.md` spec (Draft v1.0) — JSON template download, export, import with preview/confirm for groups+grants+overrides. | Implement access config import/export, or Cert SSO |
