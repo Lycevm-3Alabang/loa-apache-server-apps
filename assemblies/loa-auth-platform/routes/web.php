@@ -88,6 +88,9 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::get('/tenants/{tenant}/endpoints/manage', [WebAdminController::class, 'tenantsEndpoints'])->name('admin.tenants.endpoints.manage');
     Route::post('/tenants/{tenant}/endpoints/manage', [WebAdminController::class, 'tenantsEndpointsStore'])->name('admin.tenants.endpoints.manage.store');
     Route::delete('/tenants/{tenant}/endpoints/manage', [WebAdminController::class, 'tenantsEndpointsDestroy'])->name('admin.tenants.endpoints.manage.destroy');
+    Route::get('/tenants/{tenant}/endpoints/export', [WebAdminController::class, 'tenantsEndpointsExport'])->name('admin.tenants.endpoints.export');
+    Route::get('/tenants/{tenant}/endpoints/import', [WebAdminController::class, 'tenantsEndpointsImportForm'])->name('admin.tenants.endpoints.import.manage');
+    Route::post('/tenants/{tenant}/endpoints/import', [WebAdminController::class, 'tenantsEndpointsImport'])->name('admin.tenants.endpoints.import.manage.store');
 
     Route::get('/tenants/{tenant}/groups/{group}/endpoints/manage', [WebAdminController::class, 'tenantsGroupsEndpoints'])->name('admin.tenants.groups.endpoints.manage');
     Route::post('/tenants/{tenant}/groups/{group}/endpoints/manage', [WebAdminController::class, 'tenantsGroupsEndpointsStore'])->name('admin.tenants.groups.endpoints.manage.store');

@@ -10,6 +10,7 @@ use App\Services\AuthorizationService;
 use App\Services\IdentityService;
 use App\Services\PasswordResetNotificationService;
 use App\Services\TenantService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class WebAdminController extends Controller
 {
@@ -672,6 +674,150 @@ class WebAdminController extends Controller
             ->delete();
 
         return back()->with('status', 'Endpoint removed from catalog.');
+    }
+
+    // ─── Endpoint catalog export/import ──────────────────────
+
+    public function tenantsEndpointsExport(string $tenant): StreamedResponse
+    {
+        $tenant = Tenant::findOrFail($tenant);
+
+        $endpoints = \App\Models\TenantAppEndpoint::where(function ($q) use ($tenant) {
+            $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
+        })->orderBy('method')->orderBy('path')->get();
+
+        $payload = [
+            'version' => '1.0',
+            'exported_at' => now()->toIso8601String(),
+            'tenant_slug' => $tenant->slug,
+            'endpoints' => $endpoints->map(fn ($ep) => [
+                'method' => $ep->method,
+                'path' => $ep->path,
+                'label' => $ep->label,
+                'description' => $ep->description,
+                'required_level' => $ep->required_level,
+            ])->toArray(),
+        ];
+
+        $filename = 'endpoint-catalog-' . $tenant->slug . '-' . now()->format('Y-m-d') . '.json';
+
+        return response()->streamDownload(function () use ($payload) {
+            echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        }, $filename, [
+            'Content-Type' => 'application/json',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    public function tenantsEndpointsImportForm(string $tenant): RedirectResponse
+    {
+        return redirect()->route('admin.tenants.endpoints.manage', $tenant);
+    }
+
+    public function tenantsEndpointsImport(Request $request, string $tenant): JsonResponse
+    {
+        $tenantModel = Tenant::findOrFail($tenant);
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            if (!$file->isValid() || $file->getMimeType() !== 'application/json') {
+                return response()->json(['status' => 'error', 'message' => 'Invalid JSON file'], 422);
+            }
+            $content = file_get_contents($file->getRealPath());
+        } else {
+            $content = $request->input('payload') ?? $request->getContent();
+        }
+
+        $data = json_decode($content, true);
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Malformed JSON: ' . json_last_error_msg(),
+            ], 422);
+        }
+
+        $validator = Validator::make($data, [
+            'version' => 'required|string|in:1.0',
+            'endpoints' => 'required|array',
+            'endpoints.*.method' => 'required|string|in:GET,POST,PUT,PATCH,DELETE,*',
+            'endpoints.*.path' => 'required|string|max:512',
+            'endpoints.*.label' => 'nullable|string|max:255',
+            'endpoints.*.description' => 'nullable|string',
+            'endpoints.*.required_level' => 'required|in:read,write,admin',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $isDryRun = $request->boolean('dry_run') || !$request->boolean('confirm');
+        $endpointsInput = $data['endpoints'];
+
+        $preview = [
+            'endpoints' => ['create' => [], 'update' => [], 'skip' => [], 'errors' => []],
+        ];
+
+        foreach ($endpointsInput as $ep) {
+            $path = \App\Models\TenantAppEndpoint::normalizePath($ep['path']);
+            $method = strtoupper($ep['method']);
+
+            $existing = \App\Models\TenantAppEndpoint::where('tenant_id', $tenantModel->id)
+                ->where('method', $method)
+                ->where('path', $path)
+                ->first();
+
+            if ($existing) {
+                $preview['endpoints']['update'][] = $method . ' ' . $path;
+            } else {
+                $preview['endpoints']['create'][] = $method . ' ' . $path;
+            }
+        }
+
+        if ($isDryRun) {
+            return response()->json(['status' => 'preview'] + $preview);
+        }
+
+        $result = DB::transaction(function () use ($tenantModel, $endpointsInput, &$preview) {
+            $created = 0;
+            $updated = 0;
+
+            foreach ($endpointsInput as $ep) {
+                $path = \App\Models\TenantAppEndpoint::normalizePath($ep['path']);
+                $method = strtoupper($ep['method']);
+
+                $existing = \App\Models\TenantAppEndpoint::where('tenant_id', $tenantModel->id)
+                    ->where('method', $method)
+                    ->where('path', $path)
+                    ->first();
+
+                if ($existing) {
+                    $existing->update([
+                        'label' => $ep['label'] ?? $existing->label,
+                        'description' => $ep['description'] ?? $existing->description,
+                        'required_level' => $ep['required_level'],
+                    ]);
+                    $updated++;
+                } else {
+                    \App\Models\TenantAppEndpoint::create([
+                        'tenant_id' => $tenantModel->id,
+                        'method' => $method,
+                        'path' => $path,
+                        'label' => $ep['label'] ?? null,
+                        'description' => $ep['description'] ?? null,
+                        'required_level' => $ep['required_level'],
+                    ]);
+                    $created++;
+                }
+            }
+
+            return ['created' => $created, 'updated' => $updated];
+        });
+
+        return response()->json(['status' => 'applied'] + $result);
     }
 
     // ─── v5: Group endpoint grants ──────────────────────────────────
