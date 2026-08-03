@@ -2,7 +2,7 @@
 
 ## Product Assembly Component Specification
 
-**Version:** 1.0
+**Version:** 1.1
 **Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`) — admin surface
 **Audience:** Architects, Engineers, AI Development Agents
@@ -29,7 +29,7 @@ A platform admin (or tenant app via `permissions.json` import) registers a tenan
 
 - `tenant_endpoint_grant` table — group → endpoint level grant (tenant-scoped).
 - `tenant_endpoint_override` table — user → endpoint level override (tenant-scoped).
-- Level vocabulary resolution (`read` < `write` == `admin`; `deny` wins within a group; user overrides apply last).
+- Level vocabulary + group-priority resolution (`read` < `write` == `admin`; highest-precedence group wins; `deny` wins on priority ties; user overrides apply last).
 - Admin UI + API for managing group grants and user overrides against cataloged endpoints.
 - The "resolve effective level" computation consumed at login/refresh to build the JWT `permissions` claim payload.
 
@@ -57,7 +57,7 @@ A platform admin (or tenant app via `permissions.json` import) registers a tenan
 
 **Semantics:**
 - `read` < `write` == `admin`. `admin` is a label that enforces at the same level as `write`.
-- `deny` is a signal, not a level. If **any** of the user's groups has `deny` for an endpoint, the group-resolution result is `deny` — regardless of what other groups granted.
+- `deny` is a signal, not a level. Within the winning priority tier a `deny` grant wins; across priority tiers the higher-precedence group decides (§3.3).
 - A user-level override **replaces** the group-resolution result entirely for that endpoint. A user override of `deny` can re-enable an endpoint that groups denied.
 
 ### 3.2 Scope of a Grant
@@ -73,6 +73,18 @@ A grant applies to a user only when:
 - The catalog entry for the endpoint exists under the same tenant scope.
 
 Platform-global groups (`tenant_id NULL`) with platform-wide endpoint grants (`tenant_id NULL`) apply in **every** tenant.
+
+### 3.3 Group Priority
+
+Each group carries an integer `priority` (`user_groups.priority`, default `10`; **1 = highest precedence** — lower values win). Priority resolves **conflicts across groups** in the endpoint-level model only:
+
+- The grant from the group with the **highest precedence (lowest `priority` value)** decides the effective level for an endpoint.
+- **Different priorities:** the higher-precedence (lower value) group wins. A lower-precedence group's `deny` does **not** beat a higher-precedence group's grant.
+- **Same priority:** `deny` wins, otherwise the highest level among the tied groups (`admin` = `write` > `read`).
+- A group with no grant on the endpoint contributes nothing, regardless of its priority (`none`).
+- The claims-based model (`data-driven-permission-policy.md`) is unaffected — it keeps union/OR resolution (`permission-resolution.md`).
+
+This replaces the flat union ("OR merge") for the endpoint model: instead of merging every group's grant, the winning group is the one with the lowest `priority` value (closest to `1`); ties on `priority` fall back to `deny` first, then the highest level.
 
 ---
 
@@ -92,16 +104,22 @@ Given `(userId, tenantId, method, path)`:
      (group.tenant_id IS NULL)                  -- platform-global groups
      OR (group.tenant_id = tenantId)            -- tenant groups
      AND user is member (user_user_group)
-
-4. effective_level = 'none'
-   for each group in groups:
+   relevant = for each group in groups:
       grant = tenant_endpoint_grant[group.id, method, paramMatch(path), grantTenantId]
          where grantTenantId IN (NULL, tenantId)  -- platform-wide + tenant grants
-      if grant.level == 'deny':
-         effective_level = 'deny'
-         break  (deny wins within group resolution)
-      if levelOrdinal(grant.level) > levelOrdinal(effective_level):
-         effective_level = grant.level
+      if grant is not null:
+         keep (group.priority, grant.level)
+
+4. // Priority wins: the lowest priority value (1 = highest) decides
+   if relevant is empty:
+      effective_level = 'none'                  -- no grant → closed-by-default
+   else:
+      winPriority = min(group.priority in relevant)
+      candidates  = relevant where group.priority == winPriority
+      if any candidate.level == 'deny':
+         effective_level = 'deny'               -- same priority: deny wins
+      else:
+         effective_level = max levelOrdinal(candidates)  -- {write, admin}=2, read=1
 
 5. // Apply user override
    override = tenant_endpoint_override[userId, method, paramMatch(path), overrideTenantId]
@@ -116,7 +134,8 @@ Given `(userId, tenantId, method, path)`:
 **Notes:**
 - `paramMatch(path)` uses `{param}`-aware matching (see `tenant-endpoint-catalog.md` §8: `/api/v1/appointments/{id}` matches `/api/v1/appointments/123`).
 - `levelOrdinal`: `none`=0, `read`=1, `write`=`admin`=2.
-- `deny` is checked before ordinal comparison — a single `deny` grant short-circuits to denial.
+- Group `priority` (`user_groups.priority`, **1 = highest**, lower value wins) decides which group's grant applies when multiple groups conflict. A lower-precedence `deny` does not beat a higher-precedence grant.
+- On a `priority` tie, `deny` wins, else `admin`(=write) > `read`. Priority is irrelevant when no grant exists (`none`).
 - A user-level override of `deny` can re-enable; a user-level override of any level replaces the group result.
 
 ### 4.1 JWT `permissions` Claim Payload
@@ -154,7 +173,7 @@ See `tenant-endpoint-catalog.md` §8 for the enforcement hook contract.
 | `kernels/identity/tenancy.md` (Final v3.0) | Provides `tenants`, `user_tenants`, tenant-scoped `user_groups`. Membership enforcement gate (§3.2) reuses `tenantService::isMember()`. |
 | `kernels/identity/rules/permission-resolution.md` | Existing resolution order (union of groups, deny-wins, user overrides last). This spec applies the **same ordering** but at the endpoint-level granularity with a 3-level ordinal instead of boolean grant/deny. |
 | `assemblies/loa-auth-platform/group-permission-management.md` | `GroupController`, `UserGroupController` manage claims-based grants. This spec adds endpoint-level grant management for the catalog model. Both are consumed by the same admin session (`web.admin`). |
-| `kernels/identity/entities/user-group.md` | `user_groups` table is the grant target. `tenant_id` on groups scopes membership. |
+| `kernels/identity/entities/user-group.md` | `user_groups` table is the grant target. `tenant_id` on groups scopes membership; `priority` provides precedence across groups (§3.3). |
 | `kernels/identity/README.md` | IdentityService / JWTService contracts; this spec extends the JWT `permissions` payload at token issuance. |
 
 ### 5.1 Coexistence with Claims-Based Permissions
@@ -574,12 +593,12 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 |-------|------|--------|
 | Kernel | `kernels/identity/tenancy.md` §3 (tenants, `user_tenants`, tenant-scoped groups) | Final, implemented |
 | Kernel | `kernels/identity/entities/data-driven-permission-policy.md` (claims model) | Final, implemented (parallel model) |
-| Kernel | `kernels/identity/rules/permission-resolution.md` (deny-wins, override-last) | Final, implemented |
-| Kernel | `kernels/identity/entities/user-group.md` (group entity + `tenant_id`) | Draft, implemented |
+| Kernel | `kernels/identity/rules/permission-resolution.md` (deny-wins, override-last; endpoint model specializes with priority-wins) | Final, implemented |
+| Kernel | `kernels/identity/entities/user-group.md` (group entity + `tenant_id` + `priority`) | Draft, implemented |
 | Assembly (spec) | `tenant-endpoint-catalog.md` (catalog table + routes) | Final v3.1, **spec only — not implemented** |
 | Assembly (spec) | `group-permission-management.md` (group CRUD + claims grants) | Draft, **implemented** |
-| Assembly (spec) | `tenant-group-endpoint-grants.md` | **Final** (Admin UI §8 added) |
-| Assembly (code) | Migration: `tenant_endpoint_grant`, `tenant_endpoint_override` tables | To implement |
+| Assembly (spec) | `tenant-group-endpoint-grants.md` | **Final v1.1** (Admin UI §8 added; **§3.3 group priority** added) |
+| Assembly (code) | Migration: `tenant_endpoint_grant`, `tenant_endpoint_override` tables + `user_groups.priority` column (1 = highest) | To implement |
 | Assembly (code) | Model: `TenantEndpointGrant`, `TenantEndpointOverride` | To implement |
 | Assembly (code) | Controller: extends `PermissionPolicyController` or new `EndpointGrantController` | To implement |
 | Assembly (code) | Middleware: extend `ClaimPolicyMiddleware` for level-based enforcement | To implement |
@@ -596,8 +615,8 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 | `tenant-endpoint-catalog.md` (Final v3.1) | Defines the catalog table (`tenant_app_endpoint`), admin routes, enforcement hook, session payload format |
 | `kernels/identity/entities/data-driven-permission-policy.md` (Final v1.0) | Claims-based model (parallel); `permissions.json` import format; JWT `permissions` + `scopes` claims |
 | `kernels/identity/tenancy.md` (Final v3.0) | `tenants`, `user_tenants`, tenant-scoped groups/grants, `jwt.tenant` middleware, membership model |
-| `kernels/identity/rules/permission-resolution.md` | Resolution order: union of groups, deny-wins, user overrides last |
-| `kernels/identity/entities/user-group.md` | Group entity with `tenant_id` scoping |
+| `kernels/identity/rules/permission-resolution.md` | General resolution order (union of groups, deny-wins, user overrides last). The endpoint model specializes it: **priority-wins** replaces union (`tenant-group-endpoint-grants.md` §3.3/§4). |
+| `kernels/identity/entities/user-group.md` | Group entity with `tenant_id` scoping and `priority` rank |
 | `assemblies/loa-auth-platform/group-permission-management.md` | Existing group/user-permission admin UI + API patterns to extend; §6 Admin UI pattern to follow |
 | `assemblies/loa-auth-platform/tenant-endpoint-catalog.md` §6 | Endpoint catalog admin UI (new) — this spec's grants UI builds on the catalog |
 | `assemblies/loa-auth-platform/admin-dashboard.md` §3.8 | Route group `/admin/tenants/*` — this spec adds `/groups/{group}/endpoints` under it |

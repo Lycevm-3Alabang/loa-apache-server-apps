@@ -1,7 +1,7 @@
 # Tenant App Endpoint Catalog
 ## Product Assembly Component Specification
 
-**Version:** 3.1
+**Version:** 3.2
 **Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`) — admin surface
 **Audience:** Architects, Engineers, AI Development Agents
@@ -100,18 +100,25 @@ Route group (added to `routes/web.php` under §3.8):
 
 | Method | URI | Action | Route name |
 |--------|-----|--------|------------|
-| `GET` | `/admin/tenants/{tenant}/endpoints` | list catalog | `admin.tenants.endpoints` |
-| `POST` | `/admin/tenants/{tenant}/endpoints` | create one | `admin.tenants.endpoints.store` |
+| `GET` | `/admin/tenants/{tenant}/endpoints` | list catalog (JSON API) | `admin.tenants.endpoints` |
+| `POST` | `/admin/tenants/{tenant}/endpoints` | create one (JSON API) | `admin.tenants.endpoints.store` |
 | `POST` | `/admin/tenants/{tenant}/endpoints/bulk` | import/replace from `permissions.json` | `admin.tenants.endpoints.import` |
 | `PATCH` | `/admin/tenants/{tenant}/endpoints` | update one | `admin.tenants.endpoints.update` |
 | `DELETE` | `/admin/tenants/{tenant}/endpoints` | delete one | `admin.tenants.endpoints.destroy` |
+| `GET` | `/admin/tenants/{tenant}/endpoints/manage` | Admin UI page (blade) | `admin.tenants.endpoints.manage` |
+| `POST` | `/admin/tenants/{tenant}/endpoints/manage` | Admin UI create (blade) | `admin.tenants.endpoints.manage.store` |
+| `DELETE` | `/admin/tenants/{tenant}/endpoints/manage` | Admin UI delete (blade) | `admin.tenants.endpoints.manage.destroy` |
+
+> **Web vs API split:** the same logical resource is exposed twice. `GET /admin/tenants/{tenant}/endpoints` (and siblings) are the **JSON API** consumed by scripts/clients (§7). The **Admin UI** (§6) is served by the blade routes under `/admin/tenants/{tenant}/endpoints/manage` so the two do not collide on one URI.
 
 ---
 ## 6. Admin UI
 
 ### 6.1 Endpoint Catalog List
 
-**Route:** `GET /admin/tenants/{tenant}/endpoints`
+**Route:** `GET /admin/tenants/{tenant}/endpoints/manage` (`admin.tenants.endpoints.manage`)
+
+**Entry point:** the tenant show page (`/admin/tenants/{tenant}`) links to this page ("Manage endpoints"), alongside the existing "Manage groups" link.
 
 Displays all cataloged endpoints for the tenant, including platform-wide endpoints (`tenant_id NULL`).
 
@@ -126,11 +133,11 @@ Displays all cataloged endpoints for the tenant, including platform-wide endpoin
 
 | Action | Method | Route |
 |--------|--------|-------|
-| Create endpoint | POST | `/admin/tenants/{tenant}/endpoints` |
+| Create endpoint | POST | `/admin/tenants/{tenant}/endpoints/manage` |
 | Bulk import | POST | `/admin/tenants/{tenant}/endpoints/bulk` |
 | Validate | GET | `/admin/tenants/{tenant}/endpoints/validate` |
 | Update endpoint | PATCH | `/admin/tenants/{tenant}/endpoints` |
-| Delete endpoint | DELETE | `/admin/tenants/{tenant}/endpoints` |
+| Delete endpoint | DELETE | `/admin/tenants/{tenant}/endpoints/manage` |
 
 **Method field options:** `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `*`
 
@@ -353,5 +360,5 @@ The front-end gates API calls by membership of `<required_level>:<path>` (or hig
 | Kernel | `kernels/identity/rules/permission-resolution.md` |
 | Assembly (spec) | `assemblies/loa-auth-platform/admin-dashboard.md` §3.8 (route group) |
 | Assembly (spec) | `assemblies/loa-auth-platform/group-permission-management.md` §5 (grants) |
-| Assembly (spec) | `assemblies/loa-auth-platform/tenant-endpoint-catalog.md` (this) | Final v3.1, **Admin UI §6 added** |
+| Assembly (spec) | `assemblies/loa-auth-platform/tenant-endpoint-catalog.md` (this) | Final v3.2, **Admin UI §6** (blade routes under `/endpoints/manage` + tenant-show entry point) |
 | Assembly (spec) | `assemblies/loa-auth-platform/tenant-group-endpoint-grants.md` | Final v1.0, **Admin UI §8 added** |

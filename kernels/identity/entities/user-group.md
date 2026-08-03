@@ -14,6 +14,7 @@ Flexible grouping mechanism for organizing users. Universal across all applicati
 | name | string | required | Group identifier |
 | description | string | nullable | Human-readable description |
 | tenant_id | uuid | nullable FK | `NULL` = platform-global; set = tenant-scoped (v3.0) |
+| priority | integer | default 10 | Group precedence for tenant-endpoint level resolution (v4.0); **1 = highest** — lower value wins |
 | created_at | timestamp | auto | Creation time |
 
 ### Naming Convention
@@ -38,6 +39,7 @@ Flexible grouping mechanism for organizing users. Universal across all applicati
 2. Groups are universal (not app-specific)
 3. A user can belong to multiple groups
 4. Tenant groups only apply within their tenant (`kernels/identity/tenancy.md` §3.3)
+5. `priority` is a precedence rank used **only** by the tenant-endpoint level model (`assemblies/loa-auth-platform/tenant-group-endpoint-grants.md` §3.3/§4). **1 = highest** (lower value = more precedence). Equal priorities are allowed; on a tie `deny` wins, else `admin`/`write` > `read`. The claims-based model does not use it.
 
 ### Relationships
 

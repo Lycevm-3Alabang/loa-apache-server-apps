@@ -35,46 +35,23 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-02
+### Date: 2026-08-03
 
 ### Completed
-- **Data-Driven Permission Policy spec** finalized (`data-driven-permission-policy.md` → Final v1.0):
-  - JSON import format: `{app, version, routes[]}` with method/path/claims (key, precedence, filter)
-  - Import populates `route_policies`; admin UI manages afterward
-  - Tables: `claims`, `route_policies`, `group_claims`, `user_claim_overrides`
-  - JWT carries `permissions` (claim keys) + `scopes` (from group_claims)
-  - `permission-registry.md` and `permission-claims.md` marked SUPERSEDED
-- **Auth Platform implementation** of data-driven permission policy:
-  - 4 migrations: `claims`, `route_policies`, `group_claims`, `user_claim_overrides`
-  - 4 models: `Claim`, `RoutePolicy`, `GroupClaim`, `UserClaimOverride`
-  - `PermissionPolicyService`: `resolveUserClaims()`, `resolveUserScopes()`, `authorize()`
-  - `ClaimPolicyMiddleware`: dynamic route policy lookup + claim + filter check
-  - `ImportPermissions` command: `php artisan permissions:import {app}` reads `permissions.json`
-  - `PermissionPolicyController`: admin API CRUD for claims, route policies, group claims, user overrides + `/authorize` test endpoint
-  - `IdentityService` updated: JWT now includes `claims` (resolved claim keys) and `scopes`
-  - `bootstrap/app.php`: registered `jwt.claim-policy` middleware alias
-  - `routes/api.php`: added `v1/admin/permissions` API endpoints (claims, policies, group-claims, user-overrides, authorize)
-- **Business Contexts refactored**: Removed 7 automotive template contexts; restructured 3 LOA contexts to use `entities/` subdirectories
-- **Cert Platform SSO spec** (`assemblies/loa-cert-platform/README.md` updated)
-- **Cert Platform web-ui.md** created (15 sections)
-- **Auth Platform group-permission-management.md** created (11 sections)
-- **admin-dashboard.md** updated — added v4 scope reference
-- **Architecture decision confirmed**: SSO-only for LOA users, self-hosted for external users on cert app
-- **Group/permission management implemented**: GroupController, UserGroupController, 3 Blade views, routes — all verified against spec
-- **Admin create user implemented** (v3): WebAdminController::create/store, create.blade.php, routes — spec already Final in admin-dashboard.md §9
-
-### Key Architecture Decisions
-- **Consultation app**: SSO-only, LOA domains only (`@lyceumalabang.edu.ph`, `@itmlyceumalabang.onmicrosoft.com`)
-- **Cert app**: Any email allowed (must have record in `event_attendees` table)
-- **Permission model**: Claims-based, data-driven — policy stored in DB, managed via Auth Platform admin UI, apps consume via JWT `permissions` (claim keys) + `scopes`
-- **Guard surface discovery**: Each app ships `permissions.json` declaring its guarded endpoints + claims; Auth Platform imports it into `route_policies`
-- **SSO flow**: Auth Platform issues JWT with `permissions` (claim keys) + `scopes` → apps check claims on each endpoint via `ClaimPolicyMiddleware`
-- **Tenant group membership**: Users MUST be tenant members before being added to tenant groups (enforcement needed — not yet in code)
+- **Group priority resolution spec'd** (`user_groups.priority`; specs only — no code):
+  - `kernels/identity/entities/user-group.md`: added `priority` attribute (int, default 10, **1 = highest** — lower value wins) + invariant #5
+  - `assemblies/loa-auth-platform/tenant-group-endpoint-grants.md` → **Final v1.1**: new §3.3 *Group Priority* + §4 resolution algorithm rewritten — highest-precedence (lowest value) group wins; **`deny` wins only when priorities tie**; different priorities → higher-precedence group wins, a lower-precedence `deny` does NOT override; user overrides apply last
+  - `kernels/identity/rules/permission-resolution.md`: added endpoint-model specialization note (priority-wins); claims model stays union/OR
+- **Endpoint catalog admin UI navigation fixed**:
+  - Tenant show page now has "Manage endpoints" button → `admin.tenants.endpoints.manage`
+  - `group-endpoints.blade.php` "Back to catalog"/"Add endpoints first" links fixed to point at the blade page (were pointing at the JSON API)
+  - `tenant-endpoint-catalog.md` → **Final v3.2**: documents the web-vs-API route split (`/endpoints` = JSON, `/endpoints/manage` = blade) + tenant-show entry point
 
 ### In Progress
-- (none — tenant endpoint catalog + group endpoint grants implementation complete)
+- Group priority implementation (spec Final; code not started)
 
 ### Next Action
+- [ ] **PRIORITY**: Implement group priority — migration adds `user_groups.priority` (int, default 10, 1 = highest), model fillable, update endpoint-level resolution logic (highest-precedence group wins, `deny` only on priority ties), admin group UI priority field
 - [ ] Implement Cert Platform SSO integration  [carried over]
 
 ### Backlog / Known Gaps
@@ -113,3 +90,4 @@ Then:
 | 2026-08-02 | Read AGENT.md, AI-GUIDE.md, AI-RULES.md, PROJECT.md, group-permission-management.md, cert web-ui.md, cert README.md, tenant-endpoint-catalog.md, permission-resolution.md, data-driven-permission-policy.md, tenancy.md, README.md, user-group.md, AuthorizationService.php, RoutePolicy.php; summarized all layers + Phase 1-4 status; created `tenant-group-endpoint-grants.md` spec (Draft→Final); updated SESSION-PROMPT.md | Implement tenant-endpoint-catalog.md + tenant-group-endpoint-grants.md in code
 | 2026-08-02 | Added Admin UI §6 to `tenant-endpoint-catalog.md` (endpoint catalog list, create form, bulk import, validate, delete with force) and Admin UI §8 to `tenant-group-endpoint-grants.md` (group endpoint grants page, user endpoint overrides page); updated Implementation Inventory and Dependency References in both specs; updated SESSION-PROMPT.md | Build Blade views for tenant endpoint catalog + group/user endpoint grants |
 | 2026-08-02 | Implemented tenant endpoint catalog + group endpoint grants: 3 migrations, 3 models, EndpointGrantController, ClaimPolicyMiddleware extension, GET /api/v1/auth/access endpoint, admin web + API routes, 3 Blade views. Fixed ImportPermissionsCommandTest (Artisan::call() to resolve SQLite :memory: isolation). All 143 tests pass. Clarified: permissions.json per app not needed — bulk import API already accepts the JSON format as payload. | Implement Cert Platform SSO |
+| 2026-08-03 | Group priority resolution spec'd: `user_groups.priority` (int, default 10, 1 = highest); `tenant-group-endpoint-grants.md` → Final v1.1 (§3.3 Group Priority + §4 algorithm — highest-precedence wins, `deny` only on priority ties); `user-group.md` + `permission-resolution.md` updated. Endpoint catalog admin UI navigation fixed + `tenant-endpoint-catalog.md` → Final v3.2 (web/API split, entry point). | Implement group priority in code |

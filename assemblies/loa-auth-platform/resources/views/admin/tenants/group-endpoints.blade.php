@@ -8,7 +8,7 @@
             <p>Manage endpoint access levels for <strong>{{ $group->name }}</strong> in {{ $tenant->name }}.</p>
         </div>
         <div style="display:flex;gap:0.5rem;">
-            <a class="button button-ghost" href="{{ route('admin.tenants.endpoints', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Back to catalog</a>
+            <a class="button button-ghost" href="{{ route('admin.tenants.endpoints.manage', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Back to catalog</a>
         </div>
     </div>
 
@@ -41,7 +41,7 @@
 
             <div class="table-wrap">
                 @if ($endpoints->isEmpty())
-                    <div class="empty-state">No endpoints cataloged for this tenant. <a href="{{ route('admin.tenants.endpoints', $tenant) }}">Add endpoints first</a>.</div>
+                    <div class="empty-state">No endpoints cataloged for this tenant. <a href="{{ route('admin.tenants.endpoints.manage', $tenant) }}">Add endpoints first</a>.</div>
                 @else
                     <table>
                         <thead>

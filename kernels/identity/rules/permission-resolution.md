@@ -23,6 +23,17 @@ User permissions =
 3. **User override:** A user-level explicit grant can override a group-level deny. A user-level explicit deny can override a group-level grant
 4. **Final decision:** If any effective rule grants the permission after applying overrides, access is allowed
 
+### Specialization: Tenant-Endpoint Level Model
+
+The tenant-endpoint level model (`assemblies/loa-auth-platform/tenant-group-endpoint-grants.md`) replaces union resolution with **group-priority precedence** for tenant app endpoints:
+
+- The grant from the user's **highest-precedence** group (`user_groups.priority`, **1 = highest**, lower value wins) applies.
+- Different priorities: the higher-precedence group wins — a lower-precedence `deny` does not beat a higher-precedence grant.
+- Equal priorities: `deny` wins, else `admin`/`write` > `read`.
+- User overrides still apply last.
+
+The claims-based model above keeps union/OR resolution; only the endpoint-level model uses priority.
+
 ### Example
 
 | Source | Permission | Value |
