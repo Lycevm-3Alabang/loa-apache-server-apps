@@ -574,4 +574,244 @@ class WebAdminController extends Controller
 
         return back()->with('status', 'Permission override removed.');
     }
+
+    // ─── v5: Tenant endpoint catalog ────────────────────────────────
+
+    public function tenantsEndpoints(string $tenant): View
+    {
+        $tenant = Tenant::findOrFail($tenant);
+
+        $endpoints = \App\Models\TenantAppEndpoint::where(function ($q) use ($tenant) {
+            $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
+        })->orderBy('method')->orderBy('path')->get();
+
+        return view('admin.tenants.endpoints', [
+            'tenant' => $tenant,
+            'endpoints' => $endpoints,
+        ]);
+    }
+
+    public function tenantsEndpointsStore(Request $request, string $tenant): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'method' => 'required|string|in:GET,POST,PUT,PATCH,DELETE,*',
+            'path' => 'required|string|max:512',
+            'label' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'required_level' => 'required|in:read,write,admin',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $tenant = Tenant::findOrFail($tenant);
+        $method = strtoupper($request->input('method'));
+        $path = \App\Models\TenantAppEndpoint::normalizePath($request->input('path'));
+
+        $existing = \App\Models\TenantAppEndpoint::where('tenant_id', $tenant->id)
+            ->where('method', $method)
+            ->where('path', $path)
+            ->exists();
+
+        if ($existing) {
+            return back()->with('error', 'Endpoint already exists for this tenant.')->withInput();
+        }
+
+        \App\Models\TenantAppEndpoint::create([
+            'tenant_id' => $tenant->id,
+            'method' => $method,
+            'path' => $path,
+            'label' => $request->input('label'),
+            'description' => $request->input('description'),
+            'required_level' => $request->input('required_level'),
+        ]);
+
+        return back()->with('status', 'Endpoint added to catalog.');
+    }
+
+    public function tenantsEndpointsDestroy(Request $request, string $tenant): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'method' => 'required|string',
+            'path' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        $tenant = Tenant::findOrFail($tenant);
+        $method = strtoupper($request->input('method'));
+        $path = \App\Models\TenantAppEndpoint::normalizePath($request->input('path'));
+
+        $hasGrants = \App\Models\TenantEndpointGrant::where('method', $method)
+            ->where('path', $path)
+            ->where('tenant_id', $tenant->id)
+            ->exists();
+
+        $hasOverrides = \App\Models\TenantEndpointOverride::where('method', $method)
+            ->where('path', $path)
+            ->where('tenant_id', $tenant->id)
+            ->exists();
+
+        if ($hasGrants || $hasOverrides) {
+            $force = $request->boolean('force');
+            if (!$force) {
+                return back()->with('error', 'Endpoint has existing grants or overrides. Use force=true to delete.');
+            }
+        }
+
+        \App\Models\TenantAppEndpoint::where('tenant_id', $tenant->id)
+            ->where('method', $method)
+            ->where('path', $path)
+            ->delete();
+
+        return back()->with('status', 'Endpoint removed from catalog.');
+    }
+
+    // ─── v5: Group endpoint grants ──────────────────────────────────
+
+    public function tenantsGroupsEndpoints(string $tenant, string $group): View
+    {
+        $tenant = Tenant::findOrFail($tenant);
+        $group = UserGroup::findOrFail($group);
+
+        $endpoints = \App\Models\TenantAppEndpoint::where(function ($q) use ($tenant) {
+            $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
+        })->orderBy('method')->orderBy('path')->get();
+
+        $grants = \App\Models\TenantEndpointGrant::where('group_id', $group->id)
+            ->where(function ($q) use ($tenant) {
+                $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
+            })->get();
+
+        $grantMap = [];
+        foreach ($grants as $grant) {
+            $key = $grant->method . '|' . $grant->path;
+            $grantMap[$key] = $grant->level;
+        }
+
+        return view('admin.tenants.group-endpoints', [
+            'tenant' => $tenant,
+            'group' => $group,
+            'endpoints' => $endpoints,
+            'grantMap' => $grantMap,
+        ]);
+    }
+
+    public function tenantsGroupsEndpointsStore(Request $request, string $tenant, string $group): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'grants' => 'nullable|array',
+            'grants.*.method' => 'required|string',
+            'grants.*.path' => 'required|string',
+            'grants.*.level' => 'required|in:none,read,write,admin,deny',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        $tenant = Tenant::findOrFail($tenant);
+        $group = UserGroup::findOrFail($group);
+
+        $grants = $request->input('grants', []);
+
+        DB::transaction(function () use ($group, $tenant, $grants) {
+            \App\Models\TenantEndpointGrant::where('group_id', $group->id)
+                ->where('tenant_id', $tenant->id)
+                ->delete();
+
+            foreach ($grants as $grant) {
+                $level = $grant['level'];
+                if ($level === 'none') {
+                    continue;
+                }
+
+                $method = strtoupper($grant['method']);
+                $path = \App\Models\TenantAppEndpoint::normalizePath($grant['path']);
+
+                \App\Models\TenantEndpointGrant::create([
+                    'group_id' => $group->id,
+                    'tenant_id' => $tenant->id,
+                    'method' => $method,
+                    'path' => $path,
+                    'level' => $level,
+                ]);
+            }
+        });
+
+        return back()->with('status', 'Group endpoint grants updated.');
+    }
+
+    // ─── v5: User endpoint overrides ────────────────────────────────
+
+    public function usersEndpointOverrides(string $id): View
+    {
+        $user = User::findOrFail($id);
+
+        $overrides = \App\Models\TenantEndpointOverride::where('user_id', $user->id)
+            ->orderBy('tenant_id')
+            ->orderBy('method')
+            ->orderBy('path')
+            ->get();
+
+        $tenants = Tenant::orderBy('name')->get();
+
+        $allEndpoints = \App\Models\TenantAppEndpoint::orderBy('tenant_id')
+            ->orderBy('method')
+            ->orderBy('path')
+            ->get();
+
+        return view('admin.users.endpoint-overrides', [
+            'user' => $user,
+            'overrides' => $overrides,
+            'tenants' => $tenants,
+            'allEndpoints' => $allEndpoints,
+        ]);
+    }
+
+    public function usersEndpointOverridesStore(Request $request, string $id): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'overrides' => 'nullable|array',
+            'overrides.*.method' => 'required|string',
+            'overrides.*.path' => 'required|string',
+            'overrides.*.level' => 'required|in:none,read,write,admin,deny',
+            'overrides.*.tenant_id' => 'nullable|exists:tenants,id',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        $user = User::findOrFail($id);
+        $overrides = $request->input('overrides', []);
+
+        DB::transaction(function () use ($user, $overrides) {
+            \App\Models\TenantEndpointOverride::where('user_id', $user->id)->delete();
+
+            foreach ($overrides as $override) {
+                $level = $override['level'];
+                if ($level === 'none') {
+                    continue;
+                }
+
+                $method = strtoupper($override['method']);
+                $path = \App\Models\TenantAppEndpoint::normalizePath($override['path']);
+                $tenantId = $override['tenant_id'] ?? null;
+
+                \App\Models\TenantEndpointOverride::create([
+                    'user_id' => $user->id,
+                    'tenant_id' => $tenantId,
+                    'method' => $method,
+                    'path' => $path,
+                    'level' => $level,
+                ]);
+            }
+        });
+
+        return back()->with('status', 'User endpoint overrides updated.');
+    }
 }

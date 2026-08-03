@@ -329,11 +329,68 @@ The `ImportPermissions` command (`permissions:import {app}`) already populates `
 
 ---
 
-## 8. API Contracts
+## 8. Admin UI
+
+### 8.1 Group Endpoint Grants Page
+
+**Route:** `GET /admin/tenants/{tenant}/groups/{group}/endpoints`
+
+Displays all cataloged endpoints for the tenant with a level selector per endpoint for the selected group.
+
+**Sections:**
+
+1. **Group info** — group name, tenant, scope (platform/tenant)
+2. **Endpoint grants table** — columns: Method, Path, Label, Required Level, Granted Level
+3. **Level selector per row** — dropdown: `none` / `read` / `write` / `admin` / `deny`
+4. **Save button** — POSTs all grants at once
+
+**Actions:**
+
+| Action | Method | Route |
+|--------|--------|-------|
+| List grants | GET | `/admin/tenants/{tenant}/groups/{group}/endpoints` |
+| Grant level | POST | `/admin/tenants/{tenant}/groups/{group}/endpoints` |
+| Revoke grant | DELETE | `/admin/tenants/{tenant}/groups/{group}/endpoints` |
+
+**Deny handling:** if any group grant is `deny`, the row should visually indicate this (e.g. red badge). The user should be warned before setting `deny` — a confirmation dialog is required.
+
+**Empty state:** when no grants exist for the group, all rows show `none` (closed-by-default).
+
+### 8.2 User Endpoint Overrides Page
+
+**Route:** `GET /admin/users/{id}/endpoint-overrides`
+
+Displays all cataloged endpoints with a level selector per endpoint for the selected user.
+
+**Sections:**
+
+1. **User info** — name, email, status
+2. **Endpoint overrides table** — columns: Method, Path, Label, Required Level, Override Level
+3. **Level selector per row** — dropdown: `none` / `read` / `write` / `admin` / `deny`
+4. **Tenant scope** — optional tenant filter (platform-wide for `loa-auth-admin`)
+5. **Save button** — POSTs all overrides
+
+**Actions:**
+
+| Action | Method | Route |
+|--------|--------|-------|
+| List overrides | GET | `/admin/users/{id}/endpoint-overrides` |
+| Upsert override | POST | `/admin/users/{id}/endpoint-overrides` |
+| Remove override | DELETE | `/admin/users/{id}/endpoint-overrides` |
+
+**Note:** User overrides replace group-resolution results entirely for that endpoint. A `deny` override can re-enable an endpoint that groups denied.
+
+### 8.3 Navigation
+
+The tenant show page (`/admin/tenants/{tenant}`) should include a link to the endpoint grants section. The user detail page (`/admin/users/{id}`) should include a link to the endpoint overrides section.
+
+---
+
+## 9. API Contracts
 
 All API routes require JWT authentication + `users.manage` permission (for admin consumers). Tenant apps call `GET /api/auth/access` with their own JWT (no admin permission required — it resolves the caller's own effective permissions).
 
-### 8.1 List a Group's Endpoint Grants
+### 9.1 List a Group's Endpoint Grants
 
 `GET /api/v1/admin/tenants/{tenant}/groups/{group}/endpoints`
 
@@ -361,7 +418,7 @@ All API routes require JWT authentication + `users.manage` permission (for admin
 }
 ```
 
-### 8.2 Grant a Level to a Group
+### 9.2 Grant a Level to a Group
 
 `POST /api/v1/admin/tenants/{tenant}/groups/{group}/endpoints`
 
@@ -386,7 +443,7 @@ All API routes require JWT authentication + `users.manage` permission (for admin
 }
 ```
 
-### 8.3 Revoke a Group's Grant
+### 9.3 Revoke a Group's Grant
 
 `DELETE /api/v1/admin/tenants/{tenant}/groups/{group}/endpoints`
 
@@ -396,7 +453,7 @@ All API routes require JWT authentication + `users.manage` permission (for admin
 
 **Response (204):** No content.
 
-### 8.4 User Overrides (API)
+### 9.4 User Overrides (API)
 
 `GET /api/v1/admin/users/{id}/endpoint-overrides`
 
@@ -406,7 +463,7 @@ All API routes require JWT authentication + `users.manage` permission (for admin
 
 Same payload shapes as §7.2.
 
-### 8.5 Session Store — `GET /api/auth/access`
+### 9.5 Session Store — `GET /api/auth/access`
 
 **No admin permission required.** Any authenticated user calls this to retrieve their resolved permissions for the frontend session store.
 
@@ -438,7 +495,7 @@ The frontend uses `permissions` to gate UI elements (`read:/api/v1/appointments`
 
 ---
 
-## 9. Enforcement Integration
+## 10. Enforcement Integration
 
 The `ClaimPolicyMiddleware` (registered as `jwt.claim-policy` in `bootstrap/app.php`) is extended to consult the level-based model:
 
@@ -460,7 +517,7 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 
 ---
 
-## 10. Invariants (Consolidated)
+## 11. Invariants (Consolidated)
 
 1. Every grant/override references a cataloged endpoint that exists in the catalog for the same tenant scope (or platform-wide, `tenant_id NULL`) — enforced at write-time.
 2. Group grants are implicitly scoped by both the group's tenant and the grant's `tenant_id`; a tenant group cannot be granted levels on endpoints outside its tenant (except platform-wide `tenant_id NULL` endpoints).
@@ -474,7 +531,7 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 
 ---
 
-## 11. Security Checklist
+## 12. Security Checklist
 
 - [ ] All admin routes behind `auth` (web guard) + `web.admin` + `users.manage`
 - [ ] Platform-wide (`tenant_id NULL`) grant/override creation limited to `loa-auth-admin`
@@ -490,7 +547,7 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 
 ---
 
-## 12. Anti-Patterns
+## 13. Anti-Patterns
 
 | Pattern | Why It's Wrong | Correct Approach |
 |---------|---------------|------------------|
@@ -503,7 +560,7 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 
 ---
 
-## 13. Known Gaps / Follow-Ups
+## 14. Known Gaps / Follow-Ups
 
 1. **Tenant membership enforcement**: The current `AuthorizationService::addToGroup()` does not verify the user is a member of the group's tenant before adding them to a tenant-scoped group. This must be patched in `AuthorizationService` per `tenant-endpoint-catalog.md` §3.2 invariant and `tenancy.md` §9.4 (carried over from SESSION-PROMPT "In Progress").
 2. **Real-time revocation**: JWT `permissions` are valid for the token lifetime. For real-time grant/override changes, add an optional `GET /api/auth/access` call in the middleware or a token-revocation mechanism.
@@ -511,7 +568,7 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 
 ---
 
-## 14. Implementation Inventory
+## 15. Implementation Inventory
 
 | Layer | Item | Status |
 |-------|------|--------|
@@ -521,7 +578,7 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 | Kernel | `kernels/identity/entities/user-group.md` (group entity + `tenant_id`) | Draft, implemented |
 | Assembly (spec) | `tenant-endpoint-catalog.md` (catalog table + routes) | Final v3.1, **spec only — not implemented** |
 | Assembly (spec) | `group-permission-management.md` (group CRUD + claims grants) | Draft, **implemented** |
-| Assembly (this) | `tenant-group-endpoint-grants.md` | **New spec** |
+| Assembly (spec) | `tenant-group-endpoint-grants.md` | **Final** (Admin UI §8 added) |
 | Assembly (code) | Migration: `tenant_endpoint_grant`, `tenant_endpoint_override` tables | To implement |
 | Assembly (code) | Model: `TenantEndpointGrant`, `TenantEndpointOverride` | To implement |
 | Assembly (code) | Controller: extends `PermissionPolicyController` or new `EndpointGrantController` | To implement |
@@ -532,7 +589,7 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 
 ---
 
-## 15. Dependency References
+## 16. Dependency References
 
 | Spec | Role |
 |------|------|
@@ -541,7 +598,8 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 | `kernels/identity/tenancy.md` (Final v3.0) | `tenants`, `user_tenants`, tenant-scoped groups/grants, `jwt.tenant` middleware, membership model |
 | `kernels/identity/rules/permission-resolution.md` | Resolution order: union of groups, deny-wins, user overrides last |
 | `kernels/identity/entities/user-group.md` | Group entity with `tenant_id` scoping |
-| `assemblies/loa-auth-platform/group-permission-management.md` | Existing group/user-permission admin UI + API patterns to extend |
+| `assemblies/loa-auth-platform/group-permission-management.md` | Existing group/user-permission admin UI + API patterns to extend; §6 Admin UI pattern to follow |
+| `assemblies/loa-auth-platform/tenant-endpoint-catalog.md` §6 | Endpoint catalog admin UI (new) — this spec's grants UI builds on the catalog |
 | `assemblies/loa-auth-platform/admin-dashboard.md` §3.8 | Route group `/admin/tenants/*` — this spec adds `/groups/{group}/endpoints` under it |
 | `assemblies/loa-auth-platform/web-ui.md` | Admin session lifecycle (`web.admin` gate); login destination resolution |
 | `assemblies/loa-cert-platform/web-ui.md` §5 | Cert Platform permission-to-role mapping (consumes `permissions` claim) |

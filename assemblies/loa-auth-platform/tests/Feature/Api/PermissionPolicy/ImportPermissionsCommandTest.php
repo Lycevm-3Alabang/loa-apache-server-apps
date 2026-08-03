@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\PermissionPolicy;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 use Tests\Traits\WithJwt;
@@ -46,8 +47,9 @@ class ImportPermissionsCommandTest extends TestCase
     {
         $admin = $this->createAndLoginAdmin();
 
-        $this->artisan('permissions:import', ['app' => 'nonexistent'])
-            ->assertExitCode(1);
+        $exitCode = Artisan::call('permissions:import', ['app' => 'nonexistent']);
+
+        $this->assertEquals(1, $exitCode);
     }
 
     public function testImportFailsWhenJsonInvalid(): void
@@ -56,9 +58,9 @@ class ImportPermissionsCommandTest extends TestCase
         File::ensureDirectoryExists($this->tempDir . '/invalid');
         File::put($this->tempDir . '/invalid/permissions.json', 'not valid json');
 
-        $response = $this->artisan('permissions:import', ['app' => 'invalid']);
+        $exitCode = Artisan::call('permissions:import', ['app' => 'invalid']);
 
-        $response->assertExitCode(1);
+        $this->assertEquals(1, $exitCode);
     }
 
     public function testImportFailsWhenMissingRequiredKeys(): void
@@ -67,9 +69,9 @@ class ImportPermissionsCommandTest extends TestCase
         File::ensureDirectoryExists($this->tempDir . '/bad');
         File::put($this->tempDir . '/bad/permissions.json', json_encode(['routes' => []]));
 
-        $response = $this->artisan('permissions:import', ['app' => 'bad']);
+        $exitCode = Artisan::call('permissions:import', ['app' => 'bad']);
 
-        $response->assertExitCode(1);
+        $this->assertEquals(1, $exitCode);
     }
 
     public function testImportFailsWhenAppMismatch(): void
@@ -82,9 +84,9 @@ class ImportPermissionsCommandTest extends TestCase
             'routes' => [],
         ]));
 
-        $response = $this->artisan('permissions:import', ['app' => 'mismatch']);
+        $exitCode = Artisan::call('permissions:import', ['app' => 'mismatch']);
 
-        $response->assertExitCode(1);
+        $this->assertEquals(1, $exitCode);
     }
 
     public function testImportDryRunDoesNotSave(): void
@@ -105,9 +107,9 @@ class ImportPermissionsCommandTest extends TestCase
             ],
         ]));
 
-        $response = $this->artisan('permissions:import', ['app' => 'certificate', '--dry-run' => true]);
+        $exitCode = Artisan::call('permissions:import', ['app' => 'certificate', '--dry-run' => true]);
 
-        $response->assertExitCode(0);
+        $this->assertEquals(0, $exitCode);
         $this->assertDatabaseCount('route_policies', 0);
     }
 
@@ -136,9 +138,9 @@ class ImportPermissionsCommandTest extends TestCase
             ],
         ]));
 
-        $response = $this->artisan('permissions:import', ['app' => 'certificate']);
+        $exitCode = Artisan::call('permissions:import', ['app' => 'certificate']);
 
-        $response->assertExitCode(0);
+        $this->assertEquals(0, $exitCode);
         $this->assertDatabaseCount('claims', 2);
         $this->assertDatabaseCount('route_policies', 2);
         $this->assertDatabaseHas('claims', ['key' => 'certificate.read']);
@@ -181,9 +183,9 @@ class ImportPermissionsCommandTest extends TestCase
             ],
         ]));
 
-        $response = $this->artisan('permissions:import', ['app' => 'certificate']);
+        $exitCode = Artisan::call('permissions:import', ['app' => 'certificate']);
 
-        $response->assertExitCode(0);
+        $this->assertEquals(0, $exitCode);
         $this->assertDatabaseCount('route_policies', 1);
     }
 
@@ -214,9 +216,9 @@ class ImportPermissionsCommandTest extends TestCase
             ],
         ]));
 
-        $response = $this->artisan('permissions:import', ['app' => 'certificate']);
+        $exitCode = Artisan::call('permissions:import', ['app' => 'certificate']);
 
-        $response->assertExitCode(0);
+        $this->assertEquals(0, $exitCode);
         $this->assertDatabaseHas('route_policies', [
             'app' => 'certificate',
             'method' => 'GET',

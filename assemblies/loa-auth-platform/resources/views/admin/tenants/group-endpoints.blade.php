@@ -1,0 +1,86 @@
+@extends('layouts.admin')
+
+@section('title', 'Group Endpoint Grants - ' . $group->name . ' | LOA Admin')
+@section('content')
+    <div class="page-header">
+        <div>
+            <h1>Group Endpoint Grants</h1>
+            <p>Manage endpoint access levels for <strong>{{ $group->name }}</strong> in {{ $tenant->name }}.</p>
+        </div>
+        <div style="display:flex;gap:0.5rem;">
+            <a class="button button-ghost" href="{{ route('admin.tenants.endpoints', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Back to catalog</a>
+        </div>
+    </div>
+
+    {{-- Group info --}}
+    <div class="detail-card">
+        <div class="detail-grid">
+            <div class="detail-field">
+                <label>Group</label>
+                <span>{{ $group->name }}</span>
+            </div>
+            <div class="detail-field">
+                <label>Tenant</label>
+                <span>{{ $tenant->name }}</span>
+            </div>
+            <div class="detail-field">
+                <label>Scope</label>
+                <span>{{ $group->tenant_id ? 'Tenant' : 'Platform' }}</span>
+            </div>
+        </div>
+    </div>
+
+    {{-- Endpoint grants form --}}
+    <div class="detail-card">
+        <form method="post" action="{{ route('admin.tenants.groups.endpoints.store', [$tenant, $group]) }}">
+            @csrf
+            <div class="section-header">
+                <h2>Endpoint Grants</h2>
+                <button class="button" type="submit">Save all</button>
+            </div>
+
+            <div class="table-wrap">
+                @if ($endpoints->isEmpty())
+                    <div class="empty-state">No endpoints cataloged for this tenant. <a href="{{ route('admin.tenants.endpoints', $tenant) }}">Add endpoints first</a>.</div>
+                @else
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Path</th>
+                                <th>Label</th>
+                                <th>Required Level</th>
+                                <th>Granted Level</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($endpoints as $endpoint)
+                                @php
+                                    $key = $endpoint->method . '|' . $endpoint->path;
+                                    $currentLevel = $grantMap[$key] ?? 'none';
+                                @endphp
+                                <tr>
+                                    <td><span class="badge">{{ $endpoint->method }}</span></td>
+                                    <td><code style="font-size:0.8rem;">{{ $endpoint->path }}</code></td>
+                                    <td>{{ $endpoint->label ?? '—' }}</td>
+                                    <td><span class="badge badge-{{ $endpoint->required_level === 'admin' ? 'disabled' : 'active' }}">{{ $endpoint->required_level }}</span></td>
+                                    <td>
+                                        <select name="grants[{{ $endpoint->method }}|{{ $endpoint->path }}][level]" style="height:2.25rem;padding:0.25rem 0.5rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-family:inherit;font-size:0.8rem;">
+                                            <option value="none" {{ $currentLevel === 'none' ? 'selected' : '' }}>none</option>
+                                            <option value="read" {{ $currentLevel === 'read' ? 'selected' : '' }}>read</option>
+                                            <option value="write" {{ $currentLevel === 'write' ? 'selected' : '' }}>write</option>
+                                            <option value="admin" {{ $currentLevel === 'admin' ? 'selected' : '' }}>admin</option>
+                                            <option value="deny" {{ $currentLevel === 'deny' ? 'selected' : '' }} style="color:red;">deny</option>
+                                        </select>
+                                        <input type="hidden" name="grants[{{ $endpoint->method }}|{{ $endpoint->path }}][method]" value="{{ $endpoint->method }}">
+                                        <input type="hidden" name="grants[{{ $endpoint->method }}|{{ $endpoint->path }}][path]" value="{{ $endpoint->path }}">
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @endif
+            </div>
+        </form>
+    </div>
+@endsection

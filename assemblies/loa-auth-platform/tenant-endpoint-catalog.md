@@ -107,11 +107,59 @@ Route group (added to `routes/web.php` under §3.8):
 | `DELETE` | `/admin/tenants/{tenant}/endpoints` | delete one | `admin.tenants.endpoints.destroy` |
 
 ---
+## 6. Admin UI
 
-## 6. API Contracts
+### 6.1 Endpoint Catalog List
 
-### 6.1 List catalog
+**Route:** `GET /admin/tenants/{tenant}/endpoints`
+
+Displays all cataloged endpoints for the tenant, including platform-wide endpoints (`tenant_id NULL`).
+
+**Sections:**
+
+1. **Endpoint table** — columns: Method, Path, Label, Required Level, Actions
+2. **Create endpoint form** — method dropdown, path input, label, description, required level dropdown
+3. **Bulk import form** — textarea for JSON paste (see §6.3 payload shape) with a `replace` toggle
+4. **Validate button** — triggers `GET /admin/tenants/{tenant}/endpoints/validate`, displays results inline
+
+**Actions:**
+
+| Action | Method | Route |
+|--------|--------|-------|
+| Create endpoint | POST | `/admin/tenants/{tenant}/endpoints` |
+| Bulk import | POST | `/admin/tenants/{tenant}/endpoints/bulk` |
+| Validate | GET | `/admin/tenants/{tenant}/endpoints/validate` |
+| Update endpoint | PATCH | `/admin/tenants/{tenant}/endpoints` |
+| Delete endpoint | DELETE | `/admin/tenants/{tenant}/endpoints` |
+
+**Method field options:** `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `*`
+
+**Required Level field options:** `read`, `write`, `admin`
+
+**Delete confirmation:** if the endpoint has existing group grants or user overrides, show a warning listing the affected grants and require `force: true` to proceed.
+
+**Validate results:** display a banner or inline list showing valid/invalid endpoints, missing grants (endpoints with no group grant), and dead routes (tenant routes not in the catalog).
+
+### 6.2 Endpoint Form Fields
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `method` | select | yes | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `*` |
+| `path` | text | yes | `{param}`-aware syntax (e.g. `/api/v1/appointments/{id}`) |
+| `label` | text | no | Human-readable label |
+| `description` | textarea | no | Optional description |
+| `required_level` | select | yes | `read`, `write`, `admin` |
+
+---
+
+## 7. API Contracts
+
+All API contracts from the original §6, renumbered.
+
+### 7.1 List catalog
+
 `GET /admin/tenants/{tenant}/endpoints` → `200`
+
 ```json
 [
   {
@@ -144,8 +192,10 @@ Route group (added to `routes/web.php` under §3.8):
 ]
 ```
 
-### 6.2 Create one endpoint
+### 7.2 Create one endpoint
+
 `POST /admin/tenants/{tenant}/endpoints`
+
 ```json
 {
   "method": "DELETE",
@@ -156,11 +206,13 @@ Route group (added to `routes/web.php` under §3.8):
   "tenant_id": "tenant_ccs"
 }
 ```
+
 - Omit `tenant_id` → tenant inferred from route; `null` allowed only for platform-admin.
 - `422` on unknown `method`/`required_level`, missing `path`, or duplicate `(tenant_id, method, path)`.
 - `201` on success.
 
-### 6.3 Bulk import (from tenant app's `permissions.json`)
+### 7.3 Bulk import (from tenant app's `permissions.json`)
+
 The tenant app exports its guarded endpoints (`data-driven-permission-policy.md` §3 import format → this catalog shape). The import maps `claims` → `required_level`:
 
 | Imported claim | `required_level` |
@@ -170,6 +222,7 @@ The tenant app exports its guarded endpoints (`data-driven-permission-policy.md`
 | (`admin` label, if present) | `admin` |
 
 `POST /admin/tenants/{tenant}/endpoints/bulk`
+
 ```json
 {
   "endpoints": [
@@ -182,12 +235,15 @@ The tenant app exports its guarded endpoints (`data-driven-permission-policy.md`
   "replace": false
 }
 ```
+
 - `replace: true` → delete existing entries for the tenant first, then upsert.
 - `422` on any invalid `method`/`required_level`/malformed `path`.
 - `200` with `{ inserted, updated, skipped, errors[] }`.
 
-### 6.4 Update one endpoint
+### 7.4 Update one endpoint
+
 `PATCH /admin/tenants/{tenant}/endpoints`
+
 ```json
 {
   "method": "DELETE",
@@ -197,18 +253,22 @@ The tenant app exports its guarded endpoints (`data-driven-permission-policy.md`
 }
 ```
 
-### 6.5 Delete one endpoint
+### 7.5 Delete one endpoint
+
 `DELETE /admin/tenants/{tenant}/endpoints`
+
 ```json
 { "method": "DELETE", "path": "/api/v1/appointments/{id}" }
 ```
+
 Cascading concern: if any group currently grants this endpoint, report `409` with the referencing groups and require explicit confirmation (`force: true`) — prevents dangling grants.
 
 ---
 
-## 7. Validation (`/admin/tenants/{tenant}/endpoints/validate`)
+## 8. Validation (`/admin/tenants/{tenant}/endpoints/validate`)
 
 Mirrors `permissions:validate` (`permission-registry.md` §3). `GET` (or POST re-validate) against the tenant app's live route set:
+
 1. Schema check (required fields, enums).
 2. Naming/path check (`{param}` syntax, no duplicates).
 3. **Dead grant check:** any catalog endpoint with no grant on any group? (report)
@@ -218,7 +278,7 @@ Returns `{ valid: bool, errors: [], warnings: [] }`.
 
 ---
 
-## 8. Enforcement hook (runtime contract)
+## 9. Enforcement hook (runtime contract)
 
 This spec **declares** the catalog; the runtime gate (Next.js `proxy.ts` or Laravel `ClaimPolicyMiddleware` — see SESSION-PROMPT "Auth Platform implementation complete") consults it:
 
@@ -248,7 +308,7 @@ The front-end gates API calls by membership of `<required_level>:<path>` (or hig
 
 ---
 
-## 9. Invariants (consolidated)
+## 10. Invariants (consolidated)
 
 1. Endpoints are declared at the tenant level (catalog), not globally — except platform-wide (`tenant_id NULL`) for shared tooling.
 2. Each endpoint declares one `required_level` ∈ {`read`,`write`,`admin`}; `admin` enforces as `write`.
@@ -259,7 +319,7 @@ The front-end gates API calls by membership of `<required_level>:<path>` (or hig
 
 ---
 
-## 10. Anti-Patterns
+## 11. Anti-Patterns
 
 | Pattern | Why It's Wrong | Correct Approach |
 |---------|----------------|------------------|
@@ -271,7 +331,7 @@ The front-end gates API calls by membership of `<required_level>:<path>` (or hig
 
 ---
 
-## 11. Security Checklist
+## 12. Security Checklist
 
 - [ ] All routes behind `auth` + `web.admin` + `users.manage`
 - [ ] Platform-wide (`tenant_id NULL`) create limited to `loa-auth-admin`
@@ -283,7 +343,7 @@ The front-end gates API calls by membership of `<required_level>:<path>` (or hig
 
 ---
 
-## 12. Implementation Inventory
+## 13. Implementation Inventory
 
 | Layer | Item |
 |-------|------|
@@ -293,5 +353,5 @@ The front-end gates API calls by membership of `<required_level>:<path>` (or hig
 | Kernel | `kernels/identity/rules/permission-resolution.md` |
 | Assembly (spec) | `assemblies/loa-auth-platform/admin-dashboard.md` §3.8 (route group) |
 | Assembly (spec) | `assemblies/loa-auth-platform/group-permission-management.md` §5 (grants) |
-| Assembly (spec) | `assemblies/loa-auth-platform/tenant-endpoint-catalog.md` (this) |
-| Assembly (next) | `assemblies/loa-auth-platform/tenant-group-endpoint-grants.md` |
+| Assembly (spec) | `assemblies/loa-auth-platform/tenant-endpoint-catalog.md` (this) | Final v3.1, **Admin UI §6 added** |
+| Assembly (spec) | `assemblies/loa-auth-platform/tenant-group-endpoint-grants.md` | Final v1.0, **Admin UI §8 added** |

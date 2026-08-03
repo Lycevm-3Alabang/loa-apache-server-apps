@@ -82,4 +82,15 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::get('/users/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverridesIndex'])->name('admin.users.endpoint-overrides');
     Route::post('/users/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverrideStore'])->name('admin.users.endpoint-overrides.upsert');
     Route::delete('/users/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverrideDestroy'])->name('admin.users.endpoint-overrides.delete');
+
+    // Blade views for endpoint catalog and grants
+    Route::get('/tenants/{tenant}/endpoints/manage', [WebAdminController::class, 'tenantsEndpoints'])->name('admin.tenants.endpoints.manage');
+    Route::post('/tenants/{tenant}/endpoints/manage', [WebAdminController::class, 'tenantsEndpointsStore'])->name('admin.tenants.endpoints.manage.store');
+    Route::delete('/tenants/{tenant}/endpoints/manage', [WebAdminController::class, 'tenantsEndpointsDestroy'])->name('admin.tenants.endpoints.manage.destroy');
+
+    Route::get('/tenants/{tenant}/groups/{group}/endpoints/manage', [WebAdminController::class, 'tenantsGroupsEndpoints'])->name('admin.tenants.groups.endpoints.manage');
+    Route::post('/tenants/{tenant}/groups/{group}/endpoints/manage', [WebAdminController::class, 'tenantsGroupsEndpointsStore'])->name('admin.tenants.groups.endpoints.manage.store');
+
+    Route::get('/users/{id}/endpoint-overrides/manage', [WebAdminController::class, 'usersEndpointOverrides'])->name('admin.users.endpoint-overrides.manage');
+    Route::post('/users/{id}/endpoint-overrides/manage', [WebAdminController::class, 'usersEndpointOverridesStore'])->name('admin.users.endpoint-overrides.manage.store');
 });
