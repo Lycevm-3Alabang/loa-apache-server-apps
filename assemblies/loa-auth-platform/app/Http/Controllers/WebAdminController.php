@@ -276,6 +276,7 @@ class WebAdminController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:255',
+            'priority' => 'required|integer|min:1|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -293,6 +294,7 @@ class WebAdminController extends Controller
         UserGroup::create([
             'name' => $request->input('name'),
             'description' => $request->input('description'),
+            'priority' => $request->input('priority', 10),
             'tenant_id' => $tenant->id,
         ]);
 
@@ -381,6 +383,7 @@ class WebAdminController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:255',
+            'priority' => 'required|integer|min:1|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -398,6 +401,7 @@ class WebAdminController extends Controller
         UserGroup::create([
             'name' => $request->input('name'),
             'description' => $request->input('description'),
+            'priority' => $request->input('priority', 10),
             'tenant_id' => null,
         ]);
 

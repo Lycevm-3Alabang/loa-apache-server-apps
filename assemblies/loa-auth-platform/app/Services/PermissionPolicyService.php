@@ -271,19 +271,28 @@ class PermissionPolicyService
                 ->where('method', $endpoint->method)
                 ->where('path', $endpoint->path)
                 ->where(fn ($q) => $q->whereNull('tenant_id')->orWhere('tenant_id', $tenantId))
-                ->get();
+                ->get()
+                ->map(function (TenantEndpointGrant $grant) {
+                    $group = $grant->group;
+                    return [
+                        'level' => $grant->level,
+                        'priority' => $group ? $group->priority : 10,
+                    ];
+                })
+                ->sortBy('priority')
+                ->values();
 
-            foreach ($grants as $grant) {
-                if ($grant->level === 'deny') {
+            if ($grants->isNotEmpty()) {
+                $lowestPriority = $grants->first()['priority'];
+
+                $topGrants = $grants->filter(fn ($g) => $g['priority'] === $lowestPriority);
+
+                $hasDeny = $topGrants->contains('level', 'deny');
+
+                if ($hasDeny && $topGrants->count() > 1) {
                     $effectiveLevel = 'deny';
-                    break;
-                }
-
-                $grantOrdinal = self::LEVEL_ORDINAL[$grant->level] ?? 0;
-                $currentOrdinal = self::LEVEL_ORDINAL[$effectiveLevel] ?? 0;
-
-                if ($grantOrdinal > $currentOrdinal) {
-                    $effectiveLevel = $grant->level;
+                } else {
+                    $effectiveLevel = $topGrants->first()['level'];
                 }
             }
         }

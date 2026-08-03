@@ -19,6 +19,7 @@
                     <thead>
                         <tr>
                             <th>Group</th>
+                            <th>Priority</th>
                             <th>Members</th>
                             <th>Created</th>
                             <th class="row-actions">Actions</th>
@@ -33,6 +34,7 @@
                                         <span>{{ $group->description }}</span>
                                     @endif
                                 </td>
+                                <td class="muted">{{ $group->priority }}</td>
                                 <td class="muted">{{ $group->users_count }}</td>
                                 <td class="muted">{{ $group->created_at?->format('M j, Y') ?? '—' }}</td>
                                 <td class="row-actions">

@@ -23,6 +23,10 @@
                 <span>{{ $group->description ?? '—' }}</span>
             </div>
             <div class="detail-field">
+                <label>Priority</label>
+                <span>{{ $group->priority }} ({{ $group->priority === 1 ? 'highest' : ($group->priority <= 5 ? 'high' : 'normal') }})</span>
+            </div>
+            <div class="detail-field">
                 <label>Scope</label>
                 <span>{{ $group->tenant_id ? 'Tenant' : 'Platform' }}</span>
             </div>

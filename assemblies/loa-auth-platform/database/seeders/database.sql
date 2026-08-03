@@ -71,6 +71,7 @@ CREATE TABLE `user_groups` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `description` varchar(255) DEFAULT NULL,
+  `priority` int NOT NULL DEFAULT 10,
   `tenant_id` char(36) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -187,8 +188,8 @@ CREATE TABLE `sessions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Seed: loa-auth-admin group (platform-wide, tenant_id NULL)
-INSERT INTO `user_groups` (`id`, `name`, `description`, `tenant_id`, `created_at`, `updated_at`) VALUES
-(1, 'loa-auth-admin', 'Platform administrator', NULL, NOW(), NOW());
+INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES
+(1, 'loa-auth-admin', 'Platform administrator', 1, NULL, NOW(), NOW());
 
 INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES
 (1, 'users.view', 'View user list and details', NULL, NOW(), NOW()),

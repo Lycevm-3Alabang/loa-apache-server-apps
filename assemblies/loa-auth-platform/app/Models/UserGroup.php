@@ -18,6 +18,7 @@ class UserGroup extends Model
     protected $fillable = [
         'name',
         'description',
+        'priority',
         'tenant_id',
     ];
 

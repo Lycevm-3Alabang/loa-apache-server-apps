@@ -23,6 +23,11 @@
                 <input type="text" id="description" name="description" value="{{ old('description') }}">
                 @error('description') <span class="error-text">{{ $message }}</span> @enderror
             </div>
+            <div class="form-row">
+                <label for="priority">Priority (1 = highest, default 10)</label>
+                <input type="number" id="priority" name="priority" value="{{ old('priority', 10) }}" min="1" max="100" required>
+                @error('priority') <span class="error-text">{{ $message }}</span> @enderror
+            </div>
             <div>
                 <button class="button" type="submit">Create group</button>
             </div>

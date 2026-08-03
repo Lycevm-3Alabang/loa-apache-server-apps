@@ -21,6 +21,9 @@
             <div class="field">
                 <input type="text" name="description" value="{{ old('description') }}" placeholder="Description (optional)" style="height:2.5rem;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-family:inherit;font-size:0.875rem;">
             </div>
+            <div class="field">
+                <input type="number" name="priority" value="{{ old('priority', 10) }}" min="1" max="100" placeholder="Priority (1=highest)" style="height:2.5rem;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-family:inherit;font-size:0.875rem;width:8rem;">
+            </div>
             <button class="button" type="submit">Create</button>
         </form>
     </div>
@@ -35,6 +38,7 @@
             <div class="detail-card">
                 <div class="section-header">
                     <h2>{{ $group->name }}</h2>
+                    <span style="font-size:0.8rem;color:var(--text-muted);margin-left:0.5rem;">priority: {{ $group->priority }}</span>
                 </div>
 
                 @if ($group->description)

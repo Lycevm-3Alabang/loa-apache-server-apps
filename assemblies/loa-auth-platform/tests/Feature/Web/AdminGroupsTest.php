@@ -54,6 +54,7 @@ class AdminGroupsTest extends TestCase
             ->post('/admin/groups', [
                 'name' => 'Faculty',
                 'description' => 'Teaching staff',
+                'priority' => 5,
             ]);
 
         $response->assertRedirect();
@@ -61,6 +62,7 @@ class AdminGroupsTest extends TestCase
         $this->assertDatabaseHas('user_groups', [
             'name' => 'Faculty',
             'description' => 'Teaching staff',
+            'priority' => 5,
         ]);
     }
 
@@ -71,6 +73,7 @@ class AdminGroupsTest extends TestCase
         $response = $this->actingAs($this->admin, 'web')
             ->post('/admin/groups', [
                 'name' => 'Faculty',
+                'priority' => 10,
             ]);
 
         $response->assertSessionHas('error');
