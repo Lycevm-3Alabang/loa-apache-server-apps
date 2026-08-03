@@ -132,7 +132,7 @@ The access config payload has three top-level sections:
 
 **Response:** `application/json` file download (`Content-Disposition: attachment`).
 
-Returns the template JSON (§3) with example data. The `groups` array contains placeholder entries with `_comment` fields explaining each field. These comments are stripped on parse.
+Returns the template JSON (§3) with sample placeholder data. The `groups` array contains realistic example entries with `_comment` fields explaining each field. These comments are stripped on parse.
 
 **Template content:**
 
@@ -141,30 +141,47 @@ Returns the template JSON (§3) with example data. The `groups` array contains p
   "version": "1.0",
   "groups": [
     {
-      "name": "Example-Group",
-      "description": "Replace with actual group name",
-      "priority": 10,
-      "_comment": "priority: 1=highest, 100=lowest, default=10",
+      "name": "Faculty",
+      "description": "Teaching staff — full access to appointments and certificates",
+      "priority": 5,
+      "_comment": "priority: 1=highest, 100=lowest, default=10. Lower value = higher precedence.",
       "grants": [
-        {
-          "method": "GET",
-          "path": "/api/v1/example",
-          "level": "read",
-          "_comment": "level: read | write | admin | deny"
-        }
+        { "method": "GET",  "path": "/api/v1/appointments",            "level": "read" },
+        { "method": "POST", "path": "/api/v1/appointments",            "level": "write" },
+        { "method": "PUT",  "path": "/api/v1/appointments/{id}",       "level": "write" },
+        { "method": "DELETE","path": "/api/v1/appointments/{id}",       "level": "admin" },
+        { "method": "GET",  "path": "/api/v1/certificates",            "level": "read" },
+        { "method": "POST", "path": "/api/v1/certificates/{id}/sign",  "level": "admin" }
+      ]
+    },
+    {
+      "name": "Students",
+      "description": "Students — read-only access to appointments and certificates",
+      "priority": 20,
+      "grants": [
+        { "method": "GET", "path": "/api/v1/appointments",  "level": "read" },
+        { "method": "GET", "path": "/api/v1/certificates",  "level": "read" }
+      ]
+    },
+    {
+      "name": "Registrar-Staff",
+      "description": "Registrar — can manage certificates but not appointments",
+      "priority": 10,
+      "_comment": "This group has higher priority than Students (10 < 20). If both grants conflict, this group wins.",
+      "grants": [
+        { "method": "GET",  "path": "/api/v1/certificates",            "level": "read" },
+        { "method": "POST", "path": "/api/v1/certificates",            "level": "write" },
+        { "method": "PUT",  "path": "/api/v1/certificates/{id}",       "level": "write" },
+        { "method": "DELETE","path": "/api/v1/certificates/{id}",       "level": "admin" }
       ]
     }
   ],
   "user_overrides": [
     {
-      "email": "user@example.com",
-      "_comment": "User must already exist in the system",
+      "email": "dean@loa.edu.ph",
+      "_comment": "User must already exist in the system. Overrides replace group-resolution for that endpoint.",
       "overrides": [
-        {
-          "method": "GET",
-          "path": "/api/v1/example",
-          "level": "read"
-        }
+        { "method": "DELETE", "path": "/api/v1/appointments/{id}", "level": "write" }
       ]
     }
   ]
