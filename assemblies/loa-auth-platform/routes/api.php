@@ -84,4 +84,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverrideStore']);
         Route::delete('/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverrideDestroy']);
     });
+
+    Route::prefix('admin/tenants')->middleware(['jwt.auth', 'jwt.permission:users.manage'])->group(function () {
+        Route::get('/{tenant}/access-config/template', [App\Http\Controllers\AccessConfigController::class, 'template']);
+        Route::get('/{tenant}/access-config/export', [App\Http\Controllers\AccessConfigController::class, 'export']);
+        Route::post('/{tenant}/access-config/import', [App\Http\Controllers\AccessConfigController::class, 'import']);
+    });
 });

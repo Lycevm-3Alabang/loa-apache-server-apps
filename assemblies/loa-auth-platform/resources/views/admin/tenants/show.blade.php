@@ -10,6 +10,7 @@
         <div style="display:flex;gap:0.5rem;">
             <a class="button" href="{{ route('admin.tenants.groups', $tenant) }}">Manage groups</a>
             <a class="button" href="{{ route('admin.tenants.endpoints.manage', $tenant) }}">Manage endpoints</a>
+            <a class="button" href="{{ route('admin.tenants.access-config.import', $tenant) }}">Import/Export Config</a>
             <a class="button button-ghost" href="{{ route('admin.tenants') }}" style="border-color:var(--border);color:var(--text-secondary);">Back to tenants</a>
         </div>
     </div>

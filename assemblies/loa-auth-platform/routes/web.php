@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccessConfigController;
 use App\Http\Controllers\EndpointGrantController;
 use App\Http\Controllers\WebAdminController;
 use App\Http\Controllers\WebAuthController;
@@ -93,4 +94,10 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
 
     Route::get('/users/{id}/endpoint-overrides/manage', [WebAdminController::class, 'usersEndpointOverrides'])->name('admin.users.endpoint-overrides.manage');
     Route::post('/users/{id}/endpoint-overrides/manage', [WebAdminController::class, 'usersEndpointOverridesStore'])->name('admin.users.endpoint-overrides.manage.store');
+
+    // Access config import/export
+    Route::get('/tenants/{tenant}/access-config/template', [AccessConfigController::class, 'template'])->name('admin.tenants.access-config.template');
+    Route::get('/tenants/{tenant}/access-config/export', [AccessConfigController::class, 'export'])->name('admin.tenants.access-config.export');
+    Route::get('/tenants/{tenant}/access-config/import', [AccessConfigController::class, 'importForm'])->name('admin.tenants.access-config.import');
+    Route::post('/tenants/{tenant}/access-config/import', [AccessConfigController::class, 'import'])->name('admin.tenants.access-config.import.store');
 });

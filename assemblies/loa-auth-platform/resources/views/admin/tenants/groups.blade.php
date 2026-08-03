@@ -7,7 +7,10 @@
             <h1>{{ $tenant->name }} — Groups</h1>
             <p>Manage tenant groups and their endpoint permissions.</p>
         </div>
-        <a class="button button-ghost" href="{{ route('admin.tenants.show', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Back to tenant</a>
+        <div style="display:flex;gap:0.5rem;">
+            <a class="button button-ghost" href="{{ route('admin.tenants.access-config.import', $tenant) }}" style="border-color:var(--border);">Import/Export</a>
+            <a class="button button-ghost" href="{{ route('admin.tenants.show', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Back to tenant</a>
+        </div>
     </div>
 
     {{-- Create group --}}

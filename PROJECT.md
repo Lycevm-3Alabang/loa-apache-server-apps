@@ -2,7 +2,7 @@
 ## Project Tracker
 
 **Started:** 2026-07-30
-**Last Updated:** 2026-08-02
+**Last Updated:** 2026-08-03
 **Target:** cPanel (PHP 8.3+ / MySQL 8 / Laravel 12)
 
 ---
@@ -73,6 +73,7 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Assembly | LOA Auth Platform | `assemblies/loa-auth-platform/README.md` | ✅ Scaffolded |
 | Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Final (v1.2 — destination resolution) — implemented |
 | Assembly | LOA Admin Dashboard | `assemblies/loa-auth-platform/admin-dashboard.md` | ✅ Final (v1 + v2 implemented) |
+| Assembly | Access Config Import/Export | `assemblies/loa-auth-platform/access-config-import-export.md` | ✅ Final v1.0 — implemented |
 | Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Draft |
 | Assembly | LOA Cert Platform | `assemblies/loa-cert-platform/README.md` | ✅ Draft |
 
@@ -132,6 +133,7 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Admin web UI spec | ✅ Done | `assemblies/loa-auth-platform/admin-dashboard.md` — v1 + v2 implemented, Final |
 | Admin create user (v3) | ✅ Done | `WebAdminController::create/store`, `admin/users/create.blade.php`, routes — spec Final in admin-dashboard.md §9 |
 | Group/permission management (v4) | ✅ Done | `GroupController`, `UserGroupController`, 3 Blade views, API + admin routes — spec in group-permission-management.md |
+| Access Config Import/Export | ✅ Done | `AccessConfigController`, web + API routes, import Blade view, 3 factories, 29 tests — spec Final v1.0 |
 | Deploy to auth.loa.edu.ph | ⬜ Not started | |
 
 ### Bugs Found & Fixed (2026-07-31)

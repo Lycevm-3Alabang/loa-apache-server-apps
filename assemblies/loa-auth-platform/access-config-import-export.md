@@ -3,7 +3,7 @@
 ## Product Assembly Component Specification
 
 **Version:** 1.0
-**Status:** Draft
+**Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`) — admin surface
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -62,6 +62,7 @@ The access config payload has three top-level sections:
       "name": "Faculty",
       "description": "Teaching staff",
       "priority": 5,
+      "tenant_id": "tenant_loa",
       "grants": [
         { "method": "GET",  "path": "/api/v1/appointments",        "level": "read" },
         { "method": "POST", "path": "/api/v1/appointments",        "level": "write" },
@@ -73,6 +74,7 @@ The access config payload has three top-level sections:
       "name": "Student-Readonly",
       "description": "Students — read-only access",
       "priority": 20,
+      "tenant_id": "tenant_loa",
       "grants": [
         { "method": "GET", "path": "/api/v1/appointments", "level": "read" },
         { "method": "GET", "path": "/api/v1/certificates", "level": "read" }
@@ -100,16 +102,17 @@ The access config payload has three top-level sections:
 | `groups[].name` | Yes | Group name. Used as the upsert key (unique per tenant). |
 | `groups[].description` | No | Defaults to `null`. |
 | `groups[].priority` | No | Integer 1–100, default 10. Lower = higher precedence. |
+| `groups[].tenant_id` | No | Export-only. Tenant ID or `null` for platform-wide groups. Ignored on import (target tenant from route). |
 | `groups[].grants` | No | Array of grant objects. Empty = no grants for this group. |
-| `groups[].grants[].method` | Yes | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, or `*` |
+| `groups[].grants[].method` | Yes | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, or `*` (matches any method) |
 | `groups[].grants[].path` | Yes | Must match a cataloged endpoint for the target tenant (or platform-wide). |
-| `groups[].grants[].level` | Yes | `read`, `write`, `admin`, or `deny` |
+| `groups[].grants[].level` | Yes | `read`, `write`, `admin`, `deny`, or `none` (see §5.4) |
 | `user_overrides` | No | Array of override objects. |
 | `user_overrides[].email` | Yes | User email. Resolved to `user_id` at import time. |
 | `user_overrides[].overrides` | Yes | Array of override entries. |
 | `user_overrides[].overrides[].method` | Yes | HTTP method. |
 | `user_overrides[].overrides[].path` | Yes | Must match a cataloged endpoint. |
-| `user_overrides[].overrides[].level` | Yes | `read`, `write`, `admin`, or `deny` |
+| `user_overrides[].overrides[].level` | Yes | `read`, `write`, `admin`, `deny`, or `none` (see §5.4) |
 
 ### 3.2 Template vs Export
 
@@ -118,8 +121,9 @@ The access config payload has three top-level sections:
 | `version` | `"1.0"` | `"1.0"` |
 | `exported_at` | absent | ISO 8601 timestamp |
 | `tenant_slug` | absent | Current tenant slug |
-| `groups` | 2 example entries (commented out) | All groups with real data |
-| `groups[].grants` | 3 example entries | All real grants |
+| `groups` | 3 example entries (with `_comment` fields) | All groups with real data |
+| `groups[].tenant_id` | absent | Each group's `tenant_id` (or `null` for platform-wide) |
+| `groups[].grants` | 3–6 example entries | All real grants |
 | `user_overrides` | 1 example entry | All real overrides |
 
 ---
@@ -210,8 +214,18 @@ Serializes all groups (with priority), their grants, and all user overrides for 
 
 1. **Parse** JSON. Return `422` on malformed JSON.
 2. **Validate** schema (§3.1). Return `422` with field-level errors.
-3. **Preview** — compute what will be created/updated/skipped. Return preview without applying.
-4. **Confirm** — if `confirm=true` (form checkbox or query param), apply changes inside a DB transaction.
+3. **Check** tenant is active. Return `403` if suspended.
+4. **Preview** — compute what will be created/updated/skipped. Return preview without applying.
+5. **Confirm** — if `confirm=true` (form checkbox or query param), apply changes inside a DB transaction.
+
+**Parameter modes:**
+
+| Parameters | Behavior |
+|------------|----------|
+| `POST .../import` (no params) | Preview only |
+| `POST .../import?dry_run=true` | Preview only (explicit alias) |
+| `POST .../import?confirm=true` | Apply changes |
+| `POST .../import?dry_run=true&confirm=true` | `dry_run` wins — preview only (safe default) |
 
 **Preview response (200):**
 
@@ -302,19 +316,20 @@ For each override in `user_overrides[]`:
 ### 5.4 "none" Level Handling
 
 If a grant or override has `"level": "none"`:
-- **Grants:** delete the `TenantEndpointGrant` row (revert to default resolution).
-- **Overrides:** delete the `TenantEndpointOverride` row (revert to group resolution).
+- **Grants:** delete the `TenantEndpointGrant` row if it exists (revert to default resolution). If the row does not exist, this is a silent no-op.
+- **Overrides:** delete the `TenantEndpointOverride` row if it exists (revert to group resolution). If the row does not exist, this is a silent no-op.
 
-This allows the JSON to explicitly revoke access.
+This allows the JSON to explicitly revoke access. The response reports `"skipped": 0` for no-op deletions (the row was already absent).
 
 ### 5.5 Platform-Wide Groups
 
-If a group in the JSON has `"tenant_id": null` (exported from a platform-wide group), the import:
-- Requires platform-admin (`loa-auth-admin`) to import.
-- Creates/updates the group with `tenant_id = NULL`.
-- Grant `tenant_id` is set to `NULL` (platform-wide).
+Platform-wide groups (`tenant_id = NULL`) can only be exported, not imported via the tenant-scoped import route. The import route always targets a specific tenant — groups in the JSON are created/updated under that tenant.
 
-In the JSON, platform-wide groups are indicated by absence of a tenant scope (the import target tenant determines scope).
+When importing an export that contains platform-wide groups:
+- Platform-wide groups in the JSON are **skipped** with a warning: `"Platform-wide group '{name}' skipped — use platform admin to manage."`
+- Platform-wide grants on those groups are **not imported** (they are not tenant-scoped).
+
+Platform-wide group management is handled directly via the platform admin routes in `admin-dashboard.md`, not via this import mechanism.
 
 ---
 
@@ -371,8 +386,9 @@ Click "Export config" → browser downloads `access-config-{tenant_slug}-{date}.
 |--------|-----|--------|
 | `GET` | `/api/v1/admin/tenants/{tenant}/access-config/template` | download template |
 | `GET` | `/api/v1/admin/tenants/{tenant}/access-config/export` | download export |
-| `POST` | `/api/v1/admin/tenants/{tenant}/access-config/import` | import (JSON body) |
-| `POST` | `/api/v1/admin/tenants/{tenant}/access-config/import?dry_run=true` | validate only |
+| `POST` | `/api/v1/admin/tenants/{tenant}/access-config/import` | preview import (default) |
+| `POST` | `/api/v1/admin/tenants/{tenant}/access-config/import?dry_run=true` | preview import (explicit) |
+| `POST` | `/api/v1/admin/tenants/{tenant}/access-config/import?confirm=true` | apply import |
 
 ---
 
@@ -405,12 +421,12 @@ App\Http\Controllers\AccessConfigController
 The export method queries:
 
 1. **Groups:** `UserGroup::where('tenant_id', $tenantId)->orWhereNull('tenant_id')->get()`
-2. **Grants per group:** For each group, `TenantEndpointGrant::where('group_id', $group->id)->where('tenant_id', $tenantId)->get()`
+2. **Grants per group:** For each group, `TenantEndpointGrant::where('group_id', $group->id)->where(fn ($q) => $q->where('tenant_id', $tenantId)->orWhereNull('tenant_id'))->get()`
 3. **User overrides:** `TenantEndpointOverride::where('tenant_id', $tenantId)->get()`
 
-Serializes to the §3 JSON schema with `exported_at` timestamp.
+Serializes to the §3 JSON schema with `exported_at` timestamp. Each group's `tenant_id` is included in the JSON (or `null` for platform-wide groups).
 
-**Platform-wide groups** (tenant_id NULL) are included only if they have grants that apply to this tenant.
+**Platform-wide groups** (tenant_id NULL) are included in the export. Their grants are included if they have `tenant_id = NULL` (platform-wide) or `tenant_id = $tenantId` (tenant-scoped grants on platform-wide groups).
 
 ---
 
@@ -425,6 +441,7 @@ $validator = Validator::make($data, [
     'groups.*.name' => 'required|string|max:255',
     'groups.*.description' => 'nullable|string|max:255',
     'groups.*.priority' => 'nullable|integer|min:1|max:100',
+    'groups.*.tenant_id' => 'nullable|string',  // export-only, ignored on import
     'groups.*.grants' => 'nullable|array',
     'groups.*.grants.*.method' => 'required|string|in:GET,POST,PUT,PATCH,DELETE,*',
     'groups.*.grants.*.path' => 'required|string|max:512',
@@ -438,14 +455,20 @@ $validator = Validator::make($data, [
 ]);
 ```
 
+**Notes:**
+
+- `none` is a synthetic level that triggers row deletion (§5.4). It is not stored in the database — the DB enums are `read`, `write`, `admin`, `deny`.
+- `*` as a method value matches any HTTP method. A grant with `"method": "*"` applies to all methods for the given path.
+
 ### 10.2 Business Validation
 
 After schema validation:
 
-1. **Endpoint existence:** Each grant/override `(method, path)` must exist in `tenant_app_endpoint` for the target tenant (or platform-wide).
-2. **User existence:** Each `user_overrides[].email` must exist in `users`.
-3. **Group name uniqueness:** Within the target tenant, group names must be unique. Duplicates in the same JSON payload → last-wins.
-4. **Priority range:** 1–100. Default 10 if omitted.
+1. **Tenant active:** The target tenant must not be suspended. Return `403` if suspended.
+2. **Endpoint existence:** Each grant/override `(method, path)` must exist in `tenant_app_endpoint` for the target tenant (or platform-wide).
+3. **User existence:** Each `user_overrides[].email` must exist in `users`.
+4. **Group name uniqueness:** Within the target tenant, group names must be unique. Duplicates in the same JSON payload → last-wins.
+5. **Priority range:** 1–100. Default 10 if omitted.
 
 ---
 
@@ -453,13 +476,15 @@ After schema validation:
 
 1. Import is **tenant-scoped** — all groups, grants, and overrides are created under the target tenant.
 2. Import is **additive by default** — existing groups are updated, existing grants are upserted. Groups/grants not in the JSON are **not deleted**.
-3. `"level": "none"` explicitly deletes a grant or override row (revert to default).
-4. Platform-wide imports (tenant_id NULL groups/grants) require platform-admin.
-5. Export includes platform-wide groups that apply to the target tenant.
-6. Template is always safe to download — no side effects.
-7. Import preview never writes — dry-run only.
-8. JSON `version` field enables future schema migration without breaking existing imports.
-9. Group name is the natural key — no IDs in the JSON payload.
+3. `"level": "none"` explicitly deletes a grant or override row (revert to default). No-op if row doesn't exist.
+4. Platform-wide groups in the import JSON are **skipped** with a warning. Platform-wide management is via `admin-dashboard.md` routes.
+5. Export includes platform-wide groups and their grants (both platform-wide and tenant-scoped) for full round-trip fidelity.
+6. `groups[].tenant_id` in the JSON is **export-only** — ignored on import (target tenant from route).
+7. Template is always safe to download — no side effects.
+8. Import preview never writes — dry-run only. `dry_run` takes precedence over `confirm` if both are set.
+9. JSON `version` field enables future schema migration without breaking existing imports.
+10. Group name is the natural key — no IDs in the JSON payload.
+11. Target tenant must be active — imports into suspended tenants are rejected.
 
 ---
 
@@ -479,7 +504,7 @@ After schema validation:
 
 | Layer | Item | Status |
 |-------|------|--------|
-| Spec | `access-config-import-export.md` | **Draft** |
+| Spec | `access-config-import-export.md` | **Final v1.0** |
 | Controller | `AccessConfigController` | To implement |
 | Routes | Web + API routes for template/export/import | To add |
 | Model | No new models — uses existing `UserGroup`, `TenantEndpointGrant`, `TenantEndpointOverride` | Existing |

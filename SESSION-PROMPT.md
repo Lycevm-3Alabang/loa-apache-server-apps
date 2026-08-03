@@ -45,18 +45,23 @@ Then:
   - Admin UI: priority field in group create forms (platform + tenant), priority column in groups index, priority shown in group detail
   - `WebAdminController`: `groupsStore` + `tenantsGroupsStore` validate priority
   - `UserGroupFactory`, `database.sql` seed, `AdminGroupsTest` all updated
-- **Access Config Import/Export spec written** (`access-config-import-export.md` Draft v1.0):
-  - JSON schema for groups (with priority), grants, user overrides
-  - Template download, export, import (preview + confirm) API contracts
-  - Import logic: group upsert by name, grant upsert, "none" level deletes rows
-  - Admin UI: download template, export, import dialog with preview
+- **Access Config Import/Export implemented** (code complete, all 172 tests pass):
+  - `access-config-import-export.md` promoted to Final v1.0
+  - `AccessConfigController`: template download, export (serializes groups+grants+overrides), import (preview/confirm/dry-run, file upload or JSON body)
+  - Web routes: `admin.tenants.access-config.template`, `.export`, `.import`, `.import.store`
+  - API routes: `/api/v1/admin/tenants/{tenant}/access-config/{template|export|import}`
+  - Admin UI: `access-config-import.blade.php` (file upload, paste JSON, preview results, confirm checkbox, JS-powered preview/apply)
+  - Tenant show + groups pages: "Import/Export Config" button
+  - Factories: `TenantAppEndpointFactory`, `TenantEndpointGrantFactory`, `TenantEndpointOverrideFactory` (composite PK, no `id` column)
+  - `TenantAppEndpoint`, `TenantEndpointGrant`, `TenantEndpointOverride` models: added `HasFactory` trait
+  - 29 new tests: template, export (empty/data/platform-wide/tenant checks), import preview (create/update/missing endpoints/unknown email/validation), import apply (create/update/none-delete/overrides/file upload), tenant checks, dry-run precedence, non-admin access
 
 ### In Progress
 - (none)
 
 ### Next Action
-- [ ] **PRIORITY**: Implement Access Config Import/Export (`AccessConfigController`, routes, admin UI) — spec at `access-config-import-export.md` Draft v1.0
 - [ ] Implement Cert Platform SSO integration  [carried over]
+- [ ] Deploy auth platform to auth.loa.edu.ph
 
 ### Backlog / Known Gaps
 - **Tenant group membership enforcement**: `AuthorizationService::addToGroup()` doesn't check tenant membership — needs validation that user is tenant member before adding to tenant-scoped group
@@ -95,4 +100,6 @@ Then:
 | 2026-08-02 | Added Admin UI §6 to `tenant-endpoint-catalog.md` (endpoint catalog list, create form, bulk import, validate, delete with force) and Admin UI §8 to `tenant-group-endpoint-grants.md` (group endpoint grants page, user endpoint overrides page); updated Implementation Inventory and Dependency References in both specs; updated SESSION-PROMPT.md | Build Blade views for tenant endpoint catalog + group/user endpoint grants |
 | 2026-08-02 | Implemented tenant endpoint catalog + group endpoint grants: 3 migrations, 3 models, EndpointGrantController, ClaimPolicyMiddleware extension, GET /api/v1/auth/access endpoint, admin web + API routes, 3 Blade views. Fixed ImportPermissionsCommandTest (Artisan::call() to resolve SQLite :memory: isolation). All 143 tests pass. Clarified: permissions.json per app not needed — bulk import API already accepts the JSON format as payload. | Implement Cert Platform SSO |
 | 2026-08-03 | Group priority resolution spec'd: `user_groups.priority` (int, default 10, 1 = highest); `tenant-group-endpoint-grants.md` → Final v1.1 (§3.3 Group Priority + §4 algorithm — highest-precedence wins, `deny` only on priority ties); `user-group.md` + `permission-resolution.md` updated. Endpoint catalog admin UI navigation fixed + `tenant-endpoint-catalog.md` → Final v3.2 (web/API split, entry point). | Implement group priority in code |
-| 2026-08-03 | Implemented group priority: migration, model, resolution logic, admin UI, tests (143 pass); committed + pushed. Wrote `access-config-import-export.md` spec (Draft v1.0) — JSON template download, export, import with preview/confirm for groups+grants+overrides. | **PRIORITY**: Implement access config import/export |
+| 2026-08-03 | Implemented group priority: migration, model, resolution logic, admin UI, tests (143 pass); committed + pushed. Wrote `access-config-import-export.md` spec (Draft v1.0) — JSON template download, export, import with preview/confirm for groups+grants+overrides. | Implement access config import/export |
+| 2026-08-03 | Reviewed `access-config-import-export.md` against related specs; fixed 3 P0 issues (export query, platform-wide groups, confirm/dry_run), 3 P1 issues (active check, API routes, invariants), 3 P2 issues (none no-op, * wildcard, validation notes). Spec promoted to **Final v1.0**. | Implement access config import/export |
+| 2026-08-03 | Implemented Access Config Import/Export: `AccessConfigController` (template, export, import), web + API routes, `access-config-import.blade.php` (file upload, paste JSON, preview, confirm), buttons on tenant show + groups pages, 3 factories (composite PK), `HasFactory` on 3 models, 29 tests (all 172 pass). | Deploy auth or start Cert Platform SSO |
