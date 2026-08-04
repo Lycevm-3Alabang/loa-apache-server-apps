@@ -63,7 +63,24 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::post('/tenants/{tenant}/status', [WebAdminController::class, 'tenantsStatus'])->name('admin.tenants.status');
     Route::get('/tenants/{tenant}/groups', [WebAdminController::class, 'tenantsGroups'])->name('admin.tenants.groups');
     Route::post('/tenants/{tenant}/groups', [WebAdminController::class, 'tenantsGroupsStore'])->name('admin.tenants.groups.store');
-    Route::post('/tenants/{tenant}/groups/{group}/permissions', [WebAdminController::class, 'tenantsGroupsPermissions'])->name('admin.tenants.groups.permissions');
+    
+    // NEW: Group detail landing page
+    Route::get('/tenants/{tenant}/groups/{group_id}', [WebAdminController::class, 'tenantsGroupShow'])
+        ->name('admin.tenants.group.show')
+        ->where(['group_id' => '[0-9]+']);
+    
+    // NEW: Group endpoints / permissions page (replaces inline)
+    Route::get('/tenants/{tenant}/groups/{group_id}/endpoints', [WebAdminController::class, 'tenantsGroupEndpoints'])
+        ->name('admin.tenants.group.endpoints')
+        ->where(['group_id' => '[0-9]+']);
+    Route::post('/tenants/{tenant}/groups/{group_id}/endpoints', [WebAdminController::class, 'tenantsGroupsPermissions'])
+        ->name('admin.tenants.group.endpoints.save')
+        ->where(['group_id' => '[0-9]+']);
+    
+    // NEW: Group members page
+    Route::get('/tenants/{tenant}/groups/{group_id}/members', [WebAdminController::class, 'tenantsGroupMembers'])
+        ->name('admin.tenants.group.members')
+        ->where(['group_id' => '[0-9]+']);
     Route::post('/tenants/{tenant}/members', [WebAdminController::class, 'tenantsMembersStore'])->name('admin.tenants.members');
 
     // Tenant endpoint catalog

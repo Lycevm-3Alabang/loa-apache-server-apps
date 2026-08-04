@@ -75,7 +75,9 @@
                         @foreach ($groups as $group)
                             <tr>
                                 <td class="cell-user">
-                                    <strong>{{ $group->name }}</strong>
+                                    <strong>
+                                        <a href="{{ route('admin.tenants.group.show', [$group->tenant_id, $group->id]) }}">{{ $group->name }}</a>
+                                    </strong>
                                 </td>
                                 <td class="muted">{{ $group->description ?? '—' }}</td>
                                 <td class="muted">{{ $group->tenant_id ? 'Tenant' : 'Platform' }}</td>

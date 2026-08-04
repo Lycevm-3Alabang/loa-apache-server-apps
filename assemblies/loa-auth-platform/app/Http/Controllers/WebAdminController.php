@@ -257,19 +257,86 @@ class WebAdminController extends Controller
     public function tenantsGroups(Tenant $tenant): View
     {
         $groups = $tenant->userGroups()
-            ->with('permissions')
+            ->withCount('users')
             ->orderBy('name')
             ->get();
-
-        $allPermissions = Permission::orderBy('key')->get();
-
-        $formOptions = $groups->pluck('name', 'id');
 
         return view('admin.tenants.groups', [
             'tenant' => $tenant,
             'groups' => $groups,
+        ]);
+    }
+
+    public function tenantsGroupShow(Tenant $tenant, UserGroup $group): View
+    {
+        if ($group->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $group->load(['permissions']);
+
+        return view('admin.tenants.group-show', [
+            'tenant' => $tenant,
+            'group' => $group,
+            'membersCount' => $group->users()->count(),
+        ]);
+    }
+
+    public function tenantsGroupEndpoints(Tenant $tenant, UserGroup $group): View
+    {
+        if ($group->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $group->load('permissions');
+        $allPermissions = Permission::orderBy('key')->get();
+
+        return view('admin.tenants.group-endpoints', [
+            'tenant' => $tenant,
+            'group' => $group,
             'allPermissions' => $allPermissions,
-            'formOptions' => $formOptions,
+        ]);
+    }
+
+    public function tenantsGroupMembers(Tenant $tenant, UserGroup $group): View
+    {
+        if ($group->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $members = $group->users()
+            ->withPivot('created_at')
+            ->with('userGroups')
+            ->orderBy('email')
+            ->get();
+
+        $tenantGroups = $tenant->userGroups()->orderBy('name')->get();
+
+        return view('admin.tenants.group-members', [
+            'tenant' => $tenant,
+            'group' => $group,
+            'members' => $members,
+            'tenantGroups' => $tenantGroups,
+        ]);
+    }
+
+    public function tenantsShow(Tenant $tenant): View
+    {
+        $tenant->loadCount('users');
+
+        $members = $tenant->users()
+            ->with('userGroups')
+            ->orderBy('email')
+            ->paginate(25);
+
+        $nonMembers = User::whereNotIn('id', $tenant->users()->pluck('users.id'))
+            ->orderBy('email')
+            ->get();
+
+        return view('admin.tenants.show', [
+            'tenant' => $tenant,
+            'members' => $members,
+            'nonMembers' => $nonMembers,
         ]);
     }
 

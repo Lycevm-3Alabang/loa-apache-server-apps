@@ -40,7 +40,9 @@
         @foreach ($groups as $group)
             <div class="detail-card">
                 <div class="section-header">
-                    <h2>{{ $group->name }}</h2>
+                    <h2>
+                        <a href="{{ route('admin.tenants.group.show', [$tenant, $group]) }}">{{ $group->name }}</a>
+                    </h2>
                     <span style="font-size:0.8rem;color:var(--text-muted);margin-left:0.5rem;">priority: {{ $group->priority }}</span>
                 </div>
 
@@ -48,26 +50,11 @@
                     <p style="margin:0 0 1rem;color:var(--text-muted);font-size:0.875rem;">{{ $group->description }}</p>
                 @endif
 
-                {{-- Permission form --}}
-                <form method="post" action="{{ route('admin.tenants.groups.permissions', [$tenant, $group]) }}">
-                    @csrf
-                    <div class="perm-grid">
-                        @foreach ($allPermissions as $perm)
-                            @php
-                                $granted = $group->permissions->contains('id', $perm->id)
-                                    ? $group->permissions->firstWhere('id', $perm->id)->pivot->granted
-                                    : false;
-                            @endphp
-                            <label class="perm-check">
-                                <input type="checkbox" name="permissions[]" value="{{ $perm->id }}" @checked($granted)>
-                                <span>{{ $perm->key }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-                    <div style="margin-top:1rem;">
-                        <button class="button" type="submit">Save permissions</button>
-                    </div>
-                </form>
+                {{-- Actions --}}
+                <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+                    <a class="button" href="{{ route('admin.tenants.group.endpoints', [$tenant, $group]) }}">Manage endpoints & permissions</a>
+                    <a class="button button-ghost" href="{{ route('admin.tenants.group.members', [$tenant, $group]) }}">View members ({{ $group->users_count ?? $group->users->count() }})</a>
+                </div>
             </div>
         @endforeach
     @endif

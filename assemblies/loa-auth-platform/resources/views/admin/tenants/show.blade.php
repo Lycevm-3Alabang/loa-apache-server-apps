@@ -92,6 +92,7 @@
                         <tr>
                             <th>User</th>
                             <th>Status</th>
+                            <th>Group Memberships</th>
                             <th>Joined</th>
                             <th class="row-actions">Actions</th>
                         </tr>
@@ -104,6 +105,15 @@
                                     <span>{{ $member->email }}</span>
                                 </td>
                                 <td><span class="badge badge-{{ $member->status }}">{{ $member->status }}</span></td>
+                                <td class="muted">
+                                    @if ($member->userGroups->where('tenant_id', $tenant->id)->isNotEmpty())
+                                        @foreach ($member->userGroups->where('tenant_id', $tenant->id) as $mGroup)
+                                            <a href="{{ route('admin.tenants.group.show', [$tenant, $mGroup]) }}">{{ $mGroup->name }}</a><br>
+                                        @endforeach
+                                    @else
+                                        <span class="muted">None</span>
+                                    @endif
+                                </td>
                                 <td class="muted">{{ $member->pivot->created_at?->format('M j, Y') ?? '—' }}</td>
                                 <td class="row-actions">
                                     <form method="post" action="{{ route('admin.tenants.members', $tenant) }}" onsubmit="return confirm('Remove this user from the tenant?');">
