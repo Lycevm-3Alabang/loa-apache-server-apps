@@ -208,25 +208,6 @@ class WebAdminController extends Controller
         return redirect()->route('admin.tenants')->with('status', 'Tenant created.');
     }
 
-    public function tenantsShow(Tenant $tenant): View
-    {
-        $tenant->loadCount('users');
-
-        $members = $tenant->users()
-            ->orderBy('email')
-            ->paginate(25);
-
-        $nonMembers = User::whereNotIn('id', $tenant->users()->pluck('users.id'))
-            ->orderBy('email')
-            ->get();
-
-        return view('admin.tenants.show', [
-            'tenant' => $tenant,
-            'members' => $members,
-            'nonMembers' => $nonMembers,
-        ]);
-    }
-
     public function tenantsStatus(Request $request, Tenant $tenant): RedirectResponse
     {
         $validator = Validator::make($request->all(), [
