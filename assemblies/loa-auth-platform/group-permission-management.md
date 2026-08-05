@@ -1,8 +1,8 @@
 # LOA Auth Platform — Group & Permission Management
 ## Product Assembly Component Specification
 
-**Version:** 1.0
-**Status:** Draft
+**Version:** 2.0
+**Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 

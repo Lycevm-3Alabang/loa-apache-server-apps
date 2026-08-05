@@ -60,14 +60,14 @@ Then:
 - (none)
 
 ### Next Action
-- [ ] Implement Cert Platform SSO integration  [carried over]
+- [ ] Finalize and promote group/permission management spec to v2.0
+- [ ] Finalize Cert Platform SSO integration (Start Phase 2)
 - [ ] Deploy auth platform to auth.loa.edu.ph
 
 ### Backlog / Known Gaps
-- **Tenant group membership enforcement**: `AuthorizationService::addToGroup()` doesn't check tenant membership — needs validation that user is tenant member before adding to tenant-scoped group
-- **Cert Platform event_attendees check**: External users must exist in `event_attendees` table before registering
-- `JWT_SECRET` not configured (env) — required before deploy
-- Production environment: cPanel cron for `schedule:run`, MySQL host, MAIL SMTP credentials
+- **SUCCESS:** Group membership enforcement confirmed (must validate user's tenant membership before adding to a tenant-scoped group in `AuthorizationService`).
+- **DECISION:** Auth Platform remains the sole source of truth for identity and password changes across all connected systems. All apps must rely on the Auth API for primary state modification.
+- **CONFIRMATION:** Permission registry is confirmed as strictly data-driven, utilizing the database (`user_permission` table) rather than static JSON configs. This must be enforced in future development.
 - No-terminal deploy requires uploading prebuilt `vendor/` (pure-PHP deps; safe cross-platform)
 
 ### Open Questions

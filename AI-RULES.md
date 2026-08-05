@@ -11,18 +11,35 @@
 
 # ⛔ RULE 0: Specs Before Code — MANDATORY
 
-**The AI agent MUST check for the spec before writing ANY code.**
+**The AI agent MUST check for the spec before writing ANY application/implementation code.**
 
 | Situation | Required Action |
 |-----------|-----------------|
-| No spec exists | Write the spec FIRST, or ask the user. Do NOT code. |
-| Spec is Draft | Complete the spec FIRST. Do NOT code. |
+| No spec exists | Write the spec FIRST, or ask the user. Do NOT write implementation code. |
+| Spec is Draft | Complete the spec FIRST. Do NOT write implementation code. |
 | Spec is Final | Read it completely, then code exactly to it. |
 | Concept owned elsewhere | Reference by contract/ID. Do NOT duplicate. |
 
 **Violating this rule is a failure.** "I didn't see the spec" is not an excuse — searching for the spec is part of the task.
 
 The spec is the source of truth. The code must match the spec, never the reverse.
+
+---
+
+## ⚠️ CRITICAL CLARIFICATION: Editing a Spec Is NOT "Code"
+
+Rule 0 restricts **implementation code** (app code, migrations, routes, blade views, config, etc.). It does **NOT** restrict the user's ability to author or maintain specs.
+
+**If the user explicitly asks to create, edit, complete, or promote a spec (e.g., change a Draft spec to Final), DO IT.** This is a spec-authoring action, not implementation.
+
+- **Correct:** User says "update this Draft spec to Final" → edit the spec, mark it Final, save. Do NOT refuse.
+- **Correct:** User says "update this spec to v2.0" → edit the version/status header. Do NOT refuse.
+- **Correct:** User asks to implement a spec that is now Final → read the spec, then implement.
+- **WRONG:** User asks to finalize a Draft spec, and the agent refuses citing Rule 0. **Refusing to edit a spec the user asked to edit is a failure.** Rule 0 forbids *coding against* a Draft spec — it never forbids the user from finalizing the spec.
+
+**Determining intent:** If the user's request is about the spec *document itself* (status, version, content, wording, promotion Draft→Final), treat it as spec authorship and comply. If the request is about *implementing application code* for that spec, then the Draft/Final gate applies.
+
+**Never use Rule 0 to hard-block a request the user made explicitly.** When in doubt, ask — do not refuse.
 
 ---
 
@@ -449,12 +466,14 @@ _logger.LogInformation(
 
 ## ⛔ Mandatory Spec Check
 
-Before generating or modifying code:
+Before generating or modifying **implementation code**:
 
 1. Search `kernels/`, `domains/`, `business-contexts/`, `services/`, `assemblies/` for the relevant spec
 2. Read the ENTIRE spec
-3. If the spec is missing or Draft → STOP. Write the spec first or ask the user.
+3. If the spec is missing or Draft → STOP. Do not write implementation code. Write/complete the spec first, or ask the user.
 4. Only then write code that matches the spec
+
+**Exception — the user asked you to edit the spec itself.** If the user explicitly requests a spec change (create, complete, or promote Draft → Final), that request is the instruction. Comply with the spec edit. This rule only gates *implementation code*, never spec authorship the user requested. Finalizing a Draft spec is exactly the action that unblocks later implementation.
 
 ## ⛔ No Auto-Pilot — Always Ask
 
