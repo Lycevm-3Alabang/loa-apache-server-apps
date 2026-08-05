@@ -5,13 +5,13 @@ return [
 
     'tenant_slug' => env('TENANT_SLUG'),
 
-    'redirect_url' => env('AUTH_REDIRECT_URL', 'https://consult.loa.edu.ph'),
+    'redirect_url' => env('AUTH_REDIRECT_URL', 'https://aces-api.lyceumalabang.edu.ph'),
 
     'allowed_redirects' => array_values(array_filter(array_map(
         static fn (string $url): string => trim($url),
         explode(',', env(
             'AUTH_ALLOWED_REDIRECTS',
-            'https://consult.loa.edu.ph,https://cert.loa.edu.ph',
+            'https://aces-api.lyceumalabang.edu.ph,https://e-cert.vercel.app',
         )),
     ))),
 

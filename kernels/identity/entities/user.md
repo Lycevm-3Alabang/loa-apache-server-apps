@@ -45,7 +45,7 @@ Represents a person who can authenticate with the platform.
 
 ```php
 User::create([
-    'email' => 'user@loa.edu.ph',
+    'email' => 'user@lyceumalabang.edu.ph',
     'password' => Hash::make('password'),
     'name' => 'John Doe',
     'status' => 'active',

@@ -11,7 +11,7 @@
 
         <div class="field">
             <label for="email">Email address</label>
-            <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="email" placeholder="you@loa.edu.ph">
+            <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="email" placeholder="you@lyceumalabang.edu.ph">
             <span class="field-hint">The link will be valid for 60 minutes.</span>
         </div>
 

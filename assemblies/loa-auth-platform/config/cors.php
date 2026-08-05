@@ -2,9 +2,9 @@
 
 $configuredOrigins = (string) env('CORS_ALLOWED_ORIGINS', '');
 $defaultOrigins = [
-    'https://consult.loa.edu.ph',
-    'https://cert.loa.edu.ph',
-    'https://auth.loa.edu.ph',
+    'https://aces-api.lyceumalabang.edu.ph',
+    'https://e-cert.vercel.app',
+    'https://auth.lyceumalabang.edu.ph',
 ];
 
 return [

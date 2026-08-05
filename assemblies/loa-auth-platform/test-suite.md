@@ -169,7 +169,7 @@ trait CreatesApplication
 
 ```php
 User::factory()->create([
-    'email' => 'admin@loa.edu.ph',
+    'email' => 'admin@lyceumalabang.edu.ph',
     'name' => 'Admin User',
     'status' => 'active',
 ]);

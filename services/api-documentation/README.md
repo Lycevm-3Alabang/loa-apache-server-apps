@@ -10,7 +10,7 @@ Provide OpenAPI 3.1 specification and interactive Swagger UI for all LOA platfor
 
 ## Scope
 
-This service covers the auth platform API (`auth.loa.edu.ph`). Consult and Cert platforms will be added in later phases.
+This service covers the auth platform API (`auth.lyceumalabang.edu.ph`). Consult and Cert platforms will be added in later phases.
 
 ---
 
@@ -27,7 +27,7 @@ This service covers the auth platform API (`auth.loa.edu.ph`). Consult and Cert 
 
 ## Endpoints to Document
 
-### Auth API (`auth.loa.edu.ph`)
+### Auth API (`auth.lyceumalabang.edu.ph`)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|

@@ -12,7 +12,7 @@
 
         <div class="field">
             <label for="email">Email address</label>
-            <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="email" placeholder="you@loa.edu.ph">
+            <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus autocomplete="email" placeholder="you@lyceumalabang.edu.ph">
         </div>
 
         <div class="field">

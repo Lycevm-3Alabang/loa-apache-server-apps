@@ -240,7 +240,7 @@ POST /forgot-password
 3. If the user exists: send a `reset-password` email containing:
 
 ```
-https://auth.loa.edu.ph/reset-password?token={rawToken}&email={email}
+https://auth.lyceumalabang.edu.ph/reset-password?token={rawToken}&email={email}
 ```
 
 4. Always respond with a generic success message (anti-enumeration).
@@ -351,7 +351,7 @@ MAIL_PORT=587
 MAIL_USERNAME=...
 MAIL_PASSWORD=...
 MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS=noreply@loa.edu.ph
+MAIL_FROM_ADDRESS=noreply@lyceumalabang.edu.ph
 MAIL_FROM_NAME="LOA Platform"
 ```
 
@@ -584,11 +584,11 @@ Add to `.env` for the web UI layer:
 
 | Variable | Value | Notes |
 |----------|-------|-------|
-| `APP_URL` | `https://auth.loa.edu.ph` | Base URL for email links |
+| `APP_URL` | `https://auth.lyceumalabang.edu.ph` | Base URL for email links |
 | `SESSION_DRIVER` | `database` | Preferred; `file` also works on cPanel |
 | `SESSION_LIFETIME` | `480` | Admin sessions |
 | `SESSION_SECURE` | `true` | HTTPS in production only |
-| `AUTH_ALLOWED_REDIRECTS` | `https://consult.loa.edu.ph,https://cert.loa.edu.ph` | Comma-separated origin allowlist (tenant contexts) |
+| `AUTH_ALLOWED_REDIRECTS` | `https://aces-api.lyceumalabang.edu.ph,https://e-cert.vercel.app` | Comma-separated origin allowlist (tenant contexts) |
 | `AUTH_ADMIN_GROUP` | `loa-auth-admin` | User-group treated as platform admins |
 | `MAIL_*` | (see section 7) | SMTP credentials |
 | `JWT_SECRET` | (same as other apps) | Required for token signing |

@@ -207,7 +207,7 @@ Deployment configuration:
 - cPanel hosting
 - PHP 8.2+
 - MySQL 8 database
-- Subdomain: consult.loa.edu.ph
+- Subdomain: aces-api.lyceumalabang.edu.ph
 - Document root: public/
 
 ---

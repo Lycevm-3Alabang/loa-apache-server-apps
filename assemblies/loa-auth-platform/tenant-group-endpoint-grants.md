@@ -492,7 +492,7 @@ Same payload shapes as §7.2.
 
 ```json
 {
-  "user": { "id": "usr_abc", "email": "faculty@loa.edu.ph" },
+  "user": { "id": "usr_abc", "email": "faculty@lyceumalabang.edu.ph" },
   "tenant": { "id": "tenant_loa", "slug": "loa" },
   "groups": ["loa-auth-admin", "Faculty"],
   "permissions": [

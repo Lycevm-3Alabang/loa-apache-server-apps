@@ -19,7 +19,7 @@ class TestAuth extends Command
         // 1. Register
         $this->line("=== REGISTER ===");
         try {
-            $user = $identity->register("test2@loa.edu.ph", "Test1234", "Test User 2");
+            $user = $identity->register("test2@lyceumalabang.edu.ph", "Test1234", "Test User 2");
             $this->info("OK: {$user->id} {$user->email}");
         } catch (\Exception $e) {
             $this->error("FAIL: {$e->getMessage()}");
@@ -29,7 +29,7 @@ class TestAuth extends Command
         // 2. Login
         $this->line("\n=== LOGIN ===");
         try {
-            $tokens = $identity->login("test2@loa.edu.ph", "Test1234", "127.0.0.1");
+            $tokens = $identity->login("test2@lyceumalabang.edu.ph", "Test1234", "127.0.0.1");
             $this->info("OK: access=" . substr($tokens["access_token"], 0, 30) . "...");
         } catch (\Exception $e) {
             $this->error("FAIL: {$e->getMessage()}");
@@ -69,7 +69,7 @@ class TestAuth extends Command
         // 7. Login after disable (should fail)
         $this->line("\n=== LOGIN DISABLED (should fail) ===");
         try {
-            $identity->login("test2@loa.edu.ph", "Test1234", "127.0.0.1");
+            $identity->login("test2@lyceumalabang.edu.ph", "Test1234", "127.0.0.1");
             $this->error("FAIL: disabled user logged in!");
             return 1;
         } catch (\Exception $e) {
@@ -83,7 +83,7 @@ class TestAuth extends Command
         // 9. Login after re-enable
         $this->line("\n=== LOGIN RE-ENABLED ===");
         try {
-            $tokens2 = $identity->login("test2@loa.edu.ph", "Test1234", "127.0.0.1");
+            $tokens2 = $identity->login("test2@lyceumalabang.edu.ph", "Test1234", "127.0.0.1");
             $this->info("OK: " . substr($tokens2["access_token"], 0, 30) . "...");
         } catch (\Exception $e) {
             $this->error("FAIL: {$e->getMessage()}");
@@ -107,7 +107,7 @@ class TestAuth extends Command
 
         // 12. Password change
         $this->line("\n=== PASSWORD CHANGE ===");
-        $tokens3 = $identity->login("test2@loa.edu.ph", "Test1234", "127.0.0.1");
+        $tokens3 = $identity->login("test2@lyceumalabang.edu.ph", "Test1234", "127.0.0.1");
         $identity->updatePassword($user->id, "Test1234", "NewPass123");
         try {
             $identity->refresh($tokens3["refresh_token"]);
@@ -120,7 +120,7 @@ class TestAuth extends Command
         // 13. Login with new password
         $this->line("\n=== LOGIN NEW PASSWORD ===");
         try {
-            $identity->login("test2@loa.edu.ph", "NewPass123", "127.0.0.1");
+            $identity->login("test2@lyceumalabang.edu.ph", "NewPass123", "127.0.0.1");
             $this->info("OK: login with new password");
         } catch (\Exception $e) {
             $this->error("FAIL: {$e->getMessage()}");

@@ -47,7 +47,7 @@ No HTTP call to the auth service is required per request.
 ```
 {
   "sub": "user-uuid",
-  "email": "user@loa.edu.ph",
+  "email": "user@lyceumalabang.edu.ph",
   "groups": ["Faculty", "CCS"],
   "permissions": [
     "consult.appointments.create",

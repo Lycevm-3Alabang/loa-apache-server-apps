@@ -28,14 +28,14 @@
 
             <div class="form-row">
                 <label for="app_url">App URL</label>
-                <input type="url" id="app_url" name="app_url" value="{{ old('app_url') }}" placeholder="https://consult.loa.edu.ph">
+                <input type="url" id="app_url" name="app_url" value="{{ old('app_url') }}" placeholder="https://aces-api.lyceumalabang.edu.ph">
                 <span class="hint">The tenant's application URL (optional).</span>
                 @error('app_url') <span class="error-text">{{ $message }}</span> @enderror
             </div>
 
             <div class="form-row">
                 <label for="redirect_origins">Redirect Origins</label>
-                <textarea id="redirect_origins" name="redirect_origins" placeholder="https://consult.loa.edu.ph">{{ old('redirect_origins') }}</textarea>
+                <textarea id="redirect_origins" name="redirect_origins" placeholder="https://aces-api.lyceumalabang.edu.ph">{{ old('redirect_origins') }}</textarea>
                 <span class="hint">Comma-separated list of allowed redirect origins (optional).</span>
                 @error('redirect_origins') <span class="error-text">{{ $message }}</span> @enderror
             </div>

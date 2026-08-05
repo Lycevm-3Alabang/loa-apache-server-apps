@@ -77,9 +77,9 @@ The CORS Service owns:
 
 The CORS Service is consumed by:
 
-- LOA Auth Platform (auth.loa.edu.ph)
-- LOA Consult Platform (consult.loa.edu.ph)
-- LOA Cert Platform (cert.loa.edu.ph)
+- LOA Auth Platform (auth.lyceumalabang.edu.ph)
+- LOA Aces Platform (aces-api.lyceumalabang.edu.ph)
+- LOA Cert Platform UI (e-cert.vercel.app) + Cert API (cert-api.lyceumalabang.edu.ph)
 
 It must never depend on:
 
@@ -106,9 +106,10 @@ It must never depend on:
 The default production origin allowlist:
 
 ```
-https://auth.loa.edu.ph
-https://consult.loa.edu.ph
-https://cert.loa.edu.ph
+https://auth.lyceumalabang.edu.ph
+https://aces-api.lyceumalabang.edu.ph
+https://e-cert.vercel.app
+https://cert-api.lyceumalabang.edu.ph
 ```
 
 Additional origins (e.g., local development, admin consoles) are configured per environment.
@@ -186,7 +187,7 @@ Those responsibilities belong to the Identity Kernel and Business Contexts.
 `CORS_ALLOWED_ORIGINS` is a comma-separated string of origins. Each entry must be a single origin with no path:
 
 ```env
-CORS_ALLOWED_ORIGINS=https://auth.loa.edu.ph,https://consult.loa.edu.ph,https://cert.loa.edu.ph
+CORS_ALLOWED_ORIGINS=https://auth.lyceumalabang.edu.ph,https://aces-api.lyceumalabang.edu.ph,https://e-cert.vercel.app,https://cert-api.lyceumalabang.edu.ph
 ```
 
 The application trims entries and removes empty values before passing them to the CORS library. The resulting `allowed_origins` value is always a flat `string[]`.

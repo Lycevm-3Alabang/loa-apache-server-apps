@@ -15,7 +15,7 @@ Defines the tooling required to run the LOA Auth Platform in two environments:
 | Environment | Tooling | Purpose |
 |-------------|---------|---------|
 | Local development | Docker Compose stack | Run, test, lint, migrate, and email-capture locally |
-| Production | cPanel hosting | Deploy the same code to `auth.loa.edu.ph` |
+| Production | cPanel hosting | Deploy the same code to `auth.lyceumalabang.edu.ph` |
 
 The same application code runs in both environments. Only configuration differs (env vars).
 
@@ -82,7 +82,7 @@ docker compose down -v               # stop + delete DB volume (fresh start)
 | Hosting | cPanel |
 | PHP | 8.3+ (native PHP, no Docker) |
 | Database | MySQL 8 |
-| Subdomain | auth.loa.edu.ph |
+| Subdomain | auth.lyceumalabang.edu.ph |
 | Document root | `public/` |
 | Scheduler | cron entry: `* * * * * php /home/<user>/loa-auth-platform/artisan schedule:run` |
 
@@ -101,7 +101,7 @@ docker compose down -v               # stop + delete DB volume (fresh start)
 |----------|----------------|---------------------|----------|
 | `APP_KEY` | `php artisan key:generate` | generate once | Yes |
 | `APP_ENV` | `local` | `production` | Yes |
-| `APP_URL` | `http://localhost:8080` | `https://auth.loa.edu.ph` | Yes |
+| `APP_URL` | `http://localhost:8080` | `https://auth.lyceumalabang.edu.ph` | Yes |
 | `DB_HOST` | `mysql` | MySQL host | Yes |
 | `DB_PORT` | `3306` | `3306` | Yes |
 | `DB_DATABASE` | `loa_auth` | `loa_auth` | Yes |
@@ -110,13 +110,13 @@ docker compose down -v               # stop + delete DB volume (fresh start)
 | `JWT_SECRET` | dev value (32+ chars) | random 32+ chars | **Yes** |
 | `JWT_ACCESS_TTL` | `15` | `15` | No |
 | `JWT_REFRESH_TTL` | `10080` | `10080` | No |
-| `CORS_ALLOWED_ORIGINS` | LOA origins | `https://auth.loa.edu.ph,https://consult.loa.edu.ph,https://cert.loa.edu.ph` | Yes |
+| `CORS_ALLOWED_ORIGINS` | LOA origins | `https://auth.lyceumalabang.edu.ph,https://aces-api.lyceumalabang.edu.ph,https://e-cert.vercel.app` | Yes |
 | `L5_SWAGGER_OPEN_API_SPEC_VERSION` | `3.1.0` | `3.1.0` | No |
 | `CACHE_STORE` | `file` | `file` | Yes |
 | `MAIL_MAILER` | `smtp` | `smtp` | No |
 | `MAIL_HOST` | `mailpit` | SMTP host | No |
 | `MAIL_PORT` | `1025` | SMTP port | No |
-| `MAIL_FROM_ADDRESS` | `noreply@loa.edu.ph` | `noreply@loa.edu.ph` | Yes |
+| `MAIL_FROM_ADDRESS` | `noreply@lyceumalabang.edu.ph` | `noreply@lyceumalabang.edu.ph` | Yes |
 | `SESSION_DRIVER` | `file` | `file` | Yes |
 | `SESSION_LIFETIME` | `120` | `480` | No |
 | `SESSION_EXPIRE_ON_CLOSE` | `false` | `true` | No |

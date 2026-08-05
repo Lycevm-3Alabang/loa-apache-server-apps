@@ -57,7 +57,7 @@ class AdminUsersTest extends TestCase
     {
         $response = $this->actingAs($this->admin, 'web')
             ->post('/admin/users', [
-                'email' => 'created@loa.edu.ph',
+                'email' => 'created@lyceumalabang.edu.ph',
                 'name' => 'Created User',
                 'password' => 'Test1234!',
                 'status' => 'active',
@@ -66,7 +66,7 @@ class AdminUsersTest extends TestCase
         $response->assertRedirect();
 
         $this->assertDatabaseHas('users', [
-            'email' => 'created@loa.edu.ph',
+            'email' => 'created@lyceumalabang.edu.ph',
             'status' => 'active',
         ]);
     }

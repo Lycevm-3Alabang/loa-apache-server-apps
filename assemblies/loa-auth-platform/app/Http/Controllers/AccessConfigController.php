@@ -83,7 +83,7 @@ class AccessConfigController extends Controller
             ],
             'user_overrides' => [
                 [
-                    'email' => 'dean@loa.edu.ph',
+                    'email' => 'dean@lyceumalabang.edu.ph',
                     '_comment' => 'User must already exist in the system. Overrides replace group-resolution for that endpoint.',
                     'overrides' => [
                         ['method' => 'DELETE', 'path' => '/api/v1/appointments/{id}', 'level' => 'write'],

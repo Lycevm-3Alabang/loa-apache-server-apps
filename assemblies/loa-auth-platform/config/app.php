@@ -8,7 +8,7 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
-    'url' => env('APP_URL', 'http://auth.loa.edu.ph'),
+    'url' => env('APP_URL', 'http://auth.lyceumalabang.edu.ph'),
 
     'timezone' => env('APP_TIMEZONE', 'Asia/Manila'),
 

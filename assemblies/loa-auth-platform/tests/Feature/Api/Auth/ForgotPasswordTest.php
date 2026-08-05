@@ -15,10 +15,10 @@ class ForgotPasswordTest extends TestCase
 
     public function testForgotPasswordSuccess(): void
     {
-        User::factory()->create(['email' => 'forgot@loa.edu.ph']);
+        User::factory()->create(['email' => 'forgot@lyceumalabang.edu.ph']);
 
         $response = $this->postJson('/api/v1/auth/password/forgot', [
-            'email' => 'forgot@loa.edu.ph',
+            'email' => 'forgot@lyceumalabang.edu.ph',
         ]);
 
         $response->assertOk()
@@ -28,7 +28,7 @@ class ForgotPasswordTest extends TestCase
     public function testForgotPasswordUnknownEmail(): void
     {
         $response = $this->postJson('/api/v1/auth/password/forgot', [
-            'email' => 'unknown@loa.edu.ph',
+            'email' => 'unknown@lyceumalabang.edu.ph',
         ]);
 
         $response->assertOk();

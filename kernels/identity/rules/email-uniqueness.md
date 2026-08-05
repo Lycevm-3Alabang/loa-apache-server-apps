@@ -17,7 +17,7 @@ No two users may share the same email address. Email is the primary user identif
 
 ### Case Sensitivity
 
-Email comparison is case-insensitive. `User@LOA.EDU.PH` is the same as `user@loa.edu.ph`.
+Email comparison is case-insensitive. `User@lyceumalabang.edu.ph` is the same as `user@lyceumalabang.edu.ph`.
 
 ### Anti-Patterns
 

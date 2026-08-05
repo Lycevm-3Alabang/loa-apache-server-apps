@@ -84,7 +84,7 @@ The access config payload has three top-level sections:
 
   "user_overrides": [
     {
-      "email": "dean@loa.edu.ph",
+      "email": "dean@lyceumalabang.edu.ph",
       "overrides": [
         { "method": "DELETE", "path": "/api/v1/appointments/{id}", "level": "write" }
       ]
@@ -182,7 +182,7 @@ Returns the template JSON (§3) with sample placeholder data. The `groups` array
   ],
   "user_overrides": [
     {
-      "email": "dean@loa.edu.ph",
+      "email": "dean@lyceumalabang.edu.ph",
       "_comment": "User must already exist in the system. Overrides replace group-resolution for that endpoint.",
       "overrides": [
         { "method": "DELETE", "path": "/api/v1/appointments/{id}", "level": "write" }
@@ -246,7 +246,7 @@ Serializes all groups (with priority), their grants, and all user overrides for 
   "user_overrides": {
     "upsert": 1,
     "skip": 0,
-    "errors": ["User not found: unknown@loa.edu.ph"]
+    "errors": ["User not found: unknown@lyceumalabang.edu.ph"]
   },
   "endpoint_validation": {
     "valid": true,

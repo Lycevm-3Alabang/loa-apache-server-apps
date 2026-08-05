@@ -23,7 +23,7 @@ After running migrations, `php artisan db:seed` creates:
 ## Env Variables
 
 ```env
-ADMIN_EMAIL=admin@loa.edu.ph
+ADMIN_EMAIL=admin@lyceumalabang.edu.ph
 ADMIN_PASSWORD=Admin123!
 ADMIN_NAME=Super Admin
 ```

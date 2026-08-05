@@ -134,7 +134,7 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Admin create user (v3) | ✅ Done | `WebAdminController::create/store`, `admin/users/create.blade.php`, routes — spec Final in admin-dashboard.md §9 |
 | Group/permission management (v4) | ✅ Done | `GroupController`, `UserGroupController`, 3 Blade views, API + admin routes — spec in group-permission-management.md |
 | Access Config Import/Export | ✅ Done | `AccessConfigController`, web + API routes, import Blade view, 3 factories, 29 tests — spec Final v1.0 |
-| Deploy to auth.loa.edu.ph | ⬜ Not started | |
+| Deploy to auth.lyceumalabang.edu.ph | ⬜ Not started | |
 
 ### Bugs Found & Fixed (2026-07-31)
 
@@ -173,7 +173,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Report endpoints (7 types) | ⬜ Not started | |
 | CSV import | ⬜ Not started | |
 | Email notifications | ⬜ Not started | |
-| Deploy to consult.loa.edu.ph | ⬜ Not started | |
+| Deploy to aces-api.lyceumalabang.edu.ph | ⬜ Not started | |
 
 ## Phase 3: Cert App
 
@@ -202,7 +202,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Public verification endpoint | ⬜ Not started | No auth required |
 | Revoke/delete endpoints | ⬜ Not started | |
 | Audit trail | ⬜ Not started | |
-| Deploy to cert.loa.edu.ph | ⬜ Not started | |
+| Deploy to cert-api.lyceumalabang.edu.ph | ⬜ Not started | |
 
 ## Phase 4: Integration
 
@@ -220,9 +220,10 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 
 | App | Subdomain | Database | Framework | Purpose |
 |-----|-----------|----------|-----------|---------|
-| Auth | auth.loa.edu.ph | loa_auth | Laravel 12 | JWT token service, user management |
-| Consult | consult.loa.edu.ph | loa_consult | Laravel 12 | Consultation booking, faculty evaluation |
-| Cert | cert.loa.edu.ph | loa_cert | Laravel 12 | Certificate issuance, verification |
+| Auth | auth.lyceumalabang.edu.ph | loa_auth | Laravel 12 | JWT token service, user management |
+| Consult | aces-api.lyceumalabang.edu.ph | loa_consult | Laravel 12 | Consultation booking, faculty evaluation |
+| Cert API | cert-api.lyceumalabang.edu.ph | loa_cert | Laravel 12 | Certificate issuance, verification |
+| e-cert UI | e-cert.vercel.app | — (Vercel) | Next.js 16 | Cert frontend; consumer of Auth + Cert APIs |
 
 ---
 
@@ -306,7 +307,7 @@ loa-apache-server-apps/
 | 2026-07-30 | Three separate Laravel apps | Isolation, independent deployment |
 | 2026-07-30 | Custom JWT (no firebase) | Zero external dependencies |
 | 2026-07-30 | Stateless JWT validation | No HTTP call per request |
-| 2026-07-30 | Subdomains for each app | auth/consult/cert.loa.edu.ph |
+| 2026-07-30 | Subdomains for each app | auth/cert-api/aces-api *.lyceumalabang.edu.ph (2026-08-05: UIs move to Vercel, APIs keep *.lyceumalabang.edu.ph) |
 | 2026-07-30 | Education domain pack | New industry pack for LOA |
 | 2026-07-31 | UserGroup model (replaces Role) | Flexible grouping, multi-department support |
 | 2026-07-31 | Department in Education Domain | Education-specific, not a canonical kernel |

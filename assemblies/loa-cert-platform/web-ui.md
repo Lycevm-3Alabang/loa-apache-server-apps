@@ -37,7 +37,7 @@ The Cert Platform does not own authentication. It consumes JWT tokens issued by 
 
 ## Does Not Own
 
-- User login form (hosted by Auth Platform at `auth.loa.edu.ph`)
+- User login form (hosted by Auth Platform at `auth.lyceumalabang.edu.ph`)
 - User registration (hosted by Auth Platform)
 - Password reset (hosted by Auth Platform)
 - JWT token issuance
@@ -52,7 +52,7 @@ The Cert Platform is a **pure JWT consumer**. It has no login form, no registrat
 The Cert Platform frontend is responsible for:
 
 1. Detecting when the user is not authenticated
-2. Redirecting the browser to `auth.loa.edu.ph/login?redirect=https://cert.loa.edu.ph`
+2. Redirecting the browser to `auth.lyceumalabang.edu.ph/login?redirect=https://e-cert.vercel.app`
 3. Handling the return trip (encrypted payload in URL fragment)
 4. Storing and refreshing JWT tokens
 5. Attaching tokens to API requests
@@ -63,10 +63,10 @@ The Cert Platform frontend is responsible for:
 
 ## 4.1 Fragment Detection
 
-When the browser arrives at `cert.loa.edu.ph` from the Auth Platform redirect, the URL contains an encrypted payload in the fragment:
+When the browser arrives at `e-cert.vercel.app` from the Auth Platform redirect, the URL contains an encrypted payload in the fragment:
 
 ```
-https://cert.loa.edu.ph#payload=<base64url_aes256gcm_blob>
+https://e-cert.vercel.app#payload=<base64url_aes256gcm_blob>
 ```
 
 **Detection logic (runs on every page load):**
@@ -230,7 +230,7 @@ The frontend attaches this header via an HTTP client interceptor (e.g., Axios in
 
 When a 401 response is received (expired access token):
 
-1. The frontend calls `POST https://auth.loa.edu.ph/api/v1/auth/refresh` with the refresh token
+1. The frontend calls `POST https://auth.lyceumalabang.edu.ph/api/v1/auth/refresh` with the refresh token
 2. Auth Platform returns a new token pair
 3. Frontend updates the in-memory access token
 4. Frontend retries the original request with the new token
@@ -241,7 +241,7 @@ When a 401 response is received (expired access token):
 API Request → 401 Unauthorized
     |
     v
-POST auth.loa.edu.ph/api/v1/auth/refresh
+POST auth.lyceumalabang.edu.ph/api/v1/auth/refresh
   { refresh_token: "..." }
     |
     v
@@ -280,7 +280,7 @@ Logout requires:
 3. **Frontend:** Redirect to Auth Platform login page
 
 ```
-POST https://auth.loa.edu.ph/api/v1/auth/logout
+POST https://auth.lyceumalabang.edu.ph/api/v1/auth/logout
 Content-Type: application/json
 
 {
@@ -291,7 +291,7 @@ Content-Type: application/json
 After logout, the user is redirected to:
 
 ```
-https://auth.loa.edu.ph/login?redirect=https://cert.loa.edu.ph
+https://auth.lyceumalabang.edu.ph/login?redirect=https://e-cert.vercel.app
 ```
 
 ---
@@ -312,7 +312,7 @@ function redirectToLogin(): void {
   sessionStorage.setItem('cert_return_to', intended);
 
   const certOrigin = window.location.origin;
-  const authUrl = `https://auth.loa.edu.ph/login?redirect=${encodeURIComponent(certOrigin)}`;
+  const authUrl = `https://auth.lyceumalabang.edu.ph/login?redirect=${encodeURIComponent(certOrigin)}`;
   window.location.href = authUrl;
 }
 
@@ -426,7 +426,7 @@ This state is:
 On page load, if no access token is in memory but a refresh token exists (in `httpOnly` cookie), the frontend should attempt a silent refresh:
 
 ```
-POST https://auth.loa.edu.ph/api/v1/auth/refresh
+POST https://auth.lyceumalabang.edu.ph/api/v1/auth/refresh
 Cookie: refresh_token=...
 ```
 
@@ -465,7 +465,7 @@ api.interceptors.response.use(
 
       try {
         const { data } = await axios.post(
-          'https://auth.loa.edu.ph/api/v1/auth/refresh',
+          'https://auth.lyceumalabang.edu.ph/api/v1/auth/refresh',
           { refresh_token: refreshToken },
         );
 
@@ -583,14 +583,14 @@ The auth error page is shown when:
 
 ```env
 # Cert Platform frontend
-VITE_AUTH_PLATFORM_URL=https://auth.loa.edu.ph
-VITE_CERT_ORIGIN=https://cert.loa.edu.ph
+VITE_AUTH_PLATFORM_URL=https://auth.lyceumalabang.edu.ph
+VITE_CERT_ORIGIN=https://e-cert.vercel.app
 ```
 
 ```php
 // config/auth-platform.php (backend)
 return [
-    'base_url' => env('AUTH_PLATFORM_BASE_URL', 'https://auth.loa.edu.ph'),
+    'base_url' => env('AUTH_PLATFORM_BASE_URL', 'https://auth.lyceumalabang.edu.ph'),
     'jwt_secret' => env('JWT_SECRET'),
     'encryption_key' => env('ENCRYPTION_KEY', ''),
     'encryption_key_previous' => env('ENCRYPTION_KEY_PREVIOUS', ''),

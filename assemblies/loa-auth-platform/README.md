@@ -171,7 +171,7 @@ Deployment configuration:
 - cPanel hosting
 - PHP 8.2+
 - MySQL 8 database
-- Subdomain: auth.loa.edu.ph
+- Subdomain: auth.lyceumalabang.edu.ph
 - Document root: public/
 
 ---

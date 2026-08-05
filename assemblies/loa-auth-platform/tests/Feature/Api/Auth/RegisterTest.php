@@ -15,7 +15,7 @@ class RegisterTest extends TestCase
     public function testRegisterSuccess(): void
     {
         $response = $this->postJson('/api/v1/auth/register', [
-            'email' => 'new@loa.edu.ph',
+            'email' => 'new@lyceumalabang.edu.ph',
             'password' => 'Test1234!',
             'name' => 'New User',
         ]);
@@ -26,7 +26,7 @@ class RegisterTest extends TestCase
             ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => 'new@loa.edu.ph',
+            'email' => 'new@lyceumalabang.edu.ph',
             'name' => 'New User',
             'status' => 'active',
         ]);
@@ -34,10 +34,10 @@ class RegisterTest extends TestCase
 
     public function testRegisterDuplicateEmail(): void
     {
-        User::factory()->create(['email' => 'existing@loa.edu.ph']);
+        User::factory()->create(['email' => 'existing@lyceumalabang.edu.ph']);
 
         $response = $this->postJson('/api/v1/auth/register', [
-            'email' => 'existing@loa.edu.ph',
+            'email' => 'existing@lyceumalabang.edu.ph',
             'password' => 'Test1234!',
             'name' => 'Duplicate',
         ]);
@@ -60,7 +60,7 @@ class RegisterTest extends TestCase
     public function testRegisterShortPassword(): void
     {
         $response = $this->postJson('/api/v1/auth/register', [
-            'email' => 'user@loa.edu.ph',
+            'email' => 'user@lyceumalabang.edu.ph',
             'password' => 'short',
             'name' => 'User',
         ]);
@@ -72,7 +72,7 @@ class RegisterTest extends TestCase
     public function testRegisterPasswordNoUppercase(): void
     {
         $response = $this->postJson('/api/v1/auth/register', [
-            'email' => 'user@loa.edu.ph',
+            'email' => 'user@lyceumalabang.edu.ph',
             'password' => 'test1234!',
             'name' => 'User',
         ]);
@@ -84,7 +84,7 @@ class RegisterTest extends TestCase
     public function testRegisterMissingName(): void
     {
         $response = $this->postJson('/api/v1/auth/register', [
-            'email' => 'user@loa.edu.ph',
+            'email' => 'user@lyceumalabang.edu.ph',
             'password' => 'Test1234!',
         ]);
 

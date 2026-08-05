@@ -16,13 +16,13 @@ class MeTest extends TestCase
     {
         $user = User::factory()->create([
             'name' => 'Test User',
-            'email' => 'me@loa.edu.ph',
+            'email' => 'me@lyceumalabang.edu.ph',
         ]);
 
         $response = $this->getJson('/api/v1/auth/me', $this->jwtHeaders($user));
 
         $response->assertOk()
-            ->assertJsonPath('email', 'me@loa.edu.ph')
+            ->assertJsonPath('email', 'me@lyceumalabang.edu.ph')
             ->assertJsonPath('name', 'Test User')
             ->assertJsonStructure([
                 'id', 'email', 'name', 'status', 'groups', 'permissions', 'created_at',

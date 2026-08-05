@@ -62,7 +62,7 @@ Then:
 ### Next Action
 - [ ] Finalize and promote group/permission management spec to v2.0
 - [ ] Finalize Cert Platform SSO integration (Start Phase 2)
-- [ ] Deploy auth platform to auth.loa.edu.ph
+- [ ] Deploy auth platform to auth.lyceumalabang.edu.ph
 
 ### Backlog / Known Gaps
 - **SUCCESS:** Group membership enforcement confirmed (must validate user's tenant membership before adding to a tenant-scoped group in `AuthorizationService`).

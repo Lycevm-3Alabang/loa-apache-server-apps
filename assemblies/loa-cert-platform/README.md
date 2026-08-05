@@ -204,24 +204,24 @@ The LOA Cert Platform does not issue its own JWT tokens. Authentication is deleg
 ## 11.1 Flow Overview
 
 ```
-User visits cert.loa.edu.ph
+User visits e-cert.vercel.app
     |
     v
 [No valid session/token]
     |
     v
 Frontend redirects browser to:
-    auth.loa.edu.ph/login?redirect=https://cert.loa.edu.ph
+    auth.lyceumalabang.edu.ph/login?redirect=https://e-cert.vercel.app
     |
     v
-User authenticates on auth.loa.edu.ph
+User authenticates on auth.lyceumalabang.edu.ph
     |
     v
 Auth Platform encrypts JWT payload (AES-256-GCM)
     |
     v
 Auth Platform redirects browser to:
-    https://cert.loa.edu.ph#payload=<encrypted_base64url>
+    https://e-cert.vercel.app#payload=<encrypted_base64url>
     |
     v
 Cert Platform frontend extracts fragment
@@ -243,14 +243,14 @@ The Cert Platform frontend initiates SSO by redirecting the browser to the Auth 
 **Redirect URL format:**
 
 ```
-https://auth.loa.edu.ph/login?redirect=https://cert.loa.edu.ph
+https://auth.lyceumalabang.edu.ph/login?redirect=https://e-cert.vercel.app
 ```
 
 **Parameters:**
 
 | Parameter  | Required | Description |
 |-----------|----------|-------------|
-| `redirect` | Yes | The origin URL of the Cert Platform (`https://cert.loa.edu.ph`). Must match the Auth Platform's allowed redirects list. |
+| `redirect` | Yes | The origin URL of the Cert Platform (`https://e-cert.vercel.app`). Must match the Auth Platform's allowed redirects list. |
 
 **Requirements:**
 
@@ -289,7 +289,7 @@ Content-Type: application/json
   "expires_in": 900,
   "user": {
     "id": "usr_abc123",
-    "email": "teacher@loa.edu.ph",
+    "email": "teacher@lyceumalabang.edu.ph",
     "name": "Juan Dela Cruz"
   },
   "tenant": {
@@ -313,7 +313,7 @@ Content-Type: application/json
     "expires_in": 900,
     "user": {
       "id": "usr_abc123",
-      "email": "teacher@loa.edu.ph",
+      "email": "teacher@lyceumalabang.edu.ph",
       "name": "Juan Dela Cruz"
     },
     "tenant": {
@@ -397,7 +397,7 @@ All authenticated API requests include the access token in the `Authorization` h
 When the access token expires, the frontend calls:
 
 ```
-POST https://auth.loa.edu.ph/api/v1/auth/refresh
+POST https://auth.lyceumalabang.edu.ph/api/v1/auth/refresh
 Content-Type: application/json
 
 {
@@ -415,7 +415,7 @@ Logout requires two actions:
 2. **Backend (optional):** Revoke refresh token via Auth Platform API
 
 ```
-POST https://auth.loa.edu.ph/api/v1/auth/logout
+POST https://auth.lyceumalabang.edu.ph/api/v1/auth/logout
 Content-Type: application/json
 
 {
@@ -438,11 +438,11 @@ Content-Type: application/json
 
 ## 11.8 Auth Platform Configuration Reference
 
-The Auth Platform must include `https://cert.loa.edu.ph` in its allowed redirects:
+The Auth Platform must include `https://e-cert.vercel.app` in its allowed redirects:
 
 ```env
 # Auth Platform .env
-AUTH_ALLOWED_REDIRECTS=https://consult.loa.edu.ph,https://cert.loa.edu.ph
+AUTH_ALLOWED_REDIRECTS=https://aces-api.lyceumalabang.edu.ph,https://e-cert.vercel.app
 ENCRYPTION_KEY=<shared_key>
 ```
 
@@ -450,7 +450,7 @@ Tenant-level configuration (if using multi-tenancy):
 
 ```sql
 UPDATE tenants
-SET redirect_origins = '["https://cert.loa.edu.ph"]'
+SET redirect_origins = '["https://e-cert.vercel.app"]'
 WHERE slug = 'loa';
 ```
 
@@ -536,7 +536,7 @@ function storeTokens(data: SSOPayload): void {
  */
 function redirectToAuthPlatform(): void {
   const certOrigin = window.location.origin;
-  const authUrl = `https://auth.loa.edu.ph/login?redirect=${encodeURIComponent(certOrigin)}`;
+  const authUrl = `https://auth.lyceumalabang.edu.ph/login?redirect=${encodeURIComponent(certOrigin)}`;
   window.location.href = authUrl;
 }
 ```
@@ -748,7 +748,7 @@ Route::post('/auth/callback', AuthCallbackController::class)
 ```env
 # Cert Platform .env
 JWT_SECRET=<shared_hmac_secret_with_auth_platform>
-AUTH_PLATFORM_BASE_URL=https://auth.loa.edu.ph
+AUTH_PLATFORM_BASE_URL=https://auth.lyceumalabang.edu.ph
 ENCRYPTION_KEY=<same_key_as_auth_platform>
 ENCRYPTION_KEY_PREVIOUS=
 CERT_TENANT_SLUG=loa
@@ -757,7 +757,7 @@ CERT_TENANT_SLUG=loa
 ```php
 // config/auth-platform.php
 return [
-    'base_url' => env('AUTH_PLATFORM_BASE_URL', 'https://auth.loa.edu.ph'),
+    'base_url' => env('AUTH_PLATFORM_BASE_URL', 'https://auth.lyceumalabang.edu.ph'),
     'jwt_secret' => env('JWT_SECRET'),
     'encryption_key' => env('ENCRYPTION_KEY', ''),
     'encryption_key_previous' => env('ENCRYPTION_KEY_PREVIOUS', ''),
@@ -780,7 +780,7 @@ Deployment configuration:
 - cPanel hosting
 - PHP 8.2+
 - MySQL 8 database
-- Subdomain: cert.loa.edu.ph
+- Subdomain: cert-api.lyceumalabang.edu.ph
 - Document root: public/
 
 See `web-ui.md` for the frontend specification (auth guard, SSO callback handling, token lifecycle).

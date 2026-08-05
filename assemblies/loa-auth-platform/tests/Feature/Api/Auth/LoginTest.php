@@ -14,12 +14,12 @@ class LoginTest extends TestCase
     public function testLoginSuccess(): void
     {
         User::factory()->create([
-            'email' => 'login@loa.edu.ph',
+            'email' => 'login@lyceumalabang.edu.ph',
             'password' => bcrypt('Test1234'),
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'login@loa.edu.ph',
+            'email' => 'login@lyceumalabang.edu.ph',
             'password' => 'Test1234',
         ]);
 
@@ -32,12 +32,12 @@ class LoginTest extends TestCase
     public function testLoginInvalidCredentials(): void
     {
         User::factory()->create([
-            'email' => 'login@loa.edu.ph',
+            'email' => 'login@lyceumalabang.edu.ph',
             'password' => bcrypt('Test1234'),
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'login@loa.edu.ph',
+            'email' => 'login@lyceumalabang.edu.ph',
             'password' => 'WrongPassword',
         ]);
 
@@ -47,12 +47,12 @@ class LoginTest extends TestCase
     public function testLoginDisabledAccount(): void
     {
         User::factory()->disabled()->create([
-            'email' => 'disabled@loa.edu.ph',
+            'email' => 'disabled@lyceumalabang.edu.ph',
             'password' => bcrypt('Test1234'),
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'disabled@loa.edu.ph',
+            'email' => 'disabled@lyceumalabang.edu.ph',
             'password' => 'Test1234',
         ]);
 
@@ -62,12 +62,12 @@ class LoginTest extends TestCase
     public function testLoginLockedAccount(): void
     {
         User::factory()->locked()->create([
-            'email' => 'locked@loa.edu.ph',
+            'email' => 'locked@lyceumalabang.edu.ph',
             'password' => bcrypt('Test1234'),
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'locked@loa.edu.ph',
+            'email' => 'locked@lyceumalabang.edu.ph',
             'password' => 'Test1234',
         ]);
 
@@ -77,12 +77,12 @@ class LoginTest extends TestCase
     public function testLoginRecordsAttempt(): void
     {
         $user = User::factory()->create([
-            'email' => 'attempt@loa.edu.ph',
+            'email' => 'attempt@lyceumalabang.edu.ph',
             'password' => bcrypt('Test1234'),
         ]);
 
         $this->postJson('/api/v1/auth/login', [
-            'email' => 'attempt@loa.edu.ph',
+            'email' => 'attempt@lyceumalabang.edu.ph',
             'password' => 'Test1234',
         ]);
 
