@@ -1,6 +1,6 @@
 # SESSION PROMPT — LOA Cert Platform
 
-> Assembly-scoped session prompt for `assemblies/loa-cert-platform/`. This complements (does not replace) the repo-wide `SESSION-PROMPT.md` at the workspace root.
+> Assembly-scoped session prompt for `assemblies/loa-cert-platform/`. This complements (does not replace) the repo-wide `PROJECT_UPDATES.md` at the workspace root.
 
 ## How to Use
 
@@ -20,7 +20,7 @@ Read these files IN ORDER and report your understanding of where we left off:
 1. AI-RULES.md                       - mandatory spec-first rules (Rule 0: no code without a Final spec)
 2. AI-GUIDE.md                       - architecture + Step 0 (spec check)
 3. PROJECT.md                        - repo tracker: Phase 3 "Cert App" = this platform's status
-4. SESSION-PROMPT.md (root)          - repo-wide tracker: current state of every layer/phase
+4. PROJECT_UPDATES.md (root)    - repo-wide cross-boundary tracker: decisions/design/changes per platform
 5. assemblies/loa-cert-platform/README.md   - assembly scope + SSO callback contract (§11)
 6. assemblies/loa-cert-platform/web-ui.md   - frontend spec + permission→role mapping (§5)
 7. assemblies/loa-cert-platform/api-endpoints.md - THE endpoint source of truth (priority spec)

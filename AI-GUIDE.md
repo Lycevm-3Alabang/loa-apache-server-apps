@@ -117,7 +117,7 @@ Before taking ANY of the following actions, the AI agent MUST ask and receive an
 - Running database migrations
 - Running Docker commands (up, down, rebuild, exec)
 - Installing or updating packages (composer, npm)
-- Updating PROJECT.md, SESSION-PROMPT.md, or any tracker file
+- Updating PROJECT.md, PROJECT_UPDATES.md, or any tracker file
 - Making architectural decisions (framework upgrades, library swaps)
 - Running tests
 - Committing or pushing changes
