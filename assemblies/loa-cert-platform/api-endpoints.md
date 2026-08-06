@@ -1,7 +1,7 @@
 # LOA Cert Platform — API Endpoints
 ## Product Assembly Component Specification
 
-**Version:** 1.3
+**Version:** 1.4
 **Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -1274,6 +1274,7 @@ Re-issuing after revocation reuses the same number (the generated column becomes
 | 17 | Refresh/logout are **proxied by Cert** using the httpOnly refresh cookie | Keeps the refresh token out of JS (XSS risk); refines README §11.5–11.6. **Confirmed 2026-08-06** alongside the CSR decision — the frontend holds the access token in memory only and relies on the Cert-proxied `loa_cert_refresh` cookie (§9.3, §9.7). |
 | 18 | Owner rule enforced in the controller using the middleware-resolved granted level | `read` on certificate paths is necessary but not sufficient for participant access |
 | 19 | Author-scoped staff use `/api/v1/me/events` + `/api/v1/me/templates` and non-admin item-path grants; records carry `created_by = jwt.sub` | The level model has no authorship dimension (Auth's `author` filter is a stub); `/me` paths mirror the participant pattern and keep grants path-separated (§9.6) |
+| 20 | **Auth implementation deferred (2026-08-06)** | Phase C builds the domain CRUD endpoints **unauthenticated**; `jwt.auth` / `jwt.endpoint` middleware and the SSO `callback`/`refresh`/`logout` endpoints land in a later auth phase (decision D9, `legacy-e-cert-integration.md` §12). The §9 contract, §4.4 levels, and this catalog remain the target. |
 
 ---
 
@@ -1523,16 +1524,16 @@ CERT_REFRESH_COOKIE_TTL=10080
 
 # 13. Implementation Inventory
 
-> **Implementation order (approved core slice first):** scaffold + auth integration → events → attendees → templates → certificates. PDF/QR/email/bulk/audit/dashboard endpoints follow in later passes.
+> **Implementation order (approved core slice first):** scaffold → **unauth** domain CRUD slice (events → attendees → templates → certificates) per **decision #20 / 2026-08-06**; SSO + `jwt.auth`/`jwt.endpoint` follow in a later **auth phase**. PDF/QR/email/bulk/audit/dashboard endpoints follow in later passes.
 
 | Layer | Item |
 |-------|------|
 | Assembly | Laravel 12 scaffold in the loa-auth-platform stack (PHP 8.3, MySQL 8, Docker, PHPUnit, l5-swagger) |
 | Assembly | `config/cert-platform.php`, `config/cert-endpoints.php` (catalog mirror), `config/auth-platform.php`, `config/jwt.php` |
-| Assembly | `JWTService` (HS256, shared secret), `EncryptionService` (AES-256-GCM + previous-key fallback) |
-| Assembly | `JwtMiddleware` (`jwt.auth`, no user table), `EndpointPolicyMiddleware` (`jwt.endpoint`, level-based) |
-| Assembly | `AuthController` (callback, refresh, logout) + throttles + refresh cookie handling |
-| Assembly | `routes/api.php` route groups: `auth/*` public; everything else `['jwt.auth','jwt.endpoint']`; `verify|view` public |
+| Assembly | **Auth phase (deferred, decision #20):** `JWTService` (HS256, shared secret), `EncryptionService` (AES-256-GCM + previous-key fallback) |
+| Assembly | **Auth phase (deferred, decision #20):** `JwtMiddleware` (`jwt.auth`, no user table), `EndpointPolicyMiddleware` (`jwt.endpoint`, level-based) |
+| Assembly | **Auth phase (deferred, decision #20):** `AuthController` (callback, refresh, logout) + throttles + refresh cookie handling |
+| Assembly | **Auth phase (deferred, decision #20):** `routes/api.php` route groups: `auth/*` public; everything else `['jwt.auth','jwt.endpoint']`; `verify|view` public |
 | Assembly | `permissions:sync-cert-catalog` artisan command (generate local catalog mirror) |
 | Context | Migrations: organizations (seed 1), certificate_templates (+`created_by`), events (+`created_by`), event_attendees, certificates (+generated column), certificate_emails, certificate_sequences, audit_logs |
 | Context | Event + Template + Attendee + Certificate services; `certificate_sequences` atomic number service; author-scope filters (`/me/events`, `/me/templates`, item ownership checks) |
@@ -1603,3 +1604,9 @@ The import payload for Auth `POST /api/v1/admin/tenants/{tenant}/endpoints/bulk`
 ```
 
 > `verify/{certificate_number}` and `view/{id}` are **public** — no catalog entry, no JWT. The `auth/*` routes are public but not cataloged (cookie/payload flow, §9).
+
+---
+
+## Document Control
+
+- **Status:** Final v1.4 — 2026-08-06: **decision #20 — auth implementation deferred** (Phase C builds the domain CRUD slice unauthenticated; SSO + `jwt.auth`/`jwt.endpoint` in a later auth phase). §13 implementation inventory annotated accordingly. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`.

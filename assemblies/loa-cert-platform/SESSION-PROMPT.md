@@ -55,12 +55,13 @@ Then:
 - **Phase A COMPLETE (2026-08-06):** user confirmed remaining open questions + approved fixes. `api-endpoints.md` → **Final v1.3** (§9.2 SSO URL corrected to `/sso/login`; §9.9 `/access` made optional; §5.7 dashboard ownership note; §8 decision #17 confirmed; example cert numbers → `CERT-0001`). `legacy-e-cert-integration.md` → **Final v2.0** (§7.2 dashboard ownership note; §12 Phase A marked complete; §14 reference updated). D7 copy re-synced.
 
 ### In Progress
-- **Phase B (Auth readiness) — DEFERRED 2026-08-06:** no baked-in Auth seeder; provisioned **manually at deploy-time** per Auth runbook `assemblies/loa-auth-platform/cert-readiness.md` (**Final v0.2**, branch `docs/cert-readiness-runbook`; §8 = Local Development via Docker Compose) — loa tenant (`redirect_origins` = `https://e-cert.vercel.app`), 48-endpoint Appendix A catalog, `cert-admin`/`cert-staff`/`cert-user` groups (created manually) + grants (admin 48 / staff 39 / user 7)
+- **Phase B (Auth readiness) — DEFERRED 2026-08-06:** provisioned **manually at deploy-time** per the Auth runbook **`assemblies/loa-auth-platform/cert-readiness.md`** (**Final v0.2**, branch `docs/cert-readiness-runbook`; §8 = Local Development). How Auth is provisioned is a **side-note** — the runbook is authoritative (loa tenant + `redirect_origins`, Appendix A catalog, `cert-admin`/`cert-staff`/`cert-user` groups + grants).
 
 ### Next Action
 - [x] **Phase A — COMPLETE 2026-08-06:** `api-endpoints.md` v1.3 and `legacy-e-cert-integration.md` v2.0 promoted to **Final** (remaining open questions resolved: decision #17 proxy confirmed; dashboard stats `read` confirmed with ownership note).
 - [x] **Phase B — SPEC LOCKED 2026-08-06:** Auth readiness provisioned **manually at deploy-time** per Auth runbook `cert-readiness.md` (**Final v0.2**, incl. §8 Local Development; `loa` tenant redirect_origins, Appendix A catalog, manual group creation + grants).
-- [ ] **Phase C:** scaffold Laravel 12 Cert app (core slice: `jwt.auth`/`jwt.endpoint`, callback/refresh/logout, events/attendees/templates/certificates + tests)
+- [x] **Phase C scope — 2026-08-06 (user decision):** **no authentication on Cert API endpoints for now** — Phase C scaffolds the **domain CRUD slice only** (events/attendees/templates/certificates + tests, unauth). SSO `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` are deferred to a later **C-Auth** phase (decision #20 in `api-endpoints.md` §8; D9 in `legacy-e-cert-integration.md` §5).
+- [ ] **Phase C:** scaffold Laravel 12 Cert app — **unauth domain CRUD slice** (events/attendees/templates/certificates + tests); no auth middleware / SSO endpoints yet
 
 ### Backlog / Known Gaps
 - **Local catalog mirror** (`config/cert-endpoints.php`) must stay in sync with the Auth catalog — add `permissions:sync-cert-catalog` artisan command (§9.5)
@@ -89,6 +90,7 @@ Then:
 | 2026-08-06 (3) | **Phase A COMPLETE.** User confirmed decision #17 (Cert-proxied refresh/logout) and dashboard stats at `read` with ownership note. Promoted `api-endpoints.md` → **Final v1.3** (SSO URL `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership, example numbers `CERT-0001`) and `legacy-e-cert-integration.md` → **Final v2.0** (§7.2 ownership note, §12 A complete). D7 re-synced | Phase B (Auth readiness) → Phase C (scaffold) |
 | 2026-08-06 (4) | **Phase B DEFERRED (user decision):** no Cert data baked into Auth seeders/database.sql (seeder attempt reverted); Cert groups created **manually** at deploy-time. Auth runbook **`cert-readiness.md` (Draft v0.1)** written on branch `docs/cert-readiness-runbook` (loa tenant + redirect_origins, 48-endpoint Appendix A payload, groups, 48-row grant matrix: admin 48 / staff 39 / user 7, verification) | Review + promote `cert-readiness.md` → Final → deploy + provision → Phase C (scaffold) |
 | 2026-08-06 (5) | **`cert-readiness.md` promoted to Final v0.1** — Phase B readiness spec locked (manual deploy-time provisioning) | Deploy + provision per runbook → Phase C (scaffold) |
+| 2026-08-06 (6) | **Cert-side docs centered + auth deferred (user decisions):** ① Auth usage in Cert docs reduced to **side-notes** pointing at `cert-readiness.md` (`legacy-e-cert-integration.md` §7.2 title / §10.2 / §10.4; `README.md` §11.8 — removed inline `.env` + raw `tenants` SQL and "seeding" language). ② **No auth on Cert API endpoints for now** — Phase C = unauth domain CRUD slice; SSO + `jwt.auth`/`jwt.endpoint` deferred to a **C-Auth** phase. Bumped `api-endpoints.md` → **Final v1.4** (decision #20, §13 inventory annotated) and `legacy-e-cert-integration.md` → **Final v2.1** (D9, phase table + C-Auth row); `README.md` → Draft v1.1 | Phase C scaffold (unauth core slice) |
 
 ---
 

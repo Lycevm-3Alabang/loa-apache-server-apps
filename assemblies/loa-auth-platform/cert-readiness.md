@@ -282,7 +282,7 @@ The production steps §4–§7 apply unchanged, run against the **local** admin 
 3. **Groups** (§6): `Tenants → loa → Groups`; create `cert-admin` (priority 2), `cert-staff` (3), `cert-user` (4).
 4. **Grants** (§7): `Tenants → loa → Groups → {group} → Endpoints`; apply §7.4.
 
-**Optional tinker fast path** — the tenant + groups can be created ad-hoc to skip the forms (interactive `php artisan tinker`, paste):
+**Optional tinker fast path (local dev only)** — instead of clicking the two forms (steps 1 and 3), an operator creates the tenant + groups by pasting a one-liner into an interactive `php artisan tinker` session:
 
 ```php
 $t = App\Models\Tenant::updateOrCreate(
@@ -297,7 +297,18 @@ foreach (['cert-admin' => 2, 'cert-staff' => 3, 'cert-user' => 4] as $n => $p) {
 }
 ```
 
-The catalog import and the grant matrix still go through the admin UI (§8.3 steps 2 and 4). This snippet is an **ad-hoc convenience only** — it is **not** part of `DatabaseSeeder` or `database/seeders/database.sql`, consistent with the 2026-08-06 decision.
+**What the snippet does and does not do:**
+
+| | Tinker snippet | Admin UI (steps 1–4) |
+|---|---|---|
+| Creates the `loa` tenant | ✅ | ✅ |
+| Creates `cert-admin` / `cert-staff` / `cert-user` (empty groups) | ✅ | ✅ |
+| Imports the 48-endpoint catalog (§5.3 payload) | ❌ — still step 2 | ✅ step 2 |
+| Applies the grant matrix (§7.4) | ❌ — still step 4 | ✅ step 4 |
+| Runs automatically? | ❌ — operator pastes once, interactively | ❌ — operator clicks once |
+| Part of `DatabaseSeeder.php` / `database.sql`? | ❌ — no file is created | ❌ — no file is created |
+
+The snippet is a **manual, one-time operator action** that merely types the same data the tenant/group forms would POST. It is **not** seeding: it writes no seeder file, is not registered in `DatabaseSeeder`, is not in `database/seeders/database.sql`, and does not run on `php artisan db:seed`. That separation is the 2026-08-06 decision — Cert readiness data is provisioned by an operator, never baked into the seed pipeline.
 
 ### 8.4 Local verification
 
@@ -341,6 +352,7 @@ Repeat §9 against the local base URL:
 | 0.1 | 2026-08-06 | Initial runbook (Draft). Decision: no baked-in seeder; manual deploy-time provisioning. Grant matrix derived from `api-endpoints.md` §4.4 + Appendix A. |
 | 0.1 | 2026-08-06 | **Promoted to Final** (payload + grant matrix parity-checked against `api-endpoints.md` Appendix A: 48/48). |
 | 0.2 | 2026-08-06 | Added §8 **Local Development** (Docker Compose provisioning via the local admin UI at `localhost:8080` + optional tinker fast path; local origin/CORS/redirect table; local verification). References + Doc Control renumbered to §9–§11. |
+| 0.2 | 2026-08-06 | §8.3 tinker fast path clarified: explicit "what it does / does not do" table (tenant+groups only; catalog+grants still via admin UI; operator-pasted one-liner, no seeder file, not in `DatabaseSeeder`/`database.sql`). |
 
 ### Open Questions
 - None.
