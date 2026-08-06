@@ -61,7 +61,7 @@ Then:
 - [x] **Phase A — COMPLETE 2026-08-06:** `api-endpoints.md` v1.3 and `legacy-e-cert-integration.md` v2.0 promoted to **Final** (remaining open questions resolved: decision #17 proxy confirmed; dashboard stats `read` confirmed with ownership note).
 - [x] **Phase B — SPEC LOCKED 2026-08-06:** Auth readiness provisioned **manually at deploy-time** per Auth runbook `cert-readiness.md` (**Final v0.2**, incl. §8 Local Development; `loa` tenant redirect_origins, Appendix A catalog, manual group creation + grants).
 - [x] **Phase C scope — 2026-08-06 (user decision):** **no authentication on Cert API endpoints for now** — Phase C scaffolds the **domain CRUD slice only** (events/attendees/templates/certificates + tests, unauth). SSO `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` are deferred to a later **C-Auth** phase (decision #20 in `api-endpoints.md` §8; D9 in `legacy-e-cert-integration.md` §5).
-- [ ] **Phase C:** scaffold Laravel 12 Cert app — **unauth domain CRUD slice** (events/attendees/templates/certificates + tests); no auth middleware / SSO endpoints yet
+- [x] **Phase C scaffolding:** Created basic directory structure, composer.json, app config, and core models (`Organization`, `Event`, `CertificateTemplate`, `Certificate`, `EventAttendee`) + database migrations for the core entities to support Phase C unauth CRUD slice.
 
 ### Backlog / Known Gaps
 - **Local catalog mirror** (`config/cert-endpoints.php`) must stay in sync with the Auth catalog — add `permissions:sync-cert-catalog` artisan command (§9.5)
