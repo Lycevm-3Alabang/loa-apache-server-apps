@@ -1,8 +1,8 @@
 # LOA Cert Platform — API Endpoints
 ## Product Assembly Component Specification
 
-**Version:** 1.2
-**Status:** Draft
+**Version:** 1.3
+**Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -34,7 +34,7 @@ The API is **API-first and level-gated**. Authentication is delegated to the LOA
 |-------|-----------|----------------|
 | Auth (SSO) | callback, refresh, logout | public (SSO payload / cookie) |
 | Events | CRUD + stats + template clone + event issuance actions | `read` (list/detail/stats), `write` (create/update/delete/issue), `admin` (reissue, revoke-expired) |
-| Attendees | CRUD + CSV import + delete preview + file data | `read` (list/preview/file-data), `write` (CRUD/import), `admin` (with-cert) |
+| Attendees | CRUD + bulk import + delete preview + file data | `read` (list/preview/file-data), `write` (CRUD/import), `admin` (with-cert) |
 | Templates | CRUD (certificate + email types) | `read` (list/detail), `write` (CRUD) |
 | Certificates | issue, bulk, upload, list, detail, PDF, revoke, delete, email, reissue, expire, QR | `read` (list/detail/pdf/download/email-logs/qr), `write` (issue/bulk/upload/email), `admin` (revoke/delete/reissue/expire) |
 | Participant | own certificates (`/me`) | `read` + owner rule (§9.6) |
@@ -131,7 +131,7 @@ Error:
 ## 3.7 Binary & Multipart
 
 - PDF responses are **raw binary streams** (`Content-Type: application/pdf`), never base64-embedded in JSON (except the `rendered_html` regeneration cache). Headers: `Content-Disposition: attachment; filename="<certificate_number>.pdf"`.
-- File uploads (CSV import, certificate file upload) use **multipart/form-data**, not base64 JSON.
+- Certificate file uploads use **multipart/form-data**, not base64 JSON. Bulk attendee import (`POST /events/{id}/attendees/import`) is a **JSON payload**; CSV parsing is a front-end concern (§5.2).
 
 ## 3.8 Idempotency & Bulk Semantics
 
@@ -236,7 +236,7 @@ List events for the organization.
       "location": "Multipurpose Hall",
       "organizer": "SAO",
       "certificate_title": "Certificate of Participation",
-      "certificate_number_pattern": "LOA-2026-####",
+      "certificate_number_pattern": "CERT-####",
       "valid_until": "2026-09-15",
       "status": "active",
       "template_id": null,
@@ -268,7 +268,7 @@ Create an event.
   "location": "Multipurpose Hall",
   "organizer": "SAO",
   "certificate_title": "Certificate of Participation",
-  "certificate_number_pattern": "LOA-2026-####",
+  "certificate_number_pattern": "CERT-####",
   "valid_until": "2026-09-15",
   "template_id": "uuid",
   "email_template_id": "uuid",
@@ -284,7 +284,7 @@ Create an event.
 | `location` | string | no | |
 | `organizer` | string | no | |
 | `certificate_title` | string | no | default `Certificate of Participation` |
-| `certificate_number_pattern` | string | no | default `LOA-YYYY-####`; supports `YYYY`, `####` placeholders (see §7.4) |
+| `certificate_number_pattern` | string | yes | user-configurable; must contain a `####` placeholder (produces the incremental id); supports `YYYY`, `####` (see §7.4). Examples: `CERT-####`, `TEMP-001-####`, `CERT-####-2026`. No default. |
 | `valid_until` | date | no | default certificate expiry source |
 | `template_id` | uuid | no | must belong to org; must be `type=certificate` |
 | `email_template_id` | uuid | no | must belong to org; must be `type=email` |
@@ -461,7 +461,7 @@ List attendees for an event.
       "attended_at": "2026-08-15T10:00:00Z",
       "completed_at": "2026-08-15T10:00:00Z",
       "certificate_id": "uuid",
-      "certificate_number": "LOA-2026-0001",
+      "certificate_number": "CERT-0001",
       "generation_mode": "template",
       "created_at": "2026-08-01T09:00:00Z"
     }
@@ -494,18 +494,30 @@ Add a single attendee.
 **Response 201:** attendee resource. **Errors:** 401, 403, 404, 422 (missing name/email, invalid email).
 
 ### `POST /api/v1/events/{id}/attendees/import`
-Bulk import attendees from CSV.
+Bulk import attendees. The API accepts a **JSON payload** (array of attendees); CSV parsing / upload UX is a front-end concern.
 
 **Auth:** `write`
 
-**Request:** `multipart/form-data`
+**Request:** `application/json`
+
+```json
+{
+  "attendees": [
+    { "name": "Maria Santos", "email": "maria.santos@lyceumalabang.edu.ph" },
+    { "name": "Juan Dela Cruz", "email": "juan.dela.cruz@lyceumalabang.edu.ph", "metadata": { "section": "BSCS-2A" } }
+  ],
+  "mode": "merge",
+  "confirm": false
+}
+```
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `file` | file | CSV with header `name,email` (optional extra columns become `metadata`) |
+| `attendees` | array | required; each entry `{ name, email, metadata? }` |
 | `mode` | string | `merge` (default, upsert by email) \| `replace` (clear then insert — destructive) |
+| `confirm` | boolean | required `true` when `mode=replace` |
 
-**Behavior:** rows are validated; malformed rows are reported, valid rows upserted. `mode=replace` requires `write` and is gated behind an explicit `confirm: true` field.
+**Behavior:** entries are validated; malformed entries are reported, valid entries upserted. `mode=replace` requires `write` and is gated behind an explicit `confirm: true` field.
 
 **Response 200:**
 
@@ -522,7 +534,7 @@ Bulk import attendees from CSV.
 }
 ```
 
-**Errors:** 401, 403, 404, 422 (no file, empty file, missing header).
+**Errors:** 401, 403, 404, 422 (empty `attendees`, invalid email, `replace` without `confirm`).
 
 ### `PATCH /api/v1/attendees/{id}`
 Update an attendee.
@@ -560,7 +572,7 @@ Preview the impact of deleting an attendee.
     "attendee_id": "uuid",
     "name": "Maria Santos",
     "email": "maria.santos@lyceumalabang.edu.ph",
-    "linked_certificate": { "id": "uuid", "number": "LOA-2026-0001", "status": "active" },
+    "linked_certificate": { "id": "uuid", "number": "CERT-0001", "status": "active" },
     "deletes_certificate": true
   }
 }
@@ -720,7 +732,7 @@ Issue a single certificate.
 {
   "data": {
     "id": "uuid",
-    "certificate_number": "LOA-2026-0001",
+    "certificate_number": "CERT-0001",
     "recipient_name": "Maria Santos",
     "recipient_email": "maria.santos@lyceumalabang.edu.ph",
     "issued_at": "2026-08-05T08:00:00Z",
@@ -730,7 +742,7 @@ Issue a single certificate.
     "status": "active",
     "event_id": "uuid",
     "template_id": "uuid",
-    "file_path": "certificates/LOA-2026-0001.pdf",
+    "file_path": "certificates/CERT-0001.pdf",
     "created_at": "2026-08-05T08:00:00Z"
   }
 }
@@ -769,7 +781,7 @@ Upload a pre-rendered certificate PDF file for a certificate number.
 | `certificate_number` | string | target certificate number |
 | `file` | file | PDF source file |
 
-**Response 200:** `{ "data": { "certificate_id": "uuid", "file_path": "certificates/LOA-2026-0001.pdf" } }`
+**Response 200:** `{ "data": { "certificate_id": "uuid", "file_path": "certificates/CERT-0001.pdf" } }`
 
 **Errors:** 401, 403, 404 (number not found), 422.
 
@@ -886,7 +898,7 @@ Generate a QR data URL for a certificate's public verification URL.
 
 **Query:** `certificate_number` (required).
 
-**Response 200:** `{ "data": { "certificate_number": "LOA-2026-0001", "qr_data_url": "data:image/png;base64,..." } }`
+**Response 200:** `{ "data": { "certificate_number": "CERT-0001", "qr_data_url": "data:image/png;base64,..." } }`
 
 **Errors:** 401, 403, 404, 422 (missing number).
 
@@ -929,7 +941,7 @@ Verify a certificate by its public number.
 {
   "data": {
     "valid": true,
-    "certificate_number": "LOA-2026-0001",
+    "certificate_number": "CERT-0001",
     "issued_date": "2026-08-05",
     "valid_until": "2026-09-15",
     "status": "active",
@@ -959,7 +971,7 @@ Public read-only certificate viewer data.
   "data": {
     "certificate": {
       "id": "uuid",
-      "certificate_number": "LOA-2026-0001",
+      "certificate_number": "CERT-0001",
       "status": "active",
       "recipient_name": "Maria Santos",
       "issued_at": "2026-08-05T08:00:00Z",
@@ -985,6 +997,8 @@ Organization-wide summary.
 
 **Auth:** `read`
 
+> **Ownership note (confirmed 2026-08-06):** dashboard data is **org-wide and unscoped** — it aggregates across every event/attendee/certificate/template in the organization. The `read` grant therefore belongs to **admin and staff groups only** and is deliberately **excluded from the participant (`cert-user`) grant pattern** (§4.4). Participants never receive these paths; they see only their own certificates via `/me/certificates`. The dashboard UI is nav-gated accordingly (`legacy-e-cert-integration.md` §7.2).
+
 **Response 200:**
 
 ```json
@@ -1005,6 +1019,8 @@ Organization-wide summary.
 Recent activity feed (most recent audit entries).
 
 **Auth:** `read`
+
+> Same ownership rule as `/dashboard/stats` above — org-wide unscoped feed; admin/staff groups only, excluded from participant grants.
 
 **Query:** `limit` (default 20, max 50).
 
@@ -1045,7 +1061,7 @@ Query audit logs.
       "source": "api",
       "entity_type": "certificate",
       "entity_id": "uuid",
-      "details": { "certificate_number": "LOA-2026-0001", "reason": "Administrative decision" },
+      "details": { "certificate_number": "CERT-0001", "reason": "Administrative decision" },
       "ip_address": "203.0.113.7",
       "created_at": "2026-08-05T08:05:00Z"
     }
@@ -1190,7 +1206,7 @@ Auth group (public, §9):
 - `UNIQUE(organization_id, name)`.
 
 ### events
-`id` PK, `organization_id` FK CASCADE, `template_id` FK NULL, `email_template_id` FK NULL, `name` NOT NULL, `description`, `event_date` DATE, `location`, `organizer`, `certificate_title` DEFAULT `Certificate of Participation`, `certificate_number_pattern` DEFAULT `LOA-YYYY-####`, `valid_until` DATE, `status` (`draft`|`active`|`archive`) DEFAULT `draft`, `created_by` TEXT NULL (opaque Auth `sub`, no FK — author scope, §9.6), `created_at`, `updated_at`.
+`id` PK, `organization_id` FK CASCADE, `template_id` FK NULL, `email_template_id` FK NULL, `name` NOT NULL, `description`, `event_date` DATE, `location`, `organizer`, `certificate_title` DEFAULT `Certificate of Participation`, `certificate_number_pattern` TEXT NOT NULL (user-configurable, must contain `####`), `valid_until` DATE, `status` (`draft`|`active`|`archive`) DEFAULT `draft`, `created_by` TEXT NULL (opaque Auth `sub`, no FK — author scope, §9.6), `created_at`, `updated_at`.
 
 ### certificates
 `id` PK, `organization_id` FK CASCADE, `event_id` FK NULL CASCADE, `template_id` FK NULL, `recipient_name` NOT NULL, `recipient_email` NOT NULL, `certificate_number` NOT NULL, `issued_at` DEFAULT now, `expires_at`, `revoked_at`, `revoke_reason`, `file_path`, `metadata` JSON (holds `rendered_html` regeneration cache; **base64 `rendered_pdf` moved to storage**, only `file_path` kept), `created_at`, `updated_at`.
@@ -1224,10 +1240,10 @@ Re-issuing after revocation reuses the same number (the generated column becomes
 
 ## 7.4 Certificate number generation
 
-- `certificate_number_pattern` supports literal text plus placeholders: `YYYY` (year), `####` (zero-padded sequence, width = count of `#`).
+- `certificate_number_pattern` supports literal text plus placeholders: `YYYY` (year), `####` (zero-padded sequence, width = count of `#`). The pattern **must contain a `####` placeholder** — that is what produces the incremental id.
 - Sequence is counted per `(organization_id, pattern)` in `certificate_sequences`.
 - **Atomicity:** within a transaction, `SELECT ... FOR UPDATE` the sequence row, increment, format, insert certificate. Concurrent issuance can never duplicate a number.
-- Default pattern: `LOA-YYYY-####` (e.g. `LOA-2026-0001`).
+- The pattern is **user-configurable per event and required** (no default). Examples: `CERT-####` → `CERT-0001`, `TEMP-001-####` → `TEMP-001-0001`, `CERT-####-2026` → `CERT-0001-2026`.
 
 ## 7.5 Template placeholders
 
@@ -1243,7 +1259,7 @@ Re-issuing after revocation reuses the same number (the generated column becomes
 | 2 | `PATCH` for partial updates; `POST` for state actions | Correct REST; supersedes README §10's `PUT /certificates/{id}/revoke` |
 | 3 | Synchronous bulk operations (no workflow engine) | LOA has no workflow runtime; per-item result objects preserve observability |
 | 4 | PDF streaming endpoints stay binary | e-cert recommendation §3; no base64 over JSON for downloads |
-| 5 | Uploads are multipart | e-cert recommendation §6; base64 replaced |
+| 5 | Certificate file uploads are multipart; attendee bulk import is JSON | base64 replaced; CSV parsing is a UI concern |
 | 6 | `rendered_pdf` base64 moved to storage; `file_path` kept | Heaviest payload in the old schema (schema-documentation warning) |
 | 7 | `auth`-type templates dropped | Auth email content owned by Auth Platform |
 | 8 | `status` derived, never stored | Matches e-cert behavior; no migration drift |
@@ -1255,7 +1271,7 @@ Re-issuing after revocation reuses the same number (the generated column becomes
 | 14 | Cert keeps a **local mirror** of the endpoint catalog for enforcement | No DB/HTTP per request; Auth Platform remains the source of truth for granting |
 | 15 | `write` and `admin` share ordinal 2; `admin` is an operational label | Mirrors the Auth Platform model; admin-only paths are granted only to the admin group |
 | 16 | JWT validated with **no local user lookup** (no users table) | Account state is enforced by Auth at issuance; cert trusts the signed claims |
-| 17 | Refresh/logout are **proxied by Cert** using the httpOnly refresh cookie | Keeps the refresh token out of JS (XSS risk); refines README §11.5–11.6 |
+| 17 | Refresh/logout are **proxied by Cert** using the httpOnly refresh cookie | Keeps the refresh token out of JS (XSS risk); refines README §11.5–11.6. **Confirmed 2026-08-06** alongside the CSR decision — the frontend holds the access token in memory only and relies on the Cert-proxied `loa_cert_refresh` cookie (§9.3, §9.7). |
 | 18 | Owner rule enforced in the controller using the middleware-resolved granted level | `read` on certificate paths is necessary but not sufficient for participant access |
 | 19 | Author-scoped staff use `/api/v1/me/events` + `/api/v1/me/templates` and non-admin item-path grants; records carry `created_by = jwt.sub` | The level model has no authorship dimension (Auth's `author` filter is a stub); `/me` paths mirror the participant pattern and keep grants path-separated (§9.6) |
 
@@ -1277,7 +1293,7 @@ This section is the concrete contract for authentication and authorization. It s
 ```
 User visits e-cert.vercel.app
     → [no session] frontend redirects to
-        https://auth.lyceumalabang.edu.ph/login?redirect=https://e-cert.vercel.app
+        https://auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app
     → user authenticates on Auth Platform
     → Auth Platform encrypts token payload (AES-256-GCM, nonce[12]+tag[16]+cipher)
     → redirects browser to
@@ -1286,7 +1302,8 @@ User visits e-cert.vercel.app
     → Cert backend decrypts + validates, sets httpOnly refresh cookie, returns access token
 ```
 
-- The `redirect` origin (`https://e-cert.vercel.app`) must be in the Auth Platform's `AUTH_ALLOWED_REDIRECTS` (and/or the `loa` tenant's `redirect_origins`).
+- Use **`/sso/login`** (tenant SSO flow), **not `/login`** — auth `web-ui.md` §4.1: `/login` is the **admin-only** login and rejects non-admin users.
+- The `redirect` origin (`https://e-cert.vercel.app`) must be in the Auth Platform's `AUTH_ALLOWED_REDIRECTS` (and/or the `loa` tenant's `redirect_origins`); there is no implicit fallback — absent/invalid `redirect` is rejected.
 - URL fragments never reach servers — only the frontend can read `#payload=`.
 
 ## 9.3 `POST /api/v1/auth/callback`
@@ -1421,8 +1438,8 @@ Levels decide *whether* a caller may invoke an endpoint; **scope** decides *whic
 
 ## 9.9 Frontend Permission Store
 
-- After callback, the frontend calls `GET https://auth.lyceumalabang.edu.ph/api/v1/auth/access` with the in-memory access token to load the resolved `<level>:<path>` permission set for UI gating (per `tenant-group-endpoint-grants.md` §9.5). Cert does not proxy this endpoint.
-- UI mapping levels → e-cert roles is in `web-ui.md` §5 (updated for levels in a later pass).
+- The access token's `permissions` claim already carries the resolved `<level>:<path>` set (§4.3). Under the **CSR decision** (`legacy-e-cert-integration.md` §6.4, §7.4), the frontend parses that claim directly for its coarse UI role — **no call is required**.
+- A frontend **may** optionally call `GET https://auth.lyceumalabang.edu.ph/api/v1/auth/access` (with the in-memory access token) to load the full resolved set for fine-grained UI gating (per `tenant-group-endpoint-grants.md` §9.5). Cert does not proxy this endpoint. UI-level gating is display-only and never a security boundary.
 
 ## 9.10 Configuration
 
@@ -1458,7 +1475,7 @@ CERT_REFRESH_COOKIE_TTL=10080
 - [ ] Refresh token only in httpOnly `SameSite=Lax` cookie; never in JS-accessible storage
 - [ ] Certificate numbers generated atomically (row lock); no race can duplicate a number
 - [ ] One active certificate per (event, email) enforced
-- [ ] CSV import validated row-by-row; `replace` mode requires explicit confirm
+- [ ] Bulk attendee import validated entry-by-entry; `replace` mode requires explicit `confirm`
 - [ ] Template updates/deletes blocked when referenced (409)
 - [ ] PDF streams served as binary, never cached with sensitive headers
 - [ ] Audit logged for: issue, revoke, delete, reissue, expire, email, verify(viewed), import, sso callback
@@ -1548,7 +1565,7 @@ The import payload for Auth `POST /api/v1/admin/tenants/{tenant}/endpoints/bulk`
     { "method": "POST",   "path": "/api/v1/events/{id}/issue-completed",  "label": "Issue certificates for completed",  "required_level": "write" },
     { "method": "GET",    "path": "/api/v1/events/{id}/attendees",        "label": "List event attendees",              "required_level": "read" },
     { "method": "POST",   "path": "/api/v1/events/{id}/attendees",        "label": "Add attendee",                      "required_level": "write" },
-    { "method": "POST",   "path": "/api/v1/events/{id}/attendees/import", "label": "Import attendees CSV",              "required_level": "write" },
+    { "method": "POST",   "path": "/api/v1/events/{id}/attendees/import", "label": "Import attendees",                "required_level": "write" },
     { "method": "PATCH",  "path": "/api/v1/attendees/{id}",               "label": "Update attendee",                   "required_level": "write" },
     { "method": "DELETE", "path": "/api/v1/attendees/{id}",               "label": "Delete attendee",                   "required_level": "write" },
     { "method": "DELETE", "path": "/api/v1/attendees/{id}/with-cert",     "label": "Delete attendee with certificate",   "required_level": "admin" },

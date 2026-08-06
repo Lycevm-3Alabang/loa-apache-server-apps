@@ -52,7 +52,7 @@ Then:
 - (none — auth implementation is complete for the current spec set; deploy and Cert integration remain)
 
 ### Next Action
-- [ ] **Phase B (Cert readiness):** confirm redirect allowlist incl. `https://e-cert.vercel.app` is effective, import the Cert Appendix A endpoint catalog (`POST /api/v1/admin/tenants/{tenant}/endpoints/bulk`), seed Cert groups for the `loa` tenant
+- [x] **Phase B (Cert readiness) runbook — FINAL 2026-08-06:** `cert-readiness.md` **Final v0.2**. No Cert data baked into Auth seeders/database.sql (user decision). Provision **manually at deploy-time**: create the `loa` tenant (`redirect_origins` incl. `https://e-cert.vercel.app`), import the Cert Appendix A catalog (48 endpoints, §5 payload), create **`cert-admin` / `cert-staff` / `cert-user`** groups (priorities 2/3/4), grant per §7 matrix (admin 48 / staff 39 / user 7). **§8 Local Development added (v0.2):** same provisioning via Docker Compose (`localhost:8080` admin UI + optional tinker fast path; local origin/CORS/redirect table).
 - [ ] **Deploy** the current auth release to `auth.lyceumalabang.edu.ph` (see `DEPLOY.md` — no-terminal section requires uploading prebuilt `vendor/`)
 - [ ] Track open questions from `PROJECT_UPDATES.md` / Cert SESSION-PROMPT that depend on Auth (tenant `redirect_origins`, seed group names Q-4, `/my/profile` Q-5)
 
@@ -77,6 +77,9 @@ Then:
 | 2026-08-03 | Group priority: migration, model, resolution logic, admin UI, tests (**143 pass**); committed + pushed; `access-config-import-export.md` Draft → **Final v1.0** after P0/P1/P2 review | Implement access config import/export |
 | 2026-08-03 | Access Config Import/Export implemented: `AccessConfigController`, web + API routes, import Blade view, 3 factories, 29 tests (**all 172 pass**) | Deploy auth or start Cert Platform SSO |
 | 2026-08-05 | Cross-boundary: domain correction + allowlists updated for `https://e-cert.vercel.app`; auth referenced from root `PROJECT_UPDATES.md` | Phase B: Cert readiness (catalog import, seed groups), then deploy |
+| 2026-08-06 | **Phase B deferred (user decision):** no Cert data baked into Auth seeders/database.sql — a `CertReadinessSeeder` attempt was created then **reverted**. Provisioning will be **manual at deploy-time**. Wrote runbook **`cert-readiness.md` (Draft v0.1)** on branch `docs/cert-readiness-runbook`: `loa` tenant + `redirect_origins`, 48-endpoint Appendix A payload, group creation, full 48-row grant matrix (admin 48 / staff 39 / user 7), verification steps. Payload + matrix parity-checked against `api-endpoints.md` Appendix A | Review + promote `cert-readiness.md` → Final → deploy → provision per runbook |
+| 2026-08-06 | **`cert-readiness.md` promoted to Final v0.1** (payload + matrix verified 48/48). Phase B readiness spec is locked; provisioning happens manually at deploy-time per the runbook | Deploy auth → provision per runbook |
+| 2026-08-06 | **`cert-readiness.md` → Final v0.2:** added **§8 Local Development** (Docker Compose) — local admin UI at `localhost:8080`, local origin/CORS/redirect table, optional ad-hoc tinker fast path for tenant+groups (not in any seeder, per decision), local verification. §3 cross-ref added; References + Doc Control renumbered to §9–§11 | Deploy auth → provision per runbook |
 
 ---
 
