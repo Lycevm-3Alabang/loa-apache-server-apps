@@ -58,6 +58,23 @@ class LoginTest extends TestCase
 
         $response->assertStatus(403);
     }
+    
+    public function testLoginPendingAccount(): void
+    {
+        User::factory()->create([
+            'email' => 'pending@lyceumalabang.edu.ph',
+            'password' => bcrypt('Test1234'),
+            'status' => 'pending',
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => 'pending@lyceumalabang.edu.ph',
+            'password' => 'Test1234',
+        ]);
+
+        $response->assertStatus(403)
+            ->assertJson(['message' => 'Account not activated. Please check your email.']);
+    }
 
     public function testLoginLockedAccount(): void
     {

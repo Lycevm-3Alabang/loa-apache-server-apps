@@ -173,6 +173,10 @@ class AuthController extends Controller
                 return response()->json(['message' => 'Account is disabled'], 403);
             }
 
+            if ($e->getMessage() === 'Account not activated') {
+                return response()->json(['message' => 'Account not activated. Please check your email.'], 403);
+            }
+
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 

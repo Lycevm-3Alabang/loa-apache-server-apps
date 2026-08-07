@@ -18,8 +18,8 @@ Route::get('/', function () {
 Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [WebAuthController::class, 'login']);
 
-Route::get('/register', [WebAuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [WebAuthController::class, 'register'])
+Route::get('/activate', [WebAuthController::class, 'showActivate'])->name('activate');
+Route::post('/activate', [WebAuthController::class, 'activate'])
     ->middleware('throttle:5,60');
 
 Route::get('/forgot-password', [WebAuthController::class, 'showForgotPassword'])
@@ -36,6 +36,7 @@ Route::get('/redirect', [WebAuthController::class, 'showRedirect'])
     ->middleware('auth:web');
 
 Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
+    Route::post('/users/{id}/resend-activation', [WebAdminController::class, 'resendActivation'])->name('admin.users.resend-activation');
     Route::get('/users', [WebAdminController::class, 'index'])->name('admin.users');
     Route::get('/users/create', [WebAdminController::class, 'create'])->name('admin.users.create');
     Route::post('/users', [WebAdminController::class, 'store'])->name('admin.users.store');
