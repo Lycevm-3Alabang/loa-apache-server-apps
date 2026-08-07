@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Certificate extends Model
 {
@@ -33,4 +35,37 @@ class Certificate extends Model
         'updated_at' => 'datetime',
         'metadata' => 'array',
     ];
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(CertificateTemplate::class, 'template_id');
+    }
+
+    public function emails(): HasMany
+    {
+        return $this->hasMany(CertificateEmail::class);
+    }
+
+    public function getStatusAttribute(): string
+    {
+        if ($this->revoked_at !== null) {
+            return 'revoked';
+        }
+
+        if ($this->expires_at !== null && $this->expires_at->isPast()) {
+            return 'expired';
+        }
+
+        return 'active';
+    }
 }
