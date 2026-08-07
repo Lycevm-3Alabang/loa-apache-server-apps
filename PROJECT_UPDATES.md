@@ -101,19 +101,40 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 
 ## Last Session Notes
 
-### Date: 2026-08-07
+### Date: 2026-08-08
 
 ### Completed
-- **User Account Activation spec written and promoted to Final v1.0** (`assemblies/loa-auth-platform/user-account-activation.md`): replaces self-registration with backend-provisioned activation flow. Key decisions: `pending` user status, activation tokens (24h, single-use, SHA-256), no password field in admin create form, auto-send activation email, admin resend capability, repurposed `/register` → `/activate`.
+- **Phase C State Verification:** Audited Cert Platform implementation against `api-endpoints.md` v1.4 (Final). Found Events/Attendees groups **partially implemented** — not complete as previously reported.
+- **CertificateTemplateController:** ✅ Complete (5 endpoints, OpenAPI, tests).
+- **CertificateController:** ✅ Complete (14 endpoints, OpenAPI, tests).
+- **PdfService + PlaceholderResolver:** ✅ Complete.
+- **Docker + Swagger Infrastructure:** ✅ Complete.
+- **All Models & Migrations:** ✅ Complete.
+
+### Corrected Status — Events & Attendees
+| Resource Group | Spec Endpoints | Implemented | Missing |
+|----------------|----------------|-------------|---------|
+| **Events** | 13 (§5.1) | 6 (CRUD + stats stub) | 7: clone-template, clone-email-template, bulk-issue, reissue, revoke-expired (count+action), issue-completed |
+| **Attendees** | 8 (§5.2) | 0 | All 8 endpoints |
+
+**EventController** has basic CRUD + stats stub (mock data). No OpenAPI attributes. Routes not registered.
+**AttendeeController** does not exist.
+**Tests:** Only basic Unit tests for Event CRUD. No Feature tests for advanced endpoints, no Attendee tests.
 
 ### In Progress
-- (none)
+- **Deferred to Auth Phase:** SSO + `jwt.auth`/`jwt.endpoint` middleware (decision #20/D9)
+- **Deferred to Service Phase:** QR code generation, email sending services
+- **Active Work:** Completing Events & Attendees resource groups per spec
 
 ### Next Action
-- [ ] **Implement user account activation** per `user-account-activation.md` Final v1.0: migration (pending status + activations table), Activation model, ActivationService, AccountActivationMail, repurpose register→activate routes/views, update admin create user flow, update login to gate pending users, remove self-registration API, tests.
+- [ ] **Complete EventController:** Add 7 missing endpoints + fix `stats()` + OpenAPI on all 13 methods
+- [ ] **Create AttendeeController:** All 8 endpoints with OpenAPI
+- [ ] **Register routes** in `routes/api.php`
+- [ ] **Write Feature tests** for all 21 endpoints
+- [ ] **Run tests** and verify
 
 ### Backlog / Known Gaps
-- (none new)
+- Previous session notes (2026-08-07) overstated Events/Attendees completion — corrected here.
 
 ---
 
