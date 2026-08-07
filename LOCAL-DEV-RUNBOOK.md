@@ -248,7 +248,72 @@ docker compose exec cert-app php artisan test tests/Feature/Api/CertificateTest.
 
 ---
 
-## 11. Notes
+## 11. Known Issues & Gotchas
+
+### Missing `artisan` file
+
+If artisan commands fail with "Command not defined" or similar, the `artisan` file may be missing from the Laravel app root. Create it:
+
+```php
+#!/usr/bin/env php
+<?php
+
+use Symfony\Component\Console\Input\ArgvInput;
+
+define('LARAVEL_START', microtime(true));
+
+require __DIR__.'/vendor/autoload.php';
+
+$status = (require_once __DIR__.'/bootstrap/app.php')
+    ->handleCommand(new ArgvInput);
+
+exit($status);
+```
+
+Also ensure `public/index.php` exists:
+
+```php
+<?php
+
+use Illuminate\Http\Request;
+
+define('LARAVEL_START', microtime(true));
+
+if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
+    require $maintenance;
+}
+
+require __DIR__.'/../vendor/autoload.php';
+
+(require_once __DIR__.'/../bootstrap/app.php')
+    ->handleRequest(Request::capture());
+```
+
+### `.env` parsing errors (APP_NAME)
+
+Laravel's dotenv parser is strict about quoting. Values with spaces **must** be quoted:
+
+```
+# Wrong — causes "unexpected whitespace" error
+APP_NAME=LOA Cert Platform
+ADMIN_NAME=Super Admin
+
+# Correct
+APP_NAME="LOA Cert Platform"
+ADMIN_NAME="Super Admin"
+```
+
+The container's `environment:` block in docker-compose overrides `.env` values, but any key **not** set there falls back to the `.env` file. If the `.env` has unquoted spaces, the app crashes on bootstrap.
+
+**When copying `.env` between directories**, verify all values with spaces are quoted.
+
+### `config/app.php` must not list providers manually
+
+Laravel 11+ auto-registers service providers via `Application::configure()`. If `config/app.php` contains a `providers` array, it overrides auto-registration and breaks artisan commands (migrate, db:seed, etc.). The `providers` key should **not** exist in `config/app.php`.
+
+---
+
+## 12. Notes
 
 - The root compose file in [docker-compose.yml](docker-compose.yml) is the canonical local-development entry point.
 - The cert app also has a standalone [docker-compose.yml](assemblies/loa-cert-platform/docker-compose.yml) for independent development.
