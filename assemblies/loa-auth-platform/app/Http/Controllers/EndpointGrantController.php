@@ -29,7 +29,7 @@ class EndpointGrantController extends Controller
         $this->authorizeAdmin($request);
         $tenant = $this->getTenant($tenantId);
 
-        $endpoints = TenantAppEndpoint::where(function ($q) use ($tenant->id) {
+        $endpoints = TenantAppEndpoint::where(function ($q) use ($tenant) {
             $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
         })->orderBy('method')->orderBy('path')->get();
 
@@ -99,7 +99,7 @@ class EndpointGrantController extends Controller
         $path =TenantAppEndpoint::normalizePath($validated['path']);
         $method = strtoupper($validated['method']);
 
-        $endpoint = TenantAppEndpoint::where(function ($q) use ($tenant->id) {
+        $endpoint = TenantAppEndpoint::where(function ($q) use ($tenant) {
             $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
         })
             ->where('method', $method)
@@ -132,7 +132,7 @@ class EndpointGrantController extends Controller
         $path = TenantAppEndpoint::normalizePath($validated['path']);
         $method = strtoupper($validated['method']);
 
-        $endpoint = TenantAppEndpoint::where(function ($q) use ($tenant->id) {
+        $endpoint = TenantAppEndpoint::where(function ($q) use ($tenant) {
             $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
         })
             ->where('method', $method)
@@ -147,13 +147,13 @@ class EndpointGrantController extends Controller
 
         $hasGrants = TenantEndpointGrant::where('method', $method)
             ->where('path', $path)
-            ->where(function ($q) use ($tenant->id) {
+            ->where(function ($q) use ($tenant) {
                 $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
             })->exists();
 
         $hasOverrides = TenantEndpointOverride::where('method', $method)
             ->where('path', $path)
-            ->where(function ($q) use ($tenant->id) {
+            ->where(function ($q) use ($tenant) {
                 $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
             })->exists();
 
@@ -243,7 +243,7 @@ class EndpointGrantController extends Controller
         $errors = [];
         $warnings = [];
 
-        $catalogEndpoints = TenantAppEndpoint::where(function ($q) use ($tenant->id) {
+        $catalogEndpoints = TenantAppEndpoint::where(function ($q) use ($tenant) {
             $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
         })->get();
 
@@ -254,7 +254,7 @@ class EndpointGrantController extends Controller
 
             $hasGrants = TenantEndpointGrant::where('method', $endpoint->method)
                 ->where('path', $endpoint->path)
-                ->where(function ($q) use ($tenant->id) {
+                ->where(function ($q) use ($tenant) {
                     $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
                 })->exists();
 

@@ -270,12 +270,27 @@ class WebAdminController extends Controller
         }
 
         $group->load('permissions');
-        $allPermissions = Permission::orderBy('key')->get();
+
+        $endpoints = \App\Models\TenantAppEndpoint::where(function ($q) use ($tenant) {
+            $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
+        })->orderBy('method')->orderBy('path')->get();
+
+        $grants = \App\Models\TenantEndpointGrant::where('group_id', $group->id)
+            ->where(function ($q) use ($tenant) {
+                $q->whereNull('tenant_id')->orWhere('tenant_id', $tenant->id);
+            })->get();
+
+        $grantMap = [];
+        foreach ($grants as $grant) {
+            $key = $grant->method . '|' . $grant->path;
+            $grantMap[$key] = $grant->level;
+        }
 
         return view('admin.tenants.group-endpoints', [
             'tenant' => $tenant,
             'group' => $group,
-            'allPermissions' => $allPermissions,
+            'endpoints' => $endpoints,
+            'grantMap' => $grantMap,
         ]);
     }
 

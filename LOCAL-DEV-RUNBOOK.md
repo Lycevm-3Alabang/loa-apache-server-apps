@@ -44,6 +44,8 @@ docker compose exec auth-app php artisan migrate --force
 docker compose exec cert-app php artisan migrate --force
 ```
 
+For the local Docker environment only, the auth app seed step also provisions a local cert tenant and the local cert user groups automatically. The tenant uses the local cert URL as its redirect origin and the groups created are `cert-admin`, `cert-staff`, and `cert-user`.
+
 ---
 
 ## 3. Seed each app individually
