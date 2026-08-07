@@ -1,14 +1,49 @@
 # IMPLEMENTATION PROMPT: Events & Attendees Controllers for LOA Cert Platform
 
 ## CONTEXT
-You are implementing the **Events** and **Attendees** resource groups for the LOA Cert Platform (`assemblies/loa-cert-platform/cert-app/`). This is **Phase C** of the Cert Platform — the unauthenticated domain CRUD slice (auth middleware `jwt.auth`/`jwt.endpoint` and SSO are deferred per decision #20/D9).
+You are completing the **Events** and **Attendees** resource groups for the LOA Cert Platform (`assemblies/loa-cert-platform/cert-app/`). This is **Phase C** of the Cert Platform — the unauthenticated domain CRUD slice (auth middleware `jwt.auth`/`jwt.endpoint` and SSO are deferred per decision #20/D9).
 
 **Specs are FINAL** — code exactly to them:
-- `api-endpoints.md` v1.4 (Final) — §5.1 Events (12 endpoints), §5.2 Attendees (8 endpoints)
+- `api-endpoints.md` v1.4 (Final) — §5.1 Events (13 endpoints), §5.2 Attendees (8 endpoints)
 - `business-contexts/certificate/event.md` (Final) — Event aggregate spec
 - `business-contexts/certificate/event-attendee.md` (Final) — EventAttendee aggregate spec
 
 **DO NOT** implement auth, SSO, QR codes, email sending, or anything not in the spec.
+
+---
+
+## CURRENT STATE (as of 2026-08-08)
+
+### ✅ ALREADY IMPLEMENTED — EventController (Basic CRUD + Stats Stub)
+| Endpoint | Status | Notes |
+|----------|--------|-------|
+| `GET /api/v1/events` | ✅ Done | List with search, status, pagination |
+| `POST /api/v1/events` | ✅ Done | Create with validation |
+| `GET /api/v1/events/{id}` | ✅ Done | Show single |
+| `PATCH /api/v1/events/{id}` | ✅ Done | Partial update |
+| `DELETE /api/v1/events/{id}` | ✅ Done | Delete (cascades) |
+| `GET /api/v1/events/{id}/stats` | ⚠️ **Stub** | Returns **mock data** — needs real implementation |
+
+**File:** `app/Http/Controllers/EventController.php` (149 lines)
+**Tests:** `tests/Unit/EventControllerTest.php` (basic CRUD only)
+
+### ❌ MISSING — EventController (Advanced Endpoints)
+| Endpoint | Spec Ref | Priority |
+|----------|----------|----------|
+| `POST /api/v1/events/{id}/clone-template` | §5.1.7 | High |
+| `POST /api/v1/events/{id}/clone-email-template` | §5.1.8 | High |
+| `POST /api/v1/events/{id}/bulk-issue` | §5.1.9 | High |
+| `POST /api/v1/events/{id}/reissue` | §5.1.10 | High |
+| `GET /api/v1/events/{id}/revoke-expired` | §5.1.11 | High |
+| `POST /api/v1/events/{id}/revoke-expired` | §5.1.12 | High |
+| `POST /api/v1/events/{id}/issue-completed` | §5.1.13 | High |
+
+### ❌ COMPLETELY MISSING — AttendeeController (8 endpoints)
+All endpoints from §5.2 need implementation.
+
+### ❌ MISSING — Routes & OpenAPI
+- **Routes not registered** in `routes/api.php` (Events + Attendees completely absent)
+- **No OpenAPI attributes** on EventController (unlike Certificate/Template controllers)
 
 ---
 
@@ -23,6 +58,7 @@ You are implementing the **Events** and **Attendees** resource groups for the LO
 | **Use existing services** | `PdfService`, `PlaceholderResolver` exist. Do NOT create new services. |
 | **Test patterns** | Follow `CertificateTest.php` and `CertificateTemplateTest.php` exactly — `RefreshDatabase`, `setUp()` creates org + config, `assertJsonStructure`, `assertJsonPath`. |
 | **Run tests** | After each controller, run tests. They MUST pass. |
+| **Preserve existing CRUD** | Do NOT rewrite the 6 existing EventController methods — only ADD the 7 missing methods and fix `stats()`. |
 
 ---
 
@@ -118,95 +154,95 @@ public function test_list_templates(): void
 
 ## IMPLEMENTATION PLAN — STEP BY STEP
 
-### STEP 1: Create EventController.php
-**File:** `app/Http/Controllers/EventController.php`
+### STEP 1: Complete EventController.php
+**File:** `app/Http/Controllers/EventController.php` — **ADD to existing file**
 
-**Endpoints to implement (from api-endpoints.md §5.1):**
+**Add these 7 missing methods + fix `stats()`:**
 
-| Method | Path | Description | Spec Ref |
-|--------|------|-------------|----------|
-| GET | `/api/v1/events` | List events (search, status, pagination) | §5.1.1 |
-| POST | `/api/v1/events` | Create event | §5.1.2 |
-| GET | `/api/v1/events/{id}` | Get single event | §5.1.3 |
-| PATCH | `/api/v1/events/{id}` | Partial update | §5.1.4 |
-| DELETE | `/api/v1/events/{id}` | Delete event (cascades attendees) | §5.1.5 |
-| GET | `/api/v1/events/{id}/stats` | Event statistics | §5.1.6 |
-| POST | `/api/v1/events/{id}/clone-template` | Clone cert template for event | §5.1.7 |
-| POST | `/api/v1/events/{id}/clone-email-template` | Clone email template for event | §5.1.8 |
-| POST | `/api/v1/events/{id}/bulk-issue` | Bulk issue certs for attendees | §5.1.9 |
-| POST | `/api/v1/events/{id}/reissue` | Reissue certs for attendees (admin) | §5.1.10 |
-| GET | `/api/v1/events/{id}/revoke-expired` | Count expired certs | §5.1.11 |
-| POST | `/api/v1/events/{id}/revoke-expired` | Revoke all expired certs (admin) | §5.1.12 |
-| POST | `/api/v1/events/{id}/issue-completed` | Issue for completed attendees | §5.1.13 |
+| Method | Spec Ref | Key Logic |
+|--------|----------|-----------|
+| `cloneTemplate(Request $request, string $id)` | §5.1.7 | Validate source template exists + type=certificate; create new template from source; attach as event's `template_id` if not set; return `{template_id, name}` |
+| `cloneEmailTemplate(Request $request, string $id)` | §5.1.8 | Same as clone-template but for type=email; attach as `email_template_id` |
+| `bulkIssue(Request $request, string $id)` | §5.1.9 | For each `attendee_ids[]`: generate cert number atomically (reuse `CertificateController::generateCertificateNumber`), create Certificate, render PDF, link attendee, optionally send email; return bulk result shape |
+| `reissue(Request $request, string $id)` | §5.1.10 | For each `attendee_ids[]`: revoke existing cert + issue new number; admin-only per spec |
+| `revokeExpiredCount(string $id)` | §5.1.11 | Count expired certs for event (revoked_at=null, expires_at < now) |
+| `revokeExpired(string $id)` | §5.1.12 | Revoke all expired certs for event (set revoked_at=now, revoke_reason='Auto-expired') |
+| `issueCompleted(Request $request, string $id)` | §5.1.13 | Issue certs for attendees with `completed=true`, optionally filtered by `attendee_ids[]` |
 
-**Required OpenAPI schemas to define at top of controller:**
-- `Event` (resource)
-- `EventListResponse` (collection + meta)
-- `EventSingleResponse` (single)
-- `EventCreateRequest` (create body)
-- `EventUpdateRequest` (update body)
+**Fix `stats()` method** — replace mock data with real counts:
+```php
+$attendees = $event->attendees();
+$certificates = $event->certificates(); // via relationship
+return response()->json([
+    'data' => [
+        'event_id' => $event->id,
+        'attendees' => [
+            'total' => $attendees->count(),
+            'attended' => $attendees->where('attended', true)->count(),
+            'completed' => $attendees->where('completed', true)->count(),
+        ],
+        'certificates' => [
+            'issued' => $certificates->count(),
+            'active' => $certificates->whereNull('revoked_at')->where(function($q){ $q->whereNull('expires_at')->orWhere('expires_at', '>=', now()); })->count(),
+            'revoked' => $certificates->whereNotNull('revoked_at')->count(),
+            'expired' => $certificates->whereNull('revoked_at')->whereNotNull('expires_at')->where('expires_at', '<', now())->count(),
+        ],
+        'expiring' => $certificates->whereNull('revoked_at')->whereNotNull('expires_at')->where('expires_at', '>=', now())->where('expires_at', '<=', now()->addDays(30))->count(),
+    ]
+]);
+```
+
+**Add OpenAPI attributes** to ALL methods (including existing 6) — copy pattern from CertificateController.
+
+**Add required OpenAPI schemas at top of controller:**
+- `Event`, `EventListResponse`, `EventSingleResponse`
+- `EventCreateRequest`, `EventUpdateRequest`
 - `CloneTemplateRequest` (source_template_id, name)
 - `BulkIssueRequest` (attendee_ids[], send_email)
 - `ReissueRequest` (attendee_ids[])
 - `IssueCompletedRequest` (send_email, attendee_ids?)
-- `EventStatsResponse` (stats shape per §5.1.6)
-
-**Key logic details from spec:**
-- `certificate_number_pattern` is **required** on create, must contain `####` (no default)
-- `status` enum: `draft` | `active` | `archive`, default `draft`
-- `template_id` / `email_template_id` must be `type=certificate` / `type=email` respectively
-- `clone-template`: creates new template from source, attaches as event's `template_id` if not set
-- `bulk-issue`: for each attendee, generate cert number atomically (reuse `CertificateController::generateCertificateNumber`), render PDF, link attendee, optionally send email
-- `reissue`: revoke existing + issue new number (admin only per spec)
-- `revoke-expired`: count then revoke expired certs for event
-- `issue-completed`: issue for attendees with `completed=true`, optionally filtered by `attendee_ids`
+- `EventStatsResponse` (per spec §5.1.6)
 
 **Models to use:** `Event`, `CertificateTemplate`, `Certificate`, `EventAttendee`, `CertificateSequence`
+**Services:** Inject `PdfService` in constructor (for bulk-issue PDF generation)
 
 ---
 
 ### STEP 2: Create AttendeeController.php
-**File:** `app/Http/Controllers/AttendeeController.php`
+**File:** `app/Http/Controllers/AttendeeController.php` — **NEW FILE**
 
-**Endpoints to implement (from api-endpoints.md §5.2):**
+**Implement all 8 endpoints from §5.2:**
 
-| Method | Path | Description | Spec Ref |
-|--------|------|-------------|----------|
-| GET | `/api/v1/events/{id}/attendees` | List attendees (search, attended, completed, has_certificate, pagination) | §5.2.1 |
-| POST | `/api/v1/events/{id}/attendees` | Add single attendee (upsert by email) | §5.2.2 |
-| POST | `/api/v1/events/{id}/attendees/import` | Bulk import (JSON payload) | §5.2.3 |
-| PATCH | `/api/v1/attendees/{id}` | Update attendee | §5.2.4 |
-| DELETE | `/api/v1/attendees/{id}` | Remove attendee (unlinks cert) | §5.2.5 |
-| DELETE | `/api/v1/attendees/{id}/with-cert` | Remove attendee + delete cert (admin) | §5.2.6 |
-| GET | `/api/v1/attendees/{id}/delete-preview` | Preview delete impact | §5.2.7 |
-| GET | `/api/v1/attendees/{id}/file-data` | Return uploaded cert file | §5.2.8 |
+| Method | Path | Spec Ref | Key Logic |
+|--------|------|----------|-----------|
+| `index(Request $request, string $event_id)` | `GET /events/{event_id}/attendees` | §5.2.1 | List with filters: search, attended, completed, has_certificate, pagination |
+| `store(Request $request, string $event_id)` | `POST /events/{event_id}/attendees` | §5.2.2 | Upsert by (event_id, email) — duplicate email updates existing |
+| `import(Request $request, string $event_id)` | `POST /events/{event_id}/attendees/import` | §5.2.3 | JSON payload; `mode=merge` (upsert) or `replace` (clear+insert, requires `confirm=true`); return `{imported, skipped, errors[]}` |
+| `update(Request $request, string $id)` | `PATCH /attendees/{id}` | §5.2.4 | Partial update |
+| `destroy(string $id)` | `DELETE /attendees/{id}` | §5.2.5 | Remove attendee, unlink certificate (set certificate_id=null) |
+| `destroyWithCertificate(string $id)` | `DELETE /attendees/{id}/with-cert` | §5.2.6 | Remove attendee AND delete linked certificate |
+| `deletePreview(string $id)` | `GET /attendees/{id}/delete-preview` | §5.2.7 | Return impact: linked certificate info if exists |
+| `fileData(string $id)` | `GET /attendees/{id}/file-data` | §5.2.8 | Return PDF bytes if `generation_mode=file`, else `{data: {generation_mode: "template"}}` |
 
-**Required OpenAPI schemas:**
-- `Attendee` (resource)
-- `AttendeeListResponse`
-- `AttendeeSingleResponse`
-- `AttendeeCreateRequest` (name, email, attended, completed, metadata)
-- `AttendeeUpdateRequest` (subset of create)
+**Add OpenAPI attributes** to ALL methods + schemas at top:
+- `Attendee`, `AttendeeListResponse`, `AttendeeSingleResponse`
+- `AttendeeCreateRequest`, `AttendeeUpdateRequest`
 - `AttendeeImportRequest` (attendees[], mode, confirm)
-- `ImportResult` (imported, skipped, errors[])
-- `DeletePreviewResponse`
+- `ImportResult`, `DeletePreviewResponse`
 
-**Key logic details from spec:**
-- **Upsert by (event_id, email)** — duplicate email updates existing attendee
-- **Bulk import**: JSON payload (not multipart), `mode=merge` (default, upsert) or `mode=replace` (clear then insert, requires `confirm=true`)
-- Validation: each entry needs `name`, `email`; malformed entries reported, valid ones upserted
-- `delete-preview`: returns linked certificate info if exists
-- `file-data`: returns PDF bytes if `generation_mode=file`, else `{ "data": { "generation_mode": "template" } }`
-- `with-cert`: admin only, deletes linked certificate too
-
-**Models to use:** `EventAttendee`, `Event`, `Certificate`
+**Models:** `EventAttendee`, `Event`, `Certificate`
 
 ---
 
 ### STEP 3: Register Routes in routes/api.php
-Add to existing `Route::prefix('v1')` group:
+**File:** `routes/api.php` — **ADD to existing file**
 
 ```php
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\AttendeeController;
+
+// ... existing routes ...
+
 // Events
 Route::prefix('events')->group(function () {
     Route::get('/', [EventController::class, 'index']);
@@ -244,15 +280,15 @@ Route::prefix('attendees')->group(function () {
 ---
 
 ### STEP 4: Write Tests
-**Files:** `tests/Feature/Api/EventTest.php`, `tests/Feature/Api/AttendeeTest.php`
+**Files:** `tests/Feature/Api/EventTest.php`, `tests/Feature/Api/AttendeeTest.php` — **NEW FILES** (Feature tests, not Unit)
 
 **Follow patterns from:**
 - `CertificateTemplateTest.php` (CRUD + locking tests)
 - `CertificateTest.php` (bulk operations, status derivation, edge cases)
 
 **Test coverage required:**
-- **EventTest:** list (filters, pagination), create (validation, required pattern, template type checks), get, update, delete, stats, clone-template, clone-email-template, bulk-issue, reissue, revoke-expired (count + action), issue-completed
-- **AttendeeTest:** list (filters), create (upsert by email), import (merge + replace with confirm, validation errors), update, destroy, destroy-with-cert, delete-preview, file-data
+- **EventTest:** All 13 endpoints — list (filters, pagination), create (validation, required pattern, template type checks), get, update, delete, **stats (real counts)**, clone-template, clone-email-template, bulk-issue, reissue, revoke-expired (count + action), issue-completed
+- **AttendeeTest:** All 8 endpoints — list (filters), create (upsert by email), import (merge + replace with confirm, validation errors), update, destroy, destroy-with-cert, delete-preview, file-data
 
 **Use `RefreshDatabase` trait. Set up organization + event + template in `setUp()`.**
 
@@ -321,6 +357,7 @@ try {
 
 | ❌ Don't Do | ✅ Do Instead |
 |-------------|---------------|
+| Rewrite existing 6 EventController methods | Only ADD 7 missing methods + fix `stats()` |
 | Add `middleware(['jwt.auth', 'jwt.endpoint'])` to routes | Leave routes WITHOUT auth middleware (deferred) |
 | Create new services (EmailService, QrService) | Use existing `PdfService` only; email/QR are deferred |
 | Implement `created_by` author-scoping logic | Just save `$request->attributes->get('jwt_claims.sub')` if present; scoping is middleware's job |
@@ -333,16 +370,16 @@ try {
 
 ---
 
-## FILES TO CREATE/MODIFY
+## FILES TO MODIFY/CREATE
 
-### New Files:
-1. `app/Http/Controllers/EventController.php`
-2. `app/Http/Controllers/AttendeeController.php`
-3. `tests/Feature/Api/EventTest.php`
-4. `tests/Feature/Api/AttendeeTest.php`
+### Modify:
+1. `app/Http/Controllers/EventController.php` — ADD 7 methods + fix stats() + add OpenAPI
+2. `routes/api.php` — ADD Events + Attendees routes
 
-### Modified Files:
-1. `routes/api.php` — add Events and Attendees routes
+### Create:
+1. `app/Http/Controllers/AttendeeController.php` — NEW (8 methods + OpenAPI)
+2. `tests/Feature/Api/EventTest.php` — NEW (Feature tests for all 13 endpoints)
+3. `tests/Feature/Api/AttendeeTest.php` — NEW (Feature tests for all 8 endpoints)
 
 ---
 
@@ -350,9 +387,9 @@ try {
 
 Before declaring complete, verify:
 
-- [ ] `EventController` has all 13 methods matching §5.1 endpoints
+- [ ] `EventController` has all 13 methods matching §5.1 endpoints (6 existing + 7 new + fixed stats)
 - [ ] `AttendeeController` has all 8 methods matching §5.2 endpoints
-- [ ] OpenAPI attributes on ALL methods with correct paths, parameters, responses, schemas
+- [ ] OpenAPI attributes on ALL methods (including existing 6) with correct paths, parameters, responses, schemas
 - [ ] `routes/api.php` registers all 21 routes with correct prefixes
 - [ ] `EventTest.php` has tests for all 13 endpoints (happy path + validation + edge cases)
 - [ ] `AttendeeTest.php` has tests for all 8 endpoints
@@ -363,10 +400,11 @@ Before declaring complete, verify:
 - [ ] Response envelopes match spec (data + meta for collections, data for single, error envelope)
 - [ ] `certificate_number_pattern` validation: required + contains `####`
 - [ ] Template type validation: `certificate` for `template_id`, `email` for `email_template_id`
+- [ ] Stats endpoint returns REAL counts (not mock data)
 
 ---
 
-## RUN COMMANDS (for reference — you don't execute these)
+## RUN COMMANDS (for reference)
 
 ```bash
 # From cert-app directory
@@ -395,6 +433,12 @@ If you encounter ambiguity, STOP and ask:
 
 ---
 
-**IMPLEMENTATION ORDER:** EventController → AttendeeController → Routes → EventTest → AttendeeTest → Run Tests → Fix → Done.
+**IMPLEMENTATION ORDER:** 
+1. Complete EventController (add 7 methods + fix stats + OpenAPI)
+2. Create AttendeeController (8 methods + OpenAPI)
+3. Register routes in routes/api.php
+4. Write EventTest.php (Feature)
+5. Write AttendeeTest.php (Feature)
+6. Run Tests → Fix → Done.
 
 Do not skip steps. Do not implement deferred features. Code exactly to the Final specs.
