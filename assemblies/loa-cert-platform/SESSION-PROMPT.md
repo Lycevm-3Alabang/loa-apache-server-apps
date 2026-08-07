@@ -39,14 +39,14 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-07 (Session 4)
+### Date: 2026-08-07 (Session 5)
 ### Completed
 - **Phase C Scaffolding & Testing - Events Group:** Implemented the full resource group for Events. This includes creating/updating migration, EventController with CRUD methods (index, store, show, update, destroy), and adding all required routes (`GET/POST/PATCH/DELETE` + stats). The implementation was verified with comprehensive unit tests.
 - **Phase C Scaffolding & Testing - Attendees Group:** Implemented the full resource group for Attendees. This includes creating/updating migration, `AttendeeController`, and necessary nested event routes. This covered single record management and the complex bulk JSON import logic (`POST /import`), along with associated unit tests.
+- **Phase C Scaffolding & Testing - Templates Group:** Implemented the full resource group for CertificateTemplates (CRUD) with template locking logic. Created `CertificateTemplateController` with methods: `index`, `store`, `show`, `update`, `destroy`. Implemented locking logic that checks if template is referenced by events (locks update/delete with 409) or issued certificates (prevents delete with 409). Added routes (`GET/POST/PATCH/DELETE /templates`). Created comprehensive unit tests covering all CRUD operations, validation, locking behavior, and edge cases.
 
 ### In Progress
-- **Phase C: Templates Resource Group**: Next up is implementing the full resource group for CertificateTemplates (CRUD) to manage templates, including mandatory template locking logic on update/delete.
 - **Pending Implementation of Sessions:** After templates, we will proceed to implement the Certificates resource group (migration + controller + routes).
 
 ### Next Action
-- Start implementation of the Templates resource group: Migration check, Controller creation, Route definition, and Unit testing for all CRUD endpoints (`POST /templates`, `GET /templates/{id}`, etc.).
+- Start implementation of the Certificates resource group: Migration check, Controller creation, Route definition, and Unit testing for all CRUD endpoints (`POST /certificates`, `GET /certificates/{id}`, etc.).
