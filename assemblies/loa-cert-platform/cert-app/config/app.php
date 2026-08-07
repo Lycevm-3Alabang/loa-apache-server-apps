@@ -1,25 +1,35 @@
 <?php
 
 return [
-    'name' => 'LOA Cert Platform',
-    'env' => env('APP_ENV', 'production'),
-    'debug' => (bool) env('APP_DEBUG', false),
-    'url' => env('APP_URL', 'https://cert-api.lyceumalabang.edu.ph'),
-    'timezone' => 'UTC',
-    'locale' => 'en',
-    'fallback_locale' => 'en',
-    'faker_locale' => 'en_US',
-    'providers' => [
-        // Laravel Framework Service Providers...
-        Illuminate\Auth\AuthServiceProvider::class,
-        Illuminate\Database\DatabaseServiceProvider::class,
-        Illuminate\Encryption\EncryptionServiceProvider::class,
-        Illuminate\Filesystem\FilesystemServiceProvider::class,
-        Illuminate\Routing\RoutingServiceProvider::class,
-        Illuminate\Session\SessionServiceProvider::class,
-        Illuminate\View\ViewServiceProvider::class,
 
-        // Custom Providers...
-        App\Providers\AppServiceProvider::class,
+    'name' => env('APP_NAME', 'LOA Cert Platform'),
+
+    'env' => env('APP_ENV', 'production'),
+
+    'debug' => (bool) env('APP_DEBUG', false),
+
+    'url' => env('APP_URL', 'https://cert-api.lyceumalabang.edu.ph'),
+
+    'timezone' => env('APP_TIMEZONE', 'Asia/Manila'),
+
+    'locale' => env('APP_LOCALE', 'en'),
+
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+
+    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+
+    'cipher' => 'AES-256-CBC',
+
+    'key' => env('APP_KEY'),
+
+    'previous_keys' => [
+        ...array_filter(
+            explode(',', env('APP_PREVIOUS_KEYS', ''))
+        ),
     ],
+
+    'maintenance' => [
+        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
+    ],
+
 ];

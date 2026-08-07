@@ -1,0 +1,8 @@
+/vendor
+.env
+.env.backup
+.phpunit.result.cache
+/storage/framework/views/*
+/storage/framework/sessions/*
+/storage/logs/*
+/bootstrap/cache/*

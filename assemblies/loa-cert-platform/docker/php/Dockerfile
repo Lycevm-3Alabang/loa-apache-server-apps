@@ -19,3 +19,8 @@ RUN apt-get update \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && rm -rf /var/lib/apt/lists/* \
     && composer --version
+
+RUN mkdir -p /var/www/html/cert-app/storage/framework/{cache,sessions,views} \
+    && mkdir -p /var/www/html/cert-app/storage/logs \
+    && mkdir -p /var/www/html/cert-app/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html/cert-app/storage /var/www/html/cert-app/bootstrap/cache
