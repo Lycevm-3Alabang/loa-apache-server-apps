@@ -10,7 +10,7 @@
 
 ---
 
-## Startup Prompt
+### Startup Prompt
 
 Paste this block into the first message of a new session:
 
@@ -39,69 +39,14 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-06 (session 3) / 2026-08-07 (runbook v0.4 reconciliation)
-
+### Date: 2026-08-07 (Session 4)
 ### Completed
-- **Resolved all open questions Q-2..Q-7** (Phase A gate) with the user:
-  - **Q-2 (CSR, supersedes D8):** the refactored `e-cert` is a **client-side SPA** — token in memory only, no httpOnly access-token cookie, no server actions, no server-side JWT verification, no shared secret, `src/proxy.ts` deleted. The Cert API enforces its JWT model with app-level checks and does not adapt to front-end expectations. Refresh stays in the Cert-proxied httpOnly `loa_cert_refresh` cookie; route protection is a client-side guard (UI only).
-  - **Q-3 (audit/email-log gaps):** deferred — drop the affected UI features from the retrofit; a dedicated SMTP API endpoint will come later (check reuse of Auth's temporary email tool); not blocking v1.2.
-  - **Q-4 (seed groups):** `cert-admin` / `cert-staff` / `cert-user`; no reuse of existing LOA groups.
-  - **Q-5 (/my/profile):** out of `e-cert` scope; noted as a refinement task (likely front-end).
-  - **Q-6 (cert number):** `certificate_number_pattern` is user-configurable per event and **required**, must contain `####` to produce an incremental id (e.g. `CERT-####`, `TEMP-001-####`, `CERT-####-2026`); no fixed default.
-  - **Q-7 (attendees/import):** `/attendees/import` accepts a **JSON payload**; CSV parsing / upload wizard is a front-end concern.
-- **Bumped `api-endpoints.md` → Draft v1.3** (Q-6/Q-7 synced): `certificate_number_pattern` required + no default (§5.1, §7.4, events schema), `/attendees/import` is JSON (§5.2, Appendix A, security checklist, decision #5).
-- **Bumped `legacy-e-cert-integration.md` → Draft v1.1** (all Qs resolved in §13): D8 reframed (API-enforced JWT-cookie model), seed groups renamed to `cert-admin/staff/user`, `/my/profile` + GAP rows marked per decisions.
-- **CSR decision (2026-08-06):** aligned `e-cert` refactor with `D:\loa\e-cert\specs\` v2.0 — **CSR wins** over SSR. Rewrote `legacy-e-cert-integration.md` → **Draft v2.0**: D8 superseded in §5; §3 architecture is SPA; §6 in-memory session + parse-only client JWT + route guard; §8 server actions deleted (client API modules); §10 drops `JWT_SECRET`/cookie env, adds `NEXT_PUBLIC_CERT_TENANT_SLUG`; §12 phases D/E reworded; §13 Q-2 = CSR, R-4 = XSS/in-memory risk. Synced to `D:\loa\e-cert\legacy-e-cert-integration.md` (D7). Also fixed stale bits in `e-cert/specs` (seed groups `cert-admin/staff/user`, attendee import = JSON payload, CSV parse stays client-side).
-- **Phase A COMPLETE (2026-08-06):** user confirmed remaining open questions + approved fixes. `api-endpoints.md` → **Final v1.3** (§9.2 SSO URL corrected to `/sso/login`; §9.9 `/access` made optional; §5.7 dashboard ownership note; §8 decision #17 confirmed; example cert numbers → `CERT-0001`). `legacy-e-cert-integration.md` → **Final v2.0** (§7.2 dashboard ownership note; §12 Phase A marked complete; §14 reference updated). D7 copy re-synced.
+- **Phase C Scaffolding & Testing - Events Group:** Implemented the full resource group for Events. This includes creating/updating migration, EventController with CRUD methods (index, store, show, update, destroy), and adding all required routes (`GET/POST/PATCH/DELETE` + stats). The implementation was verified with comprehensive unit tests.
+- **Phase C Scaffolding & Testing - Attendees Group:** Implemented the full resource group for Attendees. This includes creating/updating migration, `AttendeeController`, and necessary nested event routes. This covered single record management and the complex bulk JSON import logic (`POST /import`), along with associated unit tests.
 
 ### In Progress
-- **Phase B (Auth readiness) — DEFERRED 2026-08-06:** provisioned **manually at deploy-time** per the Auth runbook **`assemblies/loa-auth-platform/cert-readiness.md`** (**Final v0.4**, branch `docs/cert-readiness-runbook`; §8 = Local Development — local Docker runs the **`LocalCertReadinessSeeder`** automatically on `db:seed`, `cert-app` tenant @ `localhost:9001` + groups; production is manual-only). How Auth is provisioned is a **side-note** — the runbook is authoritative (loa tenant + `redirect_origins`, Appendix A catalog, `cert-admin`/`cert-staff`/`cert-user` groups + grants).
+- **Phase C: Templates Resource Group**: Next up is implementing the full resource group for CertificateTemplates (CRUD) to manage templates, including mandatory template locking logic on update/delete.
+- **Pending Implementation of Sessions:** After templates, we will proceed to implement the Certificates resource group (migration + controller + routes).
 
 ### Next Action
-- [x] **Phase A — COMPLETE 2026-08-06:** `api-endpoints.md` v1.3 and `legacy-e-cert-integration.md` v2.0 promoted to **Final** (remaining open questions resolved: decision #17 proxy confirmed; dashboard stats `read` confirmed with ownership note).
-- [x] **Phase B — SPEC LOCKED 2026-08-06:** Auth readiness provisioned **manually at deploy-time** per Auth runbook `cert-readiness.md` (**Final v0.4**, incl. §8 Local Development — local `LocalCertReadinessSeeder` on `db:seed`; `loa` tenant redirect_origins, Appendix A catalog, manual group creation + grants in production).
-- [x] **Phase C scope — 2026-08-06 (user decision):** **no authentication on Cert API endpoints for now** — Phase C scaffolds the **domain CRUD slice only** (events/attendees/templates/certificates + tests, unauth). SSO `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` are deferred to a later **C-Auth** phase (decision #20 in `api-endpoints.md` §8; D9 in `legacy-e-cert-integration.md` §5).
-- [x] **Phase C scaffolding:** Created basic directory structure, composer.json, app config, and core models (`Organization`, `Event`, `CertificateTemplate`, `Certificate`, `EventAttendee`) + database migrations for the core entities to support Phase C unauth CRUD slice.
-
-### Backlog / Known Gaps
-- **Local catalog mirror** (`config/cert-endpoints.php`) must stay in sync with the Auth catalog — add `permissions:sync-cert-catalog` artisan command (§9.5)
-- **MySQL adaptations to honor at implementation:** JSON columns, no partial indexes (generated-column trick §7.3), base64 `rendered_pdf` moved to storage (only `file_path` kept), audit `user_id` / email `sent_by` as opaque TEXT without FK
-- **No workflow runtime:** bulk-issue/reissue/expire are synchronous with per-item results (decision #3 in api-endpoints.md §8)
-- **Participant role:** read grants on participant paths only + owner rule (§9.6); no `cert.*` usage
-- **Template locking:** update/delete of a referenced template returns 409
-- **Auth platform dependency:** JWT issued for the `loa` tenant must include `tenant.slug` claim; `AUTH_ALLOWED_REDIRECTS` must include `https://e-cert.vercel.app` (the e-cert UI origin)
-- **Deferred (Q-3):** global email logs + audit-log delete/entity/user/by-ids queries dropped from the retrofit; future dedicated SMTP API (check reuse of Auth's temporary email tool)
-
-### Open Questions
-- ~~Confirm Cert-proxied refresh/logout (httpOnly cookie design) is preferred over frontend-direct calls to Auth~~ **Resolved 2026-08-06**: confirmed — decision #17 stands; refresh/logout proxied by Cert via the `loa_cert_refresh` httpOnly cookie (`api-endpoints.md` §9.3/§9.7, §8 decision #17).
-- ~~Confirm dashboard stats at `read` is acceptable (was `cert.certificates.view_all`)~~ **Resolved 2026-08-06**: confirmed at `read`, **with an ownership note** — dashboard data is org-wide unscoped; grants are `cert-admin`/`cert-staff` only and excluded from `cert-user` (`api-endpoints.md` §5.7, `legacy-e-cert-integration.md` §7.2).
-
----
-
-## Session Log
-
-| Date | Work Done | Next Action |
-|------|-----------|-------------|
-| 2026-08-05 | Reviewed e-cert legacy docs; locked scope decisions; produced `api-endpoints.md` (Draft v1.0, 48 endpoints, MySQL data-model ref, permission table); created cert-scoped SESSION-PROMPT | Review + promote api-endpoints.md to Final; then Auth integration spec; then scaffold + implement |
-| 2026-08-05 (2) | Read auth-platform actual code (`JWTService`, `EncryptionService`, `ClaimPolicyMiddleware`, `EndpointGrantController`, `routes/api.php`); rewrote `api-endpoints.md` to **Draft v1.1**: level-based auth model (§4), `required_level` on all endpoints (§5/§6), full SSO + JWT/permission middleware contract (§9), Appendix A catalog; updated this SESSION-PROMPT | Review v1.1 → promote to Final v1.1 → scaffold Laravel 12 Cert app in auth stack (core slice: config + middleware + events/attendees/templates/certificates + tests) |
-| 2026-08-05 (2b) | Added **author scope** to `api-endpoints.md` (**Draft v1.2**): `GET /api/v1/me/events` + `/api/v1/me/templates`, `created_by` on events/templates (§7.2), resource-scoping rules (recipient/author/unscoped, §9.6), grant patterns (§4.4), catalog + route summary updated → 50 domain endpoints | Review v1.2 → promote to Final v1.2 → scaffold Laravel 12 Cert app (core slice) |
-| 2026-08-06 | Resolved Q-2..Q-7 with user; bumped `api-endpoints.md` → Draft v1.3 (cert-number pattern required/user-configurable, attendees/import is JSON) and `legacy-e-cert-integration.md` → Draft v1.1 (all Qs resolved in §13, seed groups `cert-admin/staff/user`) | Phase A: review + promote v1.3/v1.1 → Final → Phase B (Auth readiness) → Phase C (scaffold) |
-| 2026-08-06 (2) | Checked `D:\loa\e-cert\specs\` v2.0 — supersedes D8 with a **CSR SPA**; user chose **CSR wins**. Rewrote `legacy-e-cert-integration.md` → **Draft v2.0** (D8 superseded, §6 in-memory/parse-only/route guard, §8 server actions deleted, §10 no secrets env, §13 Q-2/R-4). Synced D7 copy; fixed `e-cert/specs` stale bits (seed groups, JSON import, CSV client-side) | Phase A: review + promote v1.3 / v2.0 → Final → Phase B → Phase C |
-| 2026-08-06 (3) | **Phase A COMPLETE.** User confirmed decision #17 (Cert-proxied refresh/logout) and dashboard stats at `read` with ownership note. Promoted `api-endpoints.md` → **Final v1.3** (SSO URL `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership, example numbers `CERT-0001`) and `legacy-e-cert-integration.md` → **Final v2.0** (§7.2 ownership note, §12 A complete). D7 re-synced | Phase B (Auth readiness) → Phase C (scaffold) |
-| 2026-08-06 (4) | **Phase B DEFERRED (user decision):** no Cert data baked into Auth seeders/database.sql (seeder attempt reverted); Cert groups created **manually** at deploy-time. Auth runbook **`cert-readiness.md` (Draft v0.1)** written on branch `docs/cert-readiness-runbook` (loa tenant + redirect_origins, 48-endpoint Appendix A payload, groups, 48-row grant matrix: admin 48 / staff 39 / user 7, verification) | Review + promote `cert-readiness.md` → Final → deploy + provision → Phase C (scaffold) |
-| 2026-08-06 (5) | **`cert-readiness.md` promoted to Final v0.1** — Phase B readiness spec locked (manual deploy-time provisioning) | Deploy + provision per runbook → Phase C (scaffold) |
-| 2026-08-06 (6) | **Cert-side docs centered + auth deferred (user decisions):** ① Auth usage in Cert docs reduced to **side-notes** pointing at `cert-readiness.md` (`legacy-e-cert-integration.md` §7.2 title / §10.2 / §10.4; `README.md` §11.8 — removed inline `.env` + raw `tenants` SQL and "seeding" language). ② **No auth on Cert API endpoints for now** — Phase C = unauth domain CRUD slice; SSO + `jwt.auth`/`jwt.endpoint` deferred to a **C-Auth** phase. Bumped `api-endpoints.md` → **Final v1.4** (decision #20, §13 inventory annotated) and `legacy-e-cert-integration.md` → **Final v2.1** (D9, phase table + C-Auth row); `README.md` → Draft v1.1 | Phase C scaffold (unauth core slice) |
-| 2026-08-06 (7) | **Phase C scaffold created** — Laravel 12 app at `assemblies/loa-cert-platform/cert-app/` (directory structure, composer.json, app config, core models `Organization`/`Event`/`CertificateTemplate`/`Certificate`/`EventAttendee` + migrations) | Implement the unauth domain CRUD slice (events/attendees/templates/certificates + tests) |
-| 2026-08-07 | Reconciled local Docker path: **`LocalCertReadinessSeeder`** (auto-runs on local `db:seed` via `DatabaseSeeder` non-prod guard; `cert-app` tenant @ `localhost:9001` + groups) is the sanctioned local provisioning. Auth runbook `cert-readiness.md` → **Final v0.4**; synced with `PROJECT_UPDATES.md` + auth SESSION-PROMPT. Production seeding stays manual-only per the 2026-08-06 decision | Implement the unauth domain CRUD slice |
-
----
-
-## Anti-Scope Rules (Cert Platform work only)
-
-| Rule | Detail |
-|------|--------|
-| No auth implementation here | SSO callback, JWT issuance, permission resolution all belong to Auth Platform sessions |
-| No direct Auth DB access | User data comes via Auth API / JWT claims only |
-| No business logic in the assembly | Cert Platform wires routes; logic lives in `business-contexts/certificate/` |
-| Specs before code, always | No implementation until the governing spec is Final (AI-RULES.md Rule 0) |
-| No auto-pilot | Confirm every significant action with the user (AI-RULES.md §13, AI-GUIDE.md) |
+- Start implementation of the Templates resource group: Migration check, Controller creation, Route definition, and Unit testing for all CRUD endpoints (`POST /templates`, `GET /templates/{id}`, etc.).
