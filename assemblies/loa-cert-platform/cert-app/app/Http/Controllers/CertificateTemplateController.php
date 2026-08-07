@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
+#[OA\Info(
+    title: "LOA Cert API",
+    version: "1.0.0",
+    description: "Certificate issuance and management for LOA platform",
+    contact: new OA\Contact(name: "LOA Dev Team")
+)]
+
 #[OA\Tag(name: "Templates", description: "Certificate template management")]
 #[OA\Schema(schema: "Template", properties: [
     new OA\Property(property: "id", type: "string", format: "uuid"),
