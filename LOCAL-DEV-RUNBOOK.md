@@ -96,6 +96,7 @@ If you are debugging a single app, start only that app and keep the shared servi
 
 ```bash
 docker compose up -d --build mysql mailpit auth-app auth-nginx auth-scheduler
+docker compose exec -T auth-app composer install --no-interaction --no-progress
 docker compose exec auth-app php artisan migrate --force
 docker compose exec auth-app php artisan db:seed --force
 docker compose logs -f auth-app
@@ -105,6 +106,7 @@ docker compose logs -f auth-app
 
 ```bash
 docker compose up -d --build mysql mailpit cert-app cert-nginx cert-scheduler
+docker compose exec -T auth-app composer install --no-interaction --no-progress
 docker compose exec cert-app php artisan migrate --force
 docker compose exec cert-app php artisan db:seed --force
 docker compose logs -f cert-app
