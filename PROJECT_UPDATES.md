@@ -70,6 +70,7 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 - **Status:** Scaffolded + largely implemented (Phase 1). **Not yet deployed** to `auth.lyceumalabang.edu.ph`.
 - **Kernel:** Identity v3.0 (tenancy) implemented in code; many kernel specs still Draft.
 - **Final specs (implemented):** `web-ui.md` v1.2 (destination resolution), `admin-dashboard.md` (v1 + v2), `tenant-endpoint-catalog.md` v3.2, `tenant-group-endpoint-grants.md` v1.1 (group priority), `access-config-import-export.md` v1.0, data-driven permission policy v1.0, RefreshToken.
+- **Final specs (pending implementation):** `user-account-activation.md` v1.0 — replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, email, admin resend).
 - **Implemented highlights:** tenants + `user_tenants` (000011–000012), tenant-scoped groups/grants (000013–000015), `tenant` JWT claim + `jwt.tenant` middleware, admin dashboard v1/v2 (tenant CRUD, groups, per-group permissions, members, suspend/activate), group priority resolution (`user_groups.priority`, default 10, 1 = highest), endpoint catalog + bulk import, access config import/export, 172 tests pass.
 - **2026-08-05 changes:** domain correction across docs/configs/tests/blades; allowlists updated (`config/cors.php`, `config/auth-web.php`, `.env.example`, `DEPLOY.md`, `environment.md`) to include `https://e-cert.vercel.app`.
 - **Phase B (Cert readiness) — DEFERRED 2026-08-06:** user decision — **no Cert data baked into the production Auth seed path** (`DatabaseSeeder` production runs only `AdminSeeder`; `database/seeders/database.sql` untouched — a `CertReadinessSeeder` attempt was created then reverted). Provisioning is **manual at deploy-time** per the runbook **`cert-readiness.md`** (**Final v0.4**, branch `docs/cert-readiness-runbook`): `loa` tenant (`redirect_origins` incl. `https://e-cert.vercel.app`), 48-endpoint Appendix A catalog import, `cert-admin`/`cert-staff`/`cert-user` groups (priorities 2/3/4, created manually), 48-row grant matrix (admin 48 / staff 39 / user 7), verification steps. Payload + matrix parity-checked against `api-endpoints.md` Appendix A. **§8 Local Development (v0.2→v0.4):** local Docker provisioning via the **`LocalCertReadinessSeeder`** (runs automatically on local `db:seed` via `DatabaseSeeder` non-prod guard — creates `cert-app` tenant @ `localhost:9001` + groups; catalog/grants still via local admin UI) plus an optional tinker fast path; local origin/CORS/redirect table.
@@ -99,6 +100,22 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 ---
 
 ## Last Session Notes
+
+### Date: 2026-08-07
+
+### Completed
+- **User Account Activation spec written and promoted to Final v1.0** (`assemblies/loa-auth-platform/user-account-activation.md`): replaces self-registration with backend-provisioned activation flow. Key decisions: `pending` user status, activation tokens (24h, single-use, SHA-256), no password field in admin create form, auto-send activation email, admin resend capability, repurposed `/register` → `/activate`.
+
+### In Progress
+- (none)
+
+### Next Action
+- [ ] **Implement user account activation** per `user-account-activation.md` Final v1.0: migration (pending status + activations table), Activation model, ActivationService, AccountActivationMail, repurpose register→activate routes/views, update admin create user flow, update login to gate pending users, remove self-registration API, tests.
+
+### Backlog / Known Gaps
+- (none new)
+
+---
 
 ### Date: 2026-08-06
 
@@ -189,3 +206,4 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 | 2026-08-06 (7) | **Decision #20 (2026-08-06):** no auth on Cert API endpoints for now — Phase C = unauth domain CRUD slice; SSO + `jwt.auth`/`jwt.endpoint` deferred to a later **C-Auth** phase. `legacy-e-cert-integration.md` → **Final v2.1** (D9, C-Auth row, side-note refactor of Auth-provisioning sections). `api-endpoints.md` → **Final v1.4** (decision #20, §13 inventory annotated). `README.md` → Draft v1.1 (§11.8 side-note). | Phase C scaffold (unauth core slice) |
 | 2026-08-06 (8) | **Phase C scaffold created** — Laravel 12 app at `assemblies/loa-cert-platform/cert-app/` (directory structure, composer.json, app config, core models `Organization`/`Event`/`CertificateTemplate`/`Certificate`/`EventAttendee` + migrations) | Implement the unauth domain CRUD slice (events/attendees/templates/certificates + tests) |
 | 2026-08-07 | Reconciled the local Docker path: documented **`LocalCertReadinessSeeder`** (auto-runs on local `db:seed` via `DatabaseSeeder` non-prod guard; `cert-app` tenant @ `localhost:9001` + groups) as the sanctioned local provisioning in `cert-readiness.md` → **Final v0.4**. Production seeding stays manual-only per the 2026-08-06 decision. | Implement the unauth domain CRUD slice |
+| 2026-08-07 (2) | **User Account Activation spec** written + promoted to **Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, admin resend). Committed + pushed. | Implement user account activation per spec |

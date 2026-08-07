@@ -27,7 +27,8 @@ Read these files IN ORDER and report your understanding of where we left off:
 8. assemblies/loa-auth-platform/tenant-group-endpoint-grants.md - level-based grants model (Final v1.1)
 9. assemblies/loa-auth-platform/tenant-endpoint-catalog.md - endpoint catalog (Final v3.2)
 10. assemblies/loa-auth-platform/access-config-import-export.md - JSON import/export (Final v1.0)
-11. assemblies/loa-auth-platform/SESSION-PROMPT.md - this file: "Last Session Notes" = where we stopped
+11. assemblies/loa-auth-platform/user-account-activation.md - activation flow replacing self-registration (Final v1.0)
+12. assemblies/loa-auth-platform/SESSION-PROMPT.md - this file: "Last Session Notes" = where we stopped
 
 Then:
 - Summarize the spec status (Draft vs Final) and what's implemented vs pending
@@ -40,21 +41,16 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-03 (auth) / 2026-08-05 (cross-boundary updates) / 2026-08-07 (v0.4 reconciliation)
+### Date: 2026-08-07
 
 ### Completed
-- **Access Config Import/Export implemented (Final v1.0):** `AccessConfigController` (template, export, import), web + API routes, `access-config-import.blade.php` (file upload, paste JSON, preview, confirm), buttons on tenant show + groups pages, 3 factories (composite PK), `HasFactory` on 3 models, 29 tests — **all 172 tests pass**.
-- **Group priority implemented:** migration, model, resolution logic, admin UI, tests.
-- **Prior auth releases (all verified, 172 tests):** tenancy v3.0 (000011–000015), tenant-scoped groups/grants, `tenant` JWT claim + `jwt.tenant`, login destination resolution (web-ui v1.2), admin dashboard v1 + v2, group/permission management v4, endpoint catalog + bulk import, data-driven permission policy (Final v1.0), RefreshToken rotation/revocation, Laravel 12 + PHP 8.3 upgrade.
-- **2026-08-05 cross-boundary updates:** domain correction across docs/configs/tests/blades (`*.lyceumalabang.edu.ph`); allowlists updated to include `https://e-cert.vercel.app` in `config/cors.php`, `config/auth-web.php`, `.env.example`, `DEPLOY.md`, `environment.md`.
+- **User Account Activation spec written and promoted to Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow. Key decisions: `pending` user status, activation tokens (24h, single-use, SHA-256), no password field in admin create form, auto-send activation email, admin resend capability, repurposed `/register` → `/activate`.
 
 ### In Progress
-- (none — auth implementation is complete for the current spec set; deploy and Cert integration remain)
+- (none)
 
 ### Next Action
-- [x] **Phase B (Cert readiness) runbook — FINAL 2026-08-06→v0.4 2026-08-07:** `cert-readiness.md` **Final v0.4**. No Cert data baked into the **production** Auth seed path (`DatabaseSeeder` prod runs only `AdminSeeder`; `database/seeders/database.sql` untouched — user decision). Provision **manually at deploy-time**: create the `loa` tenant (`redirect_origins` incl. `https://e-cert.vercel.app`), import the Cert Appendix A catalog (48 endpoints, §5 payload), create **`cert-admin` / `cert-staff` / `cert-user`** groups (priorities 2/3/4), grant per §7 matrix (admin 48 / staff 39 / user 7). **§8 Local Development (v0.2→v0.4):** local Docker provisioning runs automatically via the **`LocalCertReadinessSeeder`** (non-prod guard in `DatabaseSeeder`; `cert-app` tenant @ `localhost:9001` + groups) plus optional tinker fast path and local admin UI at `localhost:8080`; local origin/CORS/redirect table.
-- [ ] **Deploy** the current auth release to `auth.lyceumalabang.edu.ph` (see `DEPLOY.md` — no-terminal section requires uploading prebuilt `vendor/`) — **deferred** (user decision 2026-08-06: focus on Cert platform; Auth deploy can proceed independently when ready).
-- [ ] Track open questions from `PROJECT_UPDATES.md` / Cert SESSION-PROMPT that depend on Auth (tenant `redirect_origins`, seed group names Q-4, `/my/profile` Q-5)
+- [ ] **Implement user account activation** per `user-account-activation.md` Final v1.0: migration (pending status + activations table), Activation model, ActivationService, AccountActivationMail, repurpose register→activate routes/views, update admin create user flow, update login to gate pending users, remove self-registration API, tests.
 
 ### Backlog / Known Gaps
 - **Deployment not yet done** — Docker-verified only; `database.sql` rebuilt from migration schema (parity-checked).
@@ -82,6 +78,7 @@ Then:
 | 2026-08-06 | **`cert-readiness.md` → Final v0.2:** added **§8 Local Development** (Docker Compose) — local admin UI at `localhost:8080`, local origin/CORS/redirect table, optional ad-hoc tinker fast path for tenant+groups (not in any seeder, per decision), local verification. §3 cross-ref added; References + Doc Control renumbered to §9–§11 | Deploy auth → provision per runbook |
 | 2026-08-06 | **Auth deployment deferred** (user decision 2026-08-06: focus on Cert platform). Auth deploy to `auth.lyceumalabang.edu.ph` can proceed independently when ready; no action needed until then. | Focus on Cert platform Phase C scaffold (unauth domain CRUD) |
 | 2026-08-07 | Reconciled local Docker path: **`LocalCertReadinessSeeder`** (runs automatically on local `db:seed` via `DatabaseSeeder` non-prod guard; `cert-app` tenant @ `localhost:9001` + `cert-admin/staff/user` groups) is the sanctioned local provisioning. `cert-readiness.md` → **Final v0.4** (decision note, §8.1, §8.3, table, doc control). Production seeding remains manual-only per the 2026-08-06 decision. | Deploy auth → provision per runbook; Cert Phase C unauth CRUD slice |
+| 2026-08-07 (2) | **User Account Activation spec** written + promoted to **Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, admin resend). Committed + pushed. | Implement user account activation per spec |
 
 ---
 
