@@ -1,4 +1,4 @@
-# LOA Auth Platform — Deployment Guide
+﻿# LOA Cert Platform — Deployment Guide
 
 ## 1. Local Docker (development)
 
@@ -25,14 +25,14 @@ The shared stack exposes:
 ### Run migrations and seed locally
 
 ```bash
-docker compose exec auth-app php artisan migrate --force
-docker compose exec auth-app php artisan db:seed --force
+docker compose exec cert-app php artisan migrate --force
+docker compose exec cert-app php artisan db:seed --force
 ```
 
 ### Run the test suite locally
 
 ```bash
-docker compose exec auth-app php artisan test
+docker compose exec cert-app php artisan test
 ```
 
 ### Full reset (fresh database)
@@ -40,17 +40,17 @@ docker compose exec auth-app php artisan test
 ```bash
 docker compose down -v
 docker compose up -d --build
-docker compose exec auth-app php artisan migrate --force
-docker compose exec auth-app php artisan db:seed --force
+docker compose exec cert-app php artisan migrate --force
+docker compose exec cert-app php artisan db:seed --force
 ```
 
 ### Common commands
 
 ```bash
-docker compose exec auth-app bash
-docker compose exec auth-app composer dump-autoload
-docker compose exec auth-app php artisan tinker
-docker compose logs -f auth-app
+docker compose exec cert-app bash
+docker compose exec cert-app composer dump-autoload
+docker compose exec cert-app php artisan tinker
+docker compose logs -f cert-app
 docker compose down
 docker compose down -v
 ```
@@ -67,15 +67,15 @@ docker compose down -v
 2. Run `composer install --no-dev --optimize-autoloader` on the target server or in a release build.
 3. Ensure the required environment variables are present (see [environment.md](environment.md)).
 4. Set `APP_ENV=production` and `APP_DEBUG=false`.
-5. Generate a fresh `JWT_SECRET` and keep it in sync across all LOA apps.
+5. Generate a fresh `JWT_SECRET` and keep it consistent with the Auth Platform.
 
 ### Deploy steps
 
-1. Upload the application files to `~/loa-auth-platform/` via SFTP or File Manager.
+1. Upload the application files to `~/loa-cert-platform/` via SFTP or File Manager.
 2. Install production dependencies:
 
 ```bash
-cd ~/loa-auth-platform
+cd ~/loa-cert-platform
 composer install --no-dev --optimize-autoloader
 ```
 
@@ -91,40 +91,36 @@ php artisan config:cache
 php artisan l5-swagger:generate
 ```
 
-5. Point the cPanel subdomain document root to `~/loa-auth-platform/public`.
+5. Point the cPanel subdomain document root to `~/loa-cert-platform/public`.
 6. Add the scheduler entry to Cron:
 
 ```text
-* * * * * php /home/<user>/loa-auth-platform/artisan schedule:run >> /dev/null 2>&1
+* * * * * php /home/<user>/loa-cert-platform/artisan schedule:run >> /dev/null 2>&1
 ```
 
 ### Required environment variables
 
 | Variable | Value | Required |
-|----------|-------|----------|
+|---|---|---|
 | `APP_ENV` | `production` | Yes |
 | `APP_DEBUG` | `false` | Yes |
-| `APP_URL` | `https://auth.lyceumalabang.edu.ph` | Yes |
+| `APP_URL` | `https://cert-api.lyceumalabang.edu.ph` | Yes |
 | `DB_HOST` | `localhost` | Yes |
 | `DB_PORT` | `3306` | Yes |
-| `DB_DATABASE` | `loa_auth` | Yes |
+| `DB_DATABASE` | `loa_cert` | Yes |
 | `DB_USERNAME` | cPanel DB user | Yes |
 | `DB_PASSWORD` | cPanel DB password | Yes |
 | `JWT_SECRET` | random 32+ chars | Yes |
-| `CORS_ALLOWED_ORIGINS` | `https://auth.lyceumalabang.edu.ph,https://aces-api.lyceumalabang.edu.ph,https://e-cert.vercel.app` | Yes |
-| `CACHE_STORE` | `file` | Yes |
-| `ADMIN_EMAIL` | admin email | Yes |
-| `ADMIN_PASSWORD` | admin password | Yes |
-| `ADMIN_NAME` | `Super Admin` | Yes |
+| `CORS_ALLOWED_ORIGINS` | `https://auth.lyceumalabang.edu.ph,https://e-cert.vercel.app` | Yes |
 
 ---
 
 ## 3. Post-deploy verification
 
-1. Visit `https://auth.lyceumalabang.edu.ph/login` in a browser.
-2. Confirm the API routes are available with `php artisan route:list --path=api`.
+1. Visit `https://cert-api.lyceumalabang.edu.ph` in a browser.
+2. Confirm the routes are available with `php artisan route:list --path=api`.
 3. Confirm the OpenAPI document can be generated with `php artisan l5-swagger:generate`.
-4. Confirm the admin account exists and is usable.
+4. Confirm the base seed data or required records are present.
 
 ---
 
@@ -133,6 +129,5 @@ php artisan l5-swagger:generate
 - Do not commit `.env` or secrets to version control.
 - Do not run `composer install` without `--no-dev` in production.
 - Do not use the Docker stack for production.
-- Do not seed via HTTP routes.
-- Do not hardcode credentials in seeds or code.
-- Do not run migrations or seeds blindly in production without review.
+- Do not assume local Docker behavior matches the server environment.
+- Do not skip a review of the API contract before changing implementation.

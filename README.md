@@ -26,6 +26,13 @@ Whether a business starts with a simple quotation system or eventually operates 
 
 The platform is designed around the following principles:
 
+## Local development notes
+
+For the shared Docker workflow, multi-app migrations/seeding, and extension guidance for future apps, see:
+
+- [LOCAL-DEV-RUNBOOK.md](LOCAL-DEV-RUNBOOK.md)
+- [docs/local-dev-multi-app-spec.md](docs/local-dev-multi-app-spec.md)
+
 - Modular and composable
 - Industry-agnostic (via pluggable Industry Packs)
 - Plugin-oriented
@@ -325,23 +332,23 @@ php vendor/bin/phpunit --coverage
 
 ### Docker
 
-If the assembly includes a `docker-compose.yml`:
+For the LOA auth and cert assemblies, use the shared workspace compose stack in [docker-compose.yml](docker-compose.yml):
 
 ```bash
-cd assemblies/<assembly-name>
+# From the repository root
+docker compose up -d --build
 
-# Start the full stack
-docker compose up -d
+# Run auth app tests
+docker compose exec auth-app php artisan test
 
-# Run all tests inside the app container
-docker compose exec app php vendor/bin/phpunit
+# Run cert app tests
+docker compose exec cert-app php artisan test
 
-# Run a specific test file
-docker compose exec app php vendor/bin/phpunit tests/Feature/Api/PermissionPolicy/ClaimPolicyMiddlewareTest.php
-
-# Stop the stack
+# Stop the shared stack
 docker compose down
 ```
+
+The assembly-local compose files are legacy references; the root stack is the canonical local-development entry point because it avoids shared port conflicts between the auth and cert services.
 
 ### Test Environment
 
@@ -380,31 +387,24 @@ php vendor/bin/phpunit --coverage
 
 ### Running Tests with Docker
 
-The Auth Platform includes a `docker-compose.yml` that sets up the full stack (app, nginx, MySQL, scheduler, mailpit). Tests run inside the `app` container using an in-memory SQLite database.
+The shared stack at [docker-compose.yml](docker-compose.yml) starts the auth and cert apps together with shared MySQL and Mailpit services. Tests are executed inside the relevant app container using the assembly's Laravel test environment.
 
 ```bash
-cd assemblies/loa-auth-platform
+# From the repository root
+# Start the shared stack
+docker compose up -d --build
 
-# Start the full stack (MySQL, app, nginx, scheduler, mailpit)
-docker compose up -d
+# Run all auth tests
+docker compose exec auth-app php artisan test
 
-# Run all tests inside the app container
-docker compose exec app php vendor/bin/phpunit
+# Run all cert tests
+docker compose exec cert-app php artisan test
 
-# Run a specific test file
-docker compose exec app php vendor/bin/phpunit tests/Feature/Api/PermissionPolicy/ClaimPolicyMiddlewareTest.php
-
-# Run with testdox output (human-readable)
-docker compose exec app php vendor/bin/phpunit --testdox
-
-# Run with coverage
-docker compose exec app php vendor/bin/phpunit --coverage
-
-# Stop the stack
+# Stop the shared stack
 docker compose down
 ```
 
-The `phpunit.xml.dist` configures the test environment to use SQLite in-memory (`:memory:`), so no database setup is needed inside the container. The `JWT_SECRET` is set to a test value automatically.
+The test environment uses the assembly's configured Laravel testing setup and does not require a separate local database bootstrap for the default suite.
 
 ### Test Structure
 
