@@ -56,16 +56,19 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-07 (Session 6)
+### Date: 2026-08-07 (Session 8)
 ### Completed
 - **Phase C Scaffolding & Testing - Events Group:** Implemented the full resource group for Events. This includes creating/updating migration, EventController with CRUD methods (index, store, show, update, destroy), and adding all required routes (`GET/POST/PATCH/DELETE` + stats). The implementation was verified with comprehensive unit tests.
 - **Phase C Scaffolding & Testing - Attendees Group:** Implemented the full resource group for Attendees. This includes creating/updating migration, `AttendeeController`, and necessary nested event routes. This covered single record management and the complex bulk JSON import logic (`POST /import`), along with associated unit tests.
 - **Phase C Scaffolding & Testing - Templates Group:** Implemented the full resource group for CertificateTemplates (CRUD) with template locking logic. Created `CertificateTemplateController` with methods: `index`, `store`, `show`, `update`, `destroy`. Implemented locking logic that checks if template is referenced by events (locks update/delete with 409) or issued certificates (prevents delete with 409). Added routes (`GET/POST/PATCH/DELETE /templates`). Created comprehensive unit tests covering all CRUD operations, validation, locking behavior, and edge cases.
 - **Phase C Scaffolding & Testing - Certificates Group:** Implemented the full resource group for Certificates (CRUD + issue/revoke/reissue/expire). Created migrations for `certificates` (with generated column for active-number uniqueness), `certificate_sequences` (atomic number generation), and `certificate_emails` (email logs). Updated `Certificate` model with relationships and status derivation. Created `CertificateController` with all 14 endpoints. Added routes (`GET/POST/PATCH/DELETE /certificates` + sub-routes). Created comprehensive unit tests covering all operations, validation, status derivation, and edge cases.
+- **Phase C Services - PDF Service:** Integrated DOMPDF (`barryvdh/laravel-dompdf`). Created `PdfService` with certificate PDF generation, streaming, and download capabilities. Created `PlaceholderResolver` for template variable replacement (recipient_name, certificate_number, issued_date, event_name, event_date, event_location, organization_name, qr_code). Updated `CertificateController` to use `PdfService` for PDF endpoints. Created unit tests for placeholder resolution.
+- **Phase C Infrastructure - Docker:** Created standalone `docker-compose.yml` for cert platform (matches auth-platform pattern). Updated Dockerfile with DOMPDF dependencies (GD, freetype, libjpeg, libwebp, libxml, icu, mbstring). Services: app (PHP-FPM), nginx, mysql, scheduler, mailpit.
+- **Phase C Infrastructure - Swagger:** Integrated l5-swagger (`darkaonline/l5-swagger:^11.1`). Created `config/l5-swagger.php` with OpenAPI 3.1.0 spec, JWT bearer auth, dark mode UI. Added `#[OA\...]` PHP 8 attributes to `CertificateTemplateController` (5 endpoints) and `CertificateController` (14 endpoints) with full request/response schemas.
 
 ### In Progress
 - **Deferred to Auth Phase:** SSO + `jwt.auth`/`jwt.endpoint` middleware implementation
-- **Deferred to Service Phase:** PDF streaming (DOMPDF), QR generation, email sending services
+- **Deferred to Service Phase:** QR code generation, email sending services
 
 ### Next Action
-- **Phase C Complete:** Core domain CRUD slice (events → attendees → templates → certificates) is implemented. Ready for next phase: Auth integration or Service implementation (PDF/QR/email).
+- **Phase C Complete:** Core domain CRUD + PDF service + Docker + Swagger is implemented. Ready for next phase: Auth integration or additional services (QR/email).

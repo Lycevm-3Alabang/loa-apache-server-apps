@@ -64,7 +64,19 @@ docker compose exec cert-app php artisan db:seed --force
 
 ---
 
-## 4. Run only one app instead of all
+## 4. Generate Swagger documentation
+
+After migrations, generate the OpenAPI spec for the cert app:
+
+```bash
+docker compose exec cert-app php artisan l5-swagger:generate
+```
+
+Access Swagger UI at: `http://localhost:9001/api/docs`
+
+---
+
+## 5. Run only one app instead of all
 
 If you want the full stack but only need one app at a time, start the specific service(s):
 
@@ -88,7 +100,24 @@ docker compose up -d --build mysql mailpit
 
 ---
 
-## 5. Debugging one app only
+## 6. Standalone cert app (optional)
+
+The cert app has its own `docker-compose.yml` for independent development:
+
+```bash
+cd assemblies/loa-cert-platform
+docker compose up -d --build
+docker compose exec app composer install --no-interaction --no-progress
+docker compose exec app php artisan migrate --force
+docker compose exec app php artisan l5-swagger:generate
+docker compose logs -f app
+```
+
+This spins up: `app` (PHP-FPM), `nginx` (port 9001), `mysql`, `scheduler`, `mailpit`.
+
+---
+
+## 7. Debugging one app only
 
 If you are debugging a single app, start only that app and keep the shared services running.
 
@@ -109,6 +138,7 @@ docker compose up -d --build mysql mailpit cert-app cert-nginx cert-scheduler
 docker compose exec -T cert-app composer install --no-interaction --no-progress
 docker compose exec cert-app php artisan migrate --force
 docker compose exec cert-app php artisan db:seed --force
+docker compose exec cert-app php artisan l5-swagger:generate
 docker compose logs -f cert-app
 ```
 
@@ -116,7 +146,7 @@ This is the best fit when you want the shared MySQL/Mailpit services available b
 
 ---
 
-## 6. Common workflow examples
+## 8. Common workflow examples
 
 ### Example A: start everything, then migrate and seed both apps
 
@@ -124,27 +154,29 @@ This is the best fit when you want the shared MySQL/Mailpit services available b
 docker compose up -d --build
 docker compose exec cert-app php artisan migrate --force
 docker compose exec cert-app php artisan db:seed --force
+docker compose exec cert-app php artisan l5-swagger:generate
 ```
 
 ### Example B: start only auth and run its migration/seed
 
 ```bash
 docker compose up -d --build auth-app auth-nginx auth-scheduler
- docker compose exec auth-app php artisan migrate --force
- docker compose exec auth-app php artisan db:seed --force
+docker compose exec auth-app php artisan migrate --force
+docker compose exec auth-app php artisan db:seed --force
 ```
 
 ### Example C: start only cert and run its migration/seed
 
 ```bash
 docker compose up -d --build cert-app cert-nginx cert-scheduler
- docker compose exec cert-app php artisan migrate --force
- docker compose exec cert-app php artisan db:seed --force
+docker compose exec cert-app php artisan migrate --force
+docker compose exec cert-app php artisan db:seed --force
+docker compose exec cert-app php artisan l5-swagger:generate
 ```
 
 ---
 
-## 7. Useful troubleshooting commands
+## 9. Useful troubleshooting commands
 
 View logs for one app:
 
@@ -176,12 +208,52 @@ docker compose exec auth-app php artisan test
 docker compose exec cert-app php artisan test
 ```
 
+Regenerate Swagger docs:
+
+```bash
+docker compose exec cert-app php artisan l5-swagger:generate
+```
+
 ---
 
-## 8. Notes
+## 10. Test structure
+
+Tests are located in each app's `tests/` directory:
+
+```
+cert-app/
+├── phpunit.xml.dist
+└── tests/
+    ├── TestCase.php
+    ├── CreatesApplication.php
+    ├── Feature/
+    │   └── Api/
+    │       ├── CertificateTest.php
+    │       └── CertificateTemplateTest.php
+    └── Unit/
+        └── PlaceholderResolverTest.php
+```
+
+Run the full test suite:
+
+```bash
+docker compose exec cert-app php artisan test
+```
+
+Run a specific test file:
+
+```bash
+docker compose exec cert-app php artisan test tests/Feature/Api/CertificateTest.php
+```
+
+---
+
+## 11. Notes
 
 - The root compose file in [docker-compose.yml](docker-compose.yml) is the canonical local-development entry point.
+- The cert app also has a standalone [docker-compose.yml](assemblies/loa-cert-platform/docker-compose.yml) for independent development.
 - Migrations and seeds are run inside the application container, not from the host shell.
+- Swagger docs must be regenerated after adding/modifying `#[OA\...]` attributes in controllers.
 - If you want to reset the environment completely, use:
 
 ```bash
