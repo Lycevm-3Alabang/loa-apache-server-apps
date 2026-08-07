@@ -148,24 +148,35 @@ This is the best fit when you want the shared MySQL/Mailpit services available b
 
 ## 8. Common workflow examples
 
-### Example A: start everything, then migrate and seed both apps
+### First time setup (everything)
 
 ```bash
+docker compose down -v
 docker compose up -d --build
+docker compose exec auth-app php artisan migrate --force
+docker compose exec auth-app php artisan db:seed --force
+docker compose exec auth-app php artisan l5-swagger:generate
 docker compose exec cert-app php artisan migrate --force
 docker compose exec cert-app php artisan db:seed --force
 docker compose exec cert-app php artisan l5-swagger:generate
 ```
 
-### Example B: start only auth and run its migration/seed
+### Start everything (already set up)
+
+```bash
+docker compose up -d --build
+```
+
+### Auth only
 
 ```bash
 docker compose up -d --build auth-app auth-nginx auth-scheduler
 docker compose exec auth-app php artisan migrate --force
 docker compose exec auth-app php artisan db:seed --force
+docker compose exec auth-app php artisan l5-swagger:generate
 ```
 
-### Example C: start only cert and run its migration/seed
+### Cert only
 
 ```bash
 docker compose up -d --build cert-app cert-nginx cert-scheduler

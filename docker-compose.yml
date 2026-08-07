@@ -137,6 +137,7 @@ services:
       MYSQL_ROOT_PASSWORD: root-secret
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "33060:3306"
     healthcheck:
