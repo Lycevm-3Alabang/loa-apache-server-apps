@@ -2,14 +2,14 @@
 
 ## Product Assembly Component Specification
 
-**Version:** 0.2
+**Version:** 0.4
 **Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`) — operational provisioning runbook
 **Audience:** Architects, Engineers, AI Development Agents, Platform Admins
 
 > Companion to `tenant-endpoint-catalog.md`, `tenant-group-endpoint-grants.md`, `web-ui.md`, `access-config-import-export.md`, and `DEPLOY.md`.
 >
-> **Decision (2026-08-06):** Cert readiness data is **not** baked into Auth seeders or `database/seeders/database.sql`. It is provisioned **manually at deploy-time** via the admin UI / JSON API. This runbook is the authoritative checklist and payload for that provisioning.
+> **Decision (2026-08-06):** Cert readiness data is **not** baked into the **production** Auth seed path (`DatabaseSeeder` production runs only `AdminSeeder`; `database/seeders/database.sql` is untouched). In production it is provisioned **manually at deploy-time** via the admin UI / JSON API. For the **local Docker stack only**, `DatabaseSeeder` additionally runs `LocalCertReadinessSeeder` (guarded by `!app()->environment('production')`) — see §8. This runbook is the authoritative checklist and payload for that provisioning.
 
 ---
 
@@ -244,7 +244,7 @@ This section covers running the same provisioning **locally** against the Docker
 docker compose up -d --build
 docker compose exec app composer install          # first run only
 docker compose exec app php artisan migrate
-docker compose exec app php artisan db:seed       # admin user (env ADMIN_*) + `loa-auth-admin` group
+docker compose exec app php artisan db:seed       # admin user (env ADMIN_*) + `loa-auth-admin` group; local-only: also runs `LocalCertReadinessSeeder` (see §8.3)
 ```
 
 - App: `http://localhost:8080` (nginx on `:8080`; the app container itself has no host port).
@@ -275,21 +275,25 @@ docker compose exec app php artisan config:cache
 
 ### 8.3 Provision the Cert readiness data locally
 
+**Automatic fast path — `LocalCertReadinessSeeder` (recommended).** When you run `php artisan db:seed` in the local Docker stack (`APP_ENV != production`), `DatabaseSeeder` automatically runs `LocalCertReadinessSeeder` (`assemblies/loa-auth-platform/database/seeders/LocalCertReadinessSeeder.php`). It creates the **`cert-app`** tenant (`name` = `Local Cert App`, `app_url`/`redirect_origins` = `http://localhost:9001`, matching the `cert-nginx` host port in the root `docker-compose.yml`) and the empty groups **`cert-admin`** (priority 2), **`cert-staff`** (3), **`cert-user`** (4). Idempotent (`updateOrCreate`) — safe to re-run. Covered by `tests/Feature/Seeders/LocalCertReadinessSeederTest.php`.
+
+> **Note:** the local tenant slug is **`cert-app`** (the production §4–§7 payload uses `loa`) — keep them distinct because production provisioning is manual and the local one is auto. All local steps below target the `cert-app` tenant. The seeder does **not** create the catalog or grants (steps 2 and 4 below) — those still require the admin UI (or the §5.3 import).
+
 The production steps §4–§7 apply unchanged, run against the **local** admin UI at `http://localhost:8080/admin` (sign in with the seeded admin: `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`):
 
-1. **Tenant** (§4): `Tenants → Create Tenant`; `slug = loa`, `app_url` + `redirect_origins` = the local e-cert origin from §8.2.
-2. **Catalog** (§5): `Tenants → loa → Endpoints → Import` and paste the 48-endpoint Appendix A JSON (same payload as §5.3).
-3. **Groups** (§6): `Tenants → loa → Groups`; create `cert-admin` (priority 2), `cert-staff` (3), `cert-user` (4).
-4. **Grants** (§7): `Tenants → loa → Groups → {group} → Endpoints`; apply §7.4.
+1. **Tenant** (§4): `Tenants → Create Tenant`; `slug = cert-app`, `name` = `Local Cert App`, `app_url` + `redirect_origins` = `http://localhost:9001` (the local `cert-nginx` origin). Skip this step if you ran `db:seed` — `LocalCertReadinessSeeder` already created it.
+2. **Catalog** (§5): `Tenants → cert-app → Endpoints → Import` and paste the 48-endpoint Appendix A JSON (same payload as §5.3).
+3. **Groups** (§6): `Tenants → cert-app → Groups`; create `cert-admin` (priority 2), `cert-staff` (3), `cert-user` (4). Skip this step if you ran `db:seed` — the seeder already created them.
+4. **Grants** (§7): `Tenants → cert-app → Groups → {group} → Endpoints`; apply §7.4.
 
-**Optional tinker fast path (local dev only)** — instead of clicking the two forms (steps 1 and 3), an operator creates the tenant + groups by pasting a one-liner into an interactive `php artisan tinker` session:
+**Manual tinker fast path (alternative to the seeder)** — an operator creates the tenant + groups by pasting a one-liner into an interactive `php artisan tinker` session:
 
 ```php
 $t = App\Models\Tenant::updateOrCreate(
-    ['slug' => 'loa'],
-    ['name' => 'LOA Certificate Platform', 'status' => 'active',
-     'app_url' => 'https://e-cert.vercel.app',
-     'redirect_origins' => ['https://e-cert.vercel.app']]
+    ['slug' => 'cert-app'],
+    ['name' => 'Local Cert App', 'status' => 'active',
+     'app_url' => 'http://localhost:9001',
+     'redirect_origins' => ['http://localhost:9001']]
 );
 foreach (['cert-admin' => 2, 'cert-staff' => 3, 'cert-user' => 4] as $n => $p) {
     App\Models\UserGroup::updateOrCreate(['tenant_id' => $t->id, 'name' => $n],
@@ -299,16 +303,15 @@ foreach (['cert-admin' => 2, 'cert-staff' => 3, 'cert-user' => 4] as $n => $p) {
 
 **What the snippet does and does not do:**
 
-| | Tinker snippet | Admin UI (steps 1–4) |
-|---|---|---|
-| Creates the `loa` tenant | ✅ | ✅ |
-| Creates `cert-admin` / `cert-staff` / `cert-user` (empty groups) | ✅ | ✅ |
-| Imports the 48-endpoint catalog (§5.3 payload) | ❌ — still step 2 | ✅ step 2 |
-| Applies the grant matrix (§7.4) | ❌ — still step 4 | ✅ step 4 |
-| Runs automatically? | ❌ — operator pastes once, interactively | ❌ — operator clicks once |
-| Part of `DatabaseSeeder.php` / `database.sql`? | ❌ — no file is created | ❌ — no file is created |
+| | Tinker snippet | `LocalCertReadinessSeeder` (via `db:seed`) | Admin UI (steps 1–4) |
+|---|---|---|---|
+| Creates the `cert-app` tenant | ✅ | ✅ | ✅ |
+| Creates `cert-admin` / `cert-staff` / `cert-user` (empty groups) | ✅ | ✅ | ✅ |
+| Imports the 48-endpoint catalog (§5.3 payload) | ❌ — still step 2 | ❌ — still step 2 | ✅ step 2 |
+| Applies the grant matrix (§7.4) | ❌ — still step 4 | ❌ — still step 4 | ✅ step 4 |
+| Runs automatically? | ❌ — operator pastes once, interactively | ✅ — on every local `db:seed` (non-prod only) | ❌ — operator clicks once |
 
-The snippet is a **manual, one-time operator action** that merely types the same data the tenant/group forms would POST. It is **not** seeding: it writes no seeder file, is not registered in `DatabaseSeeder`, is not in `database/seeders/database.sql`, and does not run on `php artisan db:seed`. That separation is the 2026-08-06 decision — Cert readiness data is provisioned by an operator, never baked into the seed pipeline.
+The tinker snippet is a **manual, one-time operator action** that merely types the same data the tenant/group forms would POST. The **seeder** is the sanctioned automatic local path (non-prod only, idempotent). Neither is part of the **production** seed pipeline: `DatabaseSeeder` runs `AdminSeeder` everywhere and `LocalCertReadinessSeeder` only when `APP_ENV != production`; `database/seeders/database.sql` is untouched. That separation is the 2026-08-06 decision — in production, Cert readiness data is provisioned by an operator, never baked into the seed pipeline.
 
 ### 8.4 Local verification
 
@@ -353,6 +356,8 @@ Repeat §9 against the local base URL:
 | 0.1 | 2026-08-06 | **Promoted to Final** (payload + grant matrix parity-checked against `api-endpoints.md` Appendix A: 48/48). |
 | 0.2 | 2026-08-06 | Added §8 **Local Development** (Docker Compose provisioning via the local admin UI at `localhost:8080` + optional tinker fast path; local origin/CORS/redirect table; local verification). References + Doc Control renumbered to §9–§11. |
 | 0.2 | 2026-08-06 | §8.3 tinker fast path clarified: explicit "what it does / does not do" table (tenant+groups only; catalog+grants still via admin UI; operator-pasted one-liner, no seeder file, not in `DatabaseSeeder`/`database.sql`). |
+| 0.3 | 2026-08-07 | §8.3 now documents the **`LocalCertReadinessSeeder`** as the automatic local path (runs on local `db:seed` via `DatabaseSeeder`, non-prod guard only; creates `cert-app` tenant @ `localhost:9001` + groups). Decision note + §8.1 comment + "does/does not" table + closing paragraph updated. Production provisioning remains manual-only. |
+| 0.4 | 2026-08-07 | §8.3 local steps use the **`cert-app`** tenant slug consistently (admin UI steps 1–4 + tinker snippet now target `cert-app` @ `http://localhost:9001`, matching `LocalCertReadinessSeeder`). |
 
 ### Open Questions
 - None.

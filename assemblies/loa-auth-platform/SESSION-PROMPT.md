@@ -40,7 +40,7 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-03 (auth) / 2026-08-05 (cross-boundary updates)
+### Date: 2026-08-03 (auth) / 2026-08-05 (cross-boundary updates) / 2026-08-07 (v0.4 reconciliation)
 
 ### Completed
 - **Access Config Import/Export implemented (Final v1.0):** `AccessConfigController` (template, export, import), web + API routes, `access-config-import.blade.php` (file upload, paste JSON, preview, confirm), buttons on tenant show + groups pages, 3 factories (composite PK), `HasFactory` on 3 models, 29 tests — **all 172 tests pass**.
@@ -52,7 +52,7 @@ Then:
 - (none — auth implementation is complete for the current spec set; deploy and Cert integration remain)
 
 ### Next Action
-- [x] **Phase B (Cert readiness) runbook — FINAL 2026-08-06:** `cert-readiness.md` **Final v0.2**. No Cert data baked into Auth seeders/database.sql (user decision). Provision **manually at deploy-time**: create the `loa` tenant (`redirect_origins` incl. `https://e-cert.vercel.app`), import the Cert Appendix A catalog (48 endpoints, §5 payload), create **`cert-admin` / `cert-staff` / `cert-user`** groups (priorities 2/3/4), grant per §7 matrix (admin 48 / staff 39 / user 7). **§8 Local Development added (v0.2):** same provisioning via Docker Compose (`localhost:8080` admin UI + optional tinker fast path; local origin/CORS/redirect table).
+- [x] **Phase B (Cert readiness) runbook — FINAL 2026-08-06→v0.4 2026-08-07:** `cert-readiness.md` **Final v0.4**. No Cert data baked into the **production** Auth seed path (`DatabaseSeeder` prod runs only `AdminSeeder`; `database/seeders/database.sql` untouched — user decision). Provision **manually at deploy-time**: create the `loa` tenant (`redirect_origins` incl. `https://e-cert.vercel.app`), import the Cert Appendix A catalog (48 endpoints, §5 payload), create **`cert-admin` / `cert-staff` / `cert-user`** groups (priorities 2/3/4), grant per §7 matrix (admin 48 / staff 39 / user 7). **§8 Local Development (v0.2→v0.4):** local Docker provisioning runs automatically via the **`LocalCertReadinessSeeder`** (non-prod guard in `DatabaseSeeder`; `cert-app` tenant @ `localhost:9001` + groups) plus optional tinker fast path and local admin UI at `localhost:8080`; local origin/CORS/redirect table.
 - [ ] **Deploy** the current auth release to `auth.lyceumalabang.edu.ph` (see `DEPLOY.md` — no-terminal section requires uploading prebuilt `vendor/`) — **deferred** (user decision 2026-08-06: focus on Cert platform; Auth deploy can proceed independently when ready).
 - [ ] Track open questions from `PROJECT_UPDATES.md` / Cert SESSION-PROMPT that depend on Auth (tenant `redirect_origins`, seed group names Q-4, `/my/profile` Q-5)
 
@@ -81,6 +81,7 @@ Then:
 | 2026-08-06 | **`cert-readiness.md` promoted to Final v0.1** (payload + matrix verified 48/48). Phase B readiness spec is locked; provisioning happens manually at deploy-time per the runbook | Deploy auth → provision per runbook |
 | 2026-08-06 | **`cert-readiness.md` → Final v0.2:** added **§8 Local Development** (Docker Compose) — local admin UI at `localhost:8080`, local origin/CORS/redirect table, optional ad-hoc tinker fast path for tenant+groups (not in any seeder, per decision), local verification. §3 cross-ref added; References + Doc Control renumbered to §9–§11 | Deploy auth → provision per runbook |
 | 2026-08-06 | **Auth deployment deferred** (user decision 2026-08-06: focus on Cert platform). Auth deploy to `auth.lyceumalabang.edu.ph` can proceed independently when ready; no action needed until then. | Focus on Cert platform Phase C scaffold (unauth domain CRUD) |
+| 2026-08-07 | Reconciled local Docker path: **`LocalCertReadinessSeeder`** (runs automatically on local `db:seed` via `DatabaseSeeder` non-prod guard; `cert-app` tenant @ `localhost:9001` + `cert-admin/staff/user` groups) is the sanctioned local provisioning. `cert-readiness.md` → **Final v0.4** (decision note, §8.1, §8.3, table, doc control). Production seeding remains manual-only per the 2026-08-06 decision. | Deploy auth → provision per runbook; Cert Phase C unauth CRUD slice |
 
 ---
 
