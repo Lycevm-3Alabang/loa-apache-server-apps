@@ -11,7 +11,7 @@ services:
     environment:
       - ACCEPT_EULA=Y
       - BASE_URI=http://localhost:5341
-      - SEQ_FIRSTRUN_NOAUTHENTICATION=yes
+      - SEQ_FIRSTRUN_NOAUTHENTICATION=true
     networks:
       - loa
 
