@@ -41,16 +41,16 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-07
+### Date: 2026-08-08
 
 ### Completed
-- **User Account Activation spec written and promoted to Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow. Key decisions: `pending` user status, activation tokens (24h, single-use, SHA-256), no password field in admin create form, auto-send activation email, admin resend capability, repurposed `/register` → `/activate`.
+- **User Account Activation fully implemented** per `user-account-activation.md` Final v1.0: migrations (pending status + activations table), Activation model, ActivationService, activate blade view, activate-account email template, repurposed `/register` → `/activate` routes/views, admin create user flow (status: pending, sends activation email), login gates pending users, admin resend activation, tests (ActivationTest, LoginTest pending user, AdminUsersTest pending + resend).
 
 ### In Progress
-- (none)
+- **Cert Platform Phase C:** Events & Attendees CRUD slice (per root PROJECT_UPDATES.md)
 
 ### Next Action
-- [ ] **Implement user account activation** per `user-account-activation.md` Final v1.0: migration (pending status + activations table), Activation model, ActivationService, AccountActivationMail, repurpose register→activate routes/views, update admin create user flow, update login to gate pending users, remove self-registration API, tests.
+- [ ] Focus on Cert Platform implementation (Events & Attendees endpoints per `api-endpoints.md` Final v1.4)
 
 ### Backlog / Known Gaps
 - **Deployment not yet done** — Docker-verified only; `database.sql` rebuilt from migration schema (parity-checked).
@@ -79,6 +79,7 @@ Then:
 | 2026-08-06 | **Auth deployment deferred** (user decision 2026-08-06: focus on Cert platform). Auth deploy to `auth.lyceumalabang.edu.ph` can proceed independently when ready; no action needed until then. | Focus on Cert platform Phase C scaffold (unauth domain CRUD) |
 | 2026-08-07 | Reconciled local Docker path: **`LocalCertReadinessSeeder`** (runs automatically on local `db:seed` via `DatabaseSeeder` non-prod guard; `cert-app` tenant @ `localhost:9001` + `cert-admin/staff/user` groups) is the sanctioned local provisioning. `cert-readiness.md` → **Final v0.4** (decision note, §8.1, §8.3, table, doc control). Production seeding remains manual-only per the 2026-08-06 decision. | Deploy auth → provision per runbook; Cert Phase C unauth CRUD slice |
 | 2026-08-07 (2) | **User Account Activation spec** written + promoted to **Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, admin resend). Committed + pushed. | Implement user account activation per spec |
+| 2026-08-08 | **User Account Activation fully implemented** (migrations, Activation model, ActivationService, views, email template, routes, controllers, tests). Auth Platform work complete for now. | Focus on Cert Platform Phase C |
 
 ---
 
