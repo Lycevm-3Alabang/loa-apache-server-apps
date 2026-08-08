@@ -1,7 +1,6 @@
 <?php
 
 use Monolog\Handler\SyslogUdpHandler;
-use Monolog\Logger;
 
 return [
 
@@ -24,7 +23,7 @@ return [
             'handler_with' => [
                 'host' => env('SEQ_HOST', 'seq'),
                 'port' => env('SEQ_SYSLOG_PORT', 5341),
-                'facility' => env('LOG_SYSLOG_FACILITY', Logger::USER),
+                'facility' => env('LOG_SYSLOG_FACILITY', LOG_USER),
             ],
             'formatter' => \Monolog\Formatter\LineFormatter::class,
             'formatter_with' => [

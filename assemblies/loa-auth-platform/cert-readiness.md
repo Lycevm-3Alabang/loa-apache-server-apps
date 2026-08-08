@@ -242,9 +242,9 @@ This section covers running the same provisioning **locally** against the Docker
 
 ```powershell
 docker compose up -d --build
-docker compose exec app composer install          # first run only
-docker compose exec app php artisan migrate
-docker compose exec app php artisan db:seed       # admin user (env ADMIN_*) + `loa-auth-admin` group; local-only: also runs `LocalCertReadinessSeeder` (see §8.3)
+docker compose exec auth-app composer install          # first run only
+docker compose exec auth-app php artisan migrate
+docker compose exec auth-app php artisan db:seed       # admin user (env ADMIN_*) + `loa-auth-admin` group; local-only: also runs `LocalCertReadinessSeeder` (see §8.3)
 ```
 
 - App: `http://localhost:8080` (nginx on `:8080`; the app container itself has no host port).
@@ -269,8 +269,8 @@ The tenant-level `redirect_origins` (set in §8.3 / §4) must always list the **
 After editing `.env` (CORS/redirects), refresh the config cache inside the container:
 
 ```powershell
-docker compose exec app php artisan config:clear
-docker compose exec app php artisan config:cache
+docker compose exec auth-app php artisan config:clear
+docker compose exec auth-app php artisan config:cache
 ```
 
 ### 8.3 Provision the Cert readiness data locally

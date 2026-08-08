@@ -98,55 +98,11 @@ docker compose up -d --build cert-app cert-nginx cert-scheduler
 docker compose up -d --build mysql mailpit
 ```
 
----
-
-## 6. Standalone cert app (optional)
-
-The cert app has its own `docker-compose.yml` for independent development:
-
-```bash
-cd assemblies/loa-cert-platform
-docker compose up -d --build
-docker compose exec app composer install --no-interaction --no-progress
-docker compose exec app php artisan migrate --force
-docker compose exec app php artisan l5-swagger:generate
-docker compose logs -f app
-```
-
-This spins up: `app` (PHP-FPM), `nginx` (port 9001), `mysql`, `scheduler`, `mailpit`.
+> Combining the shared infra with one app's services is the recommended approach for focused debugging. See the **Auth only** / **Cert only** workflows below.
 
 ---
 
-## 7. Debugging one app only
-
-If you are debugging a single app, start only that app and keep the shared services running.
-
-### Debug auth only
-
-```bash
-docker compose up -d --build mysql mailpit auth-app auth-nginx auth-scheduler
-docker compose exec -T auth-app composer install --no-interaction --no-progress
-docker compose exec auth-app php artisan migrate --force
-docker compose exec auth-app php artisan db:seed --force
-docker compose logs -f auth-app
-```
-
-### Debug cert only
-
-```bash
-docker compose up -d --build mysql mailpit cert-app cert-nginx cert-scheduler
-docker compose exec -T cert-app composer install --no-interaction --no-progress
-docker compose exec cert-app php artisan migrate --force
-docker compose exec cert-app php artisan db:seed --force
-docker compose exec cert-app php artisan l5-swagger:generate
-docker compose logs -f cert-app
-```
-
-This is the best fit when you want the shared MySQL/Mailpit services available but do not need to run the full multi-app stack.
-
----
-
-## 8. Common workflow examples
+## 6. Common workflow examples
 
 ### First time setup (everything)
 
@@ -167,27 +123,11 @@ docker compose exec cert-app php artisan l5-swagger:generate
 docker compose up -d --build
 ```
 
-### Auth only
-
-```bash
-docker compose up -d --build auth-app auth-nginx auth-scheduler
-docker compose exec auth-app php artisan migrate --force
-docker compose exec auth-app php artisan db:seed --force
-docker compose exec auth-app php artisan l5-swagger:generate
-```
-
-### Cert only
-
-```bash
-docker compose up -d --build cert-app cert-nginx cert-scheduler
-docker compose exec cert-app php artisan migrate --force
-docker compose exec cert-app php artisan db:seed --force
-docker compose exec cert-app php artisan l5-swagger:generate
-```
+> To run a single app instead, combine the service names from Section 5 with the migrate/seed/Swagger commands from Sections 2–4.
 
 ---
 
-## 9. Useful troubleshooting commands
+## 7. Useful troubleshooting commands
 
 View logs for one app:
 
@@ -227,7 +167,7 @@ docker compose exec cert-app php artisan l5-swagger:generate
 
 ---
 
-## 10. Test structure
+## 8. Test structure
 
 Tests are located in each app's `tests/` directory:
 
@@ -259,7 +199,7 @@ docker compose exec cert-app php artisan test tests/Feature/Api/CertificateTest.
 
 ---
 
-## 11. Known Issues & Gotchas
+## 9. Known Issues & Gotchas
 
 ### Missing `artisan` file
 
@@ -324,7 +264,7 @@ Laravel 11+ auto-registers service providers via `Application::configure()`. If 
 
 ---
 
-## 12. Assembly-Specific Runbooks
+## 10. Assembly-Specific Runbooks
 
 For isolated development of a single app, use the assembly-local Docker Compose files:
 
@@ -361,7 +301,7 @@ in their Docker environments. Laravel sends logs via UDP syslog to Seq, viewable
 
 ---
 
-## 13. Notes
+## 11. Notes
 
 - The root compose file in [docker-compose.yml](docker-compose.yml) is the canonical local-development entry point.
 - Each assembly also has a standalone [docker-compose.yml](docker-compose.yml) (at `assemblies/loa-XXX-platform/docker-compose.yml`) for independent development.
@@ -376,7 +316,7 @@ docker compose up -d --build
 
 ---
 
-## 14. Next Steps
+## 12. Next Steps
 
 | Action                                      | Where                                                                                     |
 |---------------------------------------------|-------------------------------------------------------------------------------------------|
@@ -387,6 +327,6 @@ docker compose up -d --build
 
 ---
 
-## 15. Gotchas & Troubleshooting
+## 13. Gotchas & Troubleshooting
 
-See sections 9 (Known Issues), 10, 11 in this file, plus the assembly-specific runbooks linked above for additional port conflict notes and Seq setup details.
+See sections 7 (Useful troubleshooting commands), 8 (Test structure), and 9 (Known Issues & Gotchas) in this file, plus the assembly-specific runbooks linked above for additional port conflict notes and Seq setup details.

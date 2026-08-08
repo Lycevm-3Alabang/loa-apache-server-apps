@@ -1,7 +1,7 @@
 name: loa-auth
 
 services:
-  app:
+  auth-app:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
@@ -46,7 +46,7 @@ services:
       - .:/var/www/html
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - app
+      - auth-app
     networks:
       - loa
 
