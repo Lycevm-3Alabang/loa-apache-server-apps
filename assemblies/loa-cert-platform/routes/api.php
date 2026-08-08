@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CertificateTemplateController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\AttendeeController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -28,5 +30,27 @@ Route::prefix('v1')->group(function () {
         Route::post('/{id}/email', [CertificateController::class, 'email']);
         Route::get('/{id}/email-logs', [CertificateController::class, 'emailLogs']);
         Route::post('/{id}/reissue', [CertificateController::class, 'reissue']);
+    });
+
+    Route::prefix('events')->group(function () {
+        Route::get('/', [EventController::class, 'index']);
+        Route::post('/', [EventController::class, 'store']);
+        Route::get('/{id}', [EventController::class, 'show']);
+        Route::put('/{id}', [EventController::class, 'update']);
+        Route::delete('/{id}', [EventController::class, 'destroy']);
+        Route::get('/{id}/stats', [EventController::class, 'stats']);
+        
+        Route::prefix('{eventId}/attendees')->group(function () {
+            Route::get('/', [AttendeeController::class, 'index']);
+            Route::post('/', [AttendeeController::class, 'store']);
+            Route::post('/import', [AttendeeController::class, 'import']);
+        });
+    });
+
+    Route::prefix('attendees')->group(function () {
+        Route::put('/{id}', [AttendeeController::class, 'update']);
+        Route::delete('/{id}', [AttendeeController::class, 'destroy']);
+        Route::get('/{id}/delete-preview', [AttendeeController::class, 'deletePreview']);
+        Route::get('/{id}/file-data', [AttendeeController::class, 'fileData']);
     });
 });
