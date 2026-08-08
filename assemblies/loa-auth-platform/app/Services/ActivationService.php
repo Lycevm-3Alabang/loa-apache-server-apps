@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Activation;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
 
@@ -28,7 +29,7 @@ class ActivationService
         return $rawToken;
     }
     
-    public function activate(string $rawToken): User
+    public function activate(string $rawToken, string $password): User
     {
         $hashedToken = hash('sha256', $rawToken);
         
@@ -46,8 +47,11 @@ class ActivationService
             throw new \Exception('User not found');
         }
         
-        // Activate user account
-        $user->update(['status' => 'active']);
+        // Activate user account (set password + status)
+        $user->update([
+            'password' => Hash::make($password),
+            'status' => 'active',
+        ]);
         
         // Mark activation as used
         $activation->update([

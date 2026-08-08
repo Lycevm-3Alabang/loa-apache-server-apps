@@ -16,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -180,7 +181,12 @@ class WebAdminController extends Controller
         return back()->with('status', 'Activation email resent successfully.');
     }
 
-    // ─── v2: Tenant management ─────────────────────────────────────            'name' => 'required|string|max:255',
+    // ─── v2: Tenant management ─────────────────────────────────────
+
+    public function tenantsStore(Request $request): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
             'app_url' => 'nullable|url|max:255',
             'redirect_origins' => 'nullable|string',
         ]);

@@ -96,7 +96,7 @@ class EndpointGrantController extends Controller
             'required_level' => 'sometimes|in:read,write,admin',
         ]);
 
-        $path =TenantAppEndpoint::normalizePath($validated['path']);
+        $path = TenantAppEndpoint::normalizePath($validated['path']);
         $method = strtoupper($validated['method']);
 
         $endpoint = TenantAppEndpoint::where(function ($q) use ($tenant) {

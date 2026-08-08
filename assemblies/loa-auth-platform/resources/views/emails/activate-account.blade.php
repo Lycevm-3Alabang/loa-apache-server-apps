@@ -8,7 +8,7 @@
     
     <p>You have been invited to join the LOA Platform. Click the link below to set your password and activate your account.</p>
     
-    <p><a href="{{ $app_url }}/activate?token={{ $token }}">Activate Account</a></p>
+    <p><a href="{{ config('app.url') }}/activate?token={{ $token }}">Activate Account</a></p>
     
     <p>This link expires in 24 hours and can only be used once.</p>
     

@@ -181,7 +181,7 @@ class WebAuthController extends Controller
         }
 
         try {
-            $user = $this->activation->activate($request->input('token'));
+            $user = $this->activation->activate($request->input('token'), $request->input('password'));
             
             // Redirect to login with success message
             return redirect()->route('login')->with('status', 'Account activated. Please sign in.');

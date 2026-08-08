@@ -26,5 +26,5 @@
         <button class="button" type="submit">Sign in</button>
     </form>
 
-    <p class="back-link">New here? <a href="{{ route('register') }}">Create an account</a></p>
+    <p class="back-link">Need help? Contact your administrator.</p>
 @endsection

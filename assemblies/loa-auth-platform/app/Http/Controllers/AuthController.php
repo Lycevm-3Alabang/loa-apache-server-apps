@@ -74,58 +74,6 @@ class AuthController extends Controller
     }
 
     #[OA\Post(
-        path: "/api/v1/auth/register",
-        tags: ["Auth"],
-        summary: "Register new user",
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ["email", "password", "name"],
-                properties: [
-                    new OA\Property(property: "email", type: "string", format: "email", example: "user@example.com"),
-                    new OA\Property(property: "password", type: "string", format: "password", minLength: 8, example: "Password123"),
-                    new OA\Property(property: "name", type: "string", example: "John Doe"),
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(response: 201, description: "User created successfully", content: new OA\JsonContent(ref: "#/components/schemas/User")),
-            new OA\Response(response: 409, description: "Email already registered", content: new OA\JsonContent(ref: "#/components/schemas/Error")),
-            new OA\Response(response: 422, description: "Validation failed", content: new OA\JsonContent(ref: "#/components/schemas/ValidationErrors")),
-        ]
-    )]
-    public function register(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email|max:255',
-            'password' => ['required', 'string', 'min:8', 'regex:/[A-Z]/', 'regex:/[a-z]/', 'regex:/[0-9]/'],
-            'name' => 'required|string|max:255',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        try {
-            $user = $this->identity->register(
-                $request->input('email'),
-                $request->input('password'),
-                $request->input('name')
-            );
-        } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 409);
-        }
-
-        return response()->json([
-            'id' => $user->id,
-            'email' => $user->email,
-            'name' => $user->name,
-            'status' => $user->status,
-            'created_at' => $user->created_at,
-        ], 201);
-    }
-
-    #[OA\Post(
         path: "/api/v1/auth/login",
         tags: ["Auth"],
         summary: "Authenticate user and return tokens",
