@@ -20,7 +20,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && composer --version
 
-RUN mkdir -p /var/www/html/cert-app/storage/framework/{cache,sessions,views} \
-    && mkdir -p /var/www/html/cert-app/storage/logs \
-    && mkdir -p /var/www/html/cert-app/bootstrap/cache \
-    && chown -R www-data:www-data /var/www/html/cert-app/storage /var/www/html/cert-app/bootstrap/cache
+RUN mkdir -p /var/www/html/storage/framework/{cache,sessions,views} \
+    && mkdir -p /var/www/html/storage/logs \
+    && mkdir -p /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache

@@ -7,7 +7,7 @@ services:
       dockerfile: docker/php/Dockerfile
     image: loa-cert-app
     restart: unless-stopped
-    working_dir: /var/www/html/cert-app
+    working_dir: /var/www/html
     volumes:
       - .:/var/www/html
     environment:
@@ -84,7 +84,7 @@ services:
   scheduler:
     image: loa-cert-app
     restart: unless-stopped
-    working_dir: /var/www/html/cert-app
+    working_dir: /var/www/html
     command: ["php", "artisan", "schedule:work"]
     volumes:
       - .:/var/www/html
