@@ -12,6 +12,7 @@ storage/framework/sessions/
 storage/framework/views/
 storage/logs/
 bootstrap/cache/
+app/bootstrap/cache/
 assemblies/loa-auth-platform/storage/framework/cache/
 
 # Environment files

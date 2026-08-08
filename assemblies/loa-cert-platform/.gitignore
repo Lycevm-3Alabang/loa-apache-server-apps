@@ -1,6 +1,8 @@
 /vendor
 .env
 .env.backup
+.env.local
+.env.production
 .phpunit.result.cache
 /storage/framework/views/*
 /storage/framework/sessions/*
