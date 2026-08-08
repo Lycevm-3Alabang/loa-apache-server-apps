@@ -151,6 +151,33 @@ docker compose exec cert-app php artisan db:seed --force
 docker compose exec cert-app php artisan l5-swagger:generate
 ```
 
+> **One-click alternative:** the same procedure is scripted at `scripts/reset-all.ps1`
+> (cross-platform docker commands wrapped in PowerShell). Run it from the repo root.
+
+#### How to run `scripts/reset-all.ps1`
+
+From a **PowerShell** prompt at the repository root:
+
+```powershell
+# Full teardown + rebuild + migrate/seed/Swagger for both apps
+.\scripts\reset-all.ps1
+
+# Tear down + rebuild infrastructure only (skip migrate/seed/Swagger)
+.\scripts\reset-all.ps1 -SkipProvision
+
+# Tear down everything and leave it stopped (no rebuild)
+.\scripts\reset-all.ps1 -SkipUp
+```
+
+> **Execution Policy on Windows:** if `.\scripts\reset-all.ps1` is blocked with
+> `running scripts is disabled on this system`, bypass the policy for this invocation only:
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File scripts/reset-all.ps1
+> ```
+> The script sets `$ErrorActionPreference = 'Stop'`, so the first failing `docker` command
+> aborts the run. Inspect a full parameter summary at any time with
+> `Get-Help .\scripts\reset-all.ps1 -Full` (the `.EXAMPLE` blocks above show the common cases).
+
 > If you only ever use the root stack, step 2 alone is sufficient. If you switch between the
 > root stack and an assembly-local stack, always `down -v` the one you're switching *to* as well,
 > or remap the conflicting ports in the assembly compose file.
