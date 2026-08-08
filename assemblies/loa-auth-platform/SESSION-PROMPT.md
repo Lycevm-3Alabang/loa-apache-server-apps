@@ -56,10 +56,12 @@ Then:
 - **Deployment not yet done** — Docker-verified only; `database.sql` rebuilt from migration schema (parity-checked).
 - Kernel specs (User, UserGroup, Permission, LoginAttempt, PasswordResetToken, Contracts, Events, Business Rules) remain **Draft** — code is ahead of several kernel specs.
 - No-terminal deploy requires uploading prebuilt `vendor/` (pure-PHP deps; safe cross-platform).
+- **Centralized Seq logging** (port 5341) now configured in root docker-compose.yml and auth app's config/logging.php — see LOCAL-DEV-RUNBOOK.md for details.
+- No logging spec exists for this change — pending spec creation before further logging enhancements.
 
 ---
 
-## Session Log
+## Session Log 
 
 | Date | Work Done | Next Action |
 |------|-----------|-------------|
@@ -79,7 +81,7 @@ Then:
 | 2026-08-06 | **Auth deployment deferred** (user decision 2026-08-06: focus on Cert platform). Auth deploy to `auth.lyceumalabang.edu.ph` can proceed independently when ready; no action needed until then. | Focus on Cert platform Phase C scaffold (unauth domain CRUD) |
 | 2026-08-07 | Reconciled local Docker path: **`LocalCertReadinessSeeder`** (runs automatically on local `db:seed` via `DatabaseSeeder` non-prod guard; `cert-app` tenant @ `localhost:9001` + `cert-admin/staff/user` groups) is the sanctioned local provisioning. `cert-readiness.md` → **Final v0.4** (decision note, §8.1, §8.3, table, doc control). Production seeding remains manual-only per the 2026-08-06 decision. | Deploy auth → provision per runbook; Cert Phase C unauth CRUD slice |
 | 2026-08-07 (2) | **User Account Activation spec** written + promoted to **Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, admin resend). Committed + pushed. | Implement user account activation per spec |
-| 2026-08-08 | **User Account Activation fully implemented** (migrations, Activation model, ActivationService, views, email template, routes, controllers, tests). Auth Platform work complete for now. | Focus on Cert Platform Phase C |
+| 2026-08-08 | User Account Activation fully implemented (migrations, model, service, views, email template, routes, controllers, tests). Auth Platform work complete for now. Added centralized Seq logging infrastructure. | Focus on Cert Platform Phase C |
 
 ---
 

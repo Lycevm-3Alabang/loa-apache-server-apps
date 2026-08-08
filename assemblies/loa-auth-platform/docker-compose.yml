@@ -17,9 +17,23 @@ services:
       DB_DATABASE: loa_auth
       DB_USERNAME: loa
       DB_PASSWORD: loa-secret
+      SEQ_URL: "http://seq:5341"
     depends_on:
       mysql:
         condition: service_healthy
+    networks:
+      - loa
+
+  seq:
+    image: datalust/seq
+    restart: unless-stopped
+    ports:
+      - "5341:5341"
+    volumes:
+      - seq_data:/data
+    environment:
+      - ACCEPT_EULA=Y
+      - BASE_URI=http://localhost:5341
     networks:
       - loa
 
@@ -87,6 +101,7 @@ services:
 
 volumes:
   mysql_data:
+  seq_data:
 
 networks:
   loa:

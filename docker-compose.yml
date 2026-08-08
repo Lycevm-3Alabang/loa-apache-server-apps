@@ -1,6 +1,19 @@
 name: loa-platform
 
 services:
+  seq:
+    image: datalust/seq
+    restart: unless-stopped
+    ports:
+      - "5341:5341"
+    volumes:
+      - seq_data:/data
+    environment:
+      - ACCEPT_EULA=Y
+      - BASE_URI=http://localhost:5341
+    networks:
+      - loa
+
   auth-app:
     build:
       context: ./assemblies/loa-auth-platform
@@ -17,6 +30,7 @@ services:
       DB_DATABASE: loa_auth
       DB_USERNAME: loa
       DB_PASSWORD: loa-secret
+      SEQ_URL: "http://seq:5341"
     depends_on:
       mysql:
         condition: service_healthy
@@ -87,6 +101,7 @@ services:
       MAIL_ENCRYPTION: null
       MAIL_FROM_ADDRESS: "noreply@lyceumalabang.edu.ph"
       MAIL_FROM_NAME: "${APP_NAME}"
+      SEQ_URL: "http://seq:5341"
     depends_on:
       mysql:
         condition: service_healthy
@@ -159,6 +174,7 @@ services:
 
 volumes:
   mysql_data:
+  seq_data:
 
 networks:
   loa:
