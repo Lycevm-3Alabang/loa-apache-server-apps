@@ -16,7 +16,7 @@ The Cert Platform has a **standalone** Docker Compose setup for isolated develop
 | `nginx`        | Web server / reverse proxy           | `9001:80`                        |
 | `mysql`        | MySQL 8.0 database                    | `33060:3306`                     |
 | `scheduler`    | Laravel scheduled task runner         | —                                |
-| `mailpit`      | Email capture for testing             | `8025:8025`, `1026:1025`          |
+| `mailpit`      | Email capture for testing             | `8025:8025`, `1025:1025`          |
 | `seq`          | Centralized log server                | `5341:5341`                      |
 
 ---
@@ -246,14 +246,24 @@ Seq provides:
 - Filtering by level (Debug, Information, Warning, Error)
 - Retention policy management
 
+### Running Standalone with Seq
+
+When using the Cert platform's standalone `docker-compose.yml`, Seq is also included (ports `5341:5341`).
+
+```bash
+cd assemblies/loa-cert-platform
+docker compose up -d --build
+```
+
+Logs are automatically forwarded to Seq at `http://localhost:5341`.
+
 ### Verifying Logs Reach Seq
 
-After starting services:
+After starting services, trigger a request then check Seq UI:
 
 1. Visit `http://localhost:5341`
 2. Look for recent log entries from the `cert-app` channel
-3. Check that certificate issuance, attendee import, and PDF generation operations produce structured log entries
-4. Confirm the `APP_DEBUG` flag enables debug-level logging
+3. Confirm debug-level logs appear (ensure `APP_DEBUG=true` in environment)
 
 ### Notes
 

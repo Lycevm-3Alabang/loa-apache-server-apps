@@ -18,7 +18,7 @@ The Auth Platform has a **standalone** Docker Compose setup for isolated develop
 | `nginx`        | Web server / reverse proxy           | `8080:80`                        |
 | `mysql`        | MySQL 8.0 database                    | `33060:3306`                     |
 | `scheduler`    | Laravel scheduled task runner         | —                                |
-| `mailpit`      | Email capture for testing             | `8030:8025`, `1030:1025`          |
+| `mailpit`      | Email capture for testing             | `8026:8025`, `1026:1025`          |
 | `seq`          | Centralized log server                | `5341:5341`                      |
 
 ---
@@ -57,7 +57,7 @@ docker compose run --rm app php artisan key:generate --force
 
 - API server: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/api/docs`
-- Mailpit UI: `http://localhost:8030`
+- Mailpit UI: `http://localhost:8026`
 - Seq log server: `http://localhost:5341`
 
 ---

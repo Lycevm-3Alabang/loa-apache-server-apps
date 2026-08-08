@@ -324,10 +324,47 @@ Laravel 11+ auto-registers service providers via `Application::configure()`. If 
 
 ---
 
-## 12. Notes
+## 12. Assembly-Specific Runbooks
+
+For isolated development of a single app, use the assembly-local Docker Compose files:
+
+- **[Auth Platform](assemblies/loa-auth-platform/LOCAL-DEV-RUNBOOK.md)** — standalone `loa-auth` stack with local MySQL on `33060`, nginx on `8080`, Mailpit, and Seq logging.
+- **[Cert Platform](assemblies/loa-cert-platform/LOCAL-DEV-RUNBOOK.md)** — standalone `loa-cert` stack with local MySQL on `33060`, nginx on `9001`, Mailpit, and Seq logging.
+
+### Port Isolation Strategy
+
+The root-level stack and assembly-local stacks each bind MySQL to host port `33060`. To avoid conflicts:
+
+- If using the **root-level** stack: do NOT start the assembly-local MySQL simultaneously.
+- If using an **assembly-local** stack: stop the root-level stack first (`docker compose down`) or remap ports in the assembly compose file.
+
+| Resource        | Root Stack   | Auth Standalone | Cert Standalone |
+|-----------------|--------------|------------------|------------------|
+| MySQL (host)    | `33060`      | `33060`          | `33060`          |
+| Nginx Auth UI   | `8080`       | `8080`           | —                |
+| Nginx Cert UI   | `9001`       | —                | `9001`           |
+| Mailpit (web)   | `8025`       | `8026`           | `8025`           |
+| Mailpit (SMTP)  | `1025`       | `1026`           | `1025`           |
+| Seq UI          | `5341`       | `5341`           | `5341`           |
+
+> **Note**: Auth standalone remaps Mailpit ports to `8026:8025`/`1026:1025` to avoid conflicts with the root stack. Cert standalone and root stack both use `8025`/`1025` for Mailpit — do not run both simultaneously.
+
+### Centralized Seq Logging
+
+The root-level stack includes a **Seq** service for structured log aggregation. Both the Auth and Cert app containers receive:
+
+```
+SEQ_URL=http://seq:5341
+```
+
+in their Docker environments. Laravel sends logs via UDP syslog to Seq, viewable at `http://localhost:5341`.
+
+---
+
+## 13. Notes
 
 - The root compose file in [docker-compose.yml](docker-compose.yml) is the canonical local-development entry point.
-- The cert app also has a standalone [docker-compose.yml](assemblies/loa-cert-platform/docker-compose.yml) for independent development.
+- Each assembly also has a standalone [docker-compose.yml](docker-compose.yml) (at `assemblies/loa-XXX-platform/docker-compose.yml`) for independent development.
 - Migrations and seeds are run inside the application container, not from the host shell.
 - Swagger docs must be regenerated after adding/modifying `#[OA\...]` attributes in controllers.
 - If you want to reset the environment completely, use:
@@ -336,3 +373,20 @@ Laravel 11+ auto-registers service providers via `Application::configure()`. If 
 docker compose down -v
 docker compose up -d --build
 ```
+
+---
+
+## 14. Next Steps
+
+| Action                                      | Where                                                                                     |
+|---------------------------------------------|-------------------------------------------------------------------------------------------|
+| Add unit + integration tests                | `tests/Feature` in each app                                                               |
+| Configure CI (GitHub Actions)               | Add `.github/workflows/*.yml` to root repo                                                  |
+| Add cross-stack port isolation              | Consider remapping assembly-local MySQL/Mailpit/Seq ports                                 |
+| Document API integration tests              | Extend `assemblies/loa-cert-platform/test-suite.md`                                       |
+
+---
+
+## 15. Gotchas & Troubleshooting
+
+See sections 9 (Known Issues), 10, 11 in this file, plus the assembly-specific runbooks linked above for additional port conflict notes and Seq setup details.
