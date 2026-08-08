@@ -76,7 +76,11 @@
                             <tr>
                                 <td class="cell-user">
                                     <strong>
-                                        <a href="{{ route('admin.tenants.group.show', [$group->tenant_id, $group->id]) }}">{{ $group->name }}</a>
+                                        @if ($group->tenant_id)
+                                            <a href="{{ route('admin.tenants.group.show', [$group->tenant_id, $group->id]) }}">{{ $group->name }}</a>
+                                        @else
+                                            <a href="{{ route('admin.groups.show', $group->id) }}">{{ $group->name }}</a>
+                                        @endif
                                     </strong>
                                 </td>
                                 <td class="muted">{{ $group->description ?? '—' }}</td>

@@ -183,6 +183,22 @@ class WebAdminController extends Controller
 
     // ─── v2: Tenant management ─────────────────────────────────────
 
+    public function tenantsIndex(): View
+    {
+        $tenants = Tenant::withCount('users')
+            ->orderBy('name')
+            ->paginate(25);
+
+        return view('admin.tenants.index', [
+            'tenants' => $tenants,
+        ]);
+    }
+
+    public function tenantsCreate(): View
+    {
+        return view('admin.tenants.create');
+    }
+
     public function tenantsStore(Request $request): RedirectResponse
     {
         $validator = Validator::make($request->all(), [

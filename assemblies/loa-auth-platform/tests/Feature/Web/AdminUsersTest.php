@@ -106,4 +106,11 @@ class AdminUsersTest extends TestCase
 
         $response->assertOk();
     }
+
+    public function testAdminCanViewUserDetail(): void
+    {
+        $response = $this->actingAs($this->admin, 'web')->get("/admin/users/{$this->admin->id}");
+
+        $response->assertOk();
+    }
 }

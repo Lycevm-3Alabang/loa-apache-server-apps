@@ -117,6 +117,44 @@ docker compose exec cert-app php artisan db:seed --force
 docker compose exec cert-app php artisan l5-swagger:generate
 ```
 
+### Full reset (clear all Docker resources across every stack)
+
+> **Why this exists:** `docker compose down -v` is **project-scoped** — it only tears down the
+> root `loa-platform` stack. If an assembly-local stack (`loa-auth` or `loa-cert`) is still
+> running, it keeps holding the shared host ports (MySQL `33060`, nginx `8080`/`9001`, Mailpit
+> `1025`/`8026`, Seq `5341`) and the root stack fails to start with
+> `Bind for 0.0.0.0:<port> failed: port is already allocated`, leaving services like
+> `auth-app` in `Created` and `docker compose exec auth-app ...` failing with
+> `service "auth-app" is not running`.
+
+This recipe stops and removes **all** containers and volumes across the root stack **and** both
+assembly-local stacks, then prunes dangling resources, so every port is freed before rebuild.
+
+```bash
+# 1. Tear down the root stack AND both assembly-local stacks (removes containers + volumes)
+docker compose down -v
+docker compose -f assemblies/loa-auth-platform/docker-compose.yml down -v
+docker compose -f assemblies/loa-cert-platform/docker-compose.yml down -v
+
+# 2. (Optional) clear any remaining dangling containers/images/volumes/networks
+docker system prune -f --volumes
+
+# 3. Rebuild and start the root stack from a clean slate
+docker compose up -d --build
+
+# 4. Migrate + seed + Swagger for both apps
+docker compose exec auth-app php artisan migrate --force
+docker compose exec auth-app php artisan db:seed --force
+docker compose exec auth-app php artisan l5-swagger:generate
+docker compose exec cert-app php artisan migrate --force
+docker compose exec cert-app php artisan db:seed --force
+docker compose exec cert-app php artisan l5-swagger:generate
+```
+
+> If you only ever use the root stack, step 2 alone is sufficient. If you switch between the
+> root stack and an assembly-local stack, always `down -v` the one you're switching *to* as well,
+> or remap the conflicting ports in the assembly compose file.
+
 ### Start everything (already set up)
 
 ```bash
