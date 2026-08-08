@@ -1,7 +1,7 @@
 # LOA Cert Platform
 ## Product Assembly Specification
 
-**Version:** 1.0
+**Version:** 1.1
 **Status:** Draft
 **Layer:** Product Assembly
 **Audience:** Architects, Engineers, AI Development Agents
@@ -438,21 +438,9 @@ Content-Type: application/json
 
 ## 11.8 Auth Platform Configuration Reference
 
-The Auth Platform must include `https://e-cert.vercel.app` in its allowed redirects:
+> **Side-note — how Auth is provisioned.** The actual Auth-side setup (the `loa` tenant, `redirect_origins`, `AUTH_ALLOWED_REDIRECTS`, `ENCRYPTION_KEY`, endpoint catalog, groups + grants) is owned by Auth and performed **manually at deploy-time** per the Auth runbook **`assemblies/loa-auth-platform/cert-readiness.md`** — not via raw SQL here. This section only records what the Cert Platform requires of it: `https://e-cert.vercel.app` must be an allowed SSO redirect origin (Auth `AUTH_ALLOWED_REDIRECTS` and/or the `loa` tenant's `redirect_origins`), and `ENCRYPTION_KEY` must match the shared value.
 
-```env
-# Auth Platform .env
-AUTH_ALLOWED_REDIRECTS=https://aces-api.lyceumalabang.edu.ph,https://e-cert.vercel.app
-ENCRYPTION_KEY=<shared_key>
-```
-
-Tenant-level configuration (if using multi-tenancy):
-
-```sql
-UPDATE tenants
-SET redirect_origins = '["https://e-cert.vercel.app"]'
-WHERE slug = 'loa';
-```
+> Implementing the Cert-side consumers (SSO `callback`/`refresh`/`logout`, `jwt.auth`/`jwt.endpoint`) is **deferred** to a later auth phase (2026-08-06, decision #20 in `api-endpoints.md` §8); this contract stands as the target.
 
 ---
 
@@ -872,3 +860,9 @@ Business logic lives in Business Contexts, Domains, and Kernels.
 Assemblies are composable products.
 
 Products grow by adding Business Contexts.
+
+---
+
+## Document Control
+
+- **Status:** Draft v1.1 — 2026-08-06: §11.8 **Auth Platform Configuration Reference** converted to a **side-note** pointing at the Auth runbook `assemblies/loa-auth-platform/cert-readiness.md` (removed inline `.env` + raw `tenants` SQL); added note that Cert-side auth implementation is deferred (decision #20, `api-endpoints.md` §8).

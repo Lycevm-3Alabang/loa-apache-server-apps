@@ -54,6 +54,11 @@ class IdentityService
             throw new \Exception('Account is disabled');
         }
 
+        if ($user && $user->status === 'pending') {
+            $this->recordAttempt(null, $email, $ipAddress, false);
+            throw new \Exception('Account not activated');
+        }
+
         if (!$user || !Hash::check($password, $user->password)) {
             $this->recordAttempt($user?->id, $email, $ipAddress, false);
 

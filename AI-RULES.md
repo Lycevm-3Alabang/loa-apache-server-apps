@@ -3,7 +3,7 @@
 # Automotive Business Platform
 ## AI Development Rules
 
-**Version:** 1.0
+**Version:** 1.1
 **Status:** Approved
 **Audience:** AI Coding Agents, Engineers
 
@@ -43,6 +43,17 @@ Rule 0 restricts **implementation code** (app code, migrations, routes, blade vi
 
 ---
 
+
+# ⛔ RULE 0.5: NO CLI Command Execution — MANDATORY
+
+**The AI agent MUST NOT execute ANY CLI/terminal commands** — including but not limited to `docker`, `docker compose`, `git`, `composer`, `npm`, `php`, `artisan`, `curl`, `ssh`, and any PowerShell/bash command — **without explicit user permission in the current session.**
+
+- **No command execution means NO command execution.** This applies even to read-only or "harmless" commands (e.g., `docker compose ps`, `git status`, `ls`). If the agent is not explicitly authorized, it must not run it.
+- **Report, don't run.** When a command would be needed, the agent should describe the command it wants to run, state what it expects, and wait for explicit approval.
+- **Violating this rule is a failure.** "It was just a read-only command" is not an excuse.
+- **Exception:** A user's explicit, current-session instruction to run a specific command or to execute a task that requires running commands grants permission for that command/task only. Permission is never assumed or carried over from earlier sessions.
+
+---
 
 # 1. Naming Conventions
 
@@ -480,6 +491,10 @@ Before generating or modifying **implementation code**:
 **The AI agent MUST NOT act autonomously. Every significant action requires explicit user confirmation.**
 
 This is a strict behavioral rule, not a suggestion. Violations are treated as failures.
+
+### No CLI Command Execution
+
+Per **RULE 0.5**, the agent must not execute ANY CLI/terminal command without explicit user permission in the current session. Describe the command, state the expected outcome, and wait for approval.
 
 ### What Requires User Confirmation
 

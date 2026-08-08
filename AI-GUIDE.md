@@ -859,6 +859,73 @@ Before finalizing generated code:
 
 ---
 
+# Laravel Assembly Scaffolding Checklist
+
+When scaffolding a new Laravel assembly, **all** of these must exist or artisan will break silently:
+
+| File | Purpose | Notes |
+|------|---------|-------|
+| `artisan` | CLI entry point | Without it, `php artisan migrate`, `db:seed`, `l5-swagger:generate`, etc. all fail with "Command not defined" |
+| `public/index.php` | HTTP entry point | Without it, the app returns 500 on every request |
+| `bootstrap/app.php` | Application bootstrap | Must NOT contain a `providers` array — Laravel 11+ auto-registers providers; manual list breaks artisan |
+| `.env` | Environment config | All values with spaces **must** be quoted (see below) |
+| `config/app.php` | App config | Must NOT contain a `providers` array — same reason as bootstrap |
+| `routes/api.php` | API routes | Must exist even if empty, or `withRouting(api: ...)` in bootstrap fails |
+
+---
+
+# ⚠️ Recurring Gotchas
+
+## `.env` quoting
+
+Laravel's dotenv parser fails on unquoted spaces. This causes cryptic bootstrap errors like:
+
+```
+Failed to parse dotenv file. Encountered unexpected whitespace at [Super Admin]
+```
+
+**Every value with a space must be quoted:**
+
+```
+# Wrong
+APP_NAME=LOA Cert Platform
+ADMIN_NAME=Super Admin
+
+# Correct
+APP_NAME="LOA Cert Platform"
+ADMIN_NAME="Super Admin"
+```
+
+The container `environment:` block in docker-compose overrides `.env`, but any key **not** set there falls back to the `.env` file. If the `.env` has unquoted spaces, the app crashes.
+
+**When copying `.env` between directories**, verify all values with spaces are quoted.
+
+## `artisan` missing
+
+If artisan commands fail with "Command not defined" or similar, check that the `artisan` file exists in the Laravel app root (not a subdirectory). It must contain:
+
+```php
+#!/usr/bin/env php
+<?php
+
+use Symfony\Component\Console\Input\ArgvInput;
+
+define('LARAVEL_START', microtime(true));
+
+require __DIR__.'/vendor/autoload.php';
+
+$status = (require_once __DIR__.'/bootstrap/app.php')
+    ->handleCommand(new ArgvInput);
+
+exit($status);
+```
+
+## `config/app.php` must not list providers
+
+Laravel 11+ auto-registers service providers via `Application::configure()`. If `config/app.php` contains a `providers` array, it overrides auto-registration and breaks artisan commands (`migrate`, `db:seed`, etc.).
+
+---
+
 # Guiding Principle
 
 Every piece of generated code should strengthen the architecture rather than weaken it.

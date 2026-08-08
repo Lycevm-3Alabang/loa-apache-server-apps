@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Services\ActivationService;
 use App\Services\EncryptionService;
 use App\Services\IdentityService;
 use App\Services\PasswordResetNotificationService;
@@ -11,6 +12,7 @@ use App\Services\TenantService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
@@ -21,6 +23,7 @@ class WebAuthController extends Controller
         private readonly PasswordResetNotificationService $passwordResetNotifications,
         private readonly TenantService $tenants,
         private readonly EncryptionService $encryption,
+        private readonly ActivationService $activation,
     ) {
     }
 
@@ -123,27 +126,70 @@ class WebAuthController extends Controller
     {
         return view('register');
     }
-
-    public function showRedirect(Request $request): View|RedirectResponse
+    
+    public function showActivate(Request $request): View|RedirectResponse
     {
-        $encrypted = $request->session()->pull('redirect_payload');
-        $fragment = $request->session()->pull('redirect_fragment');
-        $url = $request->session()->pull('redirect_url');
-
-        if ((!$encrypted && !$fragment) || !$url) {
+        $token = $request->query('token');
+        
+        if (!$token) {
             return redirect()->route('login');
         }
+        
+        try {
+            // Validate token (lookup hashed version in database)
+            $hashedToken = hash('sha256', $token);
+            $activation = \App\Models\Activation::where('token', $hashedToken)
+                ->whereNull('activated_at')
+                ->first();
+                
+            if (!$activation || $activation->isExpired()) {
+                return redirect()->route('login')->with('error', 'Invalid or expired activation token.');
+            }
+            
+            // Get the user from activation
+            $user = \App\Models\User::find($activation->user_id);
+            if (!$user) {
+                return redirect()->route('login')->with('error', 'User not found');
+            }
+            
+            return view('activate', [
+                'email' => $user->email,
+                'token' => $token
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->route('login')->with('error', 'Invalid or expired activation token.');
+        }
+    }
 
-        if ($encrypted) {
-            $fullUrl = $url.'#payload='.$encrypted;
-        } else {
-            $fullUrl = $url.'#'.$fragment;
+    public function activate(Request $request): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+            'password' => [
+                'required', 
+                'string', 
+                'min:8',
+                'regex:/[A-Z]/', 
+                'regex:/[a-z]/', 
+                'regex:/[0-9]/',
+            ],
+            'password_confirmation' => 'required|string|same:password',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withInput($request->except('password', 'password_confirmation'))->withErrors($validator);
         }
 
-        return view('redirect', [
-            'url' => $url,
-            'full_url' => $fullUrl,
-        ]);
+        try {
+            $user = $this->activation->activate($request->input('token'), $request->input('password'));
+            
+            // Redirect to login with success message
+            return redirect()->route('login')->with('status', 'Account activated. Please sign in.');
+        } catch (\Exception $e) {
+            return back()
+                ->withInput($request->except('password', 'password_confirmation'))
+                ->withErrors(['token' => $e->getMessage()]);
+        }
     }
 
     public function register(Request $request): RedirectResponse

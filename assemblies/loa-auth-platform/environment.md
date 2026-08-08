@@ -29,10 +29,10 @@ The local stack is defined in `docker-compose.yml` at the assembly root.
 
 | Service | Image | Purpose |
 |---------|-------|---------|
-| `app` | custom `php:8.3-fpm` build (`docker/php/Dockerfile`) | PHP-FPM runtime + Composer |
+| `auth-app` | custom `php:8.3-fpm` build (`docker/php/Dockerfile`) | PHP-FPM runtime + Composer |
 | `nginx` | `nginx:1.27-alpine` | Web server, serves `public/` on port 8080 |
 | `mysql` | `mysql:8.0` | Database `loa_auth` (matches production MySQL 8) |
-| `scheduler` | same image as `app` | Runs `php artisan schedule:work` (daily prune job) |
+| `scheduler` | same image as `auth-app` | Runs `php artisan schedule:work` (daily prune job) |
 | `mailpit` | `axllent/mailpit` | SMTP capture on 1025, web UI on 8025 (dev email) |
 
 ## 2.2 Ports
@@ -56,12 +56,12 @@ Run from the assembly root (`assemblies/loa-auth-platform/`):
 
 ```
 docker compose up -d --build         # start the stack
-docker compose exec app bash         # shell into the app container
-docker compose exec app composer install
-docker compose exec app php -l app/Services/IdentityService.php
-docker compose exec app php artisan migrate
-docker compose exec app php artisan tinker
-docker compose logs -f app           # app logs
+docker compose exec auth-app bash         # shell into the app container
+docker compose exec auth-app composer install
+docker compose exec auth-app php -l app/Services/IdentityService.php
+docker compose exec auth-app php artisan migrate
+docker compose exec auth-app php artisan tinker
+docker compose logs -f auth-app           # app logs
 docker compose down                  # stop the stack (keeps DB volume)
 docker compose down -v               # stop + delete DB volume (fresh start)
 ```

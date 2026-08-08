@@ -18,8 +18,8 @@ Route::get('/', function () {
 Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [WebAuthController::class, 'login']);
 
-Route::get('/register', [WebAuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [WebAuthController::class, 'register'])
+Route::get('/activate', [WebAuthController::class, 'showActivate'])->name('activate');
+Route::post('/activate', [WebAuthController::class, 'activate'])
     ->middleware('throttle:5,60');
 
 Route::get('/forgot-password', [WebAuthController::class, 'showForgotPassword'])
@@ -36,6 +36,7 @@ Route::get('/redirect', [WebAuthController::class, 'showRedirect'])
     ->middleware('auth:web');
 
 Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
+    Route::post('/users/{id}/resend-activation', [WebAdminController::class, 'resendActivation'])->name('admin.users.resend-activation');
     Route::get('/users', [WebAdminController::class, 'index'])->name('admin.users');
     Route::get('/users/create', [WebAdminController::class, 'create'])->name('admin.users.create');
     Route::post('/users', [WebAdminController::class, 'store'])->name('admin.users.store');
@@ -65,22 +66,18 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::post('/tenants/{tenant}/groups', [WebAdminController::class, 'tenantsGroupsStore'])->name('admin.tenants.groups.store');
     
     // NEW: Group detail landing page
-    Route::get('/tenants/{tenant}/groups/{group_id}', [WebAdminController::class, 'tenantsGroupShow'])
-        ->name('admin.tenants.group.show')
-        ->where(['group_id' => '[0-9]+']);
+    Route::get('/tenants/{tenant}/groups/{group}', [WebAdminController::class, 'tenantsGroupShow'])
+        ->name('admin.tenants.group.show');
     
     // NEW: Group endpoints / permissions page (replaces inline)
-    Route::get('/tenants/{tenant}/groups/{group_id}/endpoints', [WebAdminController::class, 'tenantsGroupEndpoints'])
-        ->name('admin.tenants.group.endpoints')
-        ->where(['group_id' => '[0-9]+']);
-    Route::post('/tenants/{tenant}/groups/{group_id}/endpoints', [WebAdminController::class, 'tenantsGroupsPermissions'])
-        ->name('admin.tenants.group.endpoints.save')
-        ->where(['group_id' => '[0-9]+']);
+    Route::get('/tenants/{tenant}/groups/{group}/endpoints', [WebAdminController::class, 'tenantsGroupEndpoints'])
+        ->name('admin.tenants.group.endpoints');
+    Route::post('/tenants/{tenant}/groups/{group}/endpoints', [WebAdminController::class, 'tenantsGroupsPermissions'])
+        ->name('admin.tenants.group.endpoints.save');
     
     // NEW: Group members page
-    Route::get('/tenants/{tenant}/groups/{group_id}/members', [WebAdminController::class, 'tenantsGroupMembers'])
-        ->name('admin.tenants.group.members')
-        ->where(['group_id' => '[0-9]+']);
+    Route::get('/tenants/{tenant}/groups/{group}/members', [WebAdminController::class, 'tenantsGroupMembers'])
+        ->name('admin.tenants.group.members');
     Route::post('/tenants/{tenant}/members', [WebAdminController::class, 'tenantsMembersStore'])->name('admin.tenants.members');
 
     // Tenant endpoint catalog
@@ -90,11 +87,6 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::patch('/tenants/{tenant}/endpoints', [EndpointGrantController::class, 'catalogUpdate'])->name('admin.tenants.endpoints.update');
     Route::delete('/tenants/{tenant}/endpoints', [EndpointGrantController::class, 'catalogDestroy'])->name('admin.tenants.endpoints.destroy');
     Route::get('/tenants/{tenant}/endpoints/validate', [EndpointGrantController::class, 'catalogValidate'])->name('admin.tenants.endpoints.validate');
-
-    // Group endpoint grants
-    Route::get('/tenants/{tenant}/groups/{group}/endpoints', [EndpointGrantController::class, 'groupGrantsIndex'])->name('admin.tenants.groups.endpoints');
-    Route::post('/tenants/{tenant}/groups/{group}/endpoints', [EndpointGrantController::class, 'groupGrantStore'])->name('admin.tenants.groups.endpoints.grant');
-    Route::delete('/tenants/{tenant}/groups/{group}/endpoints', [EndpointGrantController::class, 'groupGrantDestroy'])->name('admin.tenants.groups.endpoints.revoke');
 
     // User endpoint overrides
     Route::get('/users/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverridesIndex'])->name('admin.users.endpoint-overrides');

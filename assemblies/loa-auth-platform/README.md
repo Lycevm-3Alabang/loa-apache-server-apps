@@ -294,10 +294,10 @@ cd assemblies/loa-auth-platform
 docker compose up -d
 
 # Run all tests inside the app container
-docker compose exec app php vendor/bin/phpunit
+docker compose exec auth-app php vendor/bin/phpunit
 
 # Run a specific test file
-docker compose exec app php vendor/bin/phpunit tests/Feature/Api/PermissionPolicy/ClaimPolicyMiddlewareTest.php
+docker compose exec auth-app php vendor/bin/phpunit tests/Feature/Api/PermissionPolicy/ClaimPolicyMiddlewareTest.php
 
 # Stop the stack
 docker compose down

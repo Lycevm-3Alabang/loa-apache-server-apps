@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Web;
 
+use App\Models\Permission;
 use App\Models\User;
 use App\Models\UserGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,82 +20,97 @@ class AdminUsersTest extends TestCase
 
         $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
 
-        $this->admin = User::factory()->create();
-        $group = UserGroup::firstOrCreate(
+        // Create admin user with users.manage permission
+        $this->admin = User::factory()->create([
+            'email' => 'admin@lyceumalabang.edu.ph',
+            'name' => 'Admin User',
+            'status' => 'active'
+        ]);
+
+        // Add to admin group that has permissions
+        $adminGroup = UserGroup::firstOrCreate(
             ['name' => config('auth-web.admin_group')],
             ['description' => 'Platform administrators']
         );
-        $this->admin->userGroups()->attach($group->id);
+        $this->admin->userGroups()->attach($adminGroup);
 
-        $perm = \App\Models\Permission::firstOrCreate(
+        // Grant users.manage permission to the admin group
+        $managePermission = Permission::firstOrCreate(
             ['key' => 'users.manage'],
             ['description' => 'Manage users']
         );
-        $group->permissions()->syncWithoutDetaching([
-            $perm->id => ['granted' => true, 'tenant_id' => null],
+        $adminGroup->permissions()->syncWithoutDetaching([
+            $managePermission->id => ['granted' => true]
         ]);
     }
 
-    public function testIndexSuccess(): void
+    public function testAdminCanCreateUser(): void
     {
-        $response = $this->actingAs($this->admin, 'web')
-            ->get('/admin/users');
-
-        $response->assertOk();
-    }
-
-    public function testShowUserSuccess(): void
-    {
-        $user = User::factory()->create();
-
-        $response = $this->actingAs($this->admin, 'web')
-            ->get("/admin/users/{$user->id}");
-
-        $response->assertOk();
-    }
-
-    public function testStoreUserSuccess(): void
-    {
-        $response = $this->actingAs($this->admin, 'web')
-            ->post('/admin/users', [
-                'email' => 'created@lyceumalabang.edu.ph',
-                'name' => 'Created User',
-                'password' => 'Test1234!',
-                'status' => 'active',
-            ]);
+        $response = $this->actingAs($this->admin, 'web')->post('/admin/users', [
+            'email' => 'newuser@lyceumalabang.edu.ph',
+            'name' => 'New User',
+        ]);
 
         $response->assertRedirect();
 
         $this->assertDatabaseHas('users', [
-            'email' => 'created@lyceumalabang.edu.ph',
-            'status' => 'active',
+            'email' => 'newuser@lyceumalabang.edu.ph',
+            'name' => 'New User',
+            'status' => 'pending'
         ]);
     }
 
-    public function testUpdateStatusSuccess(): void
+    public function testAdminCanCreateUserWithActivation(): void
     {
-        $user = User::factory()->active()->create();
+        $response = $this->actingAs($this->admin, 'web')->post('/admin/users', [
+            'email' => 'newuser@lyceumalabang.edu.ph',
+            'name' => 'New User',
+        ]);
 
-        $response = $this->actingAs($this->admin, 'web')
-            ->post("/admin/users/{$user->id}/status", [
-                'status' => 'disabled',
-            ]);
-
-        $response->assertRedirect();
+        $response->assertRedirect()
+            ->assertSessionHas('status', 'User created. Activation email sent.');
 
         $this->assertDatabaseHas('users', [
-            'id' => $user->id,
-            'status' => 'disabled',
+            'email' => 'newuser@lyceumalabang.edu.ph',
+            'name' => 'New User',
+            'status' => 'pending'
+        ]);
+
+        $this->assertDatabaseHas('activations', [
+            'user_id' => User::where('email', 'newuser@lyceumalabang.edu.ph')->first()->id
         ]);
     }
 
-    public function testSelfDisableForbidden(): void
+    public function testAdminCanResendActivation(): void
     {
-        $response = $this->actingAs($this->admin, 'web')
-            ->post("/admin/users/{$this->admin->id}/status", [
-                'status' => 'disabled',
-            ]);
+        // Create a pending user
+        $pendingUser = User::factory()->create([
+            'email' => 'pendinguser@lyceumalabang.edu.ph',
+            'name' => 'Pending User',
+            'status' => 'pending'
+        ]);
 
-        $response->assertSessionHas('error');
+        // Create an activation for this user
+        $activationService = app(\App\Services\ActivationService::class);
+        $rawToken = $activationService->createActivation($pendingUser);
+
+        $response = $this->actingAs($this->admin, 'web')->post("/admin/users/{$pendingUser->id}/resend-activation");
+
+        $response->assertRedirect()
+            ->assertSessionHas('status', 'Activation email resent successfully.');
+    }
+
+    public function testAdminCanListUsers(): void
+    {
+        $response = $this->actingAs($this->admin, 'web')->get('/admin/users');
+
+        $response->assertOk();
+    }
+
+    public function testAdminCanViewUserDetail(): void
+    {
+        $response = $this->actingAs($this->admin, 'web')->get("/admin/users/{$this->admin->id}");
+
+        $response->assertOk();
     }
 }

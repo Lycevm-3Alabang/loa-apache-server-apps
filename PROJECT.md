@@ -2,7 +2,7 @@
 ## Project Tracker
 
 **Started:** 2026-07-30
-**Last Updated:** 2026-08-03
+**Last Updated:** 2026-08-07
 **Target:** cPanel (PHP 8.3+ / MySQL 8 / Laravel 12)
 
 ---
@@ -62,6 +62,8 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Context | Certificate | `business-contexts/certificate/README.md` | ✅ Draft |
 | Context | Certificate (aggregate) | `business-contexts/certificate/certificate.md` | ✅ Draft |
 | Context | Certificate Template | `business-contexts/certificate/template.md` | ✅ Draft |
+| Context | Event | `business-contexts/certificate/event.md` | ✅ Final |
+| Context | Event Attendee | `business-contexts/certificate/event-attendee.md` | ✅ Final |
 
 ## Product Assemblies
 

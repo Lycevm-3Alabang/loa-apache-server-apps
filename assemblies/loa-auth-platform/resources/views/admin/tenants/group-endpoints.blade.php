@@ -32,7 +32,7 @@
 
     {{-- Endpoint grants form --}}
     <div class="detail-card">
-        <form method="post" action="{{ route('admin.tenants.groups.endpoints.store', [$tenant, $group]) }}">
+        <form method="post" action="{{ route('admin.tenants.group.endpoints.save', [$tenant, $group]) }}">
             @csrf
             <div class="section-header">
                 <h2>Endpoint Grants</h2>
