@@ -850,6 +850,225 @@
                     }
                 }
             }
+        },
+        "/api/v1/admin/users/import/preview": {
+            "post": {
+                "tags": [
+                    "Admin",
+                    "Users"
+                ],
+                "summary": "Preview CSV upload for bulk user import (dry-run validation)",
+                "operationId": "10a64055bc7b42095a98498513067783",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "file": {
+                                        "description": "CSV file with headers: name,email,tenant_app,user_group",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "CSV validated successfully, preview returned",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "preview"
+                                        },
+                                        "rows": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "summary": {
+                                            "type": "object"
+                                        },
+                                        "headers": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - requires users.manage permission",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrors"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/users/import/process": {
+            "post": {
+                "tags": [
+                    "Admin",
+                    "Users"
+                ],
+                "summary": "Execute bulk user import (upsert users + tenant/group assignments)",
+                "operationId": "e68c3d1cb010c9f9def8c66da37b059a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "removed_rows": {
+                                        "description": "Array of row indices removed from preview",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Import processed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "applied"
+                                        },
+                                        "processed": {
+                                            "type": "integer",
+                                            "example": 450
+                                        },
+                                        "failed": {
+                                            "type": "integer",
+                                            "example": 50
+                                        },
+                                        "failed_rows": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - requires users.manage permission",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "No import data in session",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/users/import/failed": {
+            "get": {
+                "tags": [
+                    "Admin",
+                    "Users"
+                ],
+                "summary": "Download CSV of failed import rows",
+                "operationId": "2f16a635818f6645ccdf995577898229",
+                "responses": {
+                    "200": {
+                        "description": "CSV file of failed rows",
+                        "content": {
+                            "text/csv": {}
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - requires users.manage permission",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -937,6 +1156,10 @@
         {
             "name": "Users",
             "description": "User management (admin)"
+        },
+        {
+            "name": "Admin",
+            "description": "Admin"
         }
     ],
     "security": [

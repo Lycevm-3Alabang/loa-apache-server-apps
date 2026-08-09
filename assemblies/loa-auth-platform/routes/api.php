@@ -84,6 +84,12 @@ Route::prefix('v1')->group(function () {
         Route::delete('/{id}/endpoint-overrides', [EndpointGrantController::class, 'userOverrideDestroy']);
     });
 
+    Route::prefix('admin/users/import')->middleware(['jwt.auth', 'jwt.permission:users.manage'])->group(function () {
+        Route::post('/preview', [App\Http\Controllers\UserImportController::class, 'preview']);
+        Route::post('/process', [App\Http\Controllers\UserImportController::class, 'process']);
+        Route::get('/failed', [App\Http\Controllers\UserImportController::class, 'downloadFailed']);
+    });
+
     Route::prefix('admin/tenants')->middleware(['jwt.auth', 'jwt.permission:users.manage'])->group(function () {
         Route::get('/{tenant}/access-config/template', [App\Http\Controllers\AccessConfigController::class, 'template']);
         Route::get('/{tenant}/access-config/export', [App\Http\Controllers\AccessConfigController::class, 'export']);

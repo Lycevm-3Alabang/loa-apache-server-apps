@@ -36,6 +36,12 @@ Route::get('/redirect', [WebAuthController::class, 'showRedirect'])
     ->middleware('auth:web');
 
 Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
+    // Bulk User Import (must come before /users/{id} route)
+    Route::get('/users/import', [App\Http\Controllers\UserImportController::class, 'showForm'])->name('admin.users.import');
+    Route::post('/users/import/preview', [App\Http\Controllers\UserImportController::class, 'preview'])->name('admin.users.import.preview');
+    Route::post('/users/import/process', [App\Http\Controllers\UserImportController::class, 'process'])->name('admin.users.import.process');
+    Route::get('/users/import/failed', [App\Http\Controllers\UserImportController::class, 'downloadFailed'])->name('admin.users.import.failed');
+
     Route::post('/users/{id}/resend-activation', [WebAdminController::class, 'resendActivation'])->name('admin.users.resend-activation');
     Route::get('/users', [WebAdminController::class, 'index'])->name('admin.users');
     Route::get('/users/create', [WebAdminController::class, 'create'])->name('admin.users.create');
