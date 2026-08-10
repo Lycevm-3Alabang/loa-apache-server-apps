@@ -5,11 +5,22 @@ namespace Tests\Unit;
 use Tests\TestCase;
 use App\Models\Event;
 use App\Models\EventAttendee;
+use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class AttendeeControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['cert-platform.organization_id' => Organization::create([
+            'name' => 'Lyceum of Alabang',
+            'slug' => 'loa',
+        ])->id]);
+    }
 
     public function test_attendee_index_returns_collection()
     {

@@ -56,37 +56,28 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-08 (Session 9)
+### Date: 2026-08-10 (Session 10)
 ### Completed
-- **Phase C Scaffold Review:** Verified actual implementation state vs spec (`api-endpoints.md` v1.4 Final).
-- **CertificateTemplateController:** ✅ Complete (5 endpoints: CRUD with locking logic) — OpenAPI documented, tests passing.
-- **CertificateController:** ✅ Complete (14 endpoints: CRUD + bulk issue/revoke/reissue/expire + PDF/QR/email logs) — OpenAPI documented, tests passing.
-- **PdfService + PlaceholderResolver:** ✅ Complete — DOMPDF integrated, 8 placeholders supported, unit tests passing.
-- **Docker + Swagger Infrastructure:** ✅ Complete — standalone docker-compose, l5-swagger with PHP 8 attributes.
-- **Models & Migrations:** ✅ Complete for all entities (Organization, Event, EventAttendee, CertificateTemplate, Certificate, CertificateSequence, CertificateEmail).
+- **Events & Attendees resource groups: COMPLETE per `api-endpoints.md` v1.4 (Final).**
+  - **Events (13 endpoints):** CRUD + real `stats()`, `clone-template`, `clone-email-template`, `bulk-issue`, `reissue`, `issue-completed`, `revoke-expired` (GET count + POST action). All OpenAPI-annotated.
+  - **Attendees (8 endpoints):** list, create (upsert by event+email → 201), import (JSON, `merge`/`replace`, replace requires `confirm=true`), update (PATCH, event-scoped email conflict), destroy, destroy-with-cert, delete-preview, file-data (template → 200, missing file → 410, else Storage download). All OpenAPI-annotated.
+  - Routes registered in `routes/api.php` (PATCH for updates per spec; nested `events/{eventId}/attendees` group).
+- **Test suite: GREEN — 91 tests, 334 assertions pass** (`docker compose exec -T cert-app vendor/bin/phpunit`; `php artisan test` not defined).
+  - New feature tests: `tests/Feature/Api/EventTest.php` (13 endpoints), `tests/Feature/Api/AttendeeTest.php` (8 endpoints + variations).
+- **Bugs fixed during suite run:** composite-PK sequence increment (`certificate_sequences`, `where id is null`) in `CertificateNumberService` + `CertificateController`; `destroy*()` returned `Response` against `: JsonResponse` type → `response()->json(null, 204)`; `CertificateController::store` attendee `firstOrCreate` missing `organization_id` + `$event` null scope; `expire()` counted revoked AFTER update (always 0); `PdfService` DomPDF v3 (facade + `loadHtml` signature); `Organization` model missing `HasFactory`; factories (`Organization` unique slug, `EventAttendee` + `organization_id`).
+- **Infra:** dev deps added to `composer.json` (`phpunit ^12.5` 12.5.33 — 13.x needs PHP ≥8.4.1, container is 8.3.33; `mockery ^1.6`; `fakerphp/faker ^1.24`), `autoload-dev` `Tests\`; created host `bootstrap/cache` + `storage/framework/{cache,sessions,views}` + `storage/logs` (volume shadowing); renamed `database/Migrations` → `database/migrations` (git mv; was only working on Windows host via case-insensitive mount — would break cPanel/Linux).
+- **Cleanup:** removed dead duplicate `app/Http/Controllers/Api/CertificateTemplateController.php`; deleted `.tmp_debug.php` debug script.
 
-### Current State — Events & Attendees (Per Spec vs Implementation)
-| Resource Group | Spec Endpoints | Implemented | Missing |
-|----------------|----------------|-------------|---------|
-| **Events** | 13 (§5.1) | 6 (CRUD + stats stub) | 7: clone-template, clone-email-template, bulk-issue, reissue, revoke-expired (count+action), issue-completed |
-| **Attendees** | 8 (§5.2) | 0 | All 8: list, create (upsert), import (JSON), update, destroy, destroy-with-cert, delete-preview, file-data |
-
-**EventController** (`app/Http/Controllers/EventController.php`): Has basic CRUD (index, store, show, update, destroy) + stats stub (returns mock data). **No OpenAPI attributes.** Routes not registered in `routes/api.php`.
-
-**AttendeeController:** Does not exist.
-
-**Tests:** Only basic Unit tests for Event CRUD (`tests/Unit/EventControllerTest.php`). No Feature tests for advanced endpoints, no Attendee tests.
+### Notes / Caveats
+- **NOT committed.** All changes above are working-tree only (incl. new files `CertificateNumberService.php`, the two feature test files, factories dir).
+- **Test DB (2026-08-10):** SQLite is a non-goal. `phpunit.xml.dist` now forces MySQL (`force="true"` on `DB_*`, so it beats the compose shell env) against a dedicated **`loa_cert_test`** database (created + granted to `loa`). Tests no longer touch `loa_cert` app data. The `certificates` migration's MySQL-only `storedAs('IF(...)')` column is intentional — MySQL-only stack.
+- **`cert-app/` leftover dir** (early scaffold) still present at assembly root; compose mounts `.` → `/var/www/html`, so the real app lives at assembly root. Verify before deleting.
+- Test env facts: container service `cert-app`; MySQL DBs `loa_cert` (app) + `loa_cert_test` (tests), user `loa`, pass `loa-secret`.
 
 ### In Progress
-- **Deferred to Auth Phase:** SSO + `jwt.auth`/`jwt.endpoint` middleware implementation (decision #20/D9)
-- **Deferred to Service Phase:** QR code generation, email sending services
-- **Active Work:** Completing Events & Attendees resource groups per `api-endpoints.md` v1.4
+- **Deferred to Auth Phase (C-Auth):** SSO + `jwt.auth`/`jwt.endpoint` middleware (decision #20/D9).
+- **Deferred to Service Phase:** QR code generation, email sending services.
 
 ### Next Action
-- **Complete EventController:** Add 7 missing endpoints + fix `stats()` to return real counts + add OpenAPI attributes to all 13 methods.
-- **Create AttendeeController:** Implement all 8 endpoints with OpenAPI attributes.
-- **Register routes** in `routes/api.php` for Events + Attendees.
-- **Write Feature tests** (`tests/Feature/Api/EventTest.php`, `AttendeeTest.php`) covering all endpoints.
-- **Run tests** and verify all pass.
-
-See `IMPLEMENT_EVENTS_ATTENDEES_PROMPT.txt` for detailed implementation plan.
+- [ ] Commit the completed Events/Attendees work (await explicit user instruction).
+- [ ] Remove leftover `cert-app/` dir (confirm first).

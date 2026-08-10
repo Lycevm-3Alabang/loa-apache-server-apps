@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Certificate;
+use App\Models\Event;
 use App\Models\EventAttendee;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 use OpenApi\Attributes as OA;
 
 #[OA\Tag(name: "Attendees", description: "Event attendee management")]
@@ -105,6 +108,15 @@ class AttendeeController extends Controller
     )]
     public function index(Request $request, string $eventId): JsonResponse
     {
+        $event = Event::find($eventId);
+
+        if (!$event) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event not found.',
+            ], 404);
+        }
+
         $query = EventAttendee::where('event_id', $eventId);
 
         // Apply search filter
@@ -169,28 +181,47 @@ class AttendeeController extends Controller
     )]
     public function store(Request $request, string $eventId): JsonResponse
     {
+        $event = Event::find($eventId);
+
+        if (!$event) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event not found.',
+            ], 404);
+        }
+
         $request->validate([
             'name' => 'required|string',
-            'email' => 'required|email|unique:event_attendees,event_id,' . $eventId . ',event_id,email',
+            'email' => 'required|email',
             'attended' => 'nullable|boolean',
             'completed' => 'nullable|boolean',
             'metadata' => 'nullable|array'
         ]);
 
-        $attendee = EventAttendee::create(array_merge($request->all(), [
-            'event_id' => $eventId,
-            'organization_id' => $this->getOrganizationId()
-        ]));
+        $attendee = EventAttendee::updateOrCreate(
+            ['event_id' => $eventId, 'email' => $request->input('email')],
+            array_merge($request->only(['name', 'attended', 'completed', 'metadata']), [
+                'organization_id' => $event->organization_id,
+            ])
+        );
+
+        if ($request->boolean('attended') && $attendee->attended_at === null) {
+            $attendee->update(['attended_at' => now()]);
+        }
+
+        if ($request->boolean('completed') && $attendee->completed_at === null) {
+            $attendee->update(['completed_at' => now()]);
+        }
 
         return response()->json([
-            'data' => $attendee
+            'data' => $attendee->fresh()
         ], 201);
     }
 
     /**
      * Update the specified attendee in storage.
      */
-    #[OA\Put(
+    #[OA\Patch(
         path: "/api/v1/attendees/{id}",
         summary: "Update attendee",
         tags: ["Attendees"],
@@ -214,17 +245,50 @@ class AttendeeController extends Controller
 
         $request->validate([
             'name' => 'nullable|string',
-            'email' => 'nullable|email|unique:event_attendees,id,' . $id . ',id,email',
+            'email' => 'nullable|email|unique:event_attendees,email,' . $id . ',id,event_id,' . $attendee->event_id,
             'attended' => 'nullable|boolean',
             'completed' => 'nullable|boolean',
+            'attended_at' => 'nullable|date',
+            'completed_at' => 'nullable|date',
             'metadata' => 'nullable|array'
         ]);
 
-        $attendee->update($request->all());
+        $attendee->update($request->only([
+            'name', 'email', 'attended', 'completed', 'attended_at', 'completed_at', 'metadata'
+        ]));
 
         return response()->json([
-            'data' => $attendee
+            'data' => $attendee->fresh()
         ]);
+    }
+
+    /**
+     * Delete an attendee together with its linked certificate.
+     */
+    #[OA\Delete(
+        path: "/api/v1/attendees/{id}/with-cert",
+        summary: "Delete attendee and linked certificate",
+        tags: ["Attendees"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
+        ],
+        responses: [
+            new OA\Response(response: 204, description: "Deleted"),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 404, description: "Not found"),
+        ]
+    )]
+    public function destroyWithCert(string $id): JsonResponse
+    {
+        $attendee = EventAttendee::findOrFail($id);
+
+        if ($attendee->certificate_id) {
+            Certificate::where('id', $attendee->certificate_id)->delete();
+        }
+
+        $attendee->delete();
+
+        return response()->json(null, 204);
     }
 
     /**
@@ -248,7 +312,7 @@ class AttendeeController extends Controller
         $attendee = EventAttendee::findOrFail($id);
         $attendee->delete();
 
-        return response()->noContent();
+        return response()->json(null, 204);
     }
 
     /**
@@ -274,6 +338,15 @@ class AttendeeController extends Controller
     )]
     public function import(Request $request, string $eventId): JsonResponse
     {
+        $event = Event::find($eventId);
+
+        if (!$event) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event not found.',
+            ], 404);
+        }
+
         $request->validate([
             'attendees' => 'required|array',
             'attendees.*.name' => 'required|string',
@@ -283,6 +356,18 @@ class AttendeeController extends Controller
         ]);
 
         $mode = $request->input('mode', 'merge');
+
+        if ($mode === 'replace') {
+            if (!$request->boolean('confirm')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Replacing attendees requires confirm=true.',
+                ], 422);
+            }
+
+            EventAttendee::where('event_id', $eventId)->delete();
+        }
+
         $attendeesData = $request->input('attendees');
 
         // Process the import
@@ -323,7 +408,7 @@ class AttendeeController extends Controller
                     ],
                     array_merge($attendeeData, [
                         'event_id' => $eventId,
-                        'organization_id' => $this->getOrganizationId()
+                        'organization_id' => $event->organization_id
                     ])
                 );
 
@@ -361,22 +446,27 @@ class AttendeeController extends Controller
     )]
     public function deletePreview(string $id): JsonResponse
     {
-        $attendee = EventAttendee::findOrFail($id);
-        
-        // In a real implementation, this would check if attendee has linked certificate
+        $attendee = EventAttendee::with('certificate')->findOrFail($id);
+
+        $certificate = $attendee->certificate;
+
         return response()->json([
             'data' => [
                 'attendee_id' => $attendee->id,
                 'name' => $attendee->name,
                 'email' => $attendee->email,
-                'linked_certificate' => null,
-                'deletes_certificate' => false
+                'linked_certificate' => $certificate ? [
+                    'id' => $certificate->id,
+                    'number' => $certificate->certificate_number,
+                    'status' => $certificate->status,
+                ] : null,
+                'deletes_certificate' => $certificate !== null,
             ]
         ]);
     }
 
     /**
-     * Get attendee file data.
+     * Return the uploaded certificate source file for an attendee.
      */
     #[OA\Get(
         path: "/api/v1/attendees/{id}/file-data",
@@ -389,35 +479,33 @@ class AttendeeController extends Controller
             new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(ref: "#/components/schemas/AttendeeFileDataResponse")),
             new OA\Response(response: 401, description: "Unauthorized"),
             new OA\Response(response: 404, description: "Not found"),
+            new OA\Response(response: 410, description: "File removed"),
         ]
     )]
-    public function fileData(string $id): JsonResponse
+    public function fileData(string $id)
     {
         $attendee = EventAttendee::findOrFail($id);
-        
-        if ($attendee->metadata && isset($attendee->metadata['file_path'])) {
-            // In a real implementation, this would return the actual file
+
+        $metadata = $attendee->metadata ?? [];
+        $mode = $metadata['generation_mode'] ?? 'template';
+
+        if ($mode !== 'file') {
             return response()->json([
                 'data' => [
-                    'generation_mode' => 'file'
+                    'generation_mode' => 'template'
                 ]
             ]);
         }
-        
-        return response()->json([
-            'data' => [
-                'generation_mode' => 'template'
-            ]
-        ]);
-    }
 
-    /**
-     * Get organization ID (placeholder implementation).
-     */
-    private function getOrganizationId(): string
-    {
-        // In a real implementation, this would be retrieved from the JWT or request
-        // For now, we'll return a default organization ID for demo purposes
-        return '123e4567-e89b-12d3-a456-426614174000';
+        $path = $metadata['file_path'] ?? null;
+
+        if (!$path || !Storage::disk('public')->exists($path)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Uploaded file has been removed.',
+            ], 410);
+        }
+
+        return Storage::disk('public')->download($path, $metadata['file_name'] ?? basename($path));
     }
 }

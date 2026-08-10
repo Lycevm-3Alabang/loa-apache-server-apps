@@ -310,8 +310,9 @@ class CertificateTest extends TestCase
 
         $this->assertDatabaseHas('certificates', [
             'id' => $certificate->id,
-            'revoked_at' => now()->format('Y-m-d H'),
+            'revoke_reason' => 'Correction',
         ]);
+        $this->assertNotNull(Certificate::find($certificate->id)->revoked_at);
     }
 
     public function test_reissue_certificate_requires_reason(): void

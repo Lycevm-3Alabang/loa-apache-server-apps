@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Certificate;
 use App\Models\CertificateTemplate;
-use Barryvdh\DomPDF\PDF as DomPDF;
+use Barryvdh\DomPDF\Facade\Pdf as DomPDF;
 use Illuminate\Support\Facades\Storage;
 
 class PdfService
@@ -23,10 +23,7 @@ class PdfService
         }
 
         $html = $this->buildHtml($template, $certificate);
-        $pdf = DomPDF::loadHtml($html, [
-            'isRemoteEnabled' => true,
-            'isHtml5ParserEnabled' => true,
-        ]);
+        $pdf = DomPDF::loadHtml($html);
 
         $pdf->setPaper('letter', 'landscape');
         $pdf->setOption('defaultFont', 'sans-serif');
@@ -48,10 +45,7 @@ class PdfService
         }
 
         $html = $this->buildHtml($template, $certificate);
-        $pdf = DomPDF::loadHtml($html, [
-            'isRemoteEnabled' => true,
-            'isHtml5ParserEnabled' => true,
-        ]);
+        $pdf = DomPDF::loadHtml($html);
 
         $pdf->setPaper('letter', 'landscape');
         $pdf->setOption('defaultFont', 'sans-serif');
@@ -68,10 +62,7 @@ class PdfService
         }
 
         $html = $this->buildHtml($template, $certificate);
-        $pdf = DomPDF::loadHtml($html, [
-            'isRemoteEnabled' => true,
-            'isHtml5ParserEnabled' => true,
-        ]);
+        $pdf = DomPDF::loadHtml($html);
 
         $pdf->setPaper('letter', 'landscape');
         $pdf->setOption('defaultFont', 'sans-serif');

@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Certificate;
+use App\Models\CertificateTemplate;
 use App\Models\Event;
 use App\Models\EventAttendee;
+use App\Services\CertificateNumberService;
+use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use OpenApi\Attributes as OA;
@@ -80,8 +84,50 @@ use OpenApi\Attributes as OA;
     ]),
     new OA\Property(property: "expiring", type: "integer"),
 ])]
+#[OA\Schema(schema: "EventCloneTemplateRequest", required: ["source_template_id", "name"], properties: [
+    new OA\Property(property: "source_template_id", type: "string", format: "uuid"),
+    new OA\Property(property: "name", type: "string"),
+])]
+#[OA\Schema(schema: "EventCloneResponse", properties: [
+    new OA\Property(property: "template_id", type: "string", format: "uuid"),
+    new OA\Property(property: "name", type: "string"),
+])]
+#[OA\Schema(schema: "EventBulkIssueRequest", required: ["attendee_ids"], properties: [
+    new OA\Property(property: "attendee_ids", type: "array", items: new OA\Items(type: "string", format: "uuid")),
+    new OA\Property(property: "send_email", type: "boolean", default: false),
+])]
+#[OA\Schema(schema: "EventReissueRequest", required: ["attendee_ids"], properties: [
+    new OA\Property(property: "attendee_ids", type: "array", items: new OA\Items(type: "string", format: "uuid")),
+])]
+#[OA\Schema(schema: "EventIssueCompletedRequest", properties: [
+    new OA\Property(property: "attendee_ids", type: "array", items: new OA\Items(type: "string", format: "uuid")),
+    new OA\Property(property: "send_email", type: "boolean", default: false),
+])]
+#[OA\Schema(schema: "EventIssueResponse", properties: [
+    new OA\Property(property: "success", type: "integer"),
+    new OA\Property(property: "failed", type: "integer"),
+    new OA\Property(property: "errors", type: "array", items: new OA\Items(properties: [
+        new OA\Property(property: "attendee_id", type: "string", format: "uuid"),
+        new OA\Property(property: "reason", type: "string"),
+    ])),
+    new OA\Property(property: "certificates", type: "array", items: new OA\Items(type: "string", format: "uuid")),
+])]
+#[OA\Schema(schema: "EventRevokeExpiredCountResponse", properties: [
+    new OA\Property(property: "event_id", type: "string", format: "uuid"),
+    new OA\Property(property: "expired", type: "integer"),
+])]
+#[OA\Schema(schema: "EventRevokeExpiredResponse", properties: [
+    new OA\Property(property: "event_id", type: "string", format: "uuid"),
+    new OA\Property(property: "revoked", type: "integer"),
+])]
 class EventController extends Controller
 {
+    public function __construct(
+        private readonly CertificateNumberService $certificateNumberService,
+        private readonly PdfService $pdfService,
+    ) {
+    }
+
     /**
      * Display a listing of the events.
      */
@@ -102,7 +148,7 @@ class EventController extends Controller
     )]
     public function index(Request $request): JsonResponse
     {
-        $query = Event::query();
+        $query = Event::withCount(['attendees', 'certificates']);
 
         // Apply search filter
         if ($request->has('search')) {
@@ -122,12 +168,13 @@ class EventController extends Controller
         // Apply pagination
         $limit = min($request->input('limit', 25), 100);
         $offset = $request->input('offset', 0);
-        
-        $events = $query->skip($offset)
-                       ->take($limit)
-                       ->get();
 
         $total = $query->count();
+        $events = $query->orderBy('created_at', 'desc')
+            ->skip($offset)
+            ->take($limit)
+            ->get()
+            ->map(fn (Event $event) => $this->formatEvent($event));
 
         return response()->json([
             'data' => $events,
@@ -173,10 +220,12 @@ class EventController extends Controller
             'status' => 'nullable|in:draft,active,archive'
         ]);
 
-        $event = Event::create($request->all());
+        $event = Event::create(array_merge($request->all(), [
+            'organization_id' => config('cert-platform.organization_id'),
+        ]));
 
         return response()->json([
-            'data' => $event
+            'data' => $this->formatEvent($event->loadCount(['attendees', 'certificates']))
         ], 201);
     }
 
@@ -198,17 +247,17 @@ class EventController extends Controller
     )]
     public function show(string $id): JsonResponse
     {
-        $event = Event::findOrFail($id);
+        $event = Event::withCount(['attendees', 'certificates'])->findOrFail($id);
         
         return response()->json([
-            'data' => $event
+            'data' => $this->formatEvent($event)
         ]);
     }
 
     /**
      * Update the specified event in storage.
      */
-    #[OA\Put(
+    #[OA\Patch(
         path: "/api/v1/events/{id}",
         summary: "Update event",
         tags: ["Events"],
@@ -247,7 +296,7 @@ class EventController extends Controller
         $event->update($request->all());
 
         return response()->json([
-            'data' => $event
+            'data' => $this->formatEvent($event->fresh()->loadCount(['attendees', 'certificates']))
         ]);
     }
 
@@ -272,7 +321,478 @@ class EventController extends Controller
         $event = Event::findOrFail($id);
         $event->delete();
 
-        return response()->noContent();
+        return response()->json(null, 204);
+    }
+
+    #[OA\Post(
+        path: "/api/v1/events/{id}/clone-template",
+        summary: "Clone a certificate template and attach it to the event",
+        tags: ["Events"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(ref: "#/components/schemas/EventCloneTemplateRequest")
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(ref: "#/components/schemas/EventCloneResponse")),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 404, description: "Event or template not found"),
+            new OA\Response(response: 422, description: "Validation error"),
+        ]
+    )]
+    public function cloneTemplate(Request $request, string $id): JsonResponse
+    {
+        $event = Event::findOrFail($id);
+
+        $request->validate([
+            'source_template_id' => 'required|uuid',
+            'name' => 'required|string',
+        ]);
+
+        $source = CertificateTemplate::where('id', $request->input('source_template_id'))
+            ->where('organization_id', $event->organization_id)
+            ->where('type', 'certificate')
+            ->first();
+
+        if (!$source) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Certificate template not found.',
+            ], 404);
+        }
+
+        $clone = CertificateTemplate::create([
+            'organization_id' => $event->organization_id,
+            'name' => $request->input('name'),
+            'description' => $source->description,
+            'type' => 'certificate',
+            'html_content' => $source->html_content,
+            'css_content' => $source->css_content,
+            'created_by' => $source->created_by,
+        ]);
+
+        $event->update(['template_id' => $clone->id]);
+
+        return response()->json([
+            'data' => [
+                'template_id' => $clone->id,
+                'name' => $clone->name,
+            ],
+        ]);
+    }
+
+    #[OA\Post(
+        path: "/api/v1/events/{id}/clone-email-template",
+        summary: "Clone an email template and attach it to the event",
+        tags: ["Events"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(ref: "#/components/schemas/EventCloneTemplateRequest")
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(ref: "#/components/schemas/EventCloneResponse")),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 404, description: "Event or template not found"),
+            new OA\Response(response: 422, description: "Validation error"),
+        ]
+    )]
+    public function cloneEmailTemplate(Request $request, string $id): JsonResponse
+    {
+        $event = Event::findOrFail($id);
+
+        $request->validate([
+            'source_template_id' => 'required|uuid',
+            'name' => 'required|string',
+        ]);
+
+        $source = CertificateTemplate::where('id', $request->input('source_template_id'))
+            ->where('organization_id', $event->organization_id)
+            ->where('type', 'email')
+            ->first();
+
+        if (!$source) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Email template not found.',
+            ], 404);
+        }
+
+        $clone = CertificateTemplate::create([
+            'organization_id' => $event->organization_id,
+            'name' => $request->input('name'),
+            'description' => $source->description,
+            'type' => 'email',
+            'html_content' => $source->html_content,
+            'css_content' => $source->css_content,
+            'created_by' => $source->created_by,
+        ]);
+
+        $event->update(['email_template_id' => $clone->id]);
+
+        return response()->json([
+            'data' => [
+                'template_id' => $clone->id,
+                'name' => $clone->name,
+            ],
+        ]);
+    }
+
+    #[OA\Post(
+        path: "/api/v1/events/{id}/bulk-issue",
+        summary: "Issue certificates in bulk for selected attendees",
+        tags: ["Events"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(ref: "#/components/schemas/EventBulkIssueRequest")
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(ref: "#/components/schemas/EventIssueResponse")),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 404, description: "Event not found"),
+            new OA\Response(response: 422, description: "Validation error"),
+        ]
+    )]
+    public function bulkIssue(Request $request, string $id): JsonResponse
+    {
+        $event = Event::findOrFail($id);
+
+        $request->validate([
+            'attendee_ids' => 'required|array|min:1',
+            'attendee_ids.*' => 'uuid',
+            'send_email' => 'nullable|boolean',
+        ]);
+
+        if (!$event->certificate_number_pattern) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event has no certificate number pattern.',
+            ], 422);
+        }
+
+        if (!$event->template_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event has no certificate template.',
+            ], 422);
+        }
+
+        $attendees = EventAttendee::where('event_id', $id)
+            ->whereIn('id', $request->input('attendee_ids'))
+            ->get();
+
+        $result = $this->issueCertificates($event, $attendees);
+
+        return response()->json([
+            'data' => $result,
+        ]);
+    }
+
+    #[OA\Post(
+        path: "/api/v1/events/{id}/issue-completed",
+        summary: "Issue certificates to completed attendees",
+        tags: ["Events"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
+        ],
+        requestBody: new OA\RequestBody(
+            required: false,
+            content: new OA\JsonContent(ref: "#/components/schemas/EventIssueCompletedRequest")
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(ref: "#/components/schemas/EventIssueResponse")),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 404, description: "Event not found"),
+            new OA\Response(response: 422, description: "Validation error"),
+        ]
+    )]
+    public function issueCompleted(Request $request, string $id): JsonResponse
+    {
+        $event = Event::findOrFail($id);
+
+        $request->validate([
+            'send_email' => 'nullable|boolean',
+            'attendee_ids' => 'nullable|array',
+            'attendee_ids.*' => 'uuid',
+        ]);
+
+        if (!$event->certificate_number_pattern) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event has no certificate number pattern.',
+            ], 422);
+        }
+
+        if (!$event->template_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event has no certificate template.',
+            ], 422);
+        }
+
+        $query = EventAttendee::where('event_id', $id)->where('completed', true);
+
+        if ($request->filled('attendee_ids')) {
+            $query->whereIn('id', $request->input('attendee_ids'));
+        }
+
+        $result = $this->issueCertificates($event, $query->get());
+
+        return response()->json([
+            'data' => $result,
+        ]);
+    }
+
+    private function issueCertificates(Event $event, $attendees): array
+    {
+        $success = 0;
+        $failed = 0;
+        $errors = [];
+        $certificateIds = [];
+
+        foreach ($attendees as $attendee) {
+            try {
+                $existing = Certificate::where('event_id', $event->id)
+                    ->where('recipient_email', $attendee->email)
+                    ->whereNull('revoked_at')
+                    ->exists();
+
+                if ($existing) {
+                    $failed++;
+                    $errors[] = [
+                        'attendee_id' => $attendee->id,
+                        'reason' => 'Active certificate already exists',
+                    ];
+                    continue;
+                }
+
+                $certificateNumber = $this->certificateNumberService->generate(
+                    $event->organization_id,
+                    $event->certificate_number_pattern
+                );
+
+                $certificate = Certificate::create([
+                    'organization_id' => $event->organization_id,
+                    'event_id' => $event->id,
+                    'template_id' => $event->template_id,
+                    'recipient_name' => $attendee->name,
+                    'recipient_email' => $attendee->email,
+                    'certificate_number' => $certificateNumber,
+                    'expires_at' => $event->valid_until,
+                ]);
+
+                $attendee->update([
+                    'certificate_id' => $certificate->id,
+                    'certificate_number' => $certificateNumber,
+                ]);
+
+                try {
+                    $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+                } catch (\Exception $e) {
+                    // PDF generation failure is non-fatal; certificate is still created
+                }
+
+                $success++;
+                $certificateIds[] = $certificate->id;
+            } catch (\Exception $e) {
+                $failed++;
+                $errors[] = [
+                    'attendee_id' => $attendee->id,
+                    'reason' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return [
+            'success' => $success,
+            'failed' => $failed,
+            'errors' => $errors,
+            'certificates' => $certificateIds,
+        ];
+    }
+
+    #[OA\Post(
+        path: "/api/v1/events/{id}/reissue",
+        summary: "Reissue certificates for selected attendees",
+        tags: ["Events"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(ref: "#/components/schemas/EventReissueRequest")
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(ref: "#/components/schemas/EventIssueResponse")),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 404, description: "Event not found"),
+            new OA\Response(response: 422, description: "Validation error"),
+        ]
+    )]
+    public function reissue(Request $request, string $id): JsonResponse
+    {
+        $event = Event::findOrFail($id);
+
+        $request->validate([
+            'attendee_ids' => 'required|array|min:1',
+            'attendee_ids.*' => 'uuid',
+        ]);
+
+        if (!$event->certificate_number_pattern) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event has no certificate number pattern.',
+            ], 422);
+        }
+
+        if (!$event->template_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event has no certificate template.',
+            ], 422);
+        }
+
+        $attendees = EventAttendee::where('event_id', $id)
+            ->whereIn('id', $request->input('attendee_ids'))
+            ->get();
+
+        $success = 0;
+        $failed = 0;
+        $errors = [];
+        $certificateIds = [];
+
+        foreach ($attendees as $attendee) {
+            try {
+                $existing = Certificate::where('event_id', $id)
+                    ->where('recipient_email', $attendee->email)
+                    ->whereNull('revoked_at')
+                    ->latest('issued_at')
+                    ->first();
+
+                if ($existing) {
+                    $existing->update([
+                        'revoked_at' => now(),
+                        'revoke_reason' => 'Reissued',
+                    ]);
+                }
+
+                $certificateNumber = $this->certificateNumberService->generate(
+                    $event->organization_id,
+                    $event->certificate_number_pattern
+                );
+
+                $certificate = Certificate::create([
+                    'organization_id' => $event->organization_id,
+                    'event_id' => $id,
+                    'template_id' => $event->template_id,
+                    'recipient_name' => $attendee->name,
+                    'recipient_email' => $attendee->email,
+                    'certificate_number' => $certificateNumber,
+                    'expires_at' => $event->valid_until,
+                ]);
+
+                $attendee->update([
+                    'certificate_id' => $certificate->id,
+                    'certificate_number' => $certificateNumber,
+                ]);
+
+                try {
+                    $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+                } catch (\Exception $e) {
+                    // PDF generation failure is non-fatal; certificate is still created
+                }
+
+                $success++;
+                $certificateIds[] = $certificate->id;
+            } catch (\Exception $e) {
+                $failed++;
+                $errors[] = [
+                    'attendee_id' => $attendee->id,
+                    'reason' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return response()->json([
+            'data' => [
+                'success' => $success,
+                'failed' => $failed,
+                'errors' => $errors,
+                'certificates' => $certificateIds,
+            ],
+        ]);
+    }
+
+    #[OA\Get(
+        path: "/api/v1/events/{id}/revoke-expired",
+        summary: "Count expired certificates for the event",
+        tags: ["Events"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(ref: "#/components/schemas/EventRevokeExpiredCountResponse")),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 404, description: "Event not found"),
+        ]
+    )]
+    public function revokeExpiredCount(string $id): JsonResponse
+    {
+        $event = Event::findOrFail($id);
+
+        $expired = Certificate::where('event_id', $id)
+            ->whereNull('revoked_at')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<', now())
+            ->count();
+
+        return response()->json([
+            'data' => [
+                'event_id' => $event->id,
+                'expired' => $expired,
+            ],
+        ]);
+    }
+
+    #[OA\Post(
+        path: "/api/v1/events/{id}/revoke-expired",
+        summary: "Revoke expired certificates for the event",
+        tags: ["Events"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(ref: "#/components/schemas/EventRevokeExpiredResponse")),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 404, description: "Event not found"),
+        ]
+    )]
+    public function revokeExpired(string $id): JsonResponse
+    {
+        $event = Event::findOrFail($id);
+
+        $revoked = Certificate::where('event_id', $id)
+            ->whereNull('revoked_at')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<', now())
+            ->update([
+                'revoked_at' => now(),
+                'revoke_reason' => 'Auto-expired',
+            ]);
+
+        return response()->json([
+            'data' => [
+                'event_id' => $event->id,
+                'revoked' => $revoked,
+            ],
+        ]);
     }
 
     /**
@@ -294,16 +814,64 @@ class EventController extends Controller
     public function stats(string $id): JsonResponse
     {
         $event = Event::findOrFail($id);
-        
-        // In a real implementation, this would count attendees and certificates
-        // For now, we return mock data based on what is in the schema 
+
+        $attendeesTotal = EventAttendee::where('event_id', $id)->count();
+        $attendeesAttended = EventAttendee::where('event_id', $id)->where('attended', true)->count();
+        $attendeesCompleted = EventAttendee::where('event_id', $id)->where('completed', true)->count();
+
+        $certificatesIssued = Certificate::where('event_id', $id)->count();
+        $certificatesRevoked = Certificate::where('event_id', $id)->whereNotNull('revoked_at')->count();
+        $certificatesExpired = Certificate::where('event_id', $id)
+            ->whereNull('revoked_at')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<', now())
+            ->count();
+        $certificatesActive = $certificatesIssued - $certificatesRevoked - $certificatesExpired;
+        $expiring = Certificate::where('event_id', $id)
+            ->whereNull('revoked_at')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '>=', now())
+            ->where('expires_at', '<=', now()->addDays(30))
+            ->count();
+
         return response()->json([
             'data' => [
                 'event_id' => $event->id,
-                'attendees' => ['total' => 0, 'attended' => 0, 'completed' => 0],
-                'certificates' => ['issued' => 0, 'active' => 0, 'revoked' => 0, 'expired' => 0],
-                'expiring' => 0
+                'attendees' => [
+                    'total' => $attendeesTotal,
+                    'attended' => $attendeesAttended,
+                    'completed' => $attendeesCompleted,
+                ],
+                'certificates' => [
+                    'issued' => $certificatesIssued,
+                    'active' => $certificatesActive,
+                    'revoked' => $certificatesRevoked,
+                    'expired' => $certificatesExpired,
+                ],
+                'expiring' => $expiring,
             ]
         ]);
+    }
+
+    private function formatEvent(Event $event): array
+    {
+        return [
+            'id' => $event->id,
+            'name' => $event->name,
+            'description' => $event->description,
+            'event_date' => $event->event_date?->toDateString(),
+            'location' => $event->location,
+            'organizer' => $event->organizer,
+            'certificate_title' => $event->certificate_title,
+            'certificate_number_pattern' => $event->certificate_number_pattern,
+            'valid_until' => $event->valid_until?->toDateString(),
+            'status' => $event->status,
+            'template_id' => $event->template_id,
+            'email_template_id' => $event->email_template_id,
+            'attendees_count' => $event->attendees_count ?? 0,
+            'certificates_issued' => $event->certificates_count ?? 0,
+            'created_at' => $event->created_at?->toIso8601String(),
+            'updated_at' => $event->updated_at?->toIso8601String(),
+        ];
     }
 }

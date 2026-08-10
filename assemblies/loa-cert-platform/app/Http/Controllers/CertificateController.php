@@ -250,7 +250,7 @@ class CertificateController extends Controller
             }
         }
 
-        $certificateNumber = $this->generateCertificateNumber($organizationId, $event->certificate_number_pattern ?? 'CERT-####');
+        $certificateNumber = $this->generateCertificateNumber($organizationId, $eventId ? ($event->certificate_number_pattern ?? 'CERT-####') : 'CERT-####');
 
         $certificate = Certificate::create([
             'organization_id' => $organizationId,
@@ -259,14 +259,14 @@ class CertificateController extends Controller
             'recipient_name' => $request->input('recipient_name'),
             'recipient_email' => $request->input('recipient_email'),
             'certificate_number' => $certificateNumber,
-            'expires_at' => $request->input('expires_at') ?? ($event->valid_until ?? null),
+            'expires_at' => $request->input('expires_at') ?? ($eventId ? ($event->valid_until ?? null) : null),
             'metadata' => $request->input('metadata'),
         ]);
 
         if ($eventId) {
             $attendee = EventAttendee::firstOrCreate(
                 ['event_id' => $eventId, 'email' => $request->input('recipient_email')],
-                ['name' => $request->input('recipient_name')]
+                ['name' => $request->input('recipient_name'), 'organization_id' => $organizationId]
             );
             $attendee->update(['certificate_id' => $certificate->id, 'certificate_number' => $certificateNumber]);
         }
@@ -779,14 +779,13 @@ class CertificateController extends Controller
             ->whereNotNull('expires_at')
             ->where('expires_at', '<', now());
 
-        $revokedCount = $dryRun ? $expiredQuery->count() : 0;
+        $revokedCount = $expiredQuery->count();
 
         if (!$dryRun) {
             $expiredQuery->update([
                 'revoked_at' => now(),
                 'revoke_reason' => 'Auto-expired',
             ]);
-            $revokedCount = $expiredQuery->count();
         }
 
         $expiringCount = Certificate::whereNull('revoked_at')
@@ -856,7 +855,10 @@ class CertificateController extends Controller
                 );
 
             $value = $sequence->next_value;
-            $sequence->increment('next_value');
+
+            CertificateSequence::where('organization_id', $organizationId)
+                ->where('pattern', $pattern)
+                ->update(['next_value' => $value + 1]);
 
             $width = substr_count($pattern, '#');
             $paddedValue = str_pad($value, $width, '0', STR_PAD_LEFT);

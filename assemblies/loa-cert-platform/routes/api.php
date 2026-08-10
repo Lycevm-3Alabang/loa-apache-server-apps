@@ -1,9 +1,9 @@
 <?php
 
+use App\Http\Controllers\AttendeeController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CertificateTemplateController;
 use App\Http\Controllers\EventController;
-use App\Http\Controllers\AttendeeController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -36,10 +36,17 @@ Route::prefix('v1')->group(function () {
         Route::get('/', [EventController::class, 'index']);
         Route::post('/', [EventController::class, 'store']);
         Route::get('/{id}', [EventController::class, 'show']);
-        Route::put('/{id}', [EventController::class, 'update']);
+        Route::patch('/{id}', [EventController::class, 'update']);
         Route::delete('/{id}', [EventController::class, 'destroy']);
         Route::get('/{id}/stats', [EventController::class, 'stats']);
-        
+        Route::get('/{id}/revoke-expired', [EventController::class, 'revokeExpiredCount']);
+        Route::post('/{id}/revoke-expired', [EventController::class, 'revokeExpired']);
+        Route::post('/{id}/clone-template', [EventController::class, 'cloneTemplate']);
+        Route::post('/{id}/clone-email-template', [EventController::class, 'cloneEmailTemplate']);
+        Route::post('/{id}/bulk-issue', [EventController::class, 'bulkIssue']);
+        Route::post('/{id}/reissue', [EventController::class, 'reissue']);
+        Route::post('/{id}/issue-completed', [EventController::class, 'issueCompleted']);
+
         Route::prefix('{eventId}/attendees')->group(function () {
             Route::get('/', [AttendeeController::class, 'index']);
             Route::post('/', [AttendeeController::class, 'store']);
@@ -48,8 +55,9 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::prefix('attendees')->group(function () {
-        Route::put('/{id}', [AttendeeController::class, 'update']);
+        Route::patch('/{id}', [AttendeeController::class, 'update']);
         Route::delete('/{id}', [AttendeeController::class, 'destroy']);
+        Route::delete('/{id}/with-cert', [AttendeeController::class, 'destroyWithCert']);
         Route::get('/{id}/delete-preview', [AttendeeController::class, 'deletePreview']);
         Route::get('/{id}/file-data', [AttendeeController::class, 'fileData']);
     });

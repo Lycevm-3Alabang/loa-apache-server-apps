@@ -85,7 +85,7 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 - **SSO design (Q-1 resolved: split-origin):** browser hits `e-cert.vercel.app`; Vercel rewrite `/api/v1/:path*` → `https://cert-api.lyceumalabang.edu.ph/api/v1/:path*` keeps httpOnly refresh cookie same-origin; direct cross-origin CORS is fallback only. Flow: `auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app` → `https://e-cert.vercel.app#payload=<AES-256-GCM>` → `POST /api/v1/auth/callback` (decrypt, `exp` + tenant-slug validation, httpOnly `SameSite=Lax` refresh cookie) → `jwt.auth` (local HS256, no users table, tenant claim) + `jwt.endpoint` (local catalog mirror, closed-by-default, owner-rule hook). Cert-proxied refresh/logout; `/sso/register`, `/forgot-password`, `/reset-password`.
 - **Auth contract (verified from code):** HS256, `type=access`, TTLs 15/10080 min, claims `{ sub, email, name, groups, permissions, scopes, tenant:{id,slug} }`, `GET /api/v1/auth/access`.
 - **Open questions — all resolved 2026-08-06:** Q-2 → **CSR supersedes D8** (SPA, in-memory token, parse-only client JWT, no server actions / no shared secret, `src/proxy.ts` deleted — aligned with `D:\loa\e-cert\specs\` v2.0); Q-3 audit/email-log gaps (deferred — drop affected UI; future dedicated SMTP API, maybe reuse Auth's temp email tool); Q-4 seed groups (`cert-admin`/`cert-staff`/`cert-user`, no LOA group reuse); Q-5 `/my/profile` (out of scope, front-end refinement task); Q-6 cert number (per-event user-configurable pattern required, must contain `####`, no default); Q-7 attendees/import (JSON payload — CSV parsing is a UI concern); **decision #17** (Cert-proxied refresh/logout confirmed); **dashboard stats at `read`** (confirmed **with ownership note** — dashboard data is org-wide unscoped, grants `cert-admin`/`cert-staff` only, excluded from `cert-user`, per `api-endpoints.md` §5.7 + `legacy-e-cert-integration.md` §7.2).
-- **Next:** Phase B — Auth readiness — **deferred (2026-08-06)**: provisioned manually at deploy-time per Auth runbook `cert-readiness.md` (**Final v0.4**, incl. §8 Local Development; production has no baked-in seeder); **Phase C — scaffold CREATED 2026-08-06** (Laravel 12 app at `assemblies/loa-cert-platform/cert-app/`: composer.json, app config, core models `Organization`/`Event`/`CertificateTemplate`/`Certificate`/`EventAttendee` + migrations) — **domain CRUD slice only, unauthenticated** (decision #20 / D9: `jwt.auth`/`jwt.endpoint` + SSO callback/refresh/logout deferred to a later auth phase); implementation of the unauth CRUD slice is next.
+- **Next:** Phase B — Auth readiness — **deferred (2026-08-06)**: provisioned manually at deploy-time per Auth runbook `cert-readiness.md` (**Final v0.4**, incl. §8 Local Development; production has no baked-in seeder); **Phase C — scaffold CREATED 2026-08-06** (Laravel 12 app at `assemblies/loa-cert-platform/cert-app/`: composer.json, app config, core models `Organization`/`Event`/`CertificateTemplate`/`Certificate`/`EventAttendee` + migrations) — **domain CRUD slice only, unauthenticated** (decision #20 / D9: `jwt.auth`/`jwt.endpoint` + SSO callback/refresh/logout deferred to a later auth phase); **unauth CRUD slice COMPLETE 2026-08-10** — Events (13) + Attendees (8) endpoints, routes, OpenAPI, feature tests; **full suite green (91 tests / 334 assertions)**.
 
 ### LOA Consult Platform — `assemblies/loa-consult-platform/`
 
@@ -100,6 +100,25 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 ---
 
 ## Last Session Notes
+
+### Date: 2026-08-10
+
+### Completed
+- **Events & Attendees resource groups COMPLETE** per `api-endpoints.md` v1.4 (Final) — unauth domain CRUD slice done:
+  - **Events (13 endpoints):** CRUD + real `stats()`, clone-template, clone-email-template, bulk-issue, reissue, issue-completed, revoke-expired (GET count + POST action) — OpenAPI-annotated.
+  - **Attendees (8 endpoints):** list, create (upsert by event+email → 201), import (JSON; replace requires `confirm=true`), update (PATCH, event-scoped email conflict), destroy, destroy-with-cert, delete-preview, file-data (template → 200 / 410 / Storage download) — OpenAPI-annotated.
+  - Routes registered in `routes/api.php` (PATCH per spec; nested `events/{eventId}/attendees` group).
+- **Test suite GREEN: 91 tests / 334 assertions** via Docker (`docker compose exec -T cert-app vendor/bin/phpunit`). New feature tests: `tests/Feature/Api/EventTest.php` (13) + `AttendeeTest.php` (8).
+- **Bugs fixed during suite run** (working-tree only, NOT committed): composite-PK sequence increment (`certificate_sequences`); `destroy*()` `Response` vs `: JsonResponse` → `json(null, 204)`; `CertificateController::store` attendee `firstOrCreate` missing `organization_id` + `$event` null scope; `expire()` counted after update (always 0); `PdfService` DomPDF v3 (facade + `loadHtml`); `Organization` missing `HasFactory`; factories (unique org slug, attendee `organization_id`).
+- **Infra:** composer dev deps (`phpunit ^12.5` [13.x needs PHP ≥8.4.1; container 8.3.33], `mockery ^1.6`, `fakerphp/faker ^1.24`), `autoload-dev` `Tests\`; created `bootstrap/cache` + `storage/framework/{cache,sessions,views}` + `storage/logs` (volume shadowing); renamed `database/Migrations` → `database/migrations` (git mv — was only working on Windows via case-insensitive mount; would break cPanel/Linux).
+- **Cleanup:** removed dead duplicate `app/Http/Controllers/Api/CertificateTemplateController.php`; deleted `.tmp_debug.php`.
+- **Caveats:** nothing committed yet; `cert-app/` leftover scaffold dir still present. **Test DB (2026-08-10):** SQLite is a non-goal — `phpunit.xml.dist` now forces MySQL (`force="true"` beats compose shell env) against dedicated **`loa_cert_test`** (created + granted to `loa`); tests no longer touch `loa_cert` app data; `certificates` migration's MySQL-only `storedAs('IF(...)')` is intentional.
+
+### Next Action
+- [ ] Commit completed Events/Attendees work (await explicit instruction)
+- [ ] Remove leftover `cert-app/` dir (confirm first)
+
+---
 
 ### Date: 2026-08-08
 
@@ -229,3 +248,4 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 | 2026-08-07 | Reconciled the local Docker path: documented **`LocalCertReadinessSeeder`** (auto-runs on local `db:seed` via `DatabaseSeeder` non-prod guard; `cert-app` tenant @ `localhost:9001` + groups) as the sanctioned local provisioning in `cert-readiness.md` → **Final v0.4**. Production seeding stays manual-only per the 2026-08-06 decision. | Implement the unauth domain CRUD slice |
 | 2026-08-07 (2) | **User Account Activation spec** written + promoted to **Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, admin resend). Committed + pushed. | Implement user account activation per spec |
 | 2026-08-08 | Added centralized Seq log server (datalust/seq) to root docker-compose.yml; both Auth and Cert app services now emit structured logs to Seq on port 5341. Created config/logging.php in both assemblies with a seq channel activated when SEQ_URL env var is present. Auth platform runbook updated with Seq instructions. | Verify Seq integration logs flow correctly; update Cert runbook |
+| 2026-08-10 | **Events & Attendees complete** (unauth CRUD slice): 13 event + 8 attendee endpoints (incl. stats, clone-template, bulk-issue, reissue, issue-completed, revoke-expired, import, destroy-with-cert, delete-preview, file-data), routes, OpenAPI, feature tests. Full suite green (91/334). Fixed seq/PDF/delete/expire/scope bugs surfaced by tests; added composer dev deps; renamed `database/Migrations`→`database/migrations`; removed dead Api controller. NOT committed. | Commit Events/Attendees work; remove `cert-app/` leftover |
