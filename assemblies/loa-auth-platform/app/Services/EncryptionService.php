@@ -56,7 +56,15 @@ class EncryptionService
             return null;
         }
 
-        $decoded = base64_decode(strtr($encoded, '-_', '+/') . '==', true);
+        $encoded = strtr($encoded, '-_', '+/');
+
+        $pad = strlen($encoded) % 4;
+
+        if ($pad > 0) {
+            $encoded .= str_repeat('=', 4 - $pad);
+        }
+
+        $decoded = base64_decode($encoded, true);
 
         if ($decoded === false || strlen($decoded) < 29) {
             return null;

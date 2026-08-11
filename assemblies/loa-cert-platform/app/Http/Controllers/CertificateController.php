@@ -7,6 +7,7 @@ use App\Models\CertificateEmail;
 use App\Models\CertificateSequence;
 use App\Models\Event;
 use App\Models\EventAttendee;
+use App\Services\AuditLogger;
 use App\Services\PdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -84,6 +85,7 @@ class CertificateController extends Controller
 {
     public function __construct(
         private readonly PdfService $pdfService,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -277,6 +279,13 @@ class CertificateController extends Controller
             // PDF generation failure is non-fatal; certificate is still created
         }
 
+        $this->auditLogger->record('certificate.issued', 'api', 'certificate', $certificate->id, [
+            'certificate_number' => $certificateNumber,
+            'event_id' => $eventId,
+            'recipient_email' => $request->input('recipient_email'),
+            'channel' => 'single',
+        ]);
+
         return response()->json([
             'data' => $this->formatCertificate($certificate->fresh(['event', 'template'])),
         ], 201);
@@ -356,6 +365,13 @@ class CertificateController extends Controller
                 );
                 $attendee->update(['certificate_id' => $certificate->id, 'certificate_number' => $certificateNumber]);
 
+                $this->auditLogger->record('certificate.issued', 'api', 'certificate', $certificate->id, [
+                    'certificate_number' => $certificateNumber,
+                    'event_id' => $event->id,
+                    'recipient_email' => $recipient['email'],
+                    'channel' => 'bulk',
+                ]);
+
                 $success++;
                 $certificateIds[] = $certificate->id;
             } catch (\Exception $e) {
@@ -416,6 +432,10 @@ class CertificateController extends Controller
         $file->storeAs('public', $filePath);
 
         $certificate->update(['file_path' => $filePath]);
+
+        $this->auditLogger->record('certificate.uploaded', 'api', 'certificate', $certificate->id, [
+            'certificate_number' => $certificate->certificate_number,
+        ]);
 
         return response()->json([
             'data' => [
@@ -588,6 +608,11 @@ class CertificateController extends Controller
             'revoke_reason' => $request->input('reason'),
         ]);
 
+        $this->auditLogger->record('certificate.revoked', 'api', 'certificate', $certificate->id, [
+            'certificate_number' => $certificate->certificate_number,
+            'reason' => $request->input('reason'),
+        ]);
+
         return response()->json([
             'data' => $this->formatCertificate($certificate->fresh(['event', 'template'])),
         ]);
@@ -616,6 +641,10 @@ class CertificateController extends Controller
                 'message' => 'Certificate not found.',
             ], 404);
         }
+
+        $this->auditLogger->record('certificate.deleted', 'api', 'certificate', $certificate->id, [
+            'certificate_number' => $certificate->certificate_number,
+        ]);
 
         $certificate->delete();
 
@@ -667,6 +696,12 @@ class CertificateController extends Controller
                 'revoke_reason' => $request->input('reason'),
             ]);
 
+            $this->auditLogger->record('certificate.revoked', 'api', 'certificate', $certificate->id, [
+                'certificate_number' => $certificate->certificate_number,
+                'reason' => $request->input('reason'),
+                'channel' => 'reissue',
+            ]);
+
             $event = $certificate->event;
             $certificateNumber = $this->generateCertificateNumber(
                 $certificate->organization_id,
@@ -692,6 +727,12 @@ class CertificateController extends Controller
             }
 
             DB::commit();
+
+            $this->auditLogger->record('certificate.reissued', 'api', 'certificate', $newCertificate->id, [
+                'certificate_number' => $certificateNumber,
+                'previous_certificate_id' => $certificate->id,
+                'recipient_email' => $newCertificate->recipient_email,
+            ]);
 
             return response()->json([
                 'data' => $this->formatCertificate($newCertificate->fresh(['event', 'template'])),
@@ -786,6 +827,13 @@ class CertificateController extends Controller
                 'revoked_at' => now(),
                 'revoke_reason' => 'Auto-expired',
             ]);
+
+            if ($revokedCount > 0) {
+                $this->auditLogger->record('certificate.expired', 'api', 'certificate', null, [
+                    'revoked' => $revokedCount,
+                    'channel' => 'auto_expire',
+                ]);
+            }
         }
 
         $expiringCount = Certificate::whereNull('revoked_at')

@@ -1,7 +1,7 @@
 # LOA Cert Platform — Legacy `e-cert` Integration & Refactor
 ## Product Assembly Component Specification
 
-**Version:** 2.1
+**Version:** 2.2
 **Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Architects, Engineers, AI Development Agents

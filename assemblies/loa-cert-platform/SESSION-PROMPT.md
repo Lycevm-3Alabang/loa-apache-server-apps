@@ -56,29 +56,23 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-11 (Session 11)
+### Date: 2026-08-11 (Session 12)
 ### Completed
-- **C-Auth (authentication layer) COMPLETE — all 6 steps implemented and tested.**
-  - **Step 1 — Services:** `JWTService` (HS256 validate-only), `EncryptionService` (AES-256-GCM decrypt + previous-key fallback), `config/jwt.php`, `config/auth-platform.php`. 15 unit tests.
-  - **Step 2 — Middleware:** `JwtMiddleware` (`jwt.auth` — validates JWT, tenant claim, sets `jwt_claims`/`jwt_token`/`cert_user`), `EndpointPolicyMiddleware` (`jwt.endpoint` — level-based catalog enforcement, path param matching, public path bypass). `config/cert-endpoints.php` (48 catalog entries + 5 public paths). Middleware registered in `bootstrap/app.php`. 20 middleware tests.
-  - **Step 3 — Auth endpoints:** `AuthCallbackController` (decrypt SSO payload, validate JWT, set httpOnly refresh cookie, return access token, throttled 10/min), `AuthRefreshController` (read cookie, proxy refresh to Auth platform, rotate cookie), `AuthLogoutController` (read cookie, proxy logout to Auth platform, clear cookie, return 204). Routes: `/api/v1/auth/callback`, `/refresh`, `/logout` (public, unauthenticated).
-  - **Step 4 — Config:** `config/cert-platform.php` updated with `refresh_cookie`, `refresh_cookie_ttl`.
-  - **Step 5 — Route changes:** All existing endpoints wrapped in `jwt.auth` + `jwt.endpoint` middleware in `routes/api.php`.
-  - **Step 6 — Bootstrap:** Middleware aliases registered in `bootstrap/app.php`.
-- **Test suite updated:** Created `WithJwt` trait for tests (generates valid JWT tokens with full permissions). Updated all 6 existing test files (Feature + Unit) to use `actingAsJwt()`. Full suite: **126 tests, 386 assertions, all green.**
-- **Docs updated:** `api-endpoints.md` → v1.5 (§13 items marked done, security checklist updated), `authenticated-endpoints-spec.md` → v1.1 (fixed PUT→PATCH, added auth endpoints, added missing endpoints), `legacy-e-cert-integration.md` §12 updated.
+- **Auth platform SSO entry point now LIVE** — `GET /sso/login`, `POST /sso/login`, `GET /sso/register`, `POST /sso/register`, `GET /redirect` all working in the auth platform. E2E SSO flow is unblocked for Phase D.
+- **EncryptionService::decrypt() bug fixed** — padding logic was incorrect (always appended `==`, only decoded ~1/3 of payloads). Now pads to multiple of 4 correctly. Both auth and cert platforms share this fix.
+- **FRONTEND-INTEGRATION.md updated** — removed "blocked on auth platform" notes; SSO entry is live.
 
 ### Notes / Caveats
 - **Branch:** `cert/c-auth-step1-services` (pushed to origin, commit `e0866a7`).
 - **Test DB:** MySQL `loa_cert_test`, user `loa`, pass `loa-secret`. Tests run via `docker compose exec cert-app php vendor/bin/phpunit`.
-- **Auth platform not yet deployed** — auth endpoints proxy to `auth.lyceumalabang.edu.ph` which may not be live. Local dev works with the default config.
+- **Auth platform SSO is now live** — `GET /sso/login`, `/redirect`, `/sso/register` all working. E2E SSO flow unblocked.
 - **Pending:** `permissions:sync-cert-catalog` artisan command (generate local catalog mirror from config).
 
 ### In Progress
 - **Phase D (unblocked):** `e-cert` auth swap — in-memory token, silent refresh, SSO fragment handler, parse-only JWT, client auth guard (depends on C-Auth, now done).
 
 ### Next Action
-- [ ] Create `FRONTEND-INTEGRATION.md` handoff file for e-cert AI.
+- [ ] Phase D — e-cert auth swap (CSR): in-memory token, silent refresh, SSO fragment handler, parse-only JWT, client auth guard. **Unblocked — C-Auth complete, SSO entry live.**
 - [ ] Commit docs update (await explicit user instruction).
 - [ ] Remove leftover `cert-app/` dir (confirm first).
 

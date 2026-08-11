@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditLogger;
 use App\Services\EncryptionService;
 use App\Services\JWTService;
 use Illuminate\Http\JsonResponse;
@@ -13,6 +14,7 @@ class AuthCallbackController extends Controller
     public function __construct(
         private EncryptionService $encryption,
         private JWTService $jwt,
+        private AuditLogger $auditLogger,
     ) {}
 
     public function __invoke(Request $request): JsonResponse
@@ -93,6 +95,19 @@ class AuthCallbackController extends Controller
             true,
             false,
             'lax'
+        );
+
+        $this->auditLogger->record(
+            'auth.sso_callback',
+            'auth',
+            'user',
+            $claims['sub'] ?? null,
+            [
+                'email' => $claims['email'] ?? null,
+                'tenant_slug' => $claims['tenant']['slug'] ?? null,
+            ],
+            $claims['sub'] ?? null,
+            $claims['email'] ?? null,
         );
 
         return $response;

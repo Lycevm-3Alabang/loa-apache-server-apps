@@ -1,6 +1,6 @@
 # LOA Cert Platform — Frontend Integration Guide
 
-**Version:** 1.0 (2026-08-11)
+**Version:** 1.1.0 (2026-08-11) — SSO entry point is now live; full E2E SSO unblocked
 **Status:** Ready for Phase D (e-cert auth swap)
 
 This document is the handoff from the Cert Platform backend to the e-cert frontend. It tells you exactly what's implemented, what you need to build, and how to test.
@@ -17,9 +17,16 @@ This document is the handoff from the Cert Platform backend to the e-cert fronte
 | `/api/v1/auth/refresh` | `POST` | Token refresh — reads httpOnly cookie, proxies to Auth platform, rotates cookie, returns new access token |
 | `/api/v1/auth/logout` | `POST` | Logout — clears refresh cookie, proxies logout to Auth platform, returns 204 |
 
-### Domain Endpoints (All JWT-Gated)
+### Domain Endpoints (JWT-Gated)
 
-All 48 domain endpoints are live and enforce `jwt.auth` + `jwt.endpoint` middleware. See `authenticated-endpoints-spec.md` for the full list with required levels.
+**40 of the 48 catalog endpoints are live** and enforce `jwt.auth` + `jwt.endpoint` middleware (verified against `routes/api.php`). **Not yet implemented (no routes, no controllers):**
+
+- `/api/v1/me/certificates`, `/api/v1/me/certificates/{id}` — my certificates
+- `/api/v1/me/events`, `/api/v1/me/templates` — author-scope filters
+- `/api/v1/dashboard/stats`, `/api/v1/dashboard/activity` — dashboard
+- `/api/v1/admin/audit-logs`, `/api/v1/admin/audit-logs/export` — admin audit logs
+
+The two public verification endpoints are also **not routed yet**: `/api/v1/verify/{certificate_number}` and `/api/v1/view/{id}`. See `authenticated-endpoints-spec.md` for the full list with required levels.
 
 ### Middleware
 
@@ -50,6 +57,8 @@ auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app
   → redirects to
 https://e-cert.vercel.app#payload=<AES-256-GCM encrypted blob>
 ```
+
+> **Live (2026-08-11):** `GET /sso/login`, `POST /sso/login`, `GET /sso/register`, `POST /sso/register`, `GET /redirect` all implemented and tested in the auth platform. The encrypted payload uses AES-256-GCM; the fragment handler extracts `#payload=` from the URL hash.
 
 **Your job:** Extract `#payload=` from the URL hash, send it to `POST /api/v1/auth/callback`.
 
@@ -185,11 +194,15 @@ docker compose up cert-app cert-nginx
 
 ### Test Auth Flow
 
-1. Hit `http://localhost:8080/sso/login?redirect=http://localhost:3000` (Auth)
-2. Auth redirects with `#payload=<blob>` to your frontend
-3. Frontend extracts payload, calls `POST http://localhost:9001/api/v1/auth/callback`
+> **SSO entry point is now live (2026-08-11).** You can exercise the full E2E SSO flow locally:
+
+1. Visit `http://localhost:8080/sso/login?redirect=http://localhost:9001`
+2. Enter LOA credentials → redirects to `http://localhost:9001#payload=<encrypted blob>`
+3. Extract `#payload=` from the hash, send to `POST http://localhost:9001/api/v1/auth/callback`
 4. Response gives access token + sets refresh cookie
-5. Use token for all subsequent API calls
+5. `POST http://localhost:9001/api/v1/auth/refresh` (cookie auto-sent) — returns a new access token
+6. `POST http://localhost:9001/api/v1/auth/logout` — 204, clears cookie
+7. Use the token for all subsequent API calls
 
 ### Test Protected Endpoint
 
@@ -216,6 +229,7 @@ curl -H "Authorization: Bearer <token>" http://localhost:9001/api/v1/events
 
 - ✅ Backend auth endpoints live (callback, refresh, logout)
 - ✅ `jwt.auth` + `jwt.endpoint` middleware enforced
+- ✅ 40/48 catalog endpoints live; 8 still to build (`/me/*`, `/dashboard/*`, `/admin/audit-logs*`) + 2 public (`verify`, `view`)
 - ✅ 126 tests, 386 assertions, all green
-- ✅ Auth specs Final (`api-endpoints.md` v1.5, `legacy-e-cert-integration.md` v2.2)
+- ✅ Auth platform SSO entry (`/sso/login`, `/sso/register`, `/redirect`) — **live and tested**
 - 🚀 **Ready for Phase D — e-cert auth swap (CSR)**

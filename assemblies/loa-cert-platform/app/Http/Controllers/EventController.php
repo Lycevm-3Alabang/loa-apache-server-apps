@@ -6,6 +6,7 @@ use App\Models\Certificate;
 use App\Models\CertificateTemplate;
 use App\Models\Event;
 use App\Models\EventAttendee;
+use App\Services\AuditLogger;
 use App\Services\CertificateNumberService;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
@@ -125,6 +126,7 @@ class EventController extends Controller
     public function __construct(
         private readonly CertificateNumberService $certificateNumberService,
         private readonly PdfService $pdfService,
+        private readonly AuditLogger $auditLogger,
     ) {
     }
 
@@ -224,6 +226,10 @@ class EventController extends Controller
             'organization_id' => config('cert-platform.organization_id'),
         ]));
 
+        $this->auditLogger->record('event.created', 'api', 'event', $event->id, [
+            'name' => $event->name,
+        ]);
+
         return response()->json([
             'data' => $this->formatEvent($event->loadCount(['attendees', 'certificates']))
         ], 201);
@@ -295,6 +301,10 @@ class EventController extends Controller
 
         $event->update($request->all());
 
+        $this->auditLogger->record('event.updated', 'api', 'event', $event->id, [
+            'name' => $event->name,
+        ]);
+
         return response()->json([
             'data' => $this->formatEvent($event->fresh()->loadCount(['attendees', 'certificates']))
         ]);
@@ -319,6 +329,11 @@ class EventController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $event = Event::findOrFail($id);
+
+        $this->auditLogger->record('event.deleted', 'api', 'event', $event->id, [
+            'name' => $event->name,
+        ]);
+
         $event->delete();
 
         return response()->json(null, 204);
@@ -374,6 +389,12 @@ class EventController extends Controller
         ]);
 
         $event->update(['template_id' => $clone->id]);
+
+        $this->auditLogger->record('template.cloned', 'api', 'template', $clone->id, [
+            'source_template_id' => $source->id,
+            'event_id' => $event->id,
+            'type' => 'certificate',
+        ]);
 
         return response()->json([
             'data' => [
@@ -433,6 +454,12 @@ class EventController extends Controller
         ]);
 
         $event->update(['email_template_id' => $clone->id]);
+
+        $this->auditLogger->record('template.cloned', 'api', 'template', $clone->id, [
+            'source_template_id' => $source->id,
+            'event_id' => $event->id,
+            'type' => 'email',
+        ]);
 
         return response()->json([
             'data' => [
@@ -593,6 +620,13 @@ class EventController extends Controller
                     'certificate_number' => $certificateNumber,
                 ]);
 
+                $this->auditLogger->record('certificate.issued', 'api', 'certificate', $certificate->id, [
+                    'certificate_number' => $certificateNumber,
+                    'event_id' => $event->id,
+                    'recipient_email' => $attendee->email,
+                    'channel' => 'bulk',
+                ]);
+
                 try {
                     $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
                 } catch (\Exception $e) {
@@ -681,6 +715,11 @@ class EventController extends Controller
                         'revoked_at' => now(),
                         'revoke_reason' => 'Reissued',
                     ]);
+
+                    $this->auditLogger->record('certificate.revoked', 'api', 'certificate', $existing->id, [
+                        'certificate_number' => $existing->certificate_number,
+                        'reason' => 'Reissued',
+                    ]);
                 }
 
                 $certificateNumber = $this->certificateNumberService->generate(
@@ -701,6 +740,12 @@ class EventController extends Controller
                 $attendee->update([
                     'certificate_id' => $certificate->id,
                     'certificate_number' => $certificateNumber,
+                ]);
+
+                $this->auditLogger->record('certificate.reissued', 'api', 'certificate', $certificate->id, [
+                    'certificate_number' => $certificateNumber,
+                    'event_id' => $id,
+                    'recipient_email' => $attendee->email,
                 ]);
 
                 try {
@@ -786,6 +831,13 @@ class EventController extends Controller
                 'revoked_at' => now(),
                 'revoke_reason' => 'Auto-expired',
             ]);
+
+        if ($revoked > 0) {
+            $this->auditLogger->record('certificate.expired', 'api', 'event', $event->id, [
+                'revoked' => $revoked,
+                'channel' => 'auto_expire',
+            ]);
+        }
 
         return response()->json([
             'data' => [

@@ -67,11 +67,11 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 ### LOA Auth Platform — `assemblies/loa-auth-platform/`
 
 - **Scoped session prompt:** `assemblies/loa-auth-platform/SESSION-PROMPT.md`
-- **Status:** Scaffolded + largely implemented (Phase 1). **Not yet deployed** to `auth.lyceumalabang.edu.ph`.
+- **Status:** Scaffolded + largely implemented (Phase 1). **Not yet deployed** to `auth.lyceumalabang.edu.ph`. SSO entry point is live (`/sso/login`, `/sso/register`, `/redirect`).
 - **Kernel:** Identity v3.0 (tenancy) implemented in code; many kernel specs still Draft.
 - **Final specs (implemented):** `web-ui.md` v1.2 (destination resolution), `admin-dashboard.md` (v1 + v2), `tenant-endpoint-catalog.md` v3.2, `tenant-group-endpoint-grants.md` v1.1 (group priority), `access-config-import-export.md` v1.0, data-driven permission policy v1.0, RefreshToken.
 - **Final specs (pending implementation):** `user-account-activation.md` v1.0 — replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, email, admin resend).
-- **Implemented highlights:** tenants + `user_tenants` (000011–000012), tenant-scoped groups/grants (000013–000015), `tenant` JWT claim + `jwt.tenant` middleware, admin dashboard v1/v2 (tenant CRUD, groups, per-group permissions, members, suspend/activate), group priority resolution (`user_groups.priority`, default 10, 1 = highest), endpoint catalog + bulk import, access config import/export, 172 tests pass.
+- **Implemented highlights:** tenants + `user_tenants` (000011–000012), tenant-scoped groups/grants (000013–000015), `tenant` JWT claim + `jwt.tenant` middleware, admin dashboard v1/v2 (tenant CRUD, groups, per-group permissions, members, suspend/activate), group priority resolution (`user_groups.priority`, default 10, 1 = highest), endpoint catalog + bulk import, access config import/export, SSO web auth (login/register/redirect), EncryptionService decrypt bug fix. **210 tests pass**.
 - **2026-08-05 changes:** domain correction across docs/configs/tests/blades; allowlists updated (`config/cors.php`, `config/auth-web.php`, `.env.example`, `DEPLOY.md`, `environment.md`) to include `https://e-cert.vercel.app`.
 - **Phase B (Cert readiness) — DEFERRED 2026-08-06:** user decision — **no Cert data baked into the production Auth seed path** (`DatabaseSeeder` production runs only `AdminSeeder`; `database/seeders/database.sql` untouched — a `CertReadinessSeeder` attempt was created then reverted). Provisioning is **manual at deploy-time** per the runbook **`cert-readiness.md`** (**Final v0.4**, branch `docs/cert-readiness-runbook`): `loa` tenant (`redirect_origins` incl. `https://e-cert.vercel.app`), 48-endpoint Appendix A catalog import, `cert-admin`/`cert-staff`/`cert-user` groups (priorities 2/3/4, created manually), 48-row grant matrix (admin 48 / staff 39 / user 7), verification steps. Payload + matrix parity-checked against `api-endpoints.md` Appendix A. **§8 Local Development (v0.2→v0.4):** local Docker provisioning via the **`LocalCertReadinessSeeder`** (runs automatically on local `db:seed` via `DatabaseSeeder` non-prod guard — creates `cert-app` tenant @ `localhost:9001` + groups; catalog/grants still via local admin UI) plus an optional tinker fast path; local origin/CORS/redirect table.
 - **Next:** Auth deployment **deferred** (user decision 2026-08-06 — focus on Cert platform). Provisioning per `cert-readiness.md` (**Final v0.4**) happens at deploy-time; no action needed until Auth is deployed. Three things lined up for the Cert platform (per `assemblies/loa-cert-platform/SESSION-PROMPT.md`): **(1) Phase C** — Laravel 12 Cert app **scaffold created 2026-08-06** (`cert-app/`: core models + migrations); next is the **unauth domain CRUD slice** (events/attendees/templates/certificates + tests); **(2) C-Auth phase** — SSO `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` middleware (deferred from Phase C per decision #20/D9); **(3) Phase D** — `e-cert` auth swap (CSR): in-memory token, silent refresh, SSO fragment handler, parse-only JWT, client auth guard (depends on C-Auth).
@@ -79,7 +79,7 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 ### LOA Cert Platform — `assemblies/loa-cert-platform/`
 
 - **Scoped session prompt:** `assemblies/loa-cert-platform/SESSION-PROMPT.md`
-- **Status:** **C-Auth complete (2026-08-11).** All endpoints now enforce `jwt.auth` + `jwt.endpoint` middleware. Auth endpoints (callback/refresh/logout) live. Phase D (e-cert auth swap) is unblocked.
+- **Status:** **C-Auth complete (2026-08-11).** All endpoints now enforce `jwt.auth` + `jwt.endpoint` middleware. Auth endpoints (callback/refresh/logout) live. Auth platform SSO entry is now live — E2E SSO flow unblocked for Phase D.
 - **Key specs:** `api-endpoints.md` (**Final v1.5** — 50 domain endpoints: 48 JWT-gated + 2 public; C-Auth implemented), `legacy-e-cert-integration.md` (**Final v2.1**; authoritative retrofit spec), `web-ui.md`, `authenticated-endpoints-spec.md` (v1.1, updated 2026-08-11).
 - **Retrofit decisions D1–D7 (locked) + D8 superseded:** refactor-in-place; fresh start with no migration; archive-then-drop legacy DB; roles via user-groups + level grants; PDF/QR/email owned by Cert; spec synced to `e-cert` repo; ~~D8 SSR access-token cookie~~ **superseded 2026-08-06 — CSR wins**: `e-cert` is a **client-side SPA** (token in memory only, no server actions, no server-side JWT verification, `src/proxy.ts` deleted, no shared secret; refresh stays in the Cert-proxied httpOnly `loa_cert_refresh` cookie; route guard is client-side only).
 - **SSO design (Q-1 resolved: split-origin):** browser hits `e-cert.vercel.app`; Vercel rewrite `/api/v1/:path*` → `https://cert-api.lyceumalabang.edu.ph/api/v1/:path*` keeps httpOnly refresh cookie same-origin; direct cross-origin CORS is fallback only. Flow: `auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app` → `https://e-cert.vercel.app#payload=<AES-256-GCM>` → `POST /api/v1/auth/callback` (decrypt, `exp` + tenant-slug validation, httpOnly `SameSite=Lax` refresh cookie) → `jwt.auth` (local HS256, no users table, tenant claim) + `jwt.endpoint` (local catalog mirror, closed-by-default, owner-rule hook). Cert-proxied refresh/logout; `/sso/register`, `/forgot-password`, `/reset-password`.
@@ -110,19 +110,13 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 ### Date: 2026-08-11
 
 ### Completed
-- **C-Auth COMPLETE — all 6 steps implemented and tested.**
-  - `JWTService` (HS256 validate-only), `EncryptionService` (AES-256-GCM decrypt + key rotation)
-  - `JwtMiddleware` (`jwt.auth`), `EndpointPolicyMiddleware` (`jwt.endpoint`, 48-entry catalog)
-  - `AuthCallbackController`, `AuthRefreshController`, `AuthLogoutController` (throttled 10/min)
-  - Routes: `auth/*` public; everything else behind `['jwt.auth','jwt.endpoint']`
-  - `config/cert-platform.php` (tenant, cookie), `config/jwt.php` (secret, TTL), `config/auth-platform.php` (base_url, encryption keys)
-  - `WithJwt` test trait; all 6 test files updated; **126 tests, 386 assertions, all green**
-- **Docs updated:** `api-endpoints.md` → v1.5, `authenticated-endpoints-spec.md` → v1.1, `SESSION-PROMPT.md`, `PROJECT_UPDATES.md`
-- **Branch:** `cert/c-auth-step1-services` pushed to origin (commit `e0866a7`)
+- **Auth platform SSO fully implemented** — `GET /sso/login`, `POST /sso/login`, `GET /sso/register`, `POST /sso/register`, `GET /redirect` (splash page). Login rejects admin users, validates redirect origin against tenant `redirect_origins`, checks tenant membership, creates JWT + refresh token, stores encrypted payload in session, redirects via one-time splash page. Registration restricted to LOA domains.
+- **EncryptionService::decrypt() bug fixed** — padding logic always appended `==`, which only decoded when unpadded base64 length % 4 == 2 (~1/3 of payloads). Fixed to pad to a multiple of 4. Verified with round-trip tests.
+- **SsoAuthTest** — 15 tests, 54 assertions (encrypted + fragment paths, admin rejection, redirect validation, member-only access, one-time splash, registration domain restriction). Full auth suite: **210 tests, 498 assertions, all green**.
+- **FRONTEND-INTEGRATION.md updated** — SSO entry is now live; removed "blocked on auth platform" caveat.
 
 ### Next Action
-- [ ] Create `FRONTEND-INTEGRATION.md` handoff file for e-cert AI
-- [ ] Commit docs update
+- [ ] Deploy auth to `auth.lyceumalabang.edu.ph` (provision per `cert-readiness.md` Final v0.4)
 - [ ] Phase D — e-cert auth swap (CSR) — **unblocked**
 
 ### Date: 2026-08-10
@@ -273,3 +267,4 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 | 2026-08-07 (2) | **User Account Activation spec** written + promoted to **Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, admin resend). Committed + pushed. | Implement user account activation per spec |
 | 2026-08-08 | Added centralized Seq log server (datalust/seq) to root docker-compose.yml; both Auth and Cert app services now emit structured logs to Seq on port 5341. Created config/logging.php in both assemblies with a seq channel activated when SEQ_URL env var is present. Auth platform runbook updated with Seq instructions. | Verify Seq integration logs flow correctly; update Cert runbook |
 | 2026-08-10 | **Events & Attendees complete** (unauth CRUD slice): 13 event + 8 attendee endpoints (incl. stats, clone-template, bulk-issue, reissue, issue-completed, revoke-expired, import, destroy-with-cert, delete-preview, file-data), routes, OpenAPI, feature tests. Full suite green (91/334). Fixed seq/PDF/delete/expire/scope bugs surfaced by tests; added composer dev deps; renamed `database/Migrations`→`database/migrations`; removed dead Api controller. NOT committed. | Commit Events/Attendees work; remove `cert-app/` leftover |
+| 2026-08-11 | **Auth platform SSO implemented** (`/sso/login`, `/sso/register`, `/redirect`); fixed `EncryptionService::decrypt()` padding bug; `SsoAuthTest` (15 tests); full auth suite 210/498 green. FRONTEND-INTEGRATION.md updated. | Deploy auth or Phase D e-cert auth swap |

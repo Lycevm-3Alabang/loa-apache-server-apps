@@ -1,12 +1,16 @@
 <?php
 
 use App\Http\Controllers\AttendeeController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthCallbackController;
 use App\Http\Controllers\AuthLogoutController;
 use App\Http\Controllers\AuthRefreshController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CertificateTemplateController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\MeController;
+use App\Http\Controllers\PublicCertificateController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -19,7 +23,29 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', AuthLogoutController::class);
     });
 
+    Route::get('/verify/{certificate_number}', [PublicCertificateController::class, 'verify'])
+        ->where('certificate_number', '[A-Za-z0-9\-]+');
+    Route::get('/view/{id}', [PublicCertificateController::class, 'view']);
+
     Route::middleware(['jwt.auth', 'jwt.endpoint'])->group(function () {
+
+        Route::prefix('me')->group(function () {
+            Route::get('/certificates', [MeController::class, 'certificates']);
+            Route::get('/certificates/{id}', [MeController::class, 'certificate']);
+            Route::get('/events', [MeController::class, 'events']);
+            Route::get('/templates', [MeController::class, 'templates']);
+        });
+
+        Route::prefix('dashboard')->group(function () {
+            Route::get('/stats', [DashboardController::class, 'stats']);
+            Route::get('/activity', [DashboardController::class, 'activity']);
+        });
+
+        Route::prefix('admin')->group(function () {
+            Route::get('/audit-logs', [AuditLogController::class, 'index']);
+            Route::get('/audit-logs/export', [AuditLogController::class, 'export']);
+        });
+
 
         Route::prefix('templates')->group(function () {
             Route::get('/', [CertificateTemplateController::class, 'index']);
