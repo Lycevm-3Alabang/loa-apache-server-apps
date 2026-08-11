@@ -79,13 +79,19 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 ### LOA Cert Platform — `assemblies/loa-cert-platform/`
 
 - **Scoped session prompt:** `assemblies/loa-cert-platform/SESSION-PROMPT.md`
-- **Status:** Spec phase — **Phase A complete (2026-08-06)**: `api-endpoints.md` and `legacy-e-cert-integration.md` are **Final**. Retrofit of legacy `e-cert` (Next.js 16) into a **pure consumer** of Auth + Cert, spec-gated for implementation.
-- **Key specs:** `api-endpoints.md` (**Final v1.4** — 50 domain endpoints: 48 JWT-gated + 2 public; **decision #20: Cert API auth deferred**, Phase C = unauth domain CRUD), `legacy-e-cert-integration.md` (**Final v2.1**; authoritative retrofit spec, synced to `D:\loa\e-cert\legacy-e-cert-integration.md` per D7 — **D9 auth deferral**, C-Auth phase; Auth-provisioning sections are side-notes pointing at `cert-readiness.md`), `web-ui.md`, `README.md`.
+- **Status:** **C-Auth complete (2026-08-11).** All endpoints now enforce `jwt.auth` + `jwt.endpoint` middleware. Auth endpoints (callback/refresh/logout) live. Phase D (e-cert auth swap) is unblocked.
+- **Key specs:** `api-endpoints.md` (**Final v1.5** — 50 domain endpoints: 48 JWT-gated + 2 public; C-Auth implemented), `legacy-e-cert-integration.md` (**Final v2.1**; authoritative retrofit spec), `web-ui.md`, `authenticated-endpoints-spec.md` (v1.1, updated 2026-08-11).
 - **Retrofit decisions D1–D7 (locked) + D8 superseded:** refactor-in-place; fresh start with no migration; archive-then-drop legacy DB; roles via user-groups + level grants; PDF/QR/email owned by Cert; spec synced to `e-cert` repo; ~~D8 SSR access-token cookie~~ **superseded 2026-08-06 — CSR wins**: `e-cert` is a **client-side SPA** (token in memory only, no server actions, no server-side JWT verification, `src/proxy.ts` deleted, no shared secret; refresh stays in the Cert-proxied httpOnly `loa_cert_refresh` cookie; route guard is client-side only).
 - **SSO design (Q-1 resolved: split-origin):** browser hits `e-cert.vercel.app`; Vercel rewrite `/api/v1/:path*` → `https://cert-api.lyceumalabang.edu.ph/api/v1/:path*` keeps httpOnly refresh cookie same-origin; direct cross-origin CORS is fallback only. Flow: `auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app` → `https://e-cert.vercel.app#payload=<AES-256-GCM>` → `POST /api/v1/auth/callback` (decrypt, `exp` + tenant-slug validation, httpOnly `SameSite=Lax` refresh cookie) → `jwt.auth` (local HS256, no users table, tenant claim) + `jwt.endpoint` (local catalog mirror, closed-by-default, owner-rule hook). Cert-proxied refresh/logout; `/sso/register`, `/forgot-password`, `/reset-password`.
 - **Auth contract (verified from code):** HS256, `type=access`, TTLs 15/10080 min, claims `{ sub, email, name, groups, permissions, scopes, tenant:{id,slug} }`, `GET /api/v1/auth/access`.
-- **Open questions — all resolved 2026-08-06:** Q-2 → **CSR supersedes D8** (SPA, in-memory token, parse-only client JWT, no server actions / no shared secret, `src/proxy.ts` deleted — aligned with `D:\loa\e-cert\specs\` v2.0); Q-3 audit/email-log gaps (deferred — drop affected UI; future dedicated SMTP API, maybe reuse Auth's temp email tool); Q-4 seed groups (`cert-admin`/`cert-staff`/`cert-user`, no LOA group reuse); Q-5 `/my/profile` (out of scope, front-end refinement task); Q-6 cert number (per-event user-configurable pattern required, must contain `####`, no default); Q-7 attendees/import (JSON payload — CSV parsing is a UI concern); **decision #17** (Cert-proxied refresh/logout confirmed); **dashboard stats at `read`** (confirmed **with ownership note** — dashboard data is org-wide unscoped, grants `cert-admin`/`cert-staff` only, excluded from `cert-user`, per `api-endpoints.md` §5.7 + `legacy-e-cert-integration.md` §7.2).
-- **Next:** Phase B — Auth readiness — **deferred (2026-08-06)**: provisioned manually at deploy-time per Auth runbook `cert-readiness.md` (**Final v0.4**, incl. §8 Local Development; production has no baked-in seeder); **Phase C — scaffold CREATED 2026-08-06** (Laravel 12 app at `assemblies/loa-cert-platform/cert-app/`: composer.json, app config, core models `Organization`/`Event`/`CertificateTemplate`/`Certificate`/`EventAttendee` + migrations) — **domain CRUD slice only, unauthenticated** (decision #20 / D9: `jwt.auth`/`jwt.endpoint` + SSO callback/refresh/logout deferred to a later auth phase); **unauth CRUD slice COMPLETE 2026-08-10** — Events (13) + Attendees (8) endpoints, routes, OpenAPI, feature tests; **full suite green (91 tests / 334 assertions)**.
+- **C-Auth implementation (2026-08-11):**
+  - `JWTService` (HS256 validate-only), `EncryptionService` (AES-256-GCM decrypt + key rotation)
+  - `JwtMiddleware` (`jwt.auth`), `EndpointPolicyMiddleware` (`jwt.endpoint`, 48-entry catalog)
+  - `AuthCallbackController`, `AuthRefreshController`, `AuthLogoutController` (throttled 10/min)
+  - Routes: `auth/*` public; everything else behind `['jwt.auth','jwt.endpoint']`
+  - `config/cert-platform.php` (tenant, cookie), `config/jwt.php` (secret, TTL), `config/auth-platform.php` (base_url, encryption keys)
+  - 126 tests, 386 assertions, all green (MySQL `loa_cert_test`)
+- **Next:** Phase D — `e-cert` auth swap (CSR): in-memory token, silent refresh, SSO fragment handler, parse-only JWT, client auth guard. **Unblocked — C-Auth complete.**
 
 ### LOA Consult Platform — `assemblies/loa-consult-platform/`
 
@@ -100,6 +106,24 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 ---
 
 ## Last Session Notes
+
+### Date: 2026-08-11
+
+### Completed
+- **C-Auth COMPLETE — all 6 steps implemented and tested.**
+  - `JWTService` (HS256 validate-only), `EncryptionService` (AES-256-GCM decrypt + key rotation)
+  - `JwtMiddleware` (`jwt.auth`), `EndpointPolicyMiddleware` (`jwt.endpoint`, 48-entry catalog)
+  - `AuthCallbackController`, `AuthRefreshController`, `AuthLogoutController` (throttled 10/min)
+  - Routes: `auth/*` public; everything else behind `['jwt.auth','jwt.endpoint']`
+  - `config/cert-platform.php` (tenant, cookie), `config/jwt.php` (secret, TTL), `config/auth-platform.php` (base_url, encryption keys)
+  - `WithJwt` test trait; all 6 test files updated; **126 tests, 386 assertions, all green**
+- **Docs updated:** `api-endpoints.md` → v1.5, `authenticated-endpoints-spec.md` → v1.1, `SESSION-PROMPT.md`, `PROJECT_UPDATES.md`
+- **Branch:** `cert/c-auth-step1-services` pushed to origin (commit `e0866a7`)
+
+### Next Action
+- [ ] Create `FRONTEND-INTEGRATION.md` handoff file for e-cert AI
+- [ ] Commit docs update
+- [ ] Phase D — e-cert auth swap (CSR) — **unblocked**
 
 ### Date: 2026-08-10
 

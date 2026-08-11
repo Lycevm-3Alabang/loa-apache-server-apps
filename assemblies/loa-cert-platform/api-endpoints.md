@@ -1,7 +1,7 @@
 # LOA Cert Platform — API Endpoints
 ## Product Assembly Component Specification
 
-**Version:** 1.4
+**Version:** 1.5
 **Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -1465,15 +1465,15 @@ CERT_REFRESH_COOKIE_TTL=10080
 
 # 10. Security Checklist
 
-- [ ] All non-public endpoints behind `jwt.auth` + `jwt.endpoint` (§9.4, §9.5)
+- [x] All non-public endpoints behind `jwt.auth` + `jwt.endpoint` (§9.4, §9.5)
 - [ ] Level checks per endpoint exactly as §4/§6/Appendix A
-- [ ] Closed-by-default: any non-public route missing from the local catalog returns 403
+- [x] Closed-by-default: any non-public route missing from the local catalog returns 403
 - [ ] Public endpoints return no emails, no internal HTML, minimal ids
 - [ ] Recipient scope enforced for participant certificate access (email match)
 - [ ] Author scope enforced for non-admin event/template item operations (`created_by = jwt.sub`)
-- [ ] Tenant claim validated against `CERT_TENANT_SLUG` on every authenticated request
-- [ ] SSO payload decryption with key-rotation fallback; `exp` enforced; tenant mismatch rejected
-- [ ] Refresh token only in httpOnly `SameSite=Lax` cookie; never in JS-accessible storage
+- [x] Tenant claim validated against `CERT_TENANT_SLUG` on every authenticated request
+- [x] SSO payload decryption with key-rotation fallback; `exp` enforced; tenant mismatch rejected
+- [x] Refresh token only in httpOnly `SameSite=Lax` cookie; never in JS-accessible storage
 - [ ] Certificate numbers generated atomically (row lock); no race can duplicate a number
 - [ ] One active certificate per (event, email) enforced
 - [ ] Bulk attendee import validated entry-by-entry; `replace` mode requires explicit `confirm`
@@ -1482,7 +1482,7 @@ CERT_REFRESH_COOKIE_TTL=10080
 - [ ] Audit logged for: issue, revoke, delete, reissue, expire, email, verify(viewed), import, sso callback
 - [ ] Pagination limits enforced (max 100)
 - [ ] `Content-Type`/size limits on uploads
-- [ ] Throttling on `auth/callback` and `auth/refresh` (10/min per IP)
+- [x] Throttling on `auth/callback` and `auth/refresh` (10/min per IP)
 
 ---
 
@@ -1524,22 +1524,22 @@ CERT_REFRESH_COOKIE_TTL=10080
 
 # 13. Implementation Inventory
 
-> **Implementation order (approved core slice first):** scaffold → **unauth** domain CRUD slice (events → attendees → templates → certificates) per **decision #20 / 2026-08-06**; SSO + `jwt.auth`/`jwt.endpoint` follow in a later **auth phase**. PDF/QR/email/bulk/audit/dashboard endpoints follow in later passes.
+> **Implementation order:** scaffold → domain CRUD slice (events → attendees → templates → certificates) → **C-Auth** (SSO + `jwt.auth`/`jwt.endpoint`). PDF/QR/email/bulk/audit/dashboard endpoints follow in later passes.
 
-| Layer | Item |
-|-------|------|
-| Assembly | Laravel 12 scaffold in the loa-auth-platform stack (PHP 8.3, MySQL 8, Docker, PHPUnit, l5-swagger) |
-| Assembly | `config/cert-platform.php`, `config/cert-endpoints.php` (catalog mirror), `config/auth-platform.php`, `config/jwt.php` |
-| Assembly | **Auth phase (deferred, decision #20):** `JWTService` (HS256, shared secret), `EncryptionService` (AES-256-GCM + previous-key fallback) |
-| Assembly | **Auth phase (deferred, decision #20):** `JwtMiddleware` (`jwt.auth`, no user table), `EndpointPolicyMiddleware` (`jwt.endpoint`, level-based) |
-| Assembly | **Auth phase (deferred, decision #20):** `AuthController` (callback, refresh, logout) + throttles + refresh cookie handling |
-| Assembly | **Auth phase (deferred, decision #20):** `routes/api.php` route groups: `auth/*` public; everything else `['jwt.auth','jwt.endpoint']`; `verify|view` public |
-| Assembly | `permissions:sync-cert-catalog` artisan command (generate local catalog mirror) |
-| Context | Migrations: organizations (seed 1), certificate_templates (+`created_by`), events (+`created_by`), event_attendees, certificates (+generated column), certificate_emails, certificate_sequences, audit_logs |
-| Context | Event + Template + Attendee + Certificate services; `certificate_sequences` atomic number service; author-scope filters (`/me/events`, `/me/templates`, item ownership checks) |
-| Service | PDF service (DOMPDF), storage service (`file_path`), notification service (email) |
-| Service | QR code generation |
-| Tests | JWT + level-enforcement middleware tests; owner-rule tests; core CRUD tests (SQLite `:memory:`, shared test `JWT_SECRET`) |
+| Layer | Item | Status |
+|-------|------|--------|
+| Assembly | Laravel 12 scaffold (PHP 8.3, MySQL 8, Docker, PHPUnit, l5-swagger) | ✅ Done |
+| Assembly | `config/cert-platform.php`, `config/cert-endpoints.php` (catalog mirror), `config/auth-platform.php`, `config/jwt.php` | ✅ Done |
+| Assembly | `JWTService` (HS256, shared secret, validate-only), `EncryptionService` (AES-256-GCM + previous-key fallback) | ✅ Done (C-Auth step 1) |
+| Assembly | `JwtMiddleware` (`jwt.auth`, no user table), `EndpointPolicyMiddleware` (`jwt.endpoint`, level-based) | ✅ Done (C-Auth step 2) |
+| Assembly | `AuthCallbackController`, `AuthRefreshController`, `AuthLogoutController` + throttles + refresh cookie handling | ✅ Done (C-Auth step 3) |
+| Assembly | `routes/api.php` route groups: `auth/*` public; everything else `['jwt.auth','jwt.endpoint']`; `verify|view` public | ✅ Done (C-Auth step 3) |
+| Assembly | `permissions:sync-cert-catalog` artisan command (generate local catalog mirror) | ⬜ Pending |
+| Context | Migrations: organizations (seed 1), certificate_templates (+`created_by`), events (+`created_by`), event_attendees, certificates (+generated column), certificate_emails, certificate_sequences, audit_logs | ✅ Done |
+| Context | Event + Template + Attendee + Certificate services; `certificate_sequences` atomic number service; author-scope filters (`/me/events`, `/me/templates`, item ownership checks) | ✅ Done |
+| Service | PDF service (DOMPDF), storage service (`file_path`), notification service (email) | ⬜ Pending |
+| Service | QR code generation | ⬜ Pending |
+| Tests | JWT + level-enforcement middleware tests (20 tests); SSO callback/refresh/logout controller tests; core CRUD tests (126 tests total, MySQL) | ✅ Done |
 
 ---
 
@@ -1609,4 +1609,4 @@ The import payload for Auth `POST /api/v1/admin/tenants/{tenant}/endpoints/bulk`
 
 ## Document Control
 
-- **Status:** Final v1.4 — 2026-08-06: **decision #20 — auth implementation deferred** (Phase C builds the domain CRUD slice unauthenticated; SSO + `jwt.auth`/`jwt.endpoint` in a later auth phase). §13 implementation inventory annotated accordingly. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`.
+- **Status:** Final v1.5 — 2026-08-11: **C-Auth implemented** (§13 items marked done). Auth endpoints (callback/refresh/logout) live; `jwt.auth` + `jwt.endpoint` middleware enforced on all non-public routes; 126 tests green. v1.4 (2026-08-06): decision #20 — auth deferred. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`.
