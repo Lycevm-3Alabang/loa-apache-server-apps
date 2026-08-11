@@ -8,10 +8,11 @@ use App\Models\Event;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Traits\WithJwt;
 
 class CertificateTemplateTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithJwt;
 
     private Organization $organization;
 
@@ -43,7 +44,7 @@ class CertificateTemplateTest extends TestCase
             'html_content' => '<div>Hello {{recipient_name}}</div>',
         ]);
 
-        $response = $this->getJson('/api/v1/templates');
+        $response = $this->actingAsJwt()->getJson('/api/v1/templates');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -71,7 +72,7 @@ class CertificateTemplateTest extends TestCase
             'html_content' => '<div>Hello {{recipient_name}}</div>',
         ]);
 
-        $response = $this->getJson('/api/v1/templates?type=certificate');
+        $response = $this->actingAsJwt()->getJson('/api/v1/templates?type=certificate');
 
         $response->assertStatus(200)
             ->assertJsonPath('meta.total', 1);
@@ -93,7 +94,7 @@ class CertificateTemplateTest extends TestCase
             'html_content' => '<div>{{recipient_name}}</div>',
         ]);
 
-        $response = $this->getJson('/api/v1/templates?search=SPARK');
+        $response = $this->actingAsJwt()->getJson('/api/v1/templates?search=SPARK');
 
         $response->assertStatus(200)
             ->assertJsonPath('meta.total', 1);
@@ -109,7 +110,7 @@ class CertificateTemplateTest extends TestCase
             'css_content' => 'body { width: 1123px; }',
         ];
 
-        $response = $this->postJson('/api/v1/templates', $payload);
+        $response = $this->actingAsJwt()->postJson('/api/v1/templates', $payload);
 
         $response->assertStatus(201)
             ->assertJsonStructure([
@@ -121,7 +122,7 @@ class CertificateTemplateTest extends TestCase
 
     public function test_create_template_validates_required_fields(): void
     {
-        $response = $this->postJson('/api/v1/templates', []);
+        $response = $this->actingAsJwt()->postJson('/api/v1/templates', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['name', 'type', 'html_content']);
@@ -135,7 +136,7 @@ class CertificateTemplateTest extends TestCase
             'html_content' => '<div>test</div>',
         ];
 
-        $response = $this->postJson('/api/v1/templates', $payload);
+        $response = $this->actingAsJwt()->postJson('/api/v1/templates', $payload);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['type']);
@@ -156,7 +157,7 @@ class CertificateTemplateTest extends TestCase
             'html_content' => '<div>test</div>',
         ];
 
-        $response = $this->postJson('/api/v1/templates', $payload);
+        $response = $this->actingAsJwt()->postJson('/api/v1/templates', $payload);
 
         $response->assertStatus(409)
             ->assertJsonPath('message', 'Template name already exists for this organization.');
@@ -171,7 +172,7 @@ class CertificateTemplateTest extends TestCase
             'html_content' => '<div>{{recipient_name}}</div>',
         ]);
 
-        $response = $this->getJson("/api/v1/templates/{$template->id}");
+        $response = $this->actingAsJwt()->getJson("/api/v1/templates/{$template->id}");
 
         $response->assertStatus(200)
             ->assertJsonPath('data.id', $template->id)
@@ -180,7 +181,7 @@ class CertificateTemplateTest extends TestCase
 
     public function test_get_template_not_found(): void
     {
-        $response = $this->getJson('/api/v1/templates/nonexistent-id');
+        $response = $this->actingAsJwt()->getJson('/api/v1/templates/nonexistent-id');
 
         $response->assertStatus(404)
             ->assertJsonPath('message', 'Template not found.');
@@ -200,7 +201,7 @@ class CertificateTemplateTest extends TestCase
             'html_content' => '<div>updated</div>',
         ];
 
-        $response = $this->patchJson("/api/v1/templates/{$template->id}", $payload);
+        $response = $this->actingAsJwt()->patchJson("/api/v1/templates/{$template->id}", $payload);
 
         $response->assertStatus(200)
             ->assertJsonPath('data.name', 'Updated Name')
@@ -209,7 +210,7 @@ class CertificateTemplateTest extends TestCase
 
     public function test_update_template_not_found(): void
     {
-        $response = $this->patchJson('/api/v1/templates/nonexistent-id', [
+        $response = $this->actingAsJwt()->patchJson('/api/v1/templates/nonexistent-id', [
             'name' => 'Updated',
         ]);
 
@@ -233,7 +234,7 @@ class CertificateTemplateTest extends TestCase
             'html_content' => '<div>test</div>',
         ]);
 
-        $response = $this->patchJson("/api/v1/templates/{$templateB->id}", [
+        $response = $this->actingAsJwt()->patchJson("/api/v1/templates/{$templateB->id}", [
             'name' => 'Template A',
         ]);
 
@@ -258,7 +259,7 @@ class CertificateTemplateTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $response = $this->patchJson("/api/v1/templates/{$template->id}", [
+        $response = $this->actingAsJwt()->patchJson("/api/v1/templates/{$template->id}", [
             'name' => 'Updated Name',
         ]);
 
@@ -275,7 +276,7 @@ class CertificateTemplateTest extends TestCase
             'html_content' => '<div>test</div>',
         ]);
 
-        $response = $this->deleteJson("/api/v1/templates/{$template->id}");
+        $response = $this->actingAsJwt()->deleteJson("/api/v1/templates/{$template->id}");
 
         $response->assertStatus(204);
         $this->assertDatabaseMissing('certificate_templates', ['id' => $template->id]);
@@ -283,7 +284,7 @@ class CertificateTemplateTest extends TestCase
 
     public function test_delete_template_not_found(): void
     {
-        $response = $this->deleteJson('/api/v1/templates/nonexistent-id');
+        $response = $this->actingAsJwt()->deleteJson('/api/v1/templates/nonexistent-id');
 
         $response->assertStatus(404)
             ->assertJsonPath('message', 'Template not found.');
@@ -306,7 +307,7 @@ class CertificateTemplateTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $response = $this->deleteJson("/api/v1/templates/{$template->id}");
+        $response = $this->actingAsJwt()->deleteJson("/api/v1/templates/{$template->id}");
 
         $response->assertStatus(409)
             ->assertJsonPath('message', 'Template is referenced by events. Use force=true to delete.');
@@ -329,7 +330,7 @@ class CertificateTemplateTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
-        $response = $this->deleteJson("/api/v1/templates/{$template->id}");
+        $response = $this->actingAsJwt()->deleteJson("/api/v1/templates/{$template->id}");
 
         $response->assertStatus(409)
             ->assertJsonPath('message', 'Template is referenced by issued certificates and cannot be deleted.');
@@ -352,7 +353,7 @@ class CertificateTemplateTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $response = $this->getJson("/api/v1/templates/{$template->id}");
+        $response = $this->actingAsJwt()->getJson("/api/v1/templates/{$template->id}");
 
         $response->assertStatus(200)
             ->assertJsonPath('data.is_locked', true)
