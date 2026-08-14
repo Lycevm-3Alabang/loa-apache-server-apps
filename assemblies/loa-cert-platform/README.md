@@ -148,51 +148,79 @@ Storage Service (PDF file persistence)
 
 # 10. API Surface
 
-The LOA Cert Platform exposes the following API groups:
+The LOA Cert Platform exposes 48 endpoints across 10 groups. Full details in `api-endpoints.md` (v1.5, Final).
 
 ```
-# Events
-GET    /api/v1/events
-POST   /api/v1/events
-GET    /api/v1/events/{id}
-PUT    /api/v1/events/{id}
-DELETE /api/v1/events/{id}
-
-# Attendees
-GET    /api/v1/events/{id}/attendees
-POST   /api/v1/events/{id}/attendees
-POST   /api/v1/events/{id}/attendees/import
-DELETE /api/v1/events/{id}/attendees/{aid}
-
-# Templates
-GET    /api/v1/templates
-POST   /api/v1/templates
-GET    /api/v1/templates/{id}
-PUT    /api/v1/templates/{id}
-DELETE /api/v1/templates/{id}
-
-# Certificates
-POST   /api/v1/certificates
-POST   /api/v1/certificates/bulk
-GET    /api/v1/certificates
-GET    /api/v1/certificates/{id}
-GET    /api/v1/certificates/{id}/pdf
-PUT    /api/v1/certificates/{id}/revoke
-DELETE /api/v1/certificates/{id}
-POST   /api/v1/certificates/{id}/email
+# Auth (SSO) — Public
+POST   /api/v1/auth/callback
+POST   /api/v1/auth/refresh
+POST   /api/v1/auth/logout
 
 # Public (no auth)
 GET    /api/v1/verify/{certificate_number}
 GET    /api/v1/view/{id}
 
-# Auth Callback
-POST   /api/v1/auth/callback
+# Events (13)
+GET    /api/v1/events
+POST   /api/v1/events
+GET    /api/v1/events/{id}
+PATCH  /api/v1/events/{id}
+DELETE /api/v1/events/{id}
+GET    /api/v1/events/{id}/stats
+POST   /api/v1/events/{id}/clone-template
+POST   /api/v1/events/{id}/clone-email-template
+POST   /api/v1/events/{id}/bulk-issue
+POST   /api/v1/events/{id}/reissue
+GET    /api/v1/events/{id}/revoke-expired
+POST   /api/v1/events/{id}/revoke-expired
+POST   /api/v1/events/{id}/issue-completed
 
-# Admin
-GET    /api/v1/admin/audit
-GET    /api/v1/admin/dashboard
-GET    /api/v1/admin/users
-PUT    /api/v1/admin/users/{id}/role
+# Attendees (8)
+GET    /api/v1/events/{eventId}/attendees
+POST   /api/v1/events/{eventId}/attendees
+POST   /api/v1/events/{eventId}/attendees/import
+PATCH  /api/v1/attendees/{id}
+DELETE /api/v1/attendees/{id}
+DELETE /api/v1/attendees/{id}/with-cert
+GET    /api/v1/attendees/{id}/delete-preview
+GET    /api/v1/attendees/{id}/file-data
+
+# Templates (5)
+GET    /api/v1/templates
+POST   /api/v1/templates
+GET    /api/v1/templates/{id}
+PATCH  /api/v1/templates/{id}
+DELETE /api/v1/templates/{id}
+
+# Certificates (14)
+GET    /api/v1/certificates
+POST   /api/v1/certificates
+POST   /api/v1/certificates/bulk
+POST   /api/v1/certificates/upload
+GET    /api/v1/certificates/qr
+POST   /api/v1/certificates/expire
+GET    /api/v1/certificates/{id}
+GET    /api/v1/certificates/{id}/pdf
+GET    /api/v1/certificates/{id}/download
+POST   /api/v1/certificates/{id}/revoke
+DELETE /api/v1/certificates/{id}
+POST   /api/v1/certificates/{id}/email
+GET    /api/v1/certificates/{id}/email-logs
+POST   /api/v1/certificates/{id}/reissue
+
+# Participant — /me (4)
+GET    /api/v1/me/certificates
+GET    /api/v1/me/certificates/{id}
+GET    /api/v1/me/events
+GET    /api/v1/me/templates
+
+# Dashboard (2)
+GET    /api/v1/dashboard/stats
+GET    /api/v1/dashboard/activity
+
+# Admin (2)
+GET    /api/v1/admin/audit-logs
+GET    /api/v1/admin/audit-logs/export
 ```
 
 ---
@@ -211,7 +239,7 @@ User visits e-cert.vercel.app
     |
     v
 Frontend redirects browser to:
-    auth.lyceumalabang.edu.ph/login?redirect=https://e-cert.vercel.app
+    auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app
     |
     v
 User authenticates on auth.lyceumalabang.edu.ph
@@ -243,7 +271,7 @@ The Cert Platform frontend initiates SSO by redirecting the browser to the Auth 
 **Redirect URL format:**
 
 ```
-https://auth.lyceumalabang.edu.ph/login?redirect=https://e-cert.vercel.app
+https://auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app
 ```
 
 **Parameters:**
@@ -512,11 +540,10 @@ async function handleSSOCallback(): Promise<SSOPayload | null> {
  * Stores tokens after successful SSO callback.
  */
 function storeTokens(data: SSOPayload): void {
-  // Store access token in memory (not localStorage)
-  sessionStorage.setItem('access_token', data.access_token);
+  // Store access token in memory only (never localStorage/sessionStorage)
+  setAccessToken(data.access_token);
 
-  // Store refresh token in httpOnly cookie via backend
-  // (set by the /api/v1/auth/callback response as Set-Cookie)
+  // Refresh token is in httpOnly cookie (set by backend, invisible to JS)
 }
 
 /**
@@ -524,7 +551,7 @@ function storeTokens(data: SSOPayload): void {
  */
 function redirectToAuthPlatform(): void {
   const certOrigin = window.location.origin;
-  const authUrl = `https://auth.lyceumalabang.edu.ph/login?redirect=${encodeURIComponent(certOrigin)}`;
+  const authUrl = `https://auth.lyceumalabang.edu.ph/sso/login?redirect=${encodeURIComponent(certOrigin)}`;
   window.location.href = authUrl;
 }
 ```
@@ -771,7 +798,7 @@ Deployment configuration:
 - Subdomain: cert-api.lyceumalabang.edu.ph
 - Document root: public/
 
-See `web-ui.md` for the frontend specification (auth guard, SSO callback handling, token lifecycle).
+See `legacy-e-cert-integration.md` §6 (SSO flow, session handling) and `authenticated-endpoints-spec.md` (endpoint reference) for frontend integration details.
 
 ---
 
@@ -865,4 +892,4 @@ Products grow by adding Business Contexts.
 
 ## Document Control
 
-- **Status:** Draft v1.1 — 2026-08-06: §11.8 **Auth Platform Configuration Reference** converted to a **side-note** pointing at the Auth runbook `assemblies/loa-auth-platform/cert-readiness.md` (removed inline `.env` + raw `tenants` SQL); added note that Cert-side auth implementation is deferred (decision #20, `api-endpoints.md` §8).
+- **Status:** Draft v1.2 — 2026-08-11: §10 updated to match all 48 routed endpoints per `api-endpoints.md` v1.5; §11 fixed `/sso/login` URL; §12 fixed token storage to in-memory only; §13 updated reference to `legacy-e-cert-integration.md` + `authenticated-endpoints-spec.md` (superseded `web-ui.md` removed).

@@ -9,10 +9,11 @@ use App\Models\Event;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Traits\WithJwt;
 
 class CertificateTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithJwt;
 
     private Organization $organization;
     private Event $event;
@@ -57,7 +58,7 @@ class CertificateTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
-        $response = $this->getJson('/api/v1/certificates');
+        $response = $this->actingAsJwt()->getJson('/api/v1/certificates');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -80,7 +81,7 @@ class CertificateTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
-        $response = $this->getJson("/api/v1/certificates?event_id={$this->event->id}");
+        $response = $this->actingAsJwt()->getJson("/api/v1/certificates?event_id={$this->event->id}");
 
         $response->assertStatus(200)
             ->assertJsonPath('meta.total', 1);
@@ -108,7 +109,7 @@ class CertificateTest extends TestCase
             'revoke_reason' => 'Test',
         ]);
 
-        $response = $this->getJson('/api/v1/certificates?status=active');
+        $response = $this->actingAsJwt()->getJson('/api/v1/certificates?status=active');
 
         $response->assertStatus(200)
             ->assertJsonPath('meta.total', 1);
@@ -123,7 +124,7 @@ class CertificateTest extends TestCase
             'recipient_email' => 'maria@example.com',
         ];
 
-        $response = $this->postJson('/api/v1/certificates', $payload);
+        $response = $this->actingAsJwt()->postJson('/api/v1/certificates', $payload);
 
         $response->assertStatus(201)
             ->assertJsonStructure([
@@ -135,7 +136,7 @@ class CertificateTest extends TestCase
 
     public function test_issue_certificate_validates_required_fields(): void
     {
-        $response = $this->postJson('/api/v1/certificates', []);
+        $response = $this->actingAsJwt()->postJson('/api/v1/certificates', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['recipient_name', 'recipient_email']);
@@ -159,7 +160,7 @@ class CertificateTest extends TestCase
             'recipient_email' => 'test@example.com',
         ];
 
-        $response = $this->postJson('/api/v1/certificates', $payload);
+        $response = $this->actingAsJwt()->postJson('/api/v1/certificates', $payload);
 
         $response->assertStatus(409)
             ->assertJsonPath('message', 'An active certificate already exists for this event and email.');
@@ -174,7 +175,7 @@ class CertificateTest extends TestCase
             'recipient_email' => 'maria@example.com',
         ];
 
-        $response = $this->postJson('/api/v1/certificates', $payload);
+        $response = $this->actingAsJwt()->postJson('/api/v1/certificates', $payload);
 
         $response->assertStatus(201)
             ->assertJsonPath('data.certificate_number', 'CERT-0001');
@@ -191,7 +192,7 @@ class CertificateTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
-        $response = $this->getJson("/api/v1/certificates/{$certificate->id}");
+        $response = $this->actingAsJwt()->getJson("/api/v1/certificates/{$certificate->id}");
 
         $response->assertStatus(200)
             ->assertJsonPath('data.id', $certificate->id)
@@ -200,7 +201,7 @@ class CertificateTest extends TestCase
 
     public function test_get_certificate_not_found(): void
     {
-        $response = $this->getJson('/api/v1/certificates/nonexistent-id');
+        $response = $this->actingAsJwt()->getJson('/api/v1/certificates/nonexistent-id');
 
         $response->assertStatus(404)
             ->assertJsonPath('message', 'Certificate not found.');
@@ -217,7 +218,7 @@ class CertificateTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
-        $response = $this->postJson("/api/v1/certificates/{$certificate->id}/revoke", [
+        $response = $this->actingAsJwt()->postJson("/api/v1/certificates/{$certificate->id}/revoke", [
             'reason' => 'Administrative decision',
         ]);
 
@@ -237,7 +238,7 @@ class CertificateTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
-        $response = $this->postJson("/api/v1/certificates/{$certificate->id}/revoke", []);
+        $response = $this->actingAsJwt()->postJson("/api/v1/certificates/{$certificate->id}/revoke", []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['reason']);
@@ -256,7 +257,7 @@ class CertificateTest extends TestCase
             'revoke_reason' => 'Already revoked',
         ]);
 
-        $response = $this->postJson("/api/v1/certificates/{$certificate->id}/revoke", [
+        $response = $this->actingAsJwt()->postJson("/api/v1/certificates/{$certificate->id}/revoke", [
             'reason' => 'Try again',
         ]);
 
@@ -275,7 +276,7 @@ class CertificateTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
-        $response = $this->deleteJson("/api/v1/certificates/{$certificate->id}");
+        $response = $this->actingAsJwt()->deleteJson("/api/v1/certificates/{$certificate->id}");
 
         $response->assertStatus(204);
         $this->assertDatabaseMissing('certificates', ['id' => $certificate->id]);
@@ -283,7 +284,7 @@ class CertificateTest extends TestCase
 
     public function test_delete_certificate_not_found(): void
     {
-        $response = $this->deleteJson('/api/v1/certificates/nonexistent-id');
+        $response = $this->actingAsJwt()->deleteJson('/api/v1/certificates/nonexistent-id');
 
         $response->assertStatus(404)
             ->assertJsonPath('message', 'Certificate not found.');
@@ -300,7 +301,7 @@ class CertificateTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
-        $response = $this->postJson("/api/v1/certificates/{$certificate->id}/reissue", [
+        $response = $this->actingAsJwt()->postJson("/api/v1/certificates/{$certificate->id}/reissue", [
             'reason' => 'Correction',
         ]);
 
@@ -326,7 +327,7 @@ class CertificateTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
-        $response = $this->postJson("/api/v1/certificates/{$certificate->id}/reissue", []);
+        $response = $this->actingAsJwt()->postJson("/api/v1/certificates/{$certificate->id}/reissue", []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['reason']);
@@ -350,7 +351,7 @@ class CertificateTest extends TestCase
             'status' => 'sent',
         ]);
 
-        $response = $this->getJson("/api/v1/certificates/{$certificate->id}/email-logs");
+        $response = $this->actingAsJwt()->getJson("/api/v1/certificates/{$certificate->id}/email-logs");
 
         $response->assertStatus(200)
             ->assertJsonPath('meta.total', 1);
@@ -368,7 +369,7 @@ class CertificateTest extends TestCase
             'expires_at' => now()->subDay(),
         ]);
 
-        $response = $this->postJson('/api/v1/certificates/expire');
+        $response = $this->actingAsJwt()->postJson('/api/v1/certificates/expire');
 
         $response->assertStatus(200)
             ->assertJsonPath('data.revoked', 1);
@@ -386,7 +387,7 @@ class CertificateTest extends TestCase
             'expires_at' => now()->subDay(),
         ]);
 
-        $response = $this->postJson('/api/v1/certificates/expire', ['dry_run' => true]);
+        $response = $this->actingAsJwt()->postJson('/api/v1/certificates/expire', ['dry_run' => true]);
 
         $response->assertStatus(200)
             ->assertJsonPath('data.revoked', 1);

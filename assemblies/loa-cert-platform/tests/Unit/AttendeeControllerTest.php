@@ -7,10 +7,11 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Traits\WithJwt;
 
 class AttendeeControllerTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithJwt;
 
     protected function setUp(): void
     {
@@ -29,7 +30,7 @@ class AttendeeControllerTest extends TestCase
             'certificate_number_pattern' => 'CERT-####',
         ]);
 
-        $response = $this->get("/api/v1/events/{$event->id}/attendees");
+        $response = $this->actingAsJwt()->get("/api/v1/events/{$event->id}/attendees");
         
         $response->assertStatus(200);
         $response->assertJsonStructure([
@@ -50,7 +51,7 @@ class AttendeeControllerTest extends TestCase
             'email' => 'john@example.com',
         ];
 
-        $response = $this->post("/api/v1/events/{$event->id}/attendees", $attendeeData);
+        $response = $this->actingAsJwt()->post("/api/v1/events/{$event->id}/attendees", $attendeeData);
         
         $response->assertStatus(201);
         $response->assertJsonStructure(['data']);
@@ -78,7 +79,7 @@ class AttendeeControllerTest extends TestCase
             'name' => 'Updated Name'
         ];
 
-        $response = $this->patch("/api/v1/attendees/{$attendee->id}", $updateData);
+        $response = $this->actingAsJwt()->patch("/api/v1/attendees/{$attendee->id}", $updateData);
         
         $response->assertStatus(200);
         $response->assertJsonFragment(['name' => 'Updated Name']);
@@ -97,7 +98,7 @@ class AttendeeControllerTest extends TestCase
             'email' => 'john@example.com'
         ]);
 
-        $response = $this->delete("/api/v1/attendees/{$attendee->id}");
+        $response = $this->actingAsJwt()->delete("/api/v1/attendees/{$attendee->id}");
         
         $response->assertStatus(204);
         $this->assertDatabaseMissing('event_attendees', [
@@ -119,7 +120,7 @@ class AttendeeControllerTest extends TestCase
             ]
         ];
 
-        $response = $this->post("/api/v1/events/{$event->id}/attendees/import", $importData);
+        $response = $this->actingAsJwt()->post("/api/v1/events/{$event->id}/attendees/import", $importData);
         
         $response->assertStatus(200);
         $response->assertJsonStructure(['data']);

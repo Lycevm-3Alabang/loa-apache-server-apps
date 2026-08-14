@@ -8,4 +8,5 @@
 /storage/framework/sessions/*
 /storage/logs/*
 /storage/api-docs/*
+/storage/app/private/certificates/*
 /bootstrap/cache/*

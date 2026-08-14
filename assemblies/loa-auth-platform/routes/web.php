@@ -18,6 +18,14 @@ Route::get('/', function () {
 Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [WebAuthController::class, 'login']);
 
+Route::get('/sso/login', [WebAuthController::class, 'showSSOLogin'])->name('sso.login');
+Route::post('/sso/login', [WebAuthController::class, 'ssoLogin'])
+    ->middleware('throttle:10,60');
+
+Route::get('/sso/register', [WebAuthController::class, 'showSSORegister'])->name('sso.register');
+Route::post('/sso/register', [WebAuthController::class, 'ssoRegister'])
+    ->middleware('throttle:5,60');
+
 Route::get('/activate', [WebAuthController::class, 'showActivate'])->name('activate');
 Route::post('/activate', [WebAuthController::class, 'activate'])
     ->middleware('throttle:5,60');
@@ -32,8 +40,7 @@ Route::get('/reset-password', [WebResetController::class, 'showResetForm'])
 Route::post('/reset-password', [WebResetController::class, 'reset']);
 
 Route::get('/redirect', [WebAuthController::class, 'showRedirect'])
-    ->name('auth.redirect')
-    ->middleware('auth:web');
+    ->name('auth.redirect');
 
 Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     // Bulk User Import (must come before /users/{id} route)

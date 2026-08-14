@@ -41,16 +41,26 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-08
+### Date: 2026-08-11
 
 ### Completed
-- **User Account Activation fully implemented** per `user-account-activation.md` Final v1.0: migrations (pending status + activations table), Activation model, ActivationService, activate blade view, activate-account email template, repurposed `/register` → `/activate` routes/views, admin create user flow (status: pending, sends activation email), login gates pending users, admin resend activation, tests (ActivationTest, LoginTest pending user, AdminUsersTest pending + resend).
+- **SSO web auth fully implemented** — login, register, redirect splash, admin rejection, encrypted payload path:
+  - `WebAuthController`: `ssoLogin`, `ssoRegister`, `showSSOLogin`, `showSSORegister`, `showRedirect` methods
+  - Blade views: `sso-login.blade.php`, `sso-register.blade.php`
+  - Routes: `/sso/login`, `/sso/register`, `/redirect` (web, no CSRF)
+  - Registration restricted to `lyceumalabang.edu.ph` + `itmlyceumalabang.onmicrosoft.com`
+  - Admin users rejected from SSO login (redirects to admin dashboard instead)
+  - Splash page (`/redirect`) is one-time-use — clears session after reading
+- **EncryptionService::decrypt() bug fix** — the old code always appended `==` to the unpadded base64, which only decodes when `len % 4 == 2` (~1/3 of payloads). Fixed to pad to a multiple of 4 correctly. Verified with round-trip test.
+- **SsoAuthTest** — 15 tests, 54 assertions covering both encrypted and fragment payload paths, admin rejection, redirect validation, member-only access, one-time splash, registration domain restriction, duplicate email handling.
+- **Full auth suite: 210 tests, 498 assertions, all green.**
 
 ### In Progress
-- **Cert Platform Phase C:** Events & Attendees CRUD slice (per root PROJECT_UPDATES.md)
+- **Cert Platform Phase D:** e-cert auth swap (CSR) — now unblocked (SSO entry point exists)
 
 ### Next Action
-- [ ] Focus on Cert Platform implementation (Events & Attendees endpoints per `api-endpoints.md` Final v1.4)
+- [ ] Deploy auth to `auth.lyceumalabang.edu.ph` (provision per `cert-readiness.md` Final v0.4)
+- [ ] Focus on Cert Platform Phase D — e-cert auth swap (CSR)
 
 ### Backlog / Known Gaps
 - **Deployment not yet done** — Docker-verified only; `database.sql` rebuilt from migration schema (parity-checked).
@@ -82,6 +92,7 @@ Then:
 | 2026-08-07 | Reconciled local Docker path: **`LocalCertReadinessSeeder`** (runs automatically on local `db:seed` via `DatabaseSeeder` non-prod guard; `cert-app` tenant @ `localhost:9001` + `cert-admin/staff/user` groups) is the sanctioned local provisioning. `cert-readiness.md` → **Final v0.4** (decision note, §8.1, §8.3, table, doc control). Production seeding remains manual-only per the 2026-08-06 decision. | Deploy auth → provision per runbook; Cert Phase C unauth CRUD slice |
 | 2026-08-07 (2) | **User Account Activation spec** written + promoted to **Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, admin resend). Committed + pushed. | Implement user account activation per spec |
 | 2026-08-08 | User Account Activation fully implemented (migrations, model, service, views, email template, routes, controllers, tests). Auth Platform work complete for now. Added centralized Seq logging infrastructure. | Focus on Cert Platform Phase C |
+| 2026-08-11 | SSO web auth implemented (login/register/redirect/blade views); fixed EncryptionService::decrypt() padding bug; SsoAuthTest (15 tests); full suite 210 tests pass | Deploy auth or Phase D e-cert auth swap |
 
 ---
 

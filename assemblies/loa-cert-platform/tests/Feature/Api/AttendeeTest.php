@@ -9,10 +9,11 @@ use App\Models\EventAttendee;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Traits\WithJwt;
 
 class AttendeeTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithJwt;
 
     private Organization $organization;
     private CertificateTemplate $template;
@@ -62,7 +63,7 @@ class AttendeeTest extends TestCase
             'email' => 'john@example.com',
         ]);
 
-        $this->getJson("/api/v1/events/{$this->event->id}/attendees")
+        $this->actingAsJwt()->getJson("/api/v1/events/{$this->event->id}/attendees")
             ->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
@@ -89,20 +90,20 @@ class AttendeeTest extends TestCase
             'email' => 'john@example.com',
         ]);
 
-        $this->getJson("/api/v1/events/{$this->event->id}/attendees?search=Maria")
+        $this->actingAsJwt()->getJson("/api/v1/events/{$this->event->id}/attendees?search=Maria")
             ->assertStatus(200)
             ->assertJsonPath('meta.total', 1);
     }
 
     public function test_list_attendees_event_not_found(): void
     {
-        $this->getJson('/api/v1/events/nonexistent-id/attendees')
+        $this->actingAsJwt()->getJson('/api/v1/events/nonexistent-id/attendees')
             ->assertStatus(404);
     }
 
     public function test_create_attendee(): void
     {
-        $response = $this->postJson("/api/v1/events/{$this->event->id}/attendees", [
+        $response = $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/attendees", [
             'name' => 'Maria Santos',
             'email' => 'maria@example.com',
             'attended' => true,
@@ -130,7 +131,7 @@ class AttendeeTest extends TestCase
             'email' => 'maria@example.com',
         ]);
 
-        $this->postJson("/api/v1/events/{$this->event->id}/attendees", [
+        $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/attendees", [
             'name' => 'New Name',
             'email' => 'maria@example.com',
         ])
@@ -147,14 +148,14 @@ class AttendeeTest extends TestCase
 
     public function test_create_attendee_validates_required_fields(): void
     {
-        $this->postJson("/api/v1/events/{$this->event->id}/attendees", [])
+        $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/attendees", [])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['name', 'email']);
     }
 
     public function test_create_attendee_event_not_found(): void
     {
-        $this->postJson('/api/v1/events/nonexistent-id/attendees', [
+        $this->actingAsJwt()->postJson('/api/v1/events/nonexistent-id/attendees', [
             'name' => 'Maria',
             'email' => 'maria@example.com',
         ])
@@ -170,7 +171,7 @@ class AttendeeTest extends TestCase
             'email' => 'maria@example.com',
         ]);
 
-        $this->patchJson("/api/v1/attendees/{$attendee->id}", [
+        $this->actingAsJwt()->patchJson("/api/v1/attendees/{$attendee->id}", [
             'name' => 'Maria G. Santos',
             'completed' => true,
         ])
@@ -195,7 +196,7 @@ class AttendeeTest extends TestCase
             'email' => 'john@example.com',
         ]);
 
-        $this->patchJson("/api/v1/attendees/{$other->id}", [
+        $this->actingAsJwt()->patchJson("/api/v1/attendees/{$other->id}", [
             'email' => 'maria@example.com',
         ])
             ->assertStatus(422)
@@ -211,7 +212,7 @@ class AttendeeTest extends TestCase
             'email' => 'maria@example.com',
         ]);
 
-        $this->deleteJson("/api/v1/attendees/{$attendee->id}")
+        $this->actingAsJwt()->deleteJson("/api/v1/attendees/{$attendee->id}")
             ->assertStatus(204);
 
         $this->assertDatabaseMissing('event_attendees', ['id' => $attendee->id]);
@@ -237,7 +238,7 @@ class AttendeeTest extends TestCase
 
         $attendee->update(['certificate_id' => $certificate->id]);
 
-        $this->deleteJson("/api/v1/attendees/{$attendee->id}/with-cert")
+        $this->actingAsJwt()->deleteJson("/api/v1/attendees/{$attendee->id}/with-cert")
             ->assertStatus(204);
 
         $this->assertDatabaseMissing('event_attendees', ['id' => $attendee->id]);
@@ -253,7 +254,7 @@ class AttendeeTest extends TestCase
             'email' => 'maria@example.com',
         ]);
 
-        $this->getJson("/api/v1/attendees/{$attendee->id}/delete-preview")
+        $this->actingAsJwt()->getJson("/api/v1/attendees/{$attendee->id}/delete-preview")
             ->assertStatus(200)
             ->assertJsonPath('data.attendee_id', $attendee->id)
             ->assertJsonPath('data.linked_certificate', null)
@@ -280,7 +281,7 @@ class AttendeeTest extends TestCase
 
         $attendee->update(['certificate_id' => $certificate->id]);
 
-        $this->getJson("/api/v1/attendees/{$attendee->id}/delete-preview")
+        $this->actingAsJwt()->getJson("/api/v1/attendees/{$attendee->id}/delete-preview")
             ->assertStatus(200)
             ->assertJsonPath('data.linked_certificate.id', $certificate->id)
             ->assertJsonPath('data.deletes_certificate', true);
@@ -295,7 +296,7 @@ class AttendeeTest extends TestCase
             'email' => 'maria@example.com',
         ]);
 
-        $this->getJson("/api/v1/attendees/{$attendee->id}/file-data")
+        $this->actingAsJwt()->getJson("/api/v1/attendees/{$attendee->id}/file-data")
             ->assertStatus(200)
             ->assertJsonPath('data.generation_mode', 'template');
     }
@@ -313,13 +314,13 @@ class AttendeeTest extends TestCase
             ],
         ]);
 
-        $this->getJson("/api/v1/attendees/{$attendee->id}/file-data")
+        $this->actingAsJwt()->getJson("/api/v1/attendees/{$attendee->id}/file-data")
             ->assertStatus(410);
     }
 
     public function test_import_attendees(): void
     {
-        $response = $this->postJson("/api/v1/events/{$this->event->id}/attendees/import", [
+        $response = $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/attendees/import", [
             'attendees' => [
                 ['name' => 'Maria Santos', 'email' => 'maria@example.com'],
                 ['name' => 'John Doe', 'email' => 'john@example.com'],
@@ -342,7 +343,7 @@ class AttendeeTest extends TestCase
             'email' => 'maria@example.com',
         ]);
 
-        $this->postJson("/api/v1/events/{$this->event->id}/attendees/import", [
+        $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/attendees/import", [
             'attendees' => [
                 ['name' => 'New Name', 'email' => 'maria@example.com'],
             ],
@@ -366,7 +367,7 @@ class AttendeeTest extends TestCase
             'email' => 'maria@example.com',
         ]);
 
-        $this->postJson("/api/v1/events/{$this->event->id}/attendees/import", [
+        $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/attendees/import", [
             'attendees' => [
                 ['name' => 'New Name', 'email' => 'new@example.com'],
             ],
@@ -384,7 +385,7 @@ class AttendeeTest extends TestCase
             'email' => 'old@example.com',
         ]);
 
-        $this->postJson("/api/v1/events/{$this->event->id}/attendees/import", [
+        $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/attendees/import", [
             'attendees' => [
                 ['name' => 'New Name', 'email' => 'new@example.com'],
             ],

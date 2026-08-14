@@ -6,10 +6,11 @@ use Tests\TestCase;
 use App\Models\Event;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Traits\WithJwt;
 
 class EventControllerTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithJwt;
 
     protected function setUp(): void
     {
@@ -23,7 +24,7 @@ class EventControllerTest extends TestCase
 
     public function test_event_index_returns_collection()
     {
-        $response = $this->get('/api/v1/events');
+        $response = $this->actingAsJwt()->get('/api/v1/events');
         
         $response->assertStatus(200);
         $response->assertJsonStructure([
@@ -39,7 +40,7 @@ class EventControllerTest extends TestCase
             'certificate_number_pattern' => 'CERT-####',
         ];
 
-        $response = $this->post('/api/v1/events', $eventData);
+        $response = $this->actingAsJwt()->post('/api/v1/events', $eventData);
         
         $response->assertStatus(201);
         $response->assertJsonStructure(['data']);
@@ -56,7 +57,7 @@ class EventControllerTest extends TestCase
             'certificate_number_pattern' => 'CERT-####',
         ]);
 
-        $response = $this->get("/api/v1/events/{$event->id}");
+        $response = $this->actingAsJwt()->get("/api/v1/events/{$event->id}");
         
         $response->assertStatus(200);
         $response->assertJsonStructure(['data']);
@@ -74,7 +75,7 @@ class EventControllerTest extends TestCase
             'name' => 'Updated Name'
         ];
 
-        $response = $this->patch("/api/v1/events/{$event->id}", $updateData);
+        $response = $this->actingAsJwt()->patch("/api/v1/events/{$event->id}", $updateData);
         
         $response->assertStatus(200);
         $response->assertJsonFragment(['name' => 'Updated Name']);
@@ -87,7 +88,7 @@ class EventControllerTest extends TestCase
             'certificate_number_pattern' => 'CERT-####',
         ]);
 
-        $response = $this->delete("/api/v1/events/{$event->id}");
+        $response = $this->actingAsJwt()->delete("/api/v1/events/{$event->id}");
         
         $response->assertStatus(204);
         $this->assertDatabaseMissing('events', [

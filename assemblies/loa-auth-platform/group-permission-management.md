@@ -523,4 +523,4 @@ POST   /admin/users/{id}/permissions/{key}/remove
 | `kernels/identity/rules/permission-resolution.md` | Resolution algorithm (union, deny-wins, overrides) |
 | `kernels/identity/tenancy.md` | Tenant-scoped groups and grants |
 | `assemblies/loa-cert-platform/README.md` | Cert Platform SSO callback contract |
-| `assemblies/loa-cert-platform/web-ui.md` | Cert Platform permission-to-role mapping |
+| `assemblies/loa-cert-platform/legacy-e-cert-integration.md` §7.4 | Cert Platform permission-to-role mapping (level-based) |

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Certificate;
 use App\Models\Event;
 use App\Models\EventAttendee;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -85,6 +86,11 @@ use OpenApi\Attributes as OA;
 ])]
 class AttendeeController extends Controller
 {
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+    ) {
+    }
+
     /**
      * Display a listing of attendees for an event.
      */
@@ -213,6 +219,11 @@ class AttendeeController extends Controller
             $attendee->update(['completed_at' => now()]);
         }
 
+        $this->auditLogger->record('attendee.created', 'api', 'attendee', $attendee->id, [
+            'event_id' => $eventId,
+            'email' => $attendee->email,
+        ]);
+
         return response()->json([
             'data' => $attendee->fresh()
         ], 201);
@@ -257,6 +268,11 @@ class AttendeeController extends Controller
             'name', 'email', 'attended', 'completed', 'attended_at', 'completed_at', 'metadata'
         ]));
 
+        $this->auditLogger->record('attendee.updated', 'api', 'attendee', $attendee->id, [
+            'event_id' => $attendee->event_id,
+            'email' => $attendee->email,
+        ]);
+
         return response()->json([
             'data' => $attendee->fresh()
         ]);
@@ -283,8 +299,19 @@ class AttendeeController extends Controller
         $attendee = EventAttendee::findOrFail($id);
 
         if ($attendee->certificate_id) {
+            $this->auditLogger->record('certificate.deleted', 'api', 'certificate', $attendee->certificate_id, [
+                'certificate_number' => $attendee->certificate_number,
+                'channel' => 'attendee_delete',
+            ]);
+
             Certificate::where('id', $attendee->certificate_id)->delete();
         }
+
+        $this->auditLogger->record('attendee.deleted', 'api', 'attendee', $attendee->id, [
+            'event_id' => $attendee->event_id,
+            'email' => $attendee->email,
+            'with_certificate' => true,
+        ]);
 
         $attendee->delete();
 
@@ -310,6 +337,12 @@ class AttendeeController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $attendee = EventAttendee::findOrFail($id);
+
+        $this->auditLogger->record('attendee.deleted', 'api', 'attendee', $attendee->id, [
+            'event_id' => $attendee->event_id,
+            'email' => $attendee->email,
+        ]);
+
         $attendee->delete();
 
         return response()->json(null, 204);
@@ -422,6 +455,12 @@ class AttendeeController extends Controller
                 $result['skipped']++;
             }
         }
+
+        $this->auditLogger->record('attendee.imported', 'api', 'event', $eventId, [
+            'mode' => $mode,
+            'imported' => $result['imported'],
+            'skipped' => $result['skipped'],
+        ]);
 
         return response()->json([
             'data' => $result

@@ -9,10 +9,10 @@ class EncryptionService
 
     public function __construct()
     {
-        $rawKey = config('auth-web.encryption_key', '');
+        $rawKey = config('auth-platform.encryption_key', '');
         $this->key = $rawKey !== '' ? $this->decodeKey($rawKey) : null;
 
-        $rawPrevious = config('auth-web.encryption_key_previous', '');
+        $rawPrevious = config('auth-platform.encryption_key_previous', '');
         $this->previousKey = $rawPrevious !== '' ? $this->decodeKey($rawPrevious) : null;
     }
 
@@ -21,50 +21,17 @@ class EncryptionService
         return $this->key !== null;
     }
 
-    public function encrypt(array $payload): string
-    {
-        if ($this->key === null) {
-            throw new \RuntimeException('ENCRYPTION_KEY is not configured');
-        }
-
-        $plaintext = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-        $nonce = random_bytes(12);
-
-        $tag = '';
-        $ciphertext = openssl_encrypt(
-            $plaintext,
-            'aes-256-gcm',
-            $this->key,
-            OPENSSL_RAW_DATA,
-            $nonce,
-            $tag,
-            '',
-            16,
-        );
-
-        if ($ciphertext === false) {
-            throw new \RuntimeException('Encryption failed');
-        }
-
-        return rtrim(base64_encode($nonce . $tag . $ciphertext), '=');
-    }
-
+    /**
+     * Decrypt an AES-256-GCM SSO payload (nonce[12] + tag[16] + ciphertext).
+     * Tries current key, then previous key on failure.
+     */
     public function decrypt(string $encoded): ?array
     {
         if ($this->key === null) {
             return null;
         }
 
-        $encoded = strtr($encoded, '-_', '+/');
-
-        $pad = strlen($encoded) % 4;
-
-        if ($pad > 0) {
-            $encoded .= str_repeat('=', 4 - $pad);
-        }
-
-        $decoded = base64_decode($encoded, true);
+        $decoded = base64_decode(strtr($encoded, '-_', '+/') . '==', true);
 
         if ($decoded === false || strlen($decoded) < 29) {
             return null;

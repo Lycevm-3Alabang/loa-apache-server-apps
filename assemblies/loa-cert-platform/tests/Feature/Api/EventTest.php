@@ -10,10 +10,11 @@ use App\Models\EventAttendee;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Traits\WithJwt;
 
 class EventTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithJwt;
 
     private Organization $organization;
     private CertificateTemplate $template;
@@ -55,7 +56,7 @@ class EventTest extends TestCase
             'certificate_number_pattern' => 'CERT-####',
         ]);
 
-        $response = $this->getJson('/api/v1/events');
+        $response = $this->actingAsJwt()->getJson('/api/v1/events');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -69,18 +70,18 @@ class EventTest extends TestCase
 
     public function test_list_events_filters_by_status_and_search(): void
     {
-        $this->getJson('/api/v1/events?status=active&search=Test')
+        $this->actingAsJwt()->getJson('/api/v1/events?status=active&search=Test')
             ->assertStatus(200)
             ->assertJsonPath('meta.total', 1);
 
-        $this->getJson('/api/v1/events?status=archive')
+        $this->actingAsJwt()->getJson('/api/v1/events?status=archive')
             ->assertStatus(200)
             ->assertJsonPath('meta.total', 0);
     }
 
     public function test_create_event(): void
     {
-        $response = $this->postJson('/api/v1/events', [
+        $response = $this->actingAsJwt()->postJson('/api/v1/events', [
             'name' => 'Graduation 2026',
             'certificate_number_pattern' => 'GRAD-####',
             'event_date' => '2026-05-30',
@@ -99,14 +100,14 @@ class EventTest extends TestCase
 
     public function test_create_event_validates_required_fields(): void
     {
-        $this->postJson('/api/v1/events', [])
+        $this->actingAsJwt()->postJson('/api/v1/events', [])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['name', 'certificate_number_pattern']);
     }
 
     public function test_get_event(): void
     {
-        $this->getJson("/api/v1/events/{$this->event->id}")
+        $this->actingAsJwt()->getJson("/api/v1/events/{$this->event->id}")
             ->assertStatus(200)
             ->assertJsonPath('data.id', $this->event->id)
             ->assertJsonPath('data.attendees_count', 0);
@@ -114,13 +115,13 @@ class EventTest extends TestCase
 
     public function test_get_event_not_found(): void
     {
-        $this->getJson('/api/v1/events/nonexistent-id')
+        $this->actingAsJwt()->getJson('/api/v1/events/nonexistent-id')
             ->assertStatus(404);
     }
 
     public function test_update_event(): void
     {
-        $this->patchJson("/api/v1/events/{$this->event->id}", [
+        $this->actingAsJwt()->patchJson("/api/v1/events/{$this->event->id}", [
             'name' => 'Updated Event Name',
         ])
             ->assertStatus(200)
@@ -134,7 +135,7 @@ class EventTest extends TestCase
 
     public function test_delete_event(): void
     {
-        $this->deleteJson("/api/v1/events/{$this->event->id}")
+        $this->actingAsJwt()->deleteJson("/api/v1/events/{$this->event->id}")
             ->assertStatus(204);
 
         $this->assertDatabaseMissing('events', ['id' => $this->event->id]);
@@ -181,7 +182,7 @@ class EventTest extends TestCase
             'expires_at' => now()->subDay(),
         ]);
 
-        $this->getJson("/api/v1/events/{$this->event->id}/stats")
+        $this->actingAsJwt()->getJson("/api/v1/events/{$this->event->id}/stats")
             ->assertStatus(200)
             ->assertJsonPath('data.attendees.total', 1)
             ->assertJsonPath('data.attendees.attended', 1)
@@ -203,7 +204,7 @@ class EventTest extends TestCase
             'css_content' => 'body {}',
         ]);
 
-        $response = $this->postJson("/api/v1/events/{$this->event->id}/clone-template", [
+        $response = $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/clone-template", [
             'source_template_id' => $source->id,
             'name' => 'Cloned Certificate',
         ]);
@@ -233,7 +234,7 @@ class EventTest extends TestCase
             'html_content' => '<div>Email</div>',
         ]);
 
-        $this->postJson("/api/v1/events/{$this->event->id}/clone-template", [
+        $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/clone-template", [
             'source_template_id' => $emailSource->id,
             'name' => 'Cloned',
         ])
@@ -249,7 +250,7 @@ class EventTest extends TestCase
             'html_content' => '<div>Hello {{recipient_name}}</div>',
         ]);
 
-        $response = $this->postJson("/api/v1/events/{$this->event->id}/clone-email-template", [
+        $response = $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/clone-email-template", [
             'source_template_id' => $source->id,
             'name' => 'Cloned Email',
         ]);
@@ -277,7 +278,7 @@ class EventTest extends TestCase
             'email' => 'maria@example.com',
         ]);
 
-        $response = $this->postJson("/api/v1/events/{$this->event->id}/bulk-issue", [
+        $response = $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/bulk-issue", [
             'attendee_ids' => [$attendee->id],
         ]);
 
@@ -317,7 +318,7 @@ class EventTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
-        $this->postJson("/api/v1/events/{$this->event->id}/bulk-issue", [
+        $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/bulk-issue", [
             'attendee_ids' => [$attendee->id],
         ])
             ->assertStatus(200)
@@ -328,7 +329,7 @@ class EventTest extends TestCase
 
     public function test_bulk_issue_validates_attendee_ids(): void
     {
-        $this->postJson("/api/v1/events/{$this->event->id}/bulk-issue", [
+        $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/bulk-issue", [
             'attendee_ids' => [],
         ])
             ->assertStatus(422)
@@ -353,7 +354,7 @@ class EventTest extends TestCase
             'completed' => false,
         ]);
 
-        $response = $this->postJson("/api/v1/events/{$this->event->id}/issue-completed");
+        $response = $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/issue-completed");
 
         $response->assertStatus(200)
             ->assertJsonPath('data.success', 1)
@@ -400,7 +401,7 @@ class EventTest extends TestCase
             'next_value' => 2,
         ]);
 
-        $response = $this->postJson("/api/v1/events/{$this->event->id}/reissue", [
+        $response = $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/reissue", [
             'attendee_ids' => [$attendee->id],
         ]);
 
@@ -440,7 +441,7 @@ class EventTest extends TestCase
             'expires_at' => now()->addMonth(),
         ]);
 
-        $this->getJson("/api/v1/events/{$this->event->id}/revoke-expired")
+        $this->actingAsJwt()->getJson("/api/v1/events/{$this->event->id}/revoke-expired")
             ->assertStatus(200)
             ->assertJsonPath('data.event_id', $this->event->id)
             ->assertJsonPath('data.expired', 1);
@@ -458,7 +459,7 @@ class EventTest extends TestCase
             'expires_at' => now()->subDay(),
         ]);
 
-        $this->postJson("/api/v1/events/{$this->event->id}/revoke-expired")
+        $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/revoke-expired")
             ->assertStatus(200)
             ->assertJsonPath('data.revoked', 1);
 
