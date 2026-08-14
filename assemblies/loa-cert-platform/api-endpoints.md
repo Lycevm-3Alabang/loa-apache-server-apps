@@ -1280,7 +1280,7 @@ Re-issuing after revocation reuses the same number (the generated column becomes
 
 # 9. Auth Platform Integration & SSO
 
-This section is the concrete contract for authentication and authorization. It supersedes the v1.0 "deferred" note and refines `README.md` §11 and `web-ui.md` §4 where noted. Authority specs: `tenant-group-endpoint-grants.md` (Final v1.1), `tenant-endpoint-catalog.md`, `group-permission-management.md` (Final v2.0), `assemblies/loa-auth-platform/web-ui.md` §4.2.
+This section is the concrete contract for authentication and authorization. It supersedes the v1.0 "deferred" note and refines `README.md` §11 and `legacy-e-cert-integration.md` §6 where noted. Authority specs: `tenant-group-endpoint-grants.md` (Final v1.1), `tenant-endpoint-catalog.md`, `group-permission-management.md` (Final v2.0), `assemblies/loa-auth-platform/web-ui.md` §4.2.
 
 ## 9.1 Trust Model
 
@@ -1434,7 +1434,7 @@ Levels decide *whether* a caller may invoke an endpoint; **scope** decides *whic
 
 - Reads the `loa_cert_refresh` cookie; if present, calls Auth `POST /api/v1/auth/logout` server-to-server with the refresh token.
 - Clears the cookie; returns `204`.
-- Frontend also discards its in-memory access token (web-ui.md §4).
+- Frontend also discards its in-memory access token (`legacy-e-cert-integration.md` §6.3).
 - Refines README §11.6.
 
 ## 9.9 Frontend Permission Store
@@ -1508,7 +1508,8 @@ CERT_REFRESH_COOKIE_TTL=10080
 | Spec | Role |
 |------|------|
 | `assemblies/loa-cert-platform/README.md` | Assembly scope; §10 superseded by this spec; §11 refined by §9 here |
-| `assemblies/loa-cert-platform/web-ui.md` | Frontend SSO handling §4, permission→role mapping §5 |
+| `assemblies/loa-cert-platform/legacy-e-cert-integration.md` | Frontend SSO flow §6, permission→role mapping §7.4, token lifecycle §6.3 |
+| `assemblies/loa-cert-platform/authenticated-endpoints-spec.md` | Endpoint reference card with required levels |
 | `business-contexts/certificate/README.md` | Domain ownership (certificates, templates, events, attendees) |
 | `business-contexts/certificate/entities/certificate.md` | Certificate aggregate rules, invariants |
 | `business-contexts/certificate/entities/template.md` | Template types, placeholders, canvas |

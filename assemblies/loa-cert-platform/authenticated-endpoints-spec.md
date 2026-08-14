@@ -163,7 +163,7 @@ The access token JWT contains these claims:
 }
 ```
 
-**For front-end role mapping:** parse `permissions` claim to determine UI role (see `web-ui.md` §5).
+**For front-end role mapping:** parse `permissions` claim to determine UI role (see `legacy-e-cert-integration.md` §7.4).
 
 ---
 

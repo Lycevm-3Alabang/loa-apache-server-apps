@@ -621,5 +621,5 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 | `assemblies/loa-auth-platform/tenant-endpoint-catalog.md` §6 | Endpoint catalog admin UI (new) — this spec's grants UI builds on the catalog |
 | `assemblies/loa-auth-platform/admin-dashboard.md` §3.8 | Route group `/admin/tenants/*` — this spec adds `/groups/{group}/endpoints` under it |
 | `assemblies/loa-auth-platform/web-ui.md` | Admin session lifecycle (`web.admin` gate); login destination resolution |
-| `assemblies/loa-cert-platform/web-ui.md` §5 | Cert Platform permission-to-role mapping (consumes `permissions` claim) |
+| `assemblies/loa-cert-platform/legacy-e-cert-integration.md` §7.4 | Cert Platform permission-to-role mapping (consumes `permissions` claim) |
 | `assemblies/loa-cert-platform/README.md` §11 | SSO callback contract; tenant apps validate JWT from Auth Platform |

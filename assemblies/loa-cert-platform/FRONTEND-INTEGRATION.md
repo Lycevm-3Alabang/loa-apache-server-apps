@@ -19,14 +19,7 @@ This document is the handoff from the Cert Platform backend to the e-cert fronte
 
 ### Domain Endpoints (JWT-Gated)
 
-**40 of the 48 catalog endpoints are live** and enforce `jwt.auth` + `jwt.endpoint` middleware (verified against `routes/api.php`). **Not yet implemented (no routes, no controllers):**
-
-- `/api/v1/me/certificates`, `/api/v1/me/certificates/{id}` — my certificates
-- `/api/v1/me/events`, `/api/v1/me/templates` — author-scope filters
-- `/api/v1/dashboard/stats`, `/api/v1/dashboard/activity` — dashboard
-- `/api/v1/admin/audit-logs`, `/api/v1/admin/audit-logs/export` — admin audit logs
-
-The two public verification endpoints are also **not routed yet**: `/api/v1/verify/{certificate_number}` and `/api/v1/view/{id}`. See `authenticated-endpoints-spec.md` for the full list with required levels.
+**All 48 catalog endpoints are live** and enforce `jwt.auth` + `jwt.endpoint` middleware (verified against `routes/api.php`). See `authenticated-endpoints-spec.md` for the full list with required levels.
 
 ### Middleware
 
@@ -220,7 +213,7 @@ curl -H "Authorization: Bearer <token>" http://localhost:9001/api/v1/events
 | `api-endpoints.md` (v1.5) | Full endpoint list, auth contract, data models |
 | `authenticated-endpoints-spec.md` (v1.1) | Endpoint list with required levels (quick reference) |
 | `legacy-e-cert-integration.md` (v2.2) | Full retrofit spec — SSO flow, session model, decommission plan |
-| `web-ui.md` | Frontend spec — SSO handling, permission→role mapping |
+| `web-ui.md` | Frontend spec — SSO handling, permission→role mapping (superseded by `legacy-e-cert-integration.md` §7.4) |
 | `FRONTEND-INTEGRATION.md` | This file |
 
 ---
@@ -229,7 +222,7 @@ curl -H "Authorization: Bearer <token>" http://localhost:9001/api/v1/events
 
 - ✅ Backend auth endpoints live (callback, refresh, logout)
 - ✅ `jwt.auth` + `jwt.endpoint` middleware enforced
-- ✅ 40/48 catalog endpoints live; 8 still to build (`/me/*`, `/dashboard/*`, `/admin/audit-logs*`) + 2 public (`verify`, `view`)
+- ✅ All 48 catalog endpoints live + 2 public endpoints
 - ✅ 126 tests, 386 assertions, all green
 - ✅ Auth platform SSO entry (`/sso/login`, `/sso/register`, `/redirect`) — **live and tested**
 - 🚀 **Ready for Phase D — e-cert auth swap (CSR)**

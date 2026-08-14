@@ -734,7 +734,7 @@ Spec-gated (AI-RULES.md Rule 0). Each phase requires the governing spec to be Fi
 | **G** | Decommission legacy DB + deps (§11) | cutover verified |
 | **H** | Phase 4 integration: cross-app JWT validation tests, OpenAPI, audit consistency (`PROJECT.md` Phase 4) | — |
 
-Suggested first implementation slice (core-first, matching `SESSION-PROMPT.md`): events + attendees + templates + certificates against the Cert API (**unauthenticated** — D9); SSO/session and the auth middleware follow in the **C-Auth** phase; PDF/QR/email/audit/dashboard afterwards.
+Suggested first implementation slice (core-first): events + attendees + templates + certificates against the Cert API (**unauthenticated** — D9); SSO/session and the auth middleware follow in the **C-Auth** phase; PDF/QR/email/audit/dashboard afterwards.
 
 ---
 
@@ -761,7 +761,7 @@ Suggested first implementation slice (core-first, matching `SESSION-PROMPT.md`):
 | Spec / doc | Role |
 |------------|------|
 | `assemblies/loa-cert-platform/api-endpoints.md` (Final v1.5) | Cert API source of truth; §4 levels, §6 routes, §7 data model, §9 SSO/JWT/permissions, Appendix A catalog |
-| `assemblies/loa-cert-platform/web-ui.md` (v1.0) | Frontend spec; §4 SSO fragment, §5 permission mapping (superseded for roles by this spec §7), §6 token lifecycle (refined by the CSR decision, D8 superseded) |
+| `assemblies/loa-cert-platform/authenticated-endpoints-spec.md` (v1.1) | Endpoint reference card with required levels |
 | `assemblies/loa-cert-platform/README.md` (v1.2) | Assembly scope, §11 SSO contract, §10 REST conventions |
 | `assemblies/loa-auth-platform/tenant-group-endpoint-grants.md` (Final v1.1) | Level-based grants model (authority for levels) |
 | `assemblies/loa-auth-platform/group-permission-management.md` (Final v2.0) | User-groups + permission definitions (`cert.*` defined, not enforced) |
