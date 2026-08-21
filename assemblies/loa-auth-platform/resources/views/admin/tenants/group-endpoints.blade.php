@@ -35,15 +35,20 @@
         <form method="post" action="{{ route('admin.tenants.group.endpoints.save', [$tenant, $group]) }}">
             @csrf
             <div class="section-header">
-                <h2>Endpoint Grants</h2>
-                <button class="button" type="submit">Save all</button>
+                
+<div style="display:flex; align-items:center; gap:1rem;">
+    <label for="apply-to-all" style="font-weight:600;">Apply To All:</label>
+    <select id="apply-to-all" style="padding:0.4rem; border:1px solid var(--border); border-radius:6px;"><option value="">— Select —</option><option value="read">read</option><option value="write">write</option><option value="admin">admin</option><option value="deny">deny</option><option value="none">none</option></select>
+    <button class="button" type="submit">Save all</button>
+</div>
+
             </div>
 
             <div class="table-wrap">
                 @if ($endpoints->isEmpty())
                     <div class="empty-state">No endpoints cataloged for this tenant. <a href="{{ route('admin.tenants.endpoints.manage', $tenant) }}">Add endpoints first</a>.</div>
                 @else
-                    <table>
+                    <table id="endpoint-table">
                         <thead>
                             <tr>
                                 <th>Method</th>
@@ -83,4 +88,13 @@
             </div>
         </form>
     </div>
+    <script>
+        document.getElementById('apply-to-all').addEventListener('change', function () {
+            var value = this.value;
+            if (!value) return;
+            var selects = document.querySelectorAll('#endpoint-table select');
+            selects.forEach(function (s) { s.value = value; });
+            this.value = '';
+        });
+    </script>
 @endsection

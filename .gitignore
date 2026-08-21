@@ -25,3 +25,4 @@ assemblies/loa-auth-platform/storage/framework/cache/*
 # Environment files
 .env.local
 assemblies/loa-cert-platform/cert-app/bootstrap/cache/
+assemblies/loa-auth-platform/resources/views/admin/tenants/group-endpoints.blade.php
