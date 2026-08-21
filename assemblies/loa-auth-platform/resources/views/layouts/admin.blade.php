@@ -470,6 +470,7 @@
         </a>
         <nav class="topbar-nav" aria-label="Admin">
             <a href="{{ route('admin.users') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Users</a>
+            <a href="{{ route('admin.users.import') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Import</a>
             <a href="{{ route('admin.tenants') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Tenants</a>
             <span class="user-chip">{{ Auth::guard('web')->user()?->name ?? 'Admin' }}</span>
             <form method="post" action="{{ route('admin.logout') }}">

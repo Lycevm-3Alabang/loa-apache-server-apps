@@ -7,6 +7,7 @@
             <h1>User Management</h1>
             <p>Search, filter, and control account access.</p>
         </div>
+        <a class="button button-ghost" href="{{ route('admin.users.import') }}" style="border-color:var(--border);color:var(--text-secondary);">Import Users</a>
         <a class="button" href="{{ route('admin.users.create') }}">Create User</a>
     </div>
 

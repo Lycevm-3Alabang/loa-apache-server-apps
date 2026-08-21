@@ -85,7 +85,7 @@ class AuthCallbackController extends Controller
             ],
         ]);
 
-        $response->cookies->queue(
+        $response->withCookie(cookie(
             $cookieName,
             $refreshToken,
             $cookieTtl,
@@ -95,20 +95,24 @@ class AuthCallbackController extends Controller
             true,
             false,
             'lax'
-        );
+        ));
 
-        $this->auditLogger->record(
-            'auth.sso_callback',
-            'auth',
-            'user',
-            $claims['sub'] ?? null,
-            [
-                'email' => $claims['email'] ?? null,
-                'tenant_slug' => $claims['tenant']['slug'] ?? null,
-            ],
-            $claims['sub'] ?? null,
-            $claims['email'] ?? null,
-        );
+        try {
+            $this->auditLogger->record(
+                'auth.sso_callback',
+                'auth',
+                'user',
+                $claims['sub'] ?? null,
+                [
+                    'email' => $claims['email'] ?? null,
+                    'tenant_slug' => $claims['tenant']['slug'] ?? null,
+                ],
+                $claims['sub'] ?? null,
+                $claims['email'] ?? null,
+            );
+        } catch (\Throwable $e) {
+            \Log::warning('Audit log failed: ' . $e->getMessage());
+        }
 
         return $response;
     }
