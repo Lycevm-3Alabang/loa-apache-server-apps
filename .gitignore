@@ -7,13 +7,20 @@ vendor/
 .phpunit.cache/
 
 # Laravel
-storage/framework/cache/data/
+storage/framework/cache/*
+!storage/framework/cache/.gitkeep
+storage/framework/cache/data/*
+!storage/framework/cache/data/.gitkeep
 storage/framework/sessions/
 storage/framework/views/
 storage/logs/
 bootstrap/cache/
 app/bootstrap/cache/
-assemblies/loa-auth-platform/storage/framework/cache/
+assemblies/loa-auth-platform/storage/framework/cache/*
+!assemblies/loa-auth-platform/storage/framework/cache/.gitkeep
+!assemblies/loa-auth-platform/storage/framework/cache/data/
+!assemblies/loa-auth-platform/storage/framework/cache/data/*
+!assemblies/loa-auth-platform/storage/framework/cache/data/.gitkeep
 
 # Environment files
 .env.local

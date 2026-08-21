@@ -6,6 +6,10 @@
 .phpunit.result.cache
 /storage/framework/views/*
 /storage/framework/sessions/*
+/storage/framework/cache/*
+!/storage/framework/cache/.gitkeep
+/storage/framework/cache/data/*
+!/storage/framework/cache/data/.gitkeep
 /storage/logs/*
 /storage/api-docs/*
 /storage/app/private/certificates/*

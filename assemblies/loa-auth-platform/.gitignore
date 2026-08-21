@@ -19,6 +19,10 @@ yarn-error.log
 /vscode
 /storage/framework/views/*
 /storage/framework/sessions/*
+/storage/framework/cache/*
+!/storage/framework/cache/.gitkeep
+/storage/framework/cache/data/*
+!/storage/framework/cache/data/.gitkeep
 /storage/logs/*
 /bootstrap/cache/*
 /loa_auth

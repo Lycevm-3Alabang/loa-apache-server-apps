@@ -63,6 +63,12 @@ if ($SkipUp) {
 Write-Host '3) Rebuilding and starting the root stack...'
 docker compose up -d --build
 
+Write-Host '4) Ensuring cache directories exist with correct ownership...'
+docker compose exec auth-app mkdir -p /var/www/html/storage/framework/cache/data
+docker compose exec auth-app chown -R www-data:www-data /var/www/html/storage/framework/cache
+docker compose exec cert-app mkdir -p /var/www/html/storage/framework/cache/data
+docker compose exec cert-app chown -R www-data:www-data /var/www/html/storage/framework/cache
+
 if ($SkipProvision) {
     Write-Host 'SkipProvision set: skipping migrate/seed/Swagger. Once the apps are healthy, run:'
     Write-Host '  docker compose exec auth-app php artisan migrate --force'
@@ -74,12 +80,12 @@ if ($SkipProvision) {
     exit 0
 }
 
-Write-Host '4) Migrating and seeding the auth app...'
+Write-Host '5) Migrating and seeding the auth app...'
 docker compose exec auth-app php artisan migrate --force
 docker compose exec auth-app php artisan db:seed --force
 docker compose exec auth-app php artisan l5-swagger:generate
 
-Write-Host '5) Migrating and seeding the cert app...'
+Write-Host '6) Migrating and seeding the cert app...'
 docker compose exec cert-app php artisan migrate --force
 docker compose exec cert-app php artisan db:seed --force
 docker compose exec cert-app php artisan l5-swagger:generate
