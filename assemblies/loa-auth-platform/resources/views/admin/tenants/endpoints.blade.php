@@ -47,7 +47,14 @@
                 <div id="preview-content" style="padding:1rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-size:0.875rem;"></div>
             </div>
 
-            <div style="margin-top:1rem;display:flex;gap:0.75rem;">
+            <style>
+    #import-form .button-ghost {
+        color: var(--slate-700);
+        border-color: var(--border);
+    }
+</style>
+
+<div style="margin-top:1rem;display:flex;gap:0.75rem;">
                 <button class="button" type="submit" id="preview-btn">Preview Import</button>
                 <button class="button button-ghost" type="submit" id="apply-btn" disabled style="border-color:var(--border);">Apply Import</button>
             </div>
@@ -203,6 +210,8 @@
                     previewContent.innerHTML = html;
                     previewDiv.style.display = 'block';
                     applyBtn.disabled = true;
+
+                    setTimeout(() => location.reload(), 1500);
                 }
             } catch (err) {
                 previewContent.innerHTML = '<p style="color:var(--error);">Request failed: ' + err.message + '</p>';
