@@ -81,6 +81,17 @@ class WebAdminController extends Controller
             return back()->with('error', 'Invalid status.');
         }
 
+        $user = User::find($id);
+
+        if (!$user) {
+            return back()->with('error', 'User not found.');
+        }
+
+        if ($request->input('status') === 'disabled'
+            && $user->inGroup((string) config('auth-web.admin_group'))) {
+            return back()->with('error', 'Platform administrators cannot be deactivated.');
+        }
+
         try {
             $this->identity->setUserStatus($id, $request->input('status'));
         } catch (\Throwable) {

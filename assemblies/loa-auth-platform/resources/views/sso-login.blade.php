@@ -24,4 +24,15 @@
     </form>
 
     <p class="back-link">Need help? Contact your administrator.</p>
+
+    <script>
+        console.log('[SSO Login] Redirect target:', @json($redirect));
+        console.log('[SSO Login] Form action:', document.querySelector('form').action);
+
+        document.querySelector('form').addEventListener('submit', function(e) {
+            var email = document.getElementById('email').value;
+            console.log('[SSO Login] Submitting form for:', email);
+            console.log('[SSO Login] Redirect hidden field:', document.querySelector('input[name="redirect"]').value);
+        });
+    </script>
 @endsection

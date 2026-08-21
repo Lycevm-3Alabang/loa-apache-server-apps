@@ -26,3 +26,4 @@ assemblies/loa-auth-platform/storage/framework/cache/*
 .env.local
 assemblies/loa-cert-platform/cert-app/bootstrap/cache/
 assemblies/loa-auth-platform/resources/views/admin/tenants/group-endpoints.blade.php
+loa_auth_dump.sql

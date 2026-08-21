@@ -134,6 +134,17 @@ class UserController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        if ($request->input('status') === 'disabled'
+            && $user->inGroup((string) config('auth-web.admin_group'))) {
+            return response()->json(['message' => 'Platform administrators cannot be deactivated.'], 403);
+        }
+
         try {
             $this->identity->setUserStatus($id, $request->input('status'));
         } catch (\Exception $e) {

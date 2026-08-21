@@ -56,14 +56,22 @@
                                 <td class="muted">{{ $user->failed_attempts }}</td>
                                 <td class="muted">{{ $user->locked_until?->format('M j, Y g:i A') ?? '—' }}</td>
                                 <td class="muted">{{ $user->created_at?->format('M j, Y') ?? '—' }}</td>
-                                <td class="row-actions">
+                                                                <td class="row-actions">
                                     <a class="button" href="{{ route('admin.users.show', $user->id) }}" style="margin-right:0.375rem;">View</a>
-                                    @if ($user->status === 'active' && $user->id !== $currentUserId)
+                                    @if ($user->status === 'pending' || $user->status === 'locked')
+                                        <form method="post" action="{{ route('admin.users.status', $user->id) }}" onsubmit="return confirm('Activate this account?');" style="display:inline;">
+                                            @csrf
+                                            <input type="hidden" name="status" value="active">
+                                            <button class="button" type="submit">Activate</button>
+                                        </form>
+                                    @elseif ($user->status === 'active' && $user->id !== $currentUserId && !$user->inGroup((string) config('auth-web.admin_group')))
                                         <form method="post" action="{{ route('admin.users.status', $user->id) }}" onsubmit="return confirm('Disable this account?');" style="display:inline;">
                                             @csrf
                                             <input type="hidden" name="status" value="disabled">
                                             <button class="button button-danger" type="submit">Disable</button>
                                         </form>
+                                    @elseif ($user->status === 'active' && $user->inGroup((string) config('auth-web.admin_group')))
+                                        <span class="muted">Admin</span>
                                     @elseif ($user->status === 'disabled')
                                         <form method="post" action="{{ route('admin.users.status', $user->id) }}" style="display:inline;">
                                             @csrf
