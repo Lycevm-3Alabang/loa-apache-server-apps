@@ -2,6 +2,7 @@ loa-auth-dist/
 loa-auth-dist.zip
 *.zip
 vendor/
+tmp/
 
 # PHPUnit
 .phpunit.cache/
