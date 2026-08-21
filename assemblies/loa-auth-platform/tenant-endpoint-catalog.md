@@ -61,7 +61,7 @@ This mirrors `e-consultation`'s static `lib/page-api-map.ts`, but makes it **dyn
 | `write` | create / update / delete (non-destructive admin) | `POST`, `PUT`, `PATCH`, `DELETE` |
 | `admin` | reserved label for destructive / administrative endpoints | same operations as `write` |
 
-**Semantics:** `read` < `write` == `admin`. `admin` is a label that enforces as `write` (per product decision: "admin → write (update, create, delete)"). A caller granted `write` or `admin` may call any endpoint whose `required_level` is `read`, `write`, or `admin`; a caller granted only `read` may call `read`-required endpoints only.
+**Semantics:** `deny` < `admin` < `write` < `read` (by ordinal: -1, 98, 99, 100). Any higher level covers lower levels (e.g., `admin` satisfies a `read`-required endpoint). A caller granted `write` or `admin` may call any endpoint whose `required_level` is `read`, `write`, or `admin`; a caller granted only `read` may call `read`-required endpoints only.
 
 This vocabulary is intentionally coarse: it drives the **admin UI dropdowns** and the **session payload**. Finer data filtering (owner-scoped, department-scoped) remains the tenant app's job per-endpoint (cf. `permission-claims.md` authored/scoped — consumed, not managed, here).
 

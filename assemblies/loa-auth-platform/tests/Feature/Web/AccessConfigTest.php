@@ -423,7 +423,7 @@ class AccessConfigTest extends TestCase
                 [
                     'name' => 'Faculty',
                     'grants' => [
-                        ['method' => 'GET', 'path' => '/api/v1/appointments', 'level' => 'none'],
+                        ['method' => 'GET', 'path' => '/api/v1/appointments', 'level' => 'deny'],
                     ],
                 ],
             ],
@@ -495,7 +495,7 @@ class AccessConfigTest extends TestCase
                 [
                     'email' => $this->admin->email,
                     'overrides' => [
-                        ['method' => 'GET', 'path' => '/api/v1/appointments', 'level' => 'none'],
+                        ['method' => 'GET', 'path' => '/api/v1/appointments', 'level' => 'deny'],
                     ],
                 ],
             ],

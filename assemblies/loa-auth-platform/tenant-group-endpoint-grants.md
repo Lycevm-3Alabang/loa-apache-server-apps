@@ -52,11 +52,11 @@ A platform admin (or tenant app via `permissions.json` import) registers a tenan
 | `none` | 0 | No access (default for uncategorized endpoints) | — |
 | `read` | 1 | Safe `GET` view operations | list / view |
 | `write` | 2 | Create / update / delete | `POST`, `PUT`, `PATCH`, `DELETE` |
-| `admin` | 2 | Same as `write`; reserved label for destructive/admin endpoints | create / update / delete / admin ops |
+| `admin` | 98 | Reserved label for destructive/admin endpoints | create / update / delete / admin ops |
 | `deny` | — | Explicit denial; overrides any group-level grant for this endpoint | blocks all access |
 
 **Semantics:**
-- `read` < `write` == `admin`. `admin` is a label that enforces at the same level as `write`.
+- `deny` < `admin` < `write` < `read` (by ordinal: -1, 98, 99, 100). Any higher level covers lower levels (e.g., `admin` satisfies a `read`-required endpoint).
 - `deny` is a signal, not a level. Within the winning priority tier a `deny` grant wins; across priority tiers the higher-precedence group decides (§3.3).
 - A user-level override **replaces** the group-resolution result entirely for that endpoint. A user override of `deny` can re-enable an endpoint that groups denied.
 
@@ -80,8 +80,8 @@ Each group carries an integer `priority` (`user_groups.priority`, default `10`; 
 
 - The grant from the group with the **highest precedence (lowest `priority` value)** decides the effective level for an endpoint.
 - **Different priorities:** the higher-precedence (lower value) group wins. A lower-precedence group's `deny` does **not** beat a higher-precedence group's grant.
-- **Same priority:** `deny` wins, otherwise the highest level among the tied groups (`admin` = `write` > `read`).
-- A group with no grant on the endpoint contributes nothing, regardless of its priority (`none`).
+- **Same priority:** `deny` wins, otherwise the highest level among the tied groups (`read` > `write` > `admin`).
+- A group with no grant on the endpoint contributes nothing, regardless of its priority (`deny`).
 - The claims-based model (`data-driven-permission-policy.md`) is unaffected — it keeps union/OR resolution (`permission-resolution.md`).
 
 This replaces the flat union ("OR merge") for the endpoint model: instead of merging every group's grant, the winning group is the one with the lowest `priority` value (closest to `1`); ties on `priority` fall back to `deny` first, then the highest level.
@@ -133,9 +133,9 @@ Given `(userId, tenantId, method, path)`:
 
 **Notes:**
 - `paramMatch(path)` uses `{param}`-aware matching (see `tenant-endpoint-catalog.md` §8: `/api/v1/appointments/{id}` matches `/api/v1/appointments/123`).
-- `levelOrdinal`: `none`=0, `read`=1, `write`=`admin`=2.
+- `levelOrdinal`: `deny`=-1, `admin`=98, `write`=99, `read`=100.
 - Group `priority` (`user_groups.priority`, **1 = highest**, lower value wins) decides which group's grant applies when multiple groups conflict. A lower-precedence `deny` does not beat a higher-precedence grant.
-- On a `priority` tie, `deny` wins, else `admin`(=write) > `read`. Priority is irrelevant when no grant exists (`none`).
+- On a `priority` tie, `deny` wins, otherwise `read` > `write` > `admin`. Priority is irrelevant when no grant exists (`deny`).
 - A user-level override of `deny` can re-enable; a user-level override of any level replaces the group result.
 
 ### 4.1 JWT `permissions` Claim Payload
@@ -154,7 +154,7 @@ At login / token refresh, the Auth Platform resolves the user's effective level 
 }
 ```
 
-Only endpoints where the user's effective level > `none` appear. Each entry is `<level>:<path>` where `level` ∈ {`read`, `write`, `admin`} (never `deny` or `none`).
+Only endpoints where the user's effective level != `deny` appear. Each entry is `<level>:<path>` where `level` ∈ {`read`, `write`, `admin`} (never `deny`).
 
 This payload is:
 - Embedded in the JWT `permissions` claim (consumed by tenant apps for local `ClaimPolicyMiddleware` checks).
@@ -360,7 +360,7 @@ Displays all cataloged endpoints for the tenant with a level selector per endpoi
 
 1. **Group info** — group name, tenant, scope (platform/tenant)
 2. **Endpoint grants table** — columns: Method, Path, Label, Required Level, Granted Level
-3. **Level selector per row** — dropdown: `none` / `read` / `write` / `admin` / `deny`
+3. **Level selector per row** — dropdown: `deny` / `read` / `write` / `admin`
 4. **Save button** — POSTs all grants at once
 
 **Actions:**
@@ -373,7 +373,7 @@ Displays all cataloged endpoints for the tenant with a level selector per endpoi
 
 **Deny handling:** if any group grant is `deny`, the row should visually indicate this (e.g. red badge). The user should be warned before setting `deny` — a confirmation dialog is required.
 
-**Empty state:** when no grants exist for the group, all rows show `none` (closed-by-default).
+**Empty state:** when no grants exist for the group, all rows show `deny` (closed-by-default).
 
 ### 8.2 User Endpoint Overrides Page
 
@@ -385,7 +385,7 @@ Displays all cataloged endpoints with a level selector per endpoint for the sele
 
 1. **User info** — name, email, status
 2. **Endpoint overrides table** — columns: Method, Path, Label, Required Level, Override Level
-3. **Level selector per row** — dropdown: `none` / `read` / `write` / `admin` / `deny`
+3. **Level selector per row** — dropdown: `deny` / `read` / `write` / `admin`
 4. **Tenant scope** — optional tenant filter (platform-wide for `loa-auth-admin`)
 5. **Save button** — POSTs all overrides
 
@@ -545,7 +545,7 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 5. User overrides are tenant-scoped — a `tenant_id NULL` override applies in every tenant; a set `tenant_id` override applies only in that tenant.
 6. Platform-wide grants/overrides (`tenant_id NULL`) are creatable/modifiable by platform-admin (`loa-auth-admin`) only.
 7. Deleting a catalog endpoint with existing grants/overrides returns `409` (no silent breakage — per `tenant-endpoint-catalog.md` §6.5).
-8. The resolved JWT `permissions` payload contains only `<level>:<path>` entries where `level >= read` (never `deny` or `none`).
+8. The resolved JWT `permissions` payload contains only `<level>:<path>` entries where `level >= read` (never `deny`).
 9. Users must be tenant members before their tenant-scoped group grants take effect (enforced via `tenancy.md` §5.2 / `tenantService::isMember()` — see §11 Known Gap).
 
 ---
@@ -559,7 +559,7 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 - [ ] Deny wins: any `deny` grant short-circuits group resolution
 - [ ] User override replaces group resolution (not merges)
 - [ ] Tenant membership enforced before tenant-scoped grants apply (see Known Gaps)
-- [ ] Closed-by-default: catalog entry with no grant → `none` → 403/JSON or UI lock
+- [ ] Closed-by-default: catalog entry with no grant → `deny` → 403/JSON or UI lock
 - [ ] Deleting a catalog endpoint with existing grants → `409` (opt-in `force`)
 - [ ] `GET /api/auth/access` validates tenant `status = 'active'` before resolving
 - [ ] Override cannot grant access to an endpoint the user's groups were explicitly denied (unless the override itself grants it) — overrides are an explicit admin action, auditable

@@ -15,11 +15,10 @@ use App\Models\UserGroup;
 class PermissionPolicyService
 {
     public const LEVEL_ORDINAL = [
-        'none' => 0,
+        'deny' => -1,
         'read' => 1,
         'write' => 2,
-        'admin' => 2,
-        'deny' => -1,
+        'admin' => 3,
     ];
     public function resolveUserClaims(string $userId, ?string $tenantId = null): array
     {
@@ -181,7 +180,7 @@ class PermissionPolicyService
         foreach ($catalogEntries as $endpoint) {
             $effectiveLevel = $this->resolveEffectiveLevelForEndpoint($userId, $endpoint, $tenantId, $groupIds);
 
-            if ($effectiveLevel !== 'none' && $effectiveLevel !== 'deny') {
+            if ($effectiveLevel !== 'deny') {
                 $permissions[] = $effectiveLevel . ':' . $endpoint->path;
             }
         }
@@ -230,7 +229,7 @@ class PermissionPolicyService
                 'allowed' => false,
                 'reason' => 'no_access',
                 'required_level' => $requiredLevel,
-                'effective_level' => 'none',
+                'effective_level' => 'deny',
             ];
         }
 
@@ -264,7 +263,7 @@ class PermissionPolicyService
 
     private function resolveEffectiveLevelForEndpoint(string $userId, TenantAppEndpoint $endpoint, ?string $tenantId, array $groupIds): string
     {
-        $effectiveLevel = 'none';
+        $effectiveLevel = 'deny';
 
         if (!empty($groupIds)) {
             $grants = TenantEndpointGrant::whereIn('group_id', $groupIds)

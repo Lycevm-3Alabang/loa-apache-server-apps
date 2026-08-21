@@ -1007,7 +1007,7 @@ class WebAdminController extends Controller
             'grants' => 'nullable|array',
             'grants.*.method' => 'required|string',
             'grants.*.path' => 'required|string',
-            'grants.*.level' => 'required|in:none,read,write,admin,deny',
+            'grants.*.level' => 'required|in:read,write,admin,deny',
         ]);
 
         if ($validator->fails()) {
@@ -1026,7 +1026,7 @@ class WebAdminController extends Controller
 
             foreach ($grants as $grant) {
                 $level = $grant['level'];
-                if ($level === 'none') {
+                if ($level === 'deny') {
                     continue;
                 }
 
@@ -1079,7 +1079,7 @@ class WebAdminController extends Controller
             'overrides' => 'nullable|array',
             'overrides.*.method' => 'required|string',
             'overrides.*.path' => 'required|string',
-            'overrides.*.level' => 'required|in:none,read,write,admin,deny',
+            'overrides.*.level' => 'required|in:read,write,admin,deny',
             'overrides.*.tenant_id' => 'nullable|exists:tenants,id',
         ]);
 
@@ -1095,7 +1095,7 @@ class WebAdminController extends Controller
 
             foreach ($overrides as $override) {
                 $level = $override['level'];
-                if ($level === 'none') {
+                if ($level === 'deny') {
                     continue;
                 }
 

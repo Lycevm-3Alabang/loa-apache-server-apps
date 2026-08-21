@@ -154,7 +154,7 @@ class EndpointPolicyMiddlewareTest extends TestCase
         $this->assertTrue($called);
     }
 
-    public function test_write_covers_admin_because_same_ordinal(): void
+    public function test_write_covers_admin_because_write_ordinal_is_higher(): void
     {
         $this->setCatalog([
             ['method' => 'POST', 'path' => '/api/v1/certificates/{id}/revoke', 'required_level' => 'admin'],

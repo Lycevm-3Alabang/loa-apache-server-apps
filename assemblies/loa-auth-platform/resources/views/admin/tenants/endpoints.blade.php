@@ -48,15 +48,52 @@
             </div>
 
             <style>
-    #import-form .button-ghost {
-        color: var(--slate-700);
-        border-color: var(--border);
-    }
-</style>
+                #import-form .button-ghost {
+                    color: var(--slate-700);
+                    border-color: var(--border);
+                }
+                .import-loading {
+                    position: relative;
+                    pointer-events: none;
+                    opacity: 0.6;
+                }
+                .import-loading::after {
+                    content: '';
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    width: 1.1rem;
+                    height: 1.1rem;
+                    margin: -0.55rem 0 0 -0.55rem;
+                    border: 2px solid var(--border);
+                    border-top-color: var(--brand-600, #2563eb);
+                    border-radius: 50%;
+                    animation: spin 0.6s linear infinite;
+                }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                .import-btn-text { position: relative; z-index: 1; }
+                .import-status {
+                    display: none;
+                    margin-top: 1rem;
+                    padding: 0.75rem 1rem;
+                    border-radius: var(--radius-xl);
+                    font-size: 0.875rem;
+                    font-weight: 500;
+                }
+                .import-status.success { display: block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+                .import-status.error { display: block; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+                .import-status.processing { display: block; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+            </style>
 
-<div style="margin-top:1rem;display:flex;gap:0.75rem;">
-                <button class="button" type="submit" id="preview-btn">Preview Import</button>
-                <button class="button button-ghost" type="submit" id="apply-btn" disabled style="border-color:var(--border);">Apply Import</button>
+            <div id="import-status" class="import-status"></div>
+
+            <div style="margin-top:1rem;display:flex;gap:0.75rem;align-items:center;">
+                <button class="button" type="submit" id="preview-btn">
+                    <span class="import-btn-text">Preview Import</span>
+                </button>
+                <button class="button button-ghost" type="submit" id="apply-btn" disabled style="border-color:var(--border);">
+                    <span class="import-btn-text">Apply Import</span>
+                </button>
             </div>
         </form>
     </div>
@@ -150,6 +187,51 @@
     </div>
 
     <script>
+        function setFormLoading(form, loading, message) {
+            const btns = form.querySelectorAll('button[type="submit"]');
+            const inputs = form.querySelectorAll('input, textarea, select');
+            const status = document.getElementById('import-status');
+
+            btns.forEach(b => {
+                b.disabled = loading;
+                if (loading) b.classList.add('import-loading');
+                else b.classList.remove('import-loading');
+                const txt = b.querySelector('.import-btn-text');
+                if (txt) {
+                    if (loading) txt.dataset.original = txt.textContent;
+                    txt.textContent = loading ? message : (txt.dataset.original || txt.textContent);
+                }
+            });
+
+            inputs.forEach(i => {
+                if (loading) i.dataset.wasDisabled = i.disabled;
+                i.disabled = loading ? true : (i.dataset.wasDisabled === 'true');
+            });
+
+            if (loading) {
+                status.className = 'import-status processing';
+                status.textContent = message;
+            }
+        }
+
+        function showStatus(type, message) {
+            const status = document.getElementById('import-status');
+            status.className = 'import-status ' + type;
+            status.textContent = message;
+        }
+
+        async function refreshTable() {
+            try {
+                const resp = await fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                const html = await resp.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newSection = doc.querySelector('.detail-card:last-child');
+                const oldSection = document.querySelector('.detail-card:last-child');
+                if (newSection && oldSection) oldSection.outerHTML = newSection.outerHTML;
+            } catch (_) {}
+        }
+
         async function handleImport(e) {
             e.preventDefault();
             const form = e.target;
@@ -161,6 +243,7 @@
 
             const isApply = applyBtn && !applyBtn.disabled && confirmCheckbox && confirmCheckbox.checked;
             const url = form.action + (isApply ? '?confirm=1' : '?dry_run=1');
+            const actionLabel = isApply ? 'Applying...' : 'Previewing...';
 
             const formData = new FormData(form);
             if (isApply) {
@@ -169,56 +252,50 @@
                 formData.delete('confirm');
             }
 
-            previewBtn.disabled = true;
-            previewBtn.textContent = 'Processing...';
+            setFormLoading(form, true, actionLabel);
 
             try {
                 const response = await fetch(url, {
                     method: 'POST',
                     body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 });
 
                 const data = await response.json();
 
                 if (!response.ok) {
-                    previewContent.innerHTML = '<p style="color:var(--error);">Error: ' + (data.message || 'Request failed') + '</p>';
-                    if (data.errors) {
-                        previewContent.innerHTML += '<pre style="margin-top:0.5rem;font-size:0.8rem;">' + JSON.stringify(data.errors, null, 2) + '</pre>';
-                    }
-                    previewDiv.style.display = 'block';
+                    let msg = data.message || 'Request failed';
+                    if (data.errors) msg += '\n' + JSON.stringify(data.errors, null, 2);
+                    showStatus('error', 'Error: ' + msg);
+                    previewDiv.style.display = 'none';
                     return false;
                 }
 
                 if (data.status === 'preview') {
-                    let html = '<p><strong>Status:</strong> Preview (no changes applied)</p>';
-                    html += '<table style="width:100%;border-collapse:collapse;margin-top:0.5rem;">';
-                    html += '<tr><td style="padding:0.25rem 0;">Endpoints to create:</td><td style="padding:0.25rem 0;">' + (data.endpoints.create.length ? data.endpoints.create.join(', ') : '—') + '</td></tr>';
-                    html += '<tr><td style="padding:0.25rem 0;">Endpoints to update:</td><td style="padding:0.25rem 0;">' + (data.endpoints.update.length ? data.endpoints.update.join(', ') : '—') + '</td></tr>';
-                    html += '</table>';
-                    previewContent.innerHTML = html;
-                    previewDiv.style.display = 'block';
+                    let html = 'Preview (no changes applied) — ';
+                    html += 'Create: ' + (data.endpoints.create.length || 0) + ' | ';
+                    html += 'Update: ' + (data.endpoints.update.length || 0);
+                    if (data.endpoints.create.length) {
+                        html += '\nTo create: ' + data.endpoints.create.join(', ');
+                    }
+                    if (data.endpoints.update.length) {
+                        html += '\nTo update: ' + data.endpoints.update.join(', ');
+                    }
+                    showStatus('processing', html);
+                    previewDiv.style.display = 'none';
                     applyBtn.disabled = false;
                 } else if (data.status === 'applied') {
-                    let html = '<p style="color:var(--success);"><strong>Applied successfully!</strong></p>';
-                    html += '<table style="width:100%;border-collapse:collapse;margin-top:0.5rem;">';
-                    html += '<tr><td style="padding:0.25rem 0;">Endpoints created:</td><td style="padding:0.25rem 0;">' + data.created + '</td></tr>';
-                    html += '<tr><td style="padding:0.25rem 0;">Endpoints updated:</td><td style="padding:0.25rem 0;">' + data.updated + '</td></tr>';
-                    html += '</table>';
-                    previewContent.innerHTML = html;
-                    previewDiv.style.display = 'block';
+                    showStatus('success', 'Applied! Created: ' + data.created + ' | Updated: ' + data.updated + ' — refreshing table...');
                     applyBtn.disabled = true;
-
-                    setTimeout(() => location.reload(), 1500);
+                    previewDiv.style.display = 'none';
+                    await refreshTable();
+                    setTimeout(() => showStatus('success', 'Done. Created: ' + data.created + ' | Updated: ' + data.updated), 3000);
                 }
             } catch (err) {
-                previewContent.innerHTML = '<p style="color:var(--error);">Request failed: ' + err.message + '</p>';
-                previewDiv.style.display = 'block';
+                showStatus('error', 'Request failed: ' + err.message);
+                previewDiv.style.display = 'none';
             } finally {
-                previewBtn.disabled = false;
-                previewBtn.textContent = 'Preview Import';
+                setFormLoading(form, false, '');
             }
 
             return false;

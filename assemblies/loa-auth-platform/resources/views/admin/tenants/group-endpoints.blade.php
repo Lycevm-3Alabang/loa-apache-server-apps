@@ -38,7 +38,7 @@
                 
 <div style="display:flex; align-items:center; gap:1rem;">
     <label for="apply-to-all" style="font-weight:600;">Apply To All:</label>
-    <select id="apply-to-all" style="padding:0.4rem; border:1px solid var(--border); border-radius:6px;"><option value="">— Select —</option><option value="read">read</option><option value="write">write</option><option value="admin">admin</option><option value="deny">deny</option><option value="none">none</option></select>
+    <select id="apply-to-all" style="padding:0.4rem; border:1px solid var(--border); border-radius:6px;"><option value="">— Select —</option><option value="read">read</option><option value="write">write</option><option value="admin">admin</option><option value="deny">deny</option></select>
     <button class="button" type="submit">Save all</button>
 </div>
 
@@ -62,7 +62,7 @@
                             @foreach ($endpoints as $endpoint)
                                 @php
                                     $key = $endpoint->method . '|' . $endpoint->path;
-                                    $currentLevel = $grantMap[$key] ?? 'none';
+                                    $currentLevel = $grantMap[$key] ?? 'deny';
                                 @endphp
                                 <tr>
                                     <td><span class="badge">{{ $endpoint->method }}</span></td>
@@ -71,7 +71,7 @@
                                     <td><span class="badge badge-{{ $endpoint->required_level === 'admin' ? 'disabled' : 'active' }}">{{ $endpoint->required_level }}</span></td>
                                     <td>
                                         <select name="grants[{{ $endpoint->method }}|{{ $endpoint->path }}][level]" style="height:2.25rem;padding:0.25rem 0.5rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-family:inherit;font-size:0.8rem;">
-                                            <option value="none" {{ $currentLevel === 'none' ? 'selected' : '' }}>none</option>
+                                            <option value="deny" {{ $currentLevel === 'deny' ? 'selected' : '' }} style="color:red;">deny</option>
                                             <option value="read" {{ $currentLevel === 'read' ? 'selected' : '' }}>read</option>
                                             <option value="write" {{ $currentLevel === 'write' ? 'selected' : '' }}>write</option>
                                             <option value="admin" {{ $currentLevel === 'admin' ? 'selected' : '' }}>admin</option>

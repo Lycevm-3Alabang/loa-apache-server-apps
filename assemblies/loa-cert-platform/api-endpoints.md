@@ -154,13 +154,12 @@ The Cert Platform has **no local role model and no users table**. Runtime access
 
 | Level | Ordinal | Meaning | Example grants |
 |-------|---------|---------|----------------|
-| `read` | 1 | View / read-only | list events, view certificates, dashboard stats |
-| `write` | 2 | Create / update / state actions | create event, import attendees, issue certificate, send email |
-| `admin` | 2 | `write` + sensitive operations | revoke, delete, reissue, expire, delete attendee-with-cert, audit logs |
-| `deny` | special | Explicit block; wins on group-priority ties | — |
-| `none` | 0 | No grant (never published in the JWT) | — |
+| `deny` | -1 | Explicit block; wins on group-priority ties | — |
+| `admin` | 98 | Destructive / sensitive operations | revoke, delete, reissue, expire, audit logs |
+| `write` | 99 | Create / update / state actions | create event, import attendees, issue certificate, send email |
+| `read` | 100 | View / read-only | list events, view certificates, dashboard stats |
 
-> `write` and `admin` share ordinal 2 in the Auth Platform model. The distinction is **operational**: `required_level=admin` endpoints are granted only to the admin group; `write`-granted staff do not receive grants on `admin` paths. `admin` is never auto-derived from `write`.
+> `admin` (ordinal 98) is lower than `write` (99) and `read` (100). Any higher level covers lower levels — e.g., an `admin` grant satisfies a `read`-required endpoint. The distinction is **operational**: `required_level=admin` endpoints are granted only to the admin group; `write`-granted staff do not receive grants on `admin` paths. `admin` is never auto-derived from `write`.
 
 ## 4.3 JWT `permissions` Claim
 
@@ -174,7 +173,7 @@ admin:/api/v1/certificates/{id}/revoke
 
 - Paths use catalog (param-aware) form: `{id}` matches one path segment.
 - A leading `*` after the colon is an optional method-wildcard: `read:*:/api/v1/events` — supported by the middleware, not produced by the Auth generator.
-- Only levels `> none` and not `deny` are published (the Auth Platform filters).
+- Only levels not equal to `deny` are published (the Auth Platform filters).
 - The Cert middleware matches claim entries against the request path (param-aware, case-insensitive level) and compares ordinals (§9.5).
 
 ## 4.4 Role → Grant Guidance
@@ -1269,7 +1268,7 @@ Re-issuing after revocation reuses the same number (the generated column becomes
 | 12 | Template locking when referenced | Prevents breaking issued certificates |
 | 13 | Runtime authorization is **level-based** (`<level>:<path>`), not `cert.*` keys | Matches `tenant-group-endpoint-grants.md` — levels are the tenant-app model; `cert.*` keys are not enforced by Cert (§4.5) |
 | 14 | Cert keeps a **local mirror** of the endpoint catalog for enforcement | No DB/HTTP per request; Auth Platform remains the source of truth for granting |
-| 15 | `write` and `admin` share ordinal 2; `admin` is an operational label | Mirrors the Auth Platform model; admin-only paths are granted only to the admin group |
+| 15 | `admin` (ordinal 98) is lower than `write` (99) and `read` (100); admin is an operational label | Mirrors the Auth Platform model; admin-only paths are granted only to the admin group |
 | 16 | JWT validated with **no local user lookup** (no users table) | Account state is enforced by Auth at issuance; cert trusts the signed claims |
 | 17 | Refresh/logout are **proxied by Cert** using the httpOnly refresh cookie | Keeps the refresh token out of JS (XSS risk); refines README §11.5–11.6. **Confirmed 2026-08-06** alongside the CSR decision — the frontend holds the access token in memory only and relies on the Cert-proxied `loa_cert_refresh` cookie (§9.3, §9.7). |
 | 18 | Owner rule enforced in the controller using the middleware-resolved granted level | `read` on certificate paths is necessary but not sufficient for participant access |
@@ -1387,12 +1386,12 @@ Cert mirror of Auth's `ClaimPolicyMiddleware::handleLevelBased` (the `RoutePolic
    - No entry **and** the route is public (`verify`, `view`, `auth/*`) → allow.
    - No entry **and** the route is non-public → `403` (`reason: no_catalog_entry`, closed-by-default).
 3. Scan the JWT `permissions` claim for `<level>:<path>` entries (level case-insensitive; optional `*` method prefix) whose path matches the request (param-aware).
-4. `granted_level` = the first matching entry's level; no match → `403` (`reason: no_access`, `effective_level: none`).
+4. `granted_level` = the first matching entry's level; no match → `403` (`reason: no_access`, `effective_level: deny`).
 5. `granted_level === 'deny'` → `403` (`reason: denied`).
 6. `ordinal(granted_level) < ordinal(required_level)` → `403` (`reason: insufficient_level`).
 7. Store the granted level as request attribute `jwt_endpoint_level` so controllers can apply the owner rule (§9.6).
 
-**Ordinals:** `read=1`, `write=admin=2`, `deny=-1`, `none=0`.
+**Ordinals:** `deny=-1`, `admin=98`, `write=99`, `read=100`.
 
 **Catalog sync:** the local mirror is a deployment artifact generated from the same catalog imported into Auth (Appendix A). Auth is authoritative for grants; the local copy only mirrors `required_level` and paths for matching. Add the `permissions:sync-cert-catalog` artisan command to re-generate the mirror during deploys.
 

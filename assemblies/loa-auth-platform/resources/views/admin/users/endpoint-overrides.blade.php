@@ -61,7 +61,7 @@
                             @foreach ($allEndpoints as $endpoint)
                                 @php
                                     $existingOverride = $overrides->first(fn($o) => $o->method === $endpoint->method && $o->path === $endpoint->path && $o->tenant_id === $endpoint->tenant_id);
-                                    $currentLevel = $existingOverride?->level ?? 'none';
+                                    $currentLevel = $existingOverride?->level ?? 'deny';
                                 @endphp
                                 <tr>
                                     <td>{{ $endpoint->tenant_id ?? 'Platform' }}</td>
@@ -70,7 +70,7 @@
                                     <td><span class="badge badge-{{ $endpoint->required_level === 'admin' ? 'disabled' : 'active' }}">{{ $endpoint->required_level }}</span></td>
                                     <td>
                                         <select name="overrides[{{ $endpoint->tenant_id }}|{{ $endpoint->method }}|{{ $endpoint->path }}][level]" style="height:2.25rem;padding:0.25rem 0.5rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-family:inherit;font-size:0.8rem;">
-                                            <option value="none" {{ $currentLevel === 'none' ? 'selected' : '' }}>none</option>
+                                            <option value="deny" {{ $currentLevel === 'deny' ? 'selected' : '' }} style="color:red;">deny</option>
                                             <option value="read" {{ $currentLevel === 'read' ? 'selected' : '' }}>read</option>
                                             <option value="write" {{ $currentLevel === 'write' ? 'selected' : '' }}>write</option>
                                             <option value="admin" {{ $currentLevel === 'admin' ? 'selected' : '' }}>admin</option>

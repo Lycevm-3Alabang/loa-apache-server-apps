@@ -88,7 +88,7 @@ class ClaimPolicyMiddleware
                 'message' => 'Forbidden',
                 'reason' => 'no_access',
                 'required_level' => $requiredLevel,
-                'effective_level' => 'none',
+                'effective_level' => 'deny',
             ], 403);
         }
 
@@ -172,16 +172,16 @@ class ClaimPolicyMiddleware
     {
         return match (strtolower($level)) {
             'read' => 1,
-            'write', 'admin' => 2,
+            'write' => 2,
+            'admin' => 3,
             'deny' => -1,
-            default => 0,
+            default => -1,
         };
     }
 
     private function passesFilter(string $filter, array $userScopes): bool
     {
         return match ($filter) {
-            'none' => true,
             'all' => true,
             'author' => true,
             'scope' => !empty($userScopes),

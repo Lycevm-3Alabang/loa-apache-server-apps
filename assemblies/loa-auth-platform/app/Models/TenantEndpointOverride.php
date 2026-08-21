@@ -41,9 +41,10 @@ class TenantEndpointOverride extends Model
     {
         return match ($level) {
             'read' => 1,
-            'write', 'admin' => 2,
+            'write' => 2,
+            'admin' => 3,
             'deny' => -1,
-            default => 0,
+            default => -1,
         };
     }
 }

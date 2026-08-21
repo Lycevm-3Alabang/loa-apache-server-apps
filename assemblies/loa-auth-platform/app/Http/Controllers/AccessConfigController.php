@@ -220,13 +220,13 @@ class AccessConfigController extends Controller
             'groups.*.grants' => 'nullable|array',
             'groups.*.grants.*.method' => 'required|string|in:GET,POST,PUT,PATCH,DELETE,*',
             'groups.*.grants.*.path' => 'required|string|max:512',
-            'groups.*.grants.*.level' => 'required|string|in:read,write,admin,deny,none',
+            'groups.*.grants.*.level' => 'required|string|in:read,write,admin,deny',
             'user_overrides' => 'nullable|array',
             'user_overrides.*.email' => 'required|email',
             'user_overrides.*.overrides' => 'required|array',
             'user_overrides.*.overrides.*.method' => 'required|string|in:GET,POST,PUT,PATCH,DELETE,*',
             'user_overrides.*.overrides.*.path' => 'required|string|max:512',
-            'user_overrides.*.overrides.*.level' => 'required|string|in:read,write,admin,deny,none',
+            'user_overrides.*.overrides.*.level' => 'required|string|in:read,write,admin,deny',
         ]);
 
         if ($validator->fails()) {
@@ -252,7 +252,7 @@ class AccessConfigController extends Controller
         // Validate endpoints exist
         foreach ($groupsInput as $groupData) {
             foreach ($groupData['grants'] ?? [] as $grant) {
-                if ($grant['level'] === 'none') {
+                if ($grant['level'] === 'deny') {
                     continue;
                 }
                 $exists = TenantAppEndpoint::where(function ($q) use ($tenantId, $grant) {
@@ -278,7 +278,7 @@ class AccessConfigController extends Controller
 
         foreach ($overridesInput as $overrideData) {
             foreach ($overrideData['overrides'] ?? [] as $override) {
-                if ($override['level'] === 'none') {
+                if ($override['level'] === 'deny') {
                     continue;
                 }
                 $exists = TenantAppEndpoint::where(function ($q) use ($tenantId, $override) {
@@ -368,7 +368,7 @@ class AccessConfigController extends Controller
                 }
 
                 foreach ($groupData['grants'] ?? [] as $grant) {
-                    if ($grant['level'] === 'none') {
+                    if ($grant['level'] === 'deny') {
                         TenantEndpointGrant::where('group_id', $group->id)
                             ->where('tenant_id', $tenantId)
                             ->where('method', $grant['method'])
@@ -390,7 +390,7 @@ class AccessConfigController extends Controller
                 }
 
                 foreach ($overrideData['overrides'] ?? [] as $override) {
-                    if ($override['level'] === 'none') {
+                    if ($override['level'] === 'deny') {
                         TenantEndpointOverride::where('user_id', $user->id)
                             ->where('tenant_id', $tenantId)
                             ->where('method', $override['method'])

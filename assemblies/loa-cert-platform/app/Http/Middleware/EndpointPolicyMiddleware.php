@@ -52,7 +52,7 @@ class EndpointPolicyMiddleware
                 'message' => 'Forbidden',
                 'reason' => 'no_access',
                 'required_level' => $requiredLevel,
-                'effective_level' => 'none',
+                'effective_level' => 'deny',
             ], 403);
         }
 
@@ -99,7 +99,7 @@ class EndpointPolicyMiddleware
     private function resolveGrantedLevel(array $permissions, string $requestPath, string $catalogPath): ?string
     {
         $levelEntries = array_filter($permissions, fn ($entry) =>
-            is_string($entry) && preg_match('/^(read|write|admin|none|deny):/i', $entry)
+            is_string($entry) && preg_match('/^(read|write|admin|deny):/i', $entry)
         );
 
         foreach ($levelEntries as $entry) {
@@ -150,9 +150,10 @@ class EndpointPolicyMiddleware
     {
         return match (strtolower($level)) {
             'read' => 1,
-            'write', 'admin' => 2,
+            'write' => 2,
+            'admin' => 3,
             'deny' => -1,
-            default => 0,
+            default => -1,
         };
     }
 }

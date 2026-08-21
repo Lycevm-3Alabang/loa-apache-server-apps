@@ -4,7 +4,7 @@ return [
 
     'secret' => env('JWT_SECRET'),
 
-    'access_ttl' => (int) env('JWT_ACCESS_TTL', 15),
+    'access_ttl' => (int) env('JWT_ACCESS_TTL', 480),
 
     'refresh_ttl' => (int) env('JWT_REFRESH_TTL', 10080),
 

@@ -106,13 +106,13 @@ The access config payload has three top-level sections:
 | `groups[].grants` | No | Array of grant objects. Empty = no grants for this group. |
 | `groups[].grants[].method` | Yes | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, or `*` (matches any method) |
 | `groups[].grants[].path` | Yes | Must match a cataloged endpoint for the target tenant (or platform-wide). |
-| `groups[].grants[].level` | Yes | `read`, `write`, `admin`, `deny`, or `none` (see §5.4) |
+| `groups[].grants[].level` | Yes | `read`, `write`, `admin`, or `deny` (see §5.4) |
 | `user_overrides` | No | Array of override objects. |
 | `user_overrides[].email` | Yes | User email. Resolved to `user_id` at import time. |
 | `user_overrides[].overrides` | Yes | Array of override entries. |
 | `user_overrides[].overrides[].method` | Yes | HTTP method. |
 | `user_overrides[].overrides[].path` | Yes | Must match a cataloged endpoint. |
-| `user_overrides[].overrides[].level` | Yes | `read`, `write`, `admin`, `deny`, or `none` (see §5.4) |
+| `user_overrides[].overrides[].level` | Yes | `read`, `write`, `admin`, or `deny` (see §5.4) |
 
 ### 3.2 Template vs Export
 
@@ -445,19 +445,19 @@ $validator = Validator::make($data, [
     'groups.*.grants' => 'nullable|array',
     'groups.*.grants.*.method' => 'required|string|in:GET,POST,PUT,PATCH,DELETE,*',
     'groups.*.grants.*.path' => 'required|string|max:512',
-    'groups.*.grants.*.level' => 'required|string|in:read,write,admin,deny,none',
+    'groups.*.grants.*.level' => 'required|string|in:read,write,admin,deny',
     'user_overrides' => 'nullable|array',
     'user_overrides.*.email' => 'required|email',
     'user_overrides.*.overrides' => 'required|array',
     'user_overrides.*.overrides.*.method' => 'required|string|in:GET,POST,PUT,PATCH,DELETE,*',
     'user_overrides.*.overrides.*.path' => 'required|string|max:512',
-    'user_overrides.*.overrides.*.level' => 'required|string|in:read,write,admin,deny,none',
+    'user_overrides.*.overrides.*.level' => 'required|string|in:read,write,admin,deny',
 ]);
 ```
 
 **Notes:**
 
-- `none` is a synthetic level that triggers row deletion (§5.4). It is not stored in the database — the DB enums are `read`, `write`, `admin`, `deny`.
+- `deny` triggers row deletion on import (§5.4). It is not stored in the database — the DB enums are `read`, `write`, `admin`, `deny`.
 - `*` as a method value matches any HTTP method. A grant with `"method": "*"` applies to all methods for the given path.
 
 ### 10.2 Business Validation
