@@ -8,6 +8,7 @@
             <p>Tenant detail and membership management.</p>
         </div>
         <div style="display:flex;gap:0.5rem;">
+            <a class="button" href="{{ route('admin.tenants.edit', $tenant) }}">Edit tenant</a>
             <a class="button" href="{{ route('admin.tenants.groups', $tenant) }}">Manage groups</a>
             <a class="button" href="{{ route('admin.tenants.endpoints.manage', $tenant) }}">Manage endpoints</a>
             <a class="button" href="{{ route('admin.tenants.access-config.import', $tenant) }}">Import/Export Config</a>
@@ -32,8 +33,16 @@
                 <span>{{ $tenant->app_url ?? '—' }}</span>
             </div>
             <div class="detail-field">
+                <label>Dev App URL</label>
+                <span>{{ $tenant->dev_app_url ?? '—' }}</span>
+            </div>
+            <div class="detail-field">
                 <label>Redirect Origins</label>
                 <span>{{ $tenant->redirect_origins ? implode(', ', $tenant->redirect_origins) : '—' }}</span>
+            </div>
+            <div class="detail-field">
+                <label>Dev Redirect Origins</label>
+                <span>{{ $tenant->dev_redirect_origins ? implode(', ', $tenant->dev_redirect_origins) : '—' }}</span>
             </div>
             <div class="detail-field">
                 <label>Members</label>

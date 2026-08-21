@@ -24,14 +24,18 @@ class LocalCertReadinessSeeder extends Seeder
                 'name' => 'Local Cert App',
                 'status' => 'active',
                 'app_url' => $defaultRedirect,
+                'dev_app_url' => $defaultRedirect,
                 'redirect_origins' => [$defaultRedirect],
+                'dev_redirect_origins' => [$defaultRedirect],
             ]);
         } else {
             $tenant->update([
                 'name' => 'Local Cert App',
                 'status' => 'active',
                 'app_url' => $defaultRedirect,
+                'dev_app_url' => $defaultRedirect,
                 'redirect_origins' => [$defaultRedirect],
+                'dev_redirect_origins' => [$defaultRedirect],
             ]);
         }
 

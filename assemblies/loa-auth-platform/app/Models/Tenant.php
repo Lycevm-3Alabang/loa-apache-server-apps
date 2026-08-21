@@ -21,11 +21,14 @@ class Tenant extends Model
         'name',
         'status',
         'app_url',
+        'dev_app_url',
         'redirect_origins',
+        'dev_redirect_origins',
     ];
 
     protected $casts = [
         'redirect_origins' => 'array',
+        'dev_redirect_origins' => 'array',
     ];
 
     protected static function boot(): void
@@ -52,5 +55,19 @@ class Tenant extends Model
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    public function effectiveAppUrl(): ?string
+    {
+        return app()->environment('production')
+            ? $this->app_url
+            : ($this->dev_app_url ?? $this->app_url);
+    }
+
+    public function effectiveRedirectOrigins(): array
+    {
+        return app()->environment('production')
+            ? ($this->redirect_origins ?? [])
+            : ($this->dev_redirect_origins ?? $this->redirect_origins ?? []);
     }
 }

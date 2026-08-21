@@ -204,7 +204,9 @@ class WebAdminController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'app_url' => 'nullable|url|max:255',
+            'dev_app_url' => 'nullable|url|max:255',
             'redirect_origins' => 'nullable|string',
+            'dev_redirect_origins' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -216,18 +218,71 @@ class WebAdminController extends Controller
             explode(',', $request->input('redirect_origins', '')),
         )));
 
+        $devOrigins = array_values(array_filter(array_map(
+            fn (string $url): string => trim($url),
+            explode(',', $request->input('dev_redirect_origins', '')),
+        )));
+
         try {
             $this->tenants->createTenant([
                 'slug' => $request->input('slug'),
                 'name' => $request->input('name'),
                 'app_url' => $request->input('app_url'),
+                'dev_app_url' => $request->input('dev_app_url'),
                 'redirect_origins' => $origins,
+                'dev_redirect_origins' => $devOrigins,
             ]);
         } catch (\Throwable $e) {
             return back()->with('error', $e->getMessage())->withInput();
         }
 
         return redirect()->route('admin.tenants')->with('status', 'Tenant created.');
+    }
+
+    public function tenantsEdit(Tenant $tenant): View
+    {
+        return view('admin.tenants.edit', [
+            'tenant' => $tenant,
+        ]);
+    }
+
+    public function tenantsUpdate(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'app_url' => 'nullable|url|max:255',
+            'dev_app_url' => 'nullable|url|max:255',
+            'redirect_origins' => 'nullable|string',
+            'dev_redirect_origins' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $origins = array_values(array_filter(array_map(
+            fn (string $url): string => trim($url),
+            explode(',', $request->input('redirect_origins', '')),
+        )));
+
+        $devOrigins = array_values(array_filter(array_map(
+            fn (string $url): string => trim($url),
+            explode(',', $request->input('dev_redirect_origins', '')),
+        )));
+
+        try {
+            $this->tenants->updateTenant($tenant->id, [
+                'name' => $request->input('name'),
+                'app_url' => $request->input('app_url'),
+                'dev_app_url' => $request->input('dev_app_url'),
+                'redirect_origins' => $origins,
+                'dev_redirect_origins' => $devOrigins,
+            ]);
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage())->withInput();
+        }
+
+        return redirect()->route('admin.tenants.show', $tenant)->with('status', 'Tenant updated successfully.');
     }
 
     public function tenantsStatus(Request $request, Tenant $tenant): RedirectResponse

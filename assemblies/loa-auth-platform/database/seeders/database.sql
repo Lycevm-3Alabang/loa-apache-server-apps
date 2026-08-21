@@ -25,7 +25,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (12, '2026_08_01_000012_create_user_tenants_table', 1),
 (13, '2026_08_01_000013_add_tenant_id_to_user_groups_table', 1),
 (14, '2026_08_01_000014_add_tenant_id_to_user_group_permission_table', 1),
-(15, '2026_08_01_000015_add_tenant_id_to_user_permission_table', 1);
+(15, '2026_08_01_000015_add_tenant_id_to_user_permission_table', 1),
+(16, '2026_08_14_000001_add_dev_columns_to_tenants_table', 1);
 
 CREATE TABLE `tenants` (
   `id` char(36) NOT NULL,
@@ -33,7 +34,9 @@ CREATE TABLE `tenants` (
   `name` varchar(255) NOT NULL,
   `status` enum('active','suspended') NOT NULL DEFAULT 'active',
   `app_url` varchar(255) DEFAULT NULL,
+  `dev_app_url` varchar(255) DEFAULT NULL,
   `redirect_origins` json DEFAULT NULL,
+  `dev_redirect_origins` json DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),

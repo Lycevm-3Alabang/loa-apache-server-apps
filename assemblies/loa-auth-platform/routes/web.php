@@ -74,6 +74,8 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::get('/tenants/create', [WebAdminController::class, 'tenantsCreate'])->name('admin.tenants.create');
     Route::post('/tenants', [WebAdminController::class, 'tenantsStore'])->name('admin.tenants.store');
     Route::get('/tenants/{tenant}', [WebAdminController::class, 'tenantsShow'])->name('admin.tenants.show');
+    Route::get('/tenants/{tenant}/edit', [WebAdminController::class, 'tenantsEdit'])->name('admin.tenants.edit');
+    Route::put('/tenants/{tenant}', [WebAdminController::class, 'tenantsUpdate'])->name('admin.tenants.update');
     Route::post('/tenants/{tenant}/status', [WebAdminController::class, 'tenantsStatus'])->name('admin.tenants.status');
     Route::get('/tenants/{tenant}/groups', [WebAdminController::class, 'tenantsGroups'])->name('admin.tenants.groups');
     Route::post('/tenants/{tenant}/groups', [WebAdminController::class, 'tenantsGroupsStore'])->name('admin.tenants.groups.store');
@@ -85,7 +87,7 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     // NEW: Group endpoints / permissions page (replaces inline)
     Route::get('/tenants/{tenant}/groups/{group}/endpoints', [WebAdminController::class, 'tenantsGroupEndpoints'])
         ->name('admin.tenants.group.endpoints');
-    Route::post('/tenants/{tenant}/groups/{group}/endpoints', [WebAdminController::class, 'tenantsGroupsPermissions'])
+    Route::post('/tenants/{tenant}/groups/{group}/endpoints', [WebAdminController::class, 'tenantsGroupsEndpointsStore'])
         ->name('admin.tenants.group.endpoints.save');
     
     // NEW: Group members page

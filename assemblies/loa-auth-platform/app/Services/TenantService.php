@@ -24,7 +24,9 @@ class TenantService
             'name' => trim((string) ($data['name'] ?? '')),
             'status' => $data['status'] ?? 'active',
             'app_url' => $data['app_url'] ?? null,
+            'dev_app_url' => $data['dev_app_url'] ?? null,
             'redirect_origins' => $this->normalizeOrigins($data['redirect_origins'] ?? []),
+            'dev_redirect_origins' => $this->normalizeOrigins($data['dev_redirect_origins'] ?? []),
         ]);
     }
 
@@ -40,8 +42,12 @@ class TenantService
             'name' => isset($data['name']) ? trim((string) $data['name']) : null,
             'status' => $data['status'] ?? null,
             'app_url' => $data['app_url'] ?? null,
+            'dev_app_url' => $data['dev_app_url'] ?? null,
             'redirect_origins' => isset($data['redirect_origins'])
                 ? $this->normalizeOrigins($data['redirect_origins'])
+                : null,
+            'dev_redirect_origins' => isset($data['dev_redirect_origins'])
+                ? $this->normalizeOrigins($data['dev_redirect_origins'])
                 : null,
         ], fn ($value) => $value !== null);
 
@@ -85,7 +91,7 @@ class TenantService
             ->first(function (Tenant $tenant) use ($origin): bool {
                 return in_array(
                     $origin,
-                    $this->normalizeOrigins($tenant->redirect_origins ?? []),
+                    $this->normalizeOrigins($tenant->effectiveRedirectOrigins()),
                     true,
                 );
             });

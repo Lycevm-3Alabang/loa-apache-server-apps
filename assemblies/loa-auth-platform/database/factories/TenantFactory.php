@@ -20,7 +20,9 @@ class TenantFactory extends Factory
             'name' => ucfirst($slug) . ' Tenant',
             'status' => 'active',
             'app_url' => null,
+            'dev_app_url' => null,
             'redirect_origins' => [],
+            'dev_redirect_origins' => [],
         ];
     }
 
