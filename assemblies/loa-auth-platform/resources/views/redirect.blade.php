@@ -30,10 +30,10 @@
         console.log('[SSO Redirect] Target URL:', @json($full_url));
         console.log('[SSO Redirect] URL only:', @json($url));
 
-        setTimeout(function() {
+        requestAnimationFrame(function() {
             console.log('[SSO Redirect] Navigating to:', @json($full_url));
-            window.location.href = {!! json_encode($full_url) !!};
-        }, 2000);
+            window.location.replace({!! json_encode($full_url) !!});
+        });
     </script>
 
     <style>
