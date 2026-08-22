@@ -20,7 +20,7 @@ services:
       DB_USERNAME: loa
       DB_PASSWORD: loa-secret
       JWT_SECRET: dev-only-secret-change-before-production
-      JWT_ACCESS_TTL: 15
+      JWT_ACCESS_TTL: 480
       JWT_REFRESH_TTL: 10080
       L5_SWAGGER_OPEN_API_SPEC_VERSION: 3.1.0
       SEQ_URL: "http://seq:5341"
