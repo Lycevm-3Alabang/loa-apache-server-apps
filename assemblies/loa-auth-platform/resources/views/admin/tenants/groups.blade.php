@@ -56,8 +56,8 @@
 
                 {{-- Actions --}}
                 <div style="display:flex;gap:0.5rem;margin-top:1rem;">
-                    <a class="button" href="{{ route('admin.tenants.group.endpoints', [$tenant, $group]) }}">Manage endpoints & permissions</a>
-                    <a class="button button-ghost" href="{{ route('admin.tenants.group.members', [$tenant, $group]) }}">View members ({{ $group->users_count ?? $group->users->count() }})</a>
+                    <a class="button button-neutral" href="{{ route('admin.tenants.group.endpoints', [$tenant, $group]) }}">Manage endpoints & permissions</a>
+                    <a class="button button-neutral" href="{{ route('admin.tenants.group.members', [$tenant, $group]) }}">View members ({{ $group->users_count ?? $group->users->count() }})</a>
                 </div>
             </div>
         @endforeach

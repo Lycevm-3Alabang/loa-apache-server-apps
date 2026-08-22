@@ -34,6 +34,21 @@
                 <span>{{ $user->created_at?->format('M j, Y g:i A') ?? '—' }}</span>
             </div>
         </div>
+
+        <div class="quick-actions" aria-label="User actions">
+            <a class="action-tile" href="{{ route('admin.users.endpoint-overrides.manage', $user) }}">
+                <span class="tile-icon tile-violet" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                </span>
+                <span class="tile-body">
+                    <strong>Endpoint overrides</strong>
+                    <small>Per-user endpoint access levels</small>
+                </span>
+                <span class="tile-chevron" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
+            </a>
+        </div>
     </div>
 
     {{-- Group Membership --}}
