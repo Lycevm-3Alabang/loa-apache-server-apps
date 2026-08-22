@@ -2,6 +2,11 @@
 
 @section('title', 'Endpoint Catalog - ' . $tenant->name . ' | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Tenants', 'url' => route('admin.tenants')],
+        ['label' => $tenant->name, 'url' => route('admin.tenants.show', $tenant)],
+        ['label' => 'Endpoint Catalog'],
+    ]])
     <div class="page-header">
         <div>
             <h1>Endpoint Catalog</h1>
@@ -9,7 +14,6 @@
         </div>
         <div style="display:flex;gap:0.5rem;">
             <a class="button button-ghost" href="{{ route('admin.tenants.endpoints.export', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Export JSON</a>
-            <a class="button button-ghost" href="{{ route('admin.tenants.show', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Back to tenant</a>
         </div>
     </div>
 
@@ -169,13 +173,13 @@
                                 <td><span class="badge badge-{{ $endpoint->required_level === 'admin' ? 'disabled' : ($endpoint->required_level === 'write' ? 'active' : 'active') }}">{{ $endpoint->required_level }}</span></td>
                                 <td>{{ $endpoint->tenant_id ? 'Tenant' : 'Platform' }}</td>
                                 <td class="row-actions">
-                                    <form method="post" action="{{ route('admin.tenants.endpoints.destroy', $tenant) }}" onsubmit="return confirm('Delete this endpoint?');">
+                                    <form method="post" action="{{ route('admin.tenants.endpoints.destroy', $tenant) }}">
                                         @csrf
                                         @method('DELETE')
                                         <input type="hidden" name="method" value="{{ $endpoint->method }}">
                                         <input type="hidden" name="path" value="{{ $endpoint->path }}">
                                         <input type="hidden" name="force" value="true">
-                                        <button class="button button-danger" type="submit">Delete</button>
+                                        <a class="button button-link button-danger" role="button" href="#" onclick="event.preventDefault(); if (confirm('Delete this endpoint?')) this.closest('form').submit();">Delete</a>
                                     </form>
                                 </td>
                             </tr>

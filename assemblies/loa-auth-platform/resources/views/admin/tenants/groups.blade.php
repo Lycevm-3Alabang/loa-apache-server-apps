@@ -2,6 +2,11 @@
 
 @section('title', $tenant->name . ' Groups | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Tenants', 'url' => route('admin.tenants')],
+        ['label' => $tenant->name, 'url' => route('admin.tenants.show', $tenant)],
+        ['label' => 'Groups'],
+    ]])
     <div class="page-header">
         <div>
             <h1>{{ $tenant->name }} — Groups</h1>
@@ -9,7 +14,6 @@
         </div>
         <div style="display:flex;gap:0.5rem;">
             <a class="button button-ghost" href="{{ route('admin.tenants.access-config.import', $tenant) }}" style="border-color:var(--border);">Import/Export</a>
-            <a class="button button-ghost" href="{{ route('admin.tenants.show', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Back to tenant</a>
         </div>
     </div>
 

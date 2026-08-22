@@ -2,13 +2,15 @@
 
 @section('title', 'Endpoint Overrides - ' . $user->name . ' | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Users', 'url' => route('admin.users')],
+        ['label' => $user->name, 'url' => route('admin.users.show', $user)],
+        ['label' => 'Endpoint Overrides'],
+    ]])
     <div class="page-header">
         <div>
             <h1>Endpoint Overrides</h1>
             <p>Manage per-user endpoint access overrides for <strong>{{ $user->name }}</strong> ({{ $user->email }}).</p>
-        </div>
-        <div style="display:flex;gap:0.5rem;">
-            <a class="button button-ghost" href="{{ route('admin.users.show', $user) }}" style="border-color:var(--border);color:var(--text-secondary);">Back to user</a>
         </div>
     </div>
 

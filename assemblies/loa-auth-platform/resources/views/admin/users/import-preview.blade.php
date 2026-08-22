@@ -3,6 +3,11 @@
 @section('title', 'Import Preview - LOA Admin')
 
 @section('content')
+@include('admin.partials.breadcrumbs', ['items' => [
+    ['label' => 'Users', 'url' => route('admin.users')],
+    ['label' => 'Import', 'url' => route('admin.users.import')],
+    ['label' => 'Preview'],
+]])
 <div class="page-header">
     <div>
         <h1>Import Preview</h1>
@@ -81,7 +86,7 @@
                     </td>
                     <td class="muted">{{ $row['remarks'] }}</td>
                     <td class="row-actions">
-                        <button type="button" class="button button-ghost" style="height:2rem;padding:0 0.6rem;font-size:0.75rem;" onclick="removeRow({{ $index }})">Remove</button>
+                        <a href="#" class="button-link" style="font-size:0.75rem;" onclick="event.preventDefault(); removeRow({{ $index }})">Remove</a>
                     </td>
                 </tr>
                 @endforeach

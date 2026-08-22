@@ -2,6 +2,9 @@
 
 @section('title', 'Tenant Management | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Tenants'],
+    ]])
     <div class="page-header">
         <div>
             <h1>Tenant Management</h1>
@@ -38,7 +41,7 @@
                                 <td class="muted">{{ $tenant->app_url ? parse_url($tenant->app_url, PHP_URL_HOST) : '—' }}</td>
                                 <td class="muted">{{ $tenant->created_at?->format('M j, Y') ?? '—' }}</td>
                                 <td class="row-actions">
-                                    <a class="button" href="{{ route('admin.tenants.show', $tenant) }}">Manage</a>
+                                    <a class="button button-link" href="{{ route('admin.tenants.show', $tenant) }}">Manage</a>
                                 </td>
                             </tr>
                         @endforeach

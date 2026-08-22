@@ -2,13 +2,15 @@
 
 @section('title', 'Import Access Config - ' . $tenant->name . ' | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Tenants', 'url' => route('admin.tenants')],
+        ['label' => $tenant->name, 'url' => route('admin.tenants.show', $tenant)],
+        ['label' => 'Access Config'],
+    ]])
     <div class="page-header">
         <div>
             <h1>Import Access Config</h1>
             <p>Import groups, grants, and user overrides for {{ $tenant->name }}.</p>
-        </div>
-        <div style="display:flex;gap:0.5rem;">
-            <a class="button button-ghost" href="{{ route('admin.tenants.show', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Back to tenant</a>
         </div>
     </div>
 

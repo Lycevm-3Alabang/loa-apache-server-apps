@@ -2,6 +2,10 @@
 
 @section('title', 'Create Tenant | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Tenants', 'url' => route('admin.tenants')],
+        ['label' => 'Create Tenant'],
+    ]])
     <div class="page-header">
         <div>
             <h1>Create Tenant</h1>

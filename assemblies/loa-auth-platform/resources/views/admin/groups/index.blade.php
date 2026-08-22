@@ -2,6 +2,9 @@
 
 @section('title', 'Groups | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Groups'],
+    ]])
     <div class="page-header">
         <div>
             <h1>Groups</h1>
@@ -38,7 +41,7 @@
                                 <td class="muted">{{ $group->users_count }}</td>
                                 <td class="muted">{{ $group->created_at?->format('M j, Y') ?? '—' }}</td>
                                 <td class="row-actions">
-                                    <a class="button" href="{{ route('admin.groups.show', $group) }}">View</a>
+                                    <a class="button button-link" href="{{ route('admin.groups.show', $group) }}">View</a>
                                 </td>
                             </tr>
                         @endforeach

@@ -2,12 +2,17 @@
 
 @section('title', $group->name . ' | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Tenants', 'url' => route('admin.tenants')],
+        ['label' => $tenant->name, 'url' => route('admin.tenants.show', $tenant)],
+        ['label' => 'Groups', 'url' => route('admin.tenants.groups', $tenant)],
+        ['label' => $group->name],
+    ]])
     <div class="page-header">
         <div>
             <h1>{{ $group->name }}</h1>
             <p>Group detail for "{{ $tenant->name }}".</p>
         </div>
-        <a class="button button-ghost" href="{{ route('admin.tenants.groups', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Back to groups</a>
     </div>
 
     {{-- Group info --}}

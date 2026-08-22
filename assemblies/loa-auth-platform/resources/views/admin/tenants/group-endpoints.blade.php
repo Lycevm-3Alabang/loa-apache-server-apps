@@ -2,13 +2,17 @@
 
 @section('title', 'Group Endpoint Grants - ' . $group->name . ' | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Tenants', 'url' => route('admin.tenants')],
+        ['label' => $tenant->name, 'url' => route('admin.tenants.show', $tenant)],
+        ['label' => 'Groups', 'url' => route('admin.tenants.groups', $tenant)],
+        ['label' => $group->name, 'url' => route('admin.tenants.group.show', [$tenant, $group])],
+        ['label' => 'Endpoints & Permissions'],
+    ]])
     <div class="page-header">
         <div>
             <h1>Group Endpoint Grants</h1>
             <p>Manage endpoint access levels for <strong>{{ $group->name }}</strong> in {{ $tenant->name }}.</p>
-        </div>
-        <div style="display:flex;gap:0.5rem;">
-            <a class="button button-ghost" href="{{ route('admin.tenants.endpoints.manage', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Back to catalog</a>
         </div>
     </div>
 

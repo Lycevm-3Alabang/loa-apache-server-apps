@@ -2,12 +2,15 @@
 
 @section('title', $user->name . ' | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Users', 'url' => route('admin.users')],
+        ['label' => $user->name],
+    ]])
     <div class="page-header">
         <div>
             <h1>{{ $user->name }}</h1>
             <p>User profile, group memberships, and permission management.</p>
         </div>
-        <a class="button button-ghost" href="{{ route('admin.users') }}" style="border-color:var(--border);color:var(--text-secondary);">Back to users</a>
     </div>
 
     {{-- User info --}}
@@ -86,9 +89,9 @@
                                 <td class="muted">{{ $group->description ?? '—' }}</td>
                                 <td class="muted">{{ $group->tenant_id ? 'Tenant' : 'Platform' }}</td>
                                 <td class="row-actions">
-                                    <form method="post" action="{{ route('admin.users.groups.remove', [$user, $group->id]) }}" onsubmit="return confirm('Remove from this group?');">
+                                    <form method="post" action="{{ route('admin.users.groups.remove', [$user, $group->id]) }}">
                                         @csrf
-                                        <button class="button button-danger" type="submit">Remove</button>
+                                        <a class="button button-link button-danger" role="button" href="#" onclick="event.preventDefault(); if (confirm('Remove from this group?')) this.closest('form').submit();">Remove</a>
                                     </form>
                                 </td>
                             </tr>
@@ -174,9 +177,9 @@
                                 </td>
                                 <td class="muted">{{ $override->pivot->tenant_id ? 'Tenant' : 'Global' }}</td>
                                 <td class="row-actions">
-                                    <form method="post" action="{{ route('admin.users.permissions.remove', [$user, $override->key]) }}" onsubmit="return confirm('Remove this permission override?');">
+                                    <form method="post" action="{{ route('admin.users.permissions.remove', [$user, $override->key]) }}">
                                         @csrf
-                                        <button class="button button-danger" type="submit">Remove</button>
+                                        <a class="button button-link button-danger" role="button" href="#" onclick="event.preventDefault(); if (confirm('Remove this permission override?')) this.closest('form').submit();">Remove</a>
                                     </form>
                                 </td>
                             </tr>

@@ -115,6 +115,7 @@
             font-family: inherit;
             font-size: 0.8125rem;
             font-weight: 600;
+            text-decoration: none;
             box-shadow: 0 1px 2px rgba(0,0,0,0.08);
             transition: background 160ms ease, transform 160ms ease;
         }
@@ -124,16 +125,159 @@
 
         .button-ghost {
             background: transparent;
+            border-color: var(--border);
+            color: var(--text-secondary);
+        }
+
+        .button-ghost:hover { background: var(--surface-secondary); }
+
+        .admin-topbar .button-ghost {
             border-color: rgba(255, 255, 255, 0.25);
             color: #f8fafc;
         }
 
-        .button-ghost:hover { background: rgba(255, 255, 255, 0.1); }
+        .admin-topbar .button-ghost:hover { background: rgba(255, 255, 255, 0.1); }
 
         .button-danger {
             background: var(--danger);
             border-color: var(--danger);
         }
+
+        .button-neutral {
+            background: var(--surface);
+            border-color: var(--border);
+            color: var(--text-secondary);
+            box-shadow: none;
+        }
+
+        .button-neutral:hover {
+            background: var(--surface-secondary);
+            border-color: var(--border-strong);
+            color: var(--text);
+        }
+
+        .button-soft-danger {
+            background: #fff5f3;
+            border-color: #edc5c0;
+            color: var(--danger);
+            box-shadow: none;
+        }
+
+        .button-soft-danger:hover {
+            background: #fdeae6;
+            border-color: var(--danger);
+        }
+
+        .button-soft-success {
+            background: #effaf6;
+            border-color: #b8e1d5;
+            color: var(--success);
+            box-shadow: none;
+        }
+
+        .button-soft-success:hover {
+            background: #dff4ec;
+            border-color: var(--success);
+        }
+
+        .button svg,
+        .button-neutral svg {
+            width: 1rem;
+            height: 1rem;
+            flex-shrink: 0;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+            gap: 0.625rem;
+            margin-top: 1.25rem;
+        }
+
+        .action-tile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            background: var(--surface-secondary);
+            color: var(--text);
+            transition: border-color 140ms ease, background 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+        }
+
+        .action-tile:hover {
+            border-color: var(--brand-500);
+            background: var(--surface);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+
+        .action-tile .tile-icon {
+            display: grid;
+            place-items: center;
+            width: 2.25rem;
+            height: 2.25rem;
+            flex-shrink: 0;
+            border-radius: var(--radius-lg);
+        }
+
+        .action-tile .tile-icon svg {
+            width: 1.125rem;
+            height: 1.125rem;
+        }
+
+        .tile-slate { background: var(--slate-800); color: var(--slate-400); }
+        .tile-info { background: #eaf1fe; color: #2563eb; }
+        .tile-violet { background: #f3efff; color: #7c3aed; }
+        .tile-brand { background: rgba(252, 202, 13, 0.18); color: var(--brand-700); }
+
+        .action-tile .tile-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .action-tile .tile-body strong { font-size: 0.875rem; font-weight: 600; }
+
+        .action-tile .tile-body small {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .action-tile .tile-chevron {
+            color: var(--text-muted);
+            flex-shrink: 0;
+            transition: transform 140ms ease, color 140ms ease;
+        }
+
+        .action-tile .tile-chevron svg { width: 1rem; height: 1rem; }
+
+        .action-tile:hover .tile-chevron { color: var(--brand-700); transform: translateX(2px); }
+
+        .button-link {
+            height: auto;
+            padding: 0;
+            border: none;
+            background: none;
+            box-shadow: none;
+            color: var(--brand-600);
+        }
+
+        .button-link:hover {
+            background: none;
+            color: var(--brand-700);
+            text-decoration: underline;
+        }
+
+        .button-link.button-danger { color: var(--danger); }
+        .button-link.button-danger:hover { color: var(--danger); }
 
         .admin-container {
             width: min(100% - 2rem, 72rem);
@@ -149,6 +293,26 @@
             margin-bottom: 1.5rem;
         }
 
+        .breadcrumbs {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+            margin-bottom: 1rem;
+            font-size: 0.8125rem;
+        }
+
+        .breadcrumbs a {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .breadcrumbs a:hover { color: var(--brand-600); }
+
+        .crumb-sep { color: var(--border-strong); }
+
+        .crumb-current { color: var(--text-secondary); font-weight: 600; }
+
         .page-header h1 {
             margin: 0;
             font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
@@ -160,6 +324,13 @@
             margin: 0.35rem 0 0;
             color: var(--text-muted);
             font-size: 0.875rem;
+        }
+
+        .page-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
         .alert {
@@ -274,6 +445,11 @@
         .row-actions { white-space: nowrap; text-align: right; }
 
         .row-actions form { display: inline; margin: 0; }
+
+        .row-actions .button + .button,
+        .row-actions .button + form,
+        .row-actions form + .button,
+        .row-actions form + form { margin-left: 0.375rem; }
 
         .pagination {
             display: flex;

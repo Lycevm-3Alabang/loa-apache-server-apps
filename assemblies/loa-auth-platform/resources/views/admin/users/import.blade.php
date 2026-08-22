@@ -3,12 +3,15 @@
 @section('title', 'Bulk User Import - LOA Admin')
 
 @section('content')
+@include('admin.partials.breadcrumbs', ['items' => [
+    ['label' => 'Users', 'url' => route('admin.users')],
+    ['label' => 'Import'],
+]])
 <div class="page-header">
     <div>
         <h1>Bulk User Import</h1>
         <p>Upload a CSV file to import users with tenant and group assignments.</p>
     </div>
-    <a class="button button-ghost" href="{{ route('admin.users') }}" style="border-color:var(--border);color:var(--text-secondary);">Back to Users</a>
 </div>
 
 <div class="detail-card">

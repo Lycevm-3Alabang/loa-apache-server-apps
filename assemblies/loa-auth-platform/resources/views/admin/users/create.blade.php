@@ -2,6 +2,10 @@
 
 @section('title', 'Create User | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Users', 'url' => route('admin.users')],
+        ['label' => 'Create User'],
+    ]])
     <div class="page-header">
         <div>
             <h1>Create User</h1>

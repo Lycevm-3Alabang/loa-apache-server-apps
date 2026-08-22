@@ -2,12 +2,15 @@
 
 @section('title', 'Create Group | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Groups', 'url' => route('admin.groups')],
+        ['label' => 'Create Group'],
+    ]])
     <div class="page-header">
         <div>
             <h1>Create Group</h1>
             <p>Add a new platform group.</p>
         </div>
-        <a class="button button-ghost" href="{{ route('admin.groups') }}" style="border-color:var(--border);color:var(--text-secondary);">Back to groups</a>
     </div>
 
     <div class="detail-card">

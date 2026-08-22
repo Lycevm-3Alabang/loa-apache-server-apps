@@ -2,12 +2,15 @@
 
 @section('title', $group->name . ' | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Groups', 'url' => route('admin.groups')],
+        ['label' => $group->name],
+    ]])
     <div class="page-header">
         <div>
             <h1>{{ $group->name }}</h1>
             <p>Group detail, permissions, and membership management.</p>
         </div>
-        <a class="button button-ghost" href="{{ route('admin.groups') }}" style="border-color:var(--border);color:var(--text-secondary);">Back to groups</a>
     </div>
 
     {{-- Group info --}}
@@ -111,9 +114,9 @@
                                 </td>
                                 <td><span class="badge badge-{{ $member->status }}">{{ $member->status }}</span></td>
                                 <td class="row-actions">
-                                    <form method="post" action="{{ route('admin.groups.members.remove', [$group, $member->id]) }}" onsubmit="return confirm('Remove this user from the group?');">
+                                    <form method="post" action="{{ route('admin.groups.members.remove', [$group, $member->id]) }}">
                                         @csrf
-                                        <button class="button button-danger" type="submit">Remove</button>
+                                        <a class="button button-link button-danger" role="button" href="#" onclick="event.preventDefault(); if (confirm('Remove this user from the group?')) this.closest('form').submit();">Remove</a>
                                     </form>
                                 </td>
                             </tr>

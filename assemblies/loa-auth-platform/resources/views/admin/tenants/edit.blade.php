@@ -2,6 +2,11 @@
 
 @section('title', 'Edit ' . $tenant->name . ' | LOA Admin')
 @section('content')
+    @include('admin.partials.breadcrumbs', ['items' => [
+        ['label' => 'Tenants', 'url' => route('admin.tenants')],
+        ['label' => $tenant->name, 'url' => route('admin.tenants.show', $tenant)],
+        ['label' => 'Edit'],
+    ]])
     <div class="page-header">
         <div>
             <h1>Edit {{ $tenant->name }}</h1>
