@@ -19,6 +19,22 @@ class CertificateTemplateFactory extends Factory
             'type' => 'certificate',
             'html_content' => '<div>{{recipient_name}}</div>',
             'css_content' => null,
+            'visibility' => CertificateTemplate::VISIBILITY_PUBLIC,
         ];
+    }
+
+    public function private(): static
+    {
+        return $this->state(fn () => [
+            'visibility' => CertificateTemplate::VISIBILITY_PRIVATE,
+        ]);
+    }
+
+    public function ownedBy(string $sub): static
+    {
+        return $this->state(fn () => [
+            'created_by' => $sub,
+            'updated_by' => $sub,
+        ]);
     }
 }

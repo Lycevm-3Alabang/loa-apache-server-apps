@@ -26,8 +26,11 @@ use OpenApi\Attributes as OA;
     new OA\Property(property: "type", type: "string", enum: ["certificate", "email"]),
     new OA\Property(property: "html_content", type: "string"),
     new OA\Property(property: "css_content", type: "string", nullable: true),
+    new OA\Property(property: "visibility", type: "string", enum: ["public", "private"]),
     new OA\Property(property: "is_locked", type: "boolean"),
     new OA\Property(property: "locked_reason", type: "string", nullable: true),
+    new OA\Property(property: "created_by", type: "string", nullable: true),
+    new OA\Property(property: "updated_by", type: "string", nullable: true),
     new OA\Property(property: "created_at", type: "string", format: "date-time"),
     new OA\Property(property: "updated_at", type: "string", format: "date-time"),
 ])]
@@ -49,6 +52,7 @@ use OpenApi\Attributes as OA;
     new OA\Property(property: "type", type: "string", enum: ["certificate", "email"]),
     new OA\Property(property: "html_content", type: "string"),
     new OA\Property(property: "css_content", type: "string"),
+    new OA\Property(property: "visibility", type: "string", enum: ["public", "private"], default: "private"),
 ])]
 #[OA\Schema(schema: "TemplateUpdateRequest", properties: [
     new OA\Property(property: "name", type: "string"),
@@ -56,6 +60,7 @@ use OpenApi\Attributes as OA;
     new OA\Property(property: "type", type: "string", enum: ["certificate", "email"]),
     new OA\Property(property: "html_content", type: "string"),
     new OA\Property(property: "css_content", type: "string"),
+    new OA\Property(property: "visibility", type: "string", enum: ["public", "private"]),
 ])]
 class CertificateTemplateController extends Controller
 {
@@ -76,7 +81,11 @@ class CertificateTemplateController extends Controller
     )]
     public function index(Request $request): JsonResponse
     {
-        $query = CertificateTemplate::query();
+        $query = CertificateTemplate::query()
+            ->visibleTo(
+                (string) $this->callerSub($request),
+                $this->callerGroups($request),
+            );
 
         if ($type = $request->query('type')) {
             $query->where('type', $type);
@@ -133,6 +142,7 @@ class CertificateTemplateController extends Controller
             'type' => 'required|in:certificate,email',
             'html_content' => 'required|string',
             'css_content' => 'nullable|string',
+            'visibility' => 'nullable|in:public,private',
         ]);
 
         if ($validator->fails()) {
@@ -140,6 +150,7 @@ class CertificateTemplateController extends Controller
         }
 
         $organizationId = $this->resolveOrganizationId();
+        $sub = $this->callerSub($request);
 
         $existing = CertificateTemplate::where('organization_id', $organizationId)
             ->where('name', $request->input('name'))
@@ -152,6 +163,7 @@ class CertificateTemplateController extends Controller
             ], 409);
         }
 
+        // Omitted visibility defaults to private (spec §5.2) — sharing is opt-in.
         $template = CertificateTemplate::create([
             'organization_id' => $organizationId,
             'name' => $request->input('name'),
@@ -159,7 +171,9 @@ class CertificateTemplateController extends Controller
             'type' => $request->input('type'),
             'html_content' => $request->input('html_content'),
             'css_content' => $request->input('css_content'),
-            'created_by' => $request->attributes->get('jwt_claims.sub'),
+            'visibility' => $request->input('visibility', CertificateTemplate::VISIBILITY_PRIVATE),
+            'created_by' => $sub,
+            'updated_by' => $sub,
         ]);
 
         return response()->json([
@@ -180,11 +194,14 @@ class CertificateTemplateController extends Controller
             new OA\Response(response: 404, description: "Not found"),
         ]
     )]
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $template = CertificateTemplate::find($id);
 
-        if (!$template) {
+        if (!$template || !$template->isVisibleTo(
+            (string) $this->callerSub($request),
+            $this->callerGroups($request),
+        )) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Template not found.',
@@ -238,10 +255,25 @@ class CertificateTemplateController extends Controller
             'type' => 'sometimes|in:certificate,email',
             'html_content' => 'sometimes|string',
             'css_content' => 'nullable|string',
+            'visibility' => 'sometimes|in:public,private',
         ]);
 
         if ($validator->fails()) {
             throw ValidationException::withMessages($validator->errors()->toArray());
+        }
+
+        // Only the owner or a cert-admin may change the visibility flag (spec §5.3).
+        $sub = $this->callerSub($request);
+        $newVisibility = $request->input('visibility');
+
+        if ($newVisibility !== null
+            && $newVisibility !== $template->visibility
+            && !$template->isOwnedBy((string) $sub)
+            && !in_array('cert-admin', $this->callerGroups($request), true)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only the template owner or a cert-admin can change template visibility.',
+            ], 403);
         }
 
         if ($request->has('name') && $request->input('name') !== $template->name) {
@@ -258,13 +290,20 @@ class CertificateTemplateController extends Controller
             }
         }
 
-        $template->update($request->only([
+        $data = $request->only([
             'name',
             'description',
             'type',
             'html_content',
             'css_content',
-        ]));
+            'visibility',
+        ]);
+
+        if ($sub !== null) {
+            $data['updated_by'] = $sub;
+        }
+
+        $template->update($data);
 
         return response()->json([
             'data' => $this->formatTemplate($template->fresh()),
@@ -354,8 +393,11 @@ class CertificateTemplateController extends Controller
             'type' => $template->type,
             'html_content' => $template->html_content,
             'css_content' => $template->css_content,
+            'visibility' => $template->visibility,
             'is_locked' => $locked,
             'locked_reason' => $lockedReason,
+            'created_by' => $template->created_by,
+            'updated_by' => $template->updated_by,
             'created_at' => $template->created_at?->toIso8601String(),
             'updated_at' => $template->updated_at?->toIso8601String(),
         ];

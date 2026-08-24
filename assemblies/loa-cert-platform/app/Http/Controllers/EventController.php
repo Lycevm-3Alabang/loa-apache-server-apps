@@ -217,8 +217,24 @@ class EventController extends Controller
             'certificate_title' => 'nullable|string',
             'certificate_number_pattern' => 'required|string',
             'valid_until' => 'nullable|date',
-            'template_id' => 'nullable|uuid',
-            'email_template_id' => 'nullable|uuid',
+            'template_id' => [
+                'nullable',
+                'uuid',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request) {
+                    if (!$this->templateReferenceAvailable($request, $value, 'certificate')) {
+                        $fail("The selected {$attribute} is not available.");
+                    }
+                },
+            ],
+            'email_template_id' => [
+                'nullable',
+                'uuid',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request) {
+                    if (!$this->templateReferenceAvailable($request, $value, 'email')) {
+                        $fail("The selected {$attribute} is not available.");
+                    }
+                },
+            ],
             'status' => 'nullable|in:draft,active,archive'
         ]);
 
@@ -294,8 +310,24 @@ class EventController extends Controller
             'certificate_title' => 'nullable|string',
             'certificate_number_pattern' => 'nullable|string',
             'valid_until' => 'nullable|date',
-            'template_id' => 'nullable|uuid',
-            'email_template_id' => 'nullable|uuid',
+            'template_id' => [
+                'nullable',
+                'uuid',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request) {
+                    if (!$this->templateReferenceAvailable($request, $value, 'certificate')) {
+                        $fail("The selected {$attribute} is not available.");
+                    }
+                },
+            ],
+            'email_template_id' => [
+                'nullable',
+                'uuid',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request) {
+                    if (!$this->templateReferenceAvailable($request, $value, 'email')) {
+                        $fail("The selected {$attribute} is not available.");
+                    }
+                },
+            ],
             'status' => 'nullable|in:draft,active,archive'
         ]);
 
@@ -378,6 +410,17 @@ class EventController extends Controller
             ], 404);
         }
 
+        // Private templates may only be cloned by their owners or cert-admin (spec §5.6).
+        if (!$source->isVisibleTo(
+            $this->callerSub($request),
+            $request->attributes->get('cert_user')['groups'] ?? [],
+        )) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Certificate template not found.',
+            ], 404);
+        }
+
         $clone = CertificateTemplate::create([
             'organization_id' => $event->organization_id,
             'name' => $request->input('name'),
@@ -385,7 +428,9 @@ class EventController extends Controller
             'type' => 'certificate',
             'html_content' => $source->html_content,
             'css_content' => $source->css_content,
-            'created_by' => $source->created_by,
+            'visibility' => CertificateTemplate::VISIBILITY_PRIVATE,
+            'created_by' => $this->callerSub($request),
+            'updated_by' => $this->callerSub($request),
         ]);
 
         $event->update(['template_id' => $clone->id]);
@@ -443,6 +488,17 @@ class EventController extends Controller
             ], 404);
         }
 
+        // Private templates may only be cloned by their owners or cert-admin (spec §5.6).
+        if (!$source->isVisibleTo(
+            $this->callerSub($request),
+            $request->attributes->get('cert_user')['groups'] ?? [],
+        )) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Email template not found.',
+            ], 404);
+        }
+
         $clone = CertificateTemplate::create([
             'organization_id' => $event->organization_id,
             'name' => $request->input('name'),
@@ -450,7 +506,9 @@ class EventController extends Controller
             'type' => 'email',
             'html_content' => $source->html_content,
             'css_content' => $source->css_content,
-            'created_by' => $source->created_by,
+            'visibility' => CertificateTemplate::VISIBILITY_PRIVATE,
+            'created_by' => $this->callerSub($request),
+            'updated_by' => $this->callerSub($request),
         ]);
 
         $event->update(['email_template_id' => $clone->id]);
@@ -905,10 +963,33 @@ class EventController extends Controller
         ]);
     }
 
+    /**
+     * A template reference is available when the template exists, matches the
+     * expected type, and is visible to the caller (spec §5.6).
+     */
+    private function templateReferenceAvailable(Request $request, ?string $id, string $type): bool
+    {
+        if (!$id) {
+            return true;
+        }
+
+        $template = CertificateTemplate::find($id);
+
+        if (!$template || $template->type !== $type) {
+            return false;
+        }
+
+        return $template->isVisibleTo(
+            $this->callerSub($request),
+            $request->attributes->get('cert_user')['groups'] ?? [],
+        );
+    }
+
     private function formatEvent(Event $event): array
     {
         return [
             'id' => $event->id,
+            'organization_id' => $event->organization_id,
             'name' => $event->name,
             'description' => $event->description,
             'event_date' => $event->event_date?->toDateString(),

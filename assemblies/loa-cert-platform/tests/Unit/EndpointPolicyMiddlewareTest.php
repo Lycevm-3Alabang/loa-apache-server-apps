@@ -154,13 +154,30 @@ class EndpointPolicyMiddlewareTest extends TestCase
         $this->assertTrue($called);
     }
 
-    public function test_write_covers_admin_because_write_ordinal_is_higher(): void
+    public function test_write_does_not_cover_admin_requirement(): void
     {
         $this->setCatalog([
             ['method' => 'POST', 'path' => '/api/v1/certificates/{id}/revoke', 'required_level' => 'admin'],
         ]);
 
         $request = $this->requestWithClaims('POST', '/api/v1/certificates/abc/revoke', ['write:/api/v1/certificates/{id}/revoke']);
+        $called = false;
+        $response = $this->middleware->handle($request, function ($req) use (&$called) {
+            $called = true;
+            return response()->json(['ok' => true]);
+        });
+
+        $this->assertFalse($called);
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    public function test_write_covers_read_requirement_because_write_ordinal_is_higher(): void
+    {
+        $this->setCatalog([
+            ['method' => 'GET', 'path' => '/api/v1/events', 'required_level' => 'read'],
+        ]);
+
+        $request = $this->requestWithClaims('GET', '/api/v1/events', ['write:/api/v1/events']);
         $called = false;
         $this->middleware->handle($request, function ($req) use (&$called) {
             $called = true;
