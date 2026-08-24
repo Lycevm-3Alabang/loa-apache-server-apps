@@ -361,7 +361,7 @@ Shows a user's profile, group memberships, and effective permissions.
 
 1. **User Info** — email, name, status, created_at
 2. **Group Membership** — list of groups with add/remove controls
-3. **Effective Permissions** — resolved permission list (read-only, computed)
+3. **SSO Platform Permissions** — resolved permission list (read-only, computed)
 4. **Permission Overrides** — user-level overrides with grant/revoke controls
 
 **Actions:**
@@ -412,7 +412,7 @@ Tenant-scoped group detail page (primary navigation path: **Admin → Tenants �
 **Sections:**
 
 1. **Group Info** — name, description, priority, scope, member count
-2. **Effective Permissions** — editable checkbox grid of the auth API permission catalog; checked = granted to every member of the group (same pivot rows as §6.3, `tenant_id = NULL` on grants)
+2. **SSO Platform Permissions** — editable checkbox grid of the auth API permission catalog; checked = granted to every member of the group (same pivot rows as §6.3, `tenant_id = NULL` on grants)
 3. **Quick Actions** — links to endpoint grants and members pages
 
 **Actions:**

@@ -55,10 +55,10 @@
         </div>
     </div>
 
-    {{-- Effective Permissions (auth API keys) --}}
+    {{-- SSO Platform Permissions (auth API keys) --}}
     <div class="detail-card">
         <div class="section-header">
-            <h2>Effective Permissions</h2>
+            <h2>SSO Platform Permissions</h2>
         </div>
         <p class="muted" style="margin:0 0 1rem;font-size:0.8125rem;">
             Auth API access keys granted to every member of this group. Claims are refreshed the next time a member logs in.
@@ -73,7 +73,10 @@
                     @endphp
                     <label class="perm-check">
                         <input type="checkbox" name="permissions[]" value="{{ $perm->id }}" @checked($granted)>
-                        <span>{{ $perm->key }}</span>
+                        <span>
+                            <strong>{{ $perm->key }}</strong>
+                            <small class="muted" style="display:block;font-size:0.75rem;">{{ $perm->description ?? 'No description available.' }}</small>
+                        </span>
                     </label>
                 @endforeach
             </div>

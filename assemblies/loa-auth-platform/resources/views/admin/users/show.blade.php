@@ -117,13 +117,13 @@
         </div>
     </div>
 
-    {{-- Effective Permissions --}}
+    {{-- SSO Platform Permissions --}}
     <div class="detail-card">
         <div class="section-header">
-            <h2>Effective Permissions</h2>
+            <h2>SSO Platform Permissions</h2>
         </div>
         @if (empty($effectivePermissions))
-            <div class="empty-state">No effective permissions.</div>
+            <div class="empty-state">No SSO platform permissions.</div>
         @else
             <div class="perm-grid" style="pointer-events:none;opacity:0.7;">
                 @foreach ($allPermissions as $perm)
@@ -132,7 +132,10 @@
                     @endphp
                     <label class="perm-check">
                         <input type="checkbox" disabled @checked($active)>
-                        <span>{{ $perm->key }}</span>
+                        <span>
+                            <strong>{{ $perm->key }}</strong>
+                            <small class="muted" style="display:block;font-size:0.75rem;">{{ $perm->description ?? 'No description available.' }}</small>
+                        </span>
                     </label>
                 @endforeach
             </div>
