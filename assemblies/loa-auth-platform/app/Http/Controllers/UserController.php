@@ -59,7 +59,7 @@ class UserController extends Controller
     )]
     public function index(Request $request)
     {
-        $query = User::orderBy('name');
+        $query = User::with('userGroups:id,name')->orderBy('name');
 
         $tenantId = $this->tenantIdFromRequest($request);
         if ($tenantId) {
@@ -72,16 +72,48 @@ class UserController extends Controller
             }
         }
 
-        $users = $query->get()
+        $search = trim((string) $request->query('search', ''));
+        if ($search !== '') {
+            $like = '%' . strtolower($search) . '%';
+            $query->where(function ($q) use ($like) {
+                $q->whereRaw('LOWER(name) LIKE ?', [$like])
+                    ->orWhereRaw('LOWER(email) LIKE ?', [$like]);
+            });
+        }
+
+        $groupId = trim((string) $request->query('group_id', ''));
+        if ($groupId !== '') {
+            $query->whereHas('userGroups', fn ($q) => $q->where('user_groups.id', $groupId));
+        }
+
+        $limit = min(max((int) $request->query('limit', 25), 1), 100);
+        $offset = max((int) $request->query('offset', 0), 0);
+
+        $total = (clone $query)->toBase()->count();
+
+        $users = $query->skip($offset)
+            ->take($limit)
+            ->get()
             ->map(fn (User $user) => [
                 'id' => $user->id,
                 'email' => $user->email,
                 'name' => $user->name,
                 'status' => $user->status,
                 'created_at' => $user->created_at,
+                'groups' => $user->userGroups
+                    ->map(fn ($group) => ['id' => $group->id, 'name' => $group->name])
+                    ->values(),
             ]);
 
-        return response()->json(['data' => $users]);
+        return response()->json([
+            'data' => $users,
+            'meta' => [
+                'limit' => $limit,
+                'offset' => $offset,
+                'total' => $total,
+                'has_more' => ($offset + $limit) < $total,
+            ],
+        ]);
     }
 
     #[OA\Get(
