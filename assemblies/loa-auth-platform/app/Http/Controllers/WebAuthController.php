@@ -223,9 +223,14 @@ class WebAuthController extends Controller
         return redirect()->route('login')->with('status', 'Account created. Please sign in.');
     }
 
-    public function showForgotPassword(): View
+    public function showForgotPassword(Request $request): View
     {
-        return view('forgot-password');
+        // Validated against the redirect allowlist; null falls back to the login link.
+        $returnUrl = $this->safeRedirectUrl($request->query('redirect'));
+
+        return view('forgot-password', [
+            'redirect' => $returnUrl,
+        ]);
     }
 
     public function sendResetLinkEmail(Request $request): RedirectResponse
@@ -236,7 +241,15 @@ class WebAuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return back()->withInput()->withErrors($validator);
+            // Re-render via GET with the sanitized redirect so the
+            // Return-to-app link survives validation errors (§4.2 UI).
+            $safe = $this->safeRedirectUrl($request->input('redirect'));
+            $query = $safe !== null ? ['redirect' => $safe] : [];
+
+            return redirect()
+                ->to('/forgot-password'.($query !== [] ? '?'.http_build_query($query) : ''))
+                ->withErrors($validator)
+                ->withInput();
         }
 
         $this->passwordResetNotifications->sendForgotPasswordLink(

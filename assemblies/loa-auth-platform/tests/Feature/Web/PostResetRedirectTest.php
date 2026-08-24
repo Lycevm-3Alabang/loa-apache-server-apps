@@ -127,6 +127,59 @@ class PostResetRedirectTest extends TestCase
         $this->assertStringContainsString(urlencode(self::ALLOWED_ORIGIN.'/login'), $html);
     }
 
+    // ─── Forgot page: return-to-app link ─────────────────────────────────────
+
+    public function test_forgot_page_shows_return_to_app_for_allowlisted_redirect(): void
+    {
+        $response = $this->get('/forgot-password?'.http_build_query([
+            'redirect' => self::ALLOWED_ORIGIN.'/login',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Return to app', false);
+        $response->assertSee(self::ALLOWED_ORIGIN.'/login', false);
+        $response->assertDontSee('Back to sign in', false);
+    }
+
+    public function test_forgot_page_shows_back_to_sign_in_without_redirect(): void
+    {
+        $this->get('/forgot-password')
+            ->assertOk()
+            ->assertSee('Back to sign in', false)
+            ->assertDontSee('Return to app', false);
+    }
+
+    public function test_forgot_page_foreign_redirect_falls_back_to_sign_in(): void
+    {
+        $response = $this->get('/forgot-password?'.http_build_query([
+            'redirect' => 'https://evil.example.test/phish',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Back to sign in', false);
+        $response->assertDontSee('evil.example.test', false);
+    }
+
+    public function test_validation_error_preserves_return_to_app_link(): void
+    {
+        $redirectTarget = self::ALLOWED_ORIGIN.'/login';
+
+        $response = $this->post('/forgot-password', [
+            'email' => 'not-an-email',
+            'redirect' => $redirectTarget,
+        ]);
+
+        // Error branch re-renders via GET with the sanitized redirect in the query.
+        $response->assertStatus(302)->assertSessionHasErrors(['email']);
+        $location = (string) $response->headers->get('Location');
+        $this->assertStringContainsString('/forgot-password?redirect=', $location);
+
+        $followUp = $this->get($response->headers->get('Location'));
+        $followUp->assertOk();
+        $followUp->assertSee('Return to app', false);
+        $followUp->assertSee($redirectTarget, false);
+    }
+
     // ─── Reset form carry-through ────────────────────────────────────────────
 
     public function test_reset_form_carries_redirect_hidden_field(): void

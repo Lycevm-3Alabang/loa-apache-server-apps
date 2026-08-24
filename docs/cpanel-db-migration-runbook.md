@@ -2,7 +2,7 @@
 ## Fresh Database (Drop → Create → Seed) Path
 
 **Version:** 0.1
-**Status:** Draft
+**Status:** Final
 **Scope:** Both Laravel assemblies — `loa-auth-platform` (`lyceumalabang_auth_db`) and `loa-cert-platform` (`lyceumalabang_e_cert`)
 **Audience:** Engineers deploying to cPanel
 

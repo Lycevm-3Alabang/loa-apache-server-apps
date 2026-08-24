@@ -1,7 +1,7 @@
 # LOA Auth Platform — Web UI
 ## Product Assembly Component Specification
 
-**Version:** 1.3
+**Version:** 1.4
 **Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -246,6 +246,13 @@ https://auth.lyceumalabang.edu.ph/reset-password?token={rawToken}&email={email}&
    `redirect` is embedded **only after validation** (see "Post-Reset Redirect Resolution" below); invalid values are dropped, never emailed.
 4. Always respond with a generic success message (anti-enumeration).
 5. Rate limit: 1 request per 60 seconds per email (Laravel throttle).
+
+### UI — Return-to-app link
+
+`GET /forgot-password` accepts the same optional validated `redirect` parameter:
+
+- Present + allowlisted ⇒ the page shows **"Return to app"** linking to that URL (replaces "Back to sign in"), and keeps it in a hidden field so the POST re-embeds it into the emailed link.
+- Missing/invalid ⇒ default **"Back to sign in"** → `/login`.
 
 ---
 

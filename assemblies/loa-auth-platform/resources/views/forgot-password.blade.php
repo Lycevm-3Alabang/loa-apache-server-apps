@@ -8,6 +8,7 @@
 @section('content')
     <form class="auth-form" method="post" action="{{ url('/forgot-password') }}">
         @csrf
+        <input type="hidden" name="redirect" value="{{ old('redirect', $redirect) }}">
 
         <div class="field">
             <label for="email">Email address</label>
@@ -18,5 +19,9 @@
         <button class="button" type="submit">Send recovery link</button>
     </form>
 
-    <a class="back-link" href="{{ route('login') }}">Back to sign in</a>
+    @if (!empty($redirect))
+        <a class="back-link" href="{{ $redirect }}">Return to app</a>
+    @else
+        <a class="back-link" href="{{ route('login') }}">Back to sign in</a>
+    @endif
 @endsection

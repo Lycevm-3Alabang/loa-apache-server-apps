@@ -98,6 +98,7 @@ Then:
 | 2026-08-24 (2) | **Docs + prod wiring** (`37fcbb7`, `d031994`): password API auth model documented; JWT TTL reverted to 15m per policy; cPanel DB names/users wired into DEPLOY/env docs; DEPLOY.md hardened (MAIL_*, backup/rollback, prerequisites); HeidiSQL §14; `.env.cpanel` templates gitignored (`7deac3a`) | Phase D e-cert auth swap |
 | 2026-08-24 (3) | **Template visibility implemented in cert platform** (`9904746`, cross-assembly per Final spec): 23 new tests, suite 168/557 green; latent `jwt_claims.sub` bug fixed; inverted endpoint-policy unit test corrected. Cross-boundary record updated in PROJECT_UPDATES.md | Phase D e-cert auth swap; e-cert UI badge/toggle in Phase E/F |
 | 2026-08-24 (4) | **Post-reset redirect implemented per web-ui.md v1.3 §4.3a**: forgot-password (web+API) accepts allowlisted `redirect`, embedded into emailed link; reset form carries hidden field; success redirects to app (fallback `/login`); shared `safeRedirectUrl()` moved to base Controller (WebAuthController::resolveRedirect delegates). 9 new tests; suite 219/528 green | Commit post-reset redirect work |
+| 2026-08-24 (5) | **Forgot page return-to-app link** per web-ui.md v1.4 §4.2 UI: `/forgot-password?redirect=` shows validated "Return to app" link (else "Back to sign in"); hidden field carries redirect through POST into the emailed link; validation-error path re-renders via GET with sanitized redirect so the link survives typos. 3 new tests; suite 222/538 green | Phase D e-cert auth swap |
 
 ---
 
