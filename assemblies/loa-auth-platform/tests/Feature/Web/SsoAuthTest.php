@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\UserGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class SsoAuthTest extends TestCase
@@ -201,6 +202,82 @@ class SsoAuthTest extends TestCase
             'email' => 'staff@lyceumalabang.edu.ph',
             'password' => 'WrongPassword',
             'redirect' => 'https://e-cert.vercel.app',
+        ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('credentials');
+    }
+
+    public function test_login_admits_admin_with_web_session(): void
+    {
+        $this->adminUser();
+
+        $response = $this->post('/login', [
+            'email' => 'admin@lyceumalabang.edu.ph',
+            'password' => 'Test1234',
+        ]);
+
+        $response->assertRedirect(route('admin.users'));
+        $this->assertTrue(Auth::guard('web')->check());
+
+        $admin = User::where('email', 'admin@lyceumalabang.edu.ph')->first();
+
+        $this->assertDatabaseMissing('refresh_tokens', [
+            'user_id' => $admin->id,
+            'revoked_at' => null,
+        ]);
+    }
+
+    public function test_login_delivers_tokens_for_tenant_member_with_valid_redirect(): void
+    {
+        $this->memberUser();
+
+        $response = $this->post('/login', [
+            'email' => 'staff@lyceumalabang.edu.ph',
+            'password' => 'Test1234',
+            'redirect' => 'https://e-cert.vercel.app',
+        ]);
+
+        $response->assertRedirect('/redirect');
+        $this->assertSame('https://e-cert.vercel.app', $this->app['session']->get('redirect_url'));
+        $this->assertFalse(Auth::guard('web')->check());
+
+        $user = User::where('email', 'staff@lyceumalabang.edu.ph')->first();
+
+        $this->assertDatabaseHas('refresh_tokens', [
+            'user_id' => $user->id,
+            'revoked_at' => null,
+        ]);
+    }
+
+    public function test_login_rejects_tenant_member_without_redirect(): void
+    {
+        $this->memberUser();
+
+        $response = $this->post('/login', [
+            'email' => 'staff@lyceumalabang.edu.ph',
+            'password' => 'Test1234',
+        ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors('credentials');
+
+        $user = User::where('email', 'staff@lyceumalabang.edu.ph')->first();
+
+        $this->assertDatabaseMissing('refresh_tokens', [
+            'user_id' => $user->id,
+            'revoked_at' => null,
+        ]);
+    }
+
+    public function test_login_rejects_unknown_redirect_origin(): void
+    {
+        $this->memberUser();
+
+        $response = $this->post('/login', [
+            'email' => 'staff@lyceumalabang.edu.ph',
+            'password' => 'Test1234',
+            'redirect' => 'https://evil.example.com',
         ]);
 
         $response->assertStatus(302);
