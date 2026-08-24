@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\UserGroup;
 use App\Services\AuthorizationService;
 use App\Services\IdentityService;
 use Illuminate\Http\Request;
@@ -18,6 +19,24 @@ class UserController extends Controller
     {
         $this->identity = $identity;
         $this->authorization = $authorization;
+    }
+
+    private function tenantIdFromRequest(Request $request): ?string
+    {
+        $claims = $request->attributes->get('jwt_claims') ?? [];
+
+        return $claims['tenant']['id'] ?? null;
+    }
+
+    private function userInTenant(User $user, string $tenantId): bool
+    {
+        if ($user->inGroup((string) config('auth-web.admin_group'))) {
+            return false;
+        }
+
+        return $user->tenants()
+            ->where('tenant_id', $tenantId)
+            ->exists();
     }
 
     #[OA\Get(
@@ -40,8 +59,20 @@ class UserController extends Controller
     )]
     public function index(Request $request)
     {
-        $users = User::orderBy('name')
-            ->get()
+        $query = User::orderBy('name');
+
+        $tenantId = $this->tenantIdFromRequest($request);
+        if ($tenantId) {
+            $adminGroup = UserGroup::where('name', (string) config('auth-web.admin_group'))->first();
+
+            $query->whereHas('tenants', fn ($q) => $q->where('tenant_id', $tenantId));
+
+            if ($adminGroup) {
+                $query->whereDoesntHave('userGroups', fn ($q) => $q->where('user_groups.id', $adminGroup->id));
+            }
+        }
+
+        $users = $query->get()
             ->map(fn (User $user) => [
                 'id' => $user->id,
                 'email' => $user->email,
@@ -86,6 +117,11 @@ class UserController extends Controller
         try {
             $user = $this->identity->getUser($id);
         } catch (\Exception $e) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $tenantId = $this->tenantIdFromRequest($request);
+        if ($tenantId && !$this->userInTenant($user, $tenantId)) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
@@ -137,6 +173,11 @@ class UserController extends Controller
         $user = User::find($id);
 
         if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $tenantId = $this->tenantIdFromRequest($request);
+        if ($tenantId && !$this->userInTenant($user, $tenantId)) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
