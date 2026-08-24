@@ -19,6 +19,7 @@ class WebResetController extends Controller
         return view('reset-password', [
             'token' => (string) $request->query('token', ''),
             'email' => (string) $request->query('email', ''),
+            'redirect' => (string) $request->query('redirect', ''),
         ]);
     }
 
@@ -27,6 +28,7 @@ class WebResetController extends Controller
         $validator = Validator::make($request->all(), [
             'token' => 'required|string',
             'email' => 'required|email',
+            'redirect' => 'nullable|string',
             'password' => [
                 'required',
                 'string',
@@ -53,6 +55,14 @@ class WebResetController extends Controller
             return back()
                 ->withInput($request->except(['password', 'password_confirmation']))
                 ->withErrors(['token' => 'Invalid or expired token.']);
+        }
+
+        // Return the user to the tenant app that started the flow when the
+        // origin is allowlisted; otherwise fall back to the login page (§4.3a).
+        $target = $this->safeRedirectUrl($request->input('redirect'));
+
+        if ($target !== null) {
+            return redirect()->away($target);
         }
 
         return redirect()

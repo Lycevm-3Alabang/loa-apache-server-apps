@@ -16,6 +16,7 @@ class PasswordResetMail extends Mailable
         public readonly string $email,
         public readonly string $token,
         public readonly bool $change = false,
+        public readonly ?string $redirect = null,
     ) {
     }
 
@@ -40,9 +41,15 @@ class PasswordResetMail extends Mailable
 
     private function resetUrl(): string
     {
-        return rtrim((string) config('app.url'), '/').'/reset-password?'.http_build_query([
+        $query = [
             'token' => $this->token,
             'email' => $this->email,
-        ], '', '&', PHP_QUERY_RFC3986);
+        ];
+
+        if ($this->redirect !== null && $this->redirect !== '') {
+            $query['redirect'] = $this->redirect;
+        }
+
+        return rtrim((string) config('app.url'), '/').'/reset-password?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986);
     }
 }

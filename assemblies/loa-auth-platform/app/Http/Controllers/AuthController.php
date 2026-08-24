@@ -308,13 +308,18 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
+            'redirect' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $this->passwordResetNotifications->sendForgotPasswordLink($request->input('email'));
+        // Only allowlisted origins survive into the emailed link (web-ui.md §4.3a).
+        $this->passwordResetNotifications->sendForgotPasswordLink(
+            $request->input('email'),
+            $this->safeRedirectUrl($request->input('redirect')),
+        );
 
         return response()->json(['message' => 'If the email exists, a reset link has been sent']);
     }

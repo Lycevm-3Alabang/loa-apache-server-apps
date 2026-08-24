@@ -124,6 +124,7 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 
 ### Next Action
 - [x] Implement template visibility in `loa-cert-platform` per the Final spec — **DONE 2026-08-24, commit `9904746`** (23 new tests; suite 168/557 green)
+- [x] Implement post-reset redirect per web-ui.md v1.3 §4.3a — code + 9 tests green (auth suite 219/528), uncommitted
 - [ ] Phase D — e-cert auth swap (CSR) — unblocked
 
 ### Date: 2026-08-11
@@ -290,3 +291,4 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 | 2026-08-11 | **Auth platform SSO implemented** (`/sso/login`, `/sso/register`, `/redirect`); fixed `EncryptionService::decrypt()` padding bug; `SsoAuthTest` (15 tests); full auth suite 210/498 green. FRONTEND-INTEGRATION.md updated. **Cert endpoint verification:** 48/50 domain endpoints fully implemented; 2 stubs (QR), 1 missing (email). |
 | 2026-08-24 | **Admin UI overhaul + docs/prod wiring (auth)**: breadcrumbs everywhere, link-text actions, quick-action tiles (`4ed2e80`,`8d40f6b`); password API auth model documented; JWT TTL reverted to 15m per policy (`37fcbb7`); cPanel DB names/users wired (`d031994`); DEPLOY.md hardened; HeidiSQL §14; `.env.cpanel` templates gitignored. **Cert/e-cert:** runtime cache shards untracked; template visibility spec authored, reviewed, promoted to **Final v1.1** in e-cert repo. | Implement template visibility in loa-cert-platform |
 | 2026-08-24 (2) | **Template visibility IMPLEMENTED** (`9904746`): migration + model owner-set helpers; templates store/update/index/show per spec; clone endpoints + event references guarded; 23 new tests; fixed latent `jwt_claims.sub` bug + inverted endpoint-policy unit test. Suite 168/557 green. Swagger regenerated. Trackers updated. | Phase D e-cert auth swap; e-cert UI badge/toggle with Phase E/F |
+| 2026-08-24 (3) | **Post-reset redirect implemented (auth)** per web-ui.md v1.3 §4.3a: forgot-password web+API accept allowlisted `redirect` → emailed link → hidden field → success redirects to tenant app (fallback `/login`); shared `safeRedirectUrl()` on base Controller (WebAuthController delegates). 9 new tests; suite 219/528 green, uncommitted | Commit post-reset redirect work; Phase D |

@@ -232,6 +232,7 @@ class WebAuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
+            'redirect' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -240,6 +241,7 @@ class WebAuthController extends Controller
 
         $this->passwordResetNotifications->sendForgotPasswordLink(
             $request->string('email')->toString(),
+            $this->safeRedirectUrl($request->input('redirect')),
         );
 
         return back()->with('status', 'If the email exists, a reset link has been sent.');
@@ -449,27 +451,7 @@ class WebAuthController extends Controller
 
     private function resolveRedirect(?string $candidate): ?string
     {
-        $candidate = is_string($candidate) ? trim($candidate) : '';
-
-        if ($candidate === '' || !filter_var($candidate, FILTER_VALIDATE_URL)) {
-            return null;
-        }
-
-        $origin = $this->extractOrigin($candidate);
-
-        if ($origin === null) {
-            return null;
-        }
-
-        if ($this->tenants->resolveTenantByRedirectOrigin($origin)) {
-            return $this->removeFragment($candidate);
-        }
-
-        if (in_array($origin, $this->allowedOrigins(), true)) {
-            return $this->removeFragment($candidate);
-        }
-
-        return null;
+        return $this->safeRedirectUrl($candidate);
     }
 
     private function resolveTenant(?string $target): ?Tenant

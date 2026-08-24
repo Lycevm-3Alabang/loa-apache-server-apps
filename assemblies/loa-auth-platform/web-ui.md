@@ -1,7 +1,7 @@
 # LOA Auth Platform — Web UI
 ## Product Assembly Component Specification
 
-**Version:** 1.2
+**Version:** 1.3
 **Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -235,14 +235,15 @@ POST /forgot-password
 
 ### Steps
 
-1. User submits email.
+1. User submits email. The form (or API consumer) may include an optional `redirect` parameter — the tenant-app origin/URL that triggered the flow.
 2. System calls `IdentityService.requestPasswordReset(email)` (existing).
 3. If the user exists: send a `reset-password` email containing:
 
 ```
-https://auth.lyceumalabang.edu.ph/reset-password?token={rawToken}&email={email}
+https://auth.lyceumalabang.edu.ph/reset-password?token={rawToken}&email={email}&redirect={validated-url}
 ```
 
+   `redirect` is embedded **only after validation** (see "Post-Reset Redirect Resolution" below); invalid values are dropped, never emailed.
 4. Always respond with a generic success message (anti-enumeration).
 5. Rate limit: 1 request per 60 seconds per email (Laravel throttle).
 
@@ -265,7 +266,21 @@ POST /reset-password
 3. User opens the link: the form shows the pre-filled, read-only email plus a new-password field.
 4. User submits the new password.
 5. System validates the token (exists, not expired, not used), updates the password, and revokes all refresh tokens for the user (`token-lifecycle.md`).
-6. On success: redirect to `/login`.
+6. On success: redirect per "Post-Reset Redirect Resolution" below (app origin when validly provided; otherwise `/login`).
+
+---
+
+## 4.3a Post-Reset Redirect Resolution
+
+After **Update password** succeeds on `/reset-password`, the user is returned to the app that started the flow — not stranded on the auth login page:
+
+1. **Generation time** (`POST /forgot-password` form and `POST /api/v1/auth/password/forgot`): an optional `redirect` value is accepted and validated — only origins matching an active tenant's `redirect_origins`, or entries in the `AUTH_ALLOWED_REDIRECTS` bootstrap allowlist, are embedded into the emailed link as `&redirect=`. Everything else is dropped.
+2. **Form carry-through**: `/reset-password?...&redirect=...` keeps the value in a hidden field so it survives the POST.
+3. **Consumption time**: on successful reset, the posted `redirect` is re-validated with the same allowlist rule (never trust the round-trip blindly).
+4. **Outcome**: valid ⇒ `302` to that app URL; missing/invalid ⇒ fall back to `/login`.
+5. Session semantics: `IdentityService::resetPassword()` already revoked all refresh tokens; landing on the tenant app forces immediate re-login there. Any live access token simply expires within its TTL.
+
+Open-redirect prevention is mandatory at both validation points (§11 anti-pattern: "Following any `redirect=` value").
 
 ---
 

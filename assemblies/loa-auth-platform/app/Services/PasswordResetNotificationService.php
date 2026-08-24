@@ -12,12 +12,12 @@ class PasswordResetNotificationService
     {
     }
 
-    public function sendForgotPasswordLink(string $email): void
+    public function sendForgotPasswordLink(string $email, ?string $redirect = null): void
     {
         $token = $this->identity->requestPasswordReset($email);
 
         if ($token !== null) {
-            Mail::to($email)->send(new PasswordResetMail($email, $token));
+            Mail::to($email)->send(new PasswordResetMail($email, $token, false, $redirect));
         }
     }
 

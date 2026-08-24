@@ -9,6 +9,7 @@
     <form class="auth-form" method="post" action="{{ url('/reset-password') }}">
         @csrf
         <input type="hidden" name="token" value="{{ old('token', $token) }}">
+        <input type="hidden" name="redirect" value="{{ old('redirect', $redirect) }}">
 
         <div class="field">
             <label for="email">Account email</label>

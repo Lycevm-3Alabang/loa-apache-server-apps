@@ -59,10 +59,12 @@ Then:
 - **`.env.cpanel` production templates** created for auth + cert — full prod config with real DB names, `ENTER_*` placeholders for secrets; gitignored as `.env.cpanel` (`7deac3a`), verified untracked
 
 ### In Progress
+- **Post-reset redirect (§4.3a, web-ui.md v1.3)** — implemented this session, awaiting commit
 - **Template visibility feature** — spec Final (`D:\loa\e-cert\specs\components\template-visibility.md` v1.1) and now **implemented in loa-cert-platform** (commit `9904746`, 2026-08-24; suite 168/557 green). Remaining: e-cert UI badge/toggle lands with Phase E/F.
 
 ### Next Action
 - [x] Implement template visibility in `loa-cert-platform` per the Final spec — DONE (`9904746`)
+- [x] Implement post-reset redirect per web-ui.md v1.3 §4.3a — code + 9 tests green (219/528), uncommitted
 - [ ] Phase D — e-cert auth swap (CSR)
 
 ### Backlog / Known Gaps
@@ -95,6 +97,7 @@ Then:
 | 2026-08-24 | **Admin UI overhaul** (commits `4ed2e80`, `8d40f6b`): breadcrumbs on every page, 12 "Back to" buttons removed, link-text row actions, tenant/user/group detail quick-action tiles, ghost-button white-text fix | Implement template visibility (cert platform, spec Final) |
 | 2026-08-24 (2) | **Docs + prod wiring** (`37fcbb7`, `d031994`): password API auth model documented; JWT TTL reverted to 15m per policy; cPanel DB names/users wired into DEPLOY/env docs; DEPLOY.md hardened (MAIL_*, backup/rollback, prerequisites); HeidiSQL §14; `.env.cpanel` templates gitignored (`7deac3a`) | Phase D e-cert auth swap |
 | 2026-08-24 (3) | **Template visibility implemented in cert platform** (`9904746`, cross-assembly per Final spec): 23 new tests, suite 168/557 green; latent `jwt_claims.sub` bug fixed; inverted endpoint-policy unit test corrected. Cross-boundary record updated in PROJECT_UPDATES.md | Phase D e-cert auth swap; e-cert UI badge/toggle in Phase E/F |
+| 2026-08-24 (4) | **Post-reset redirect implemented per web-ui.md v1.3 §4.3a**: forgot-password (web+API) accepts allowlisted `redirect`, embedded into emailed link; reset form carries hidden field; success redirects to app (fallback `/login`); shared `safeRedirectUrl()` moved to base Controller (WebAuthController::resolveRedirect delegates). 9 new tests; suite 219/528 green | Commit post-reset redirect work |
 
 ---
 
