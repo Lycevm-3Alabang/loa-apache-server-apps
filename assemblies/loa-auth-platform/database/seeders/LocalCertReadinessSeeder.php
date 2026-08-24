@@ -2,40 +2,49 @@
 
 namespace Database\Seeders;
 
+use App\Models\GroupClaim;
 use App\Models\Tenant;
 use App\Models\UserGroup;
 use Illuminate\Database\Seeder;
 
 class LocalCertReadinessSeeder extends Seeder
 {
+    /**
+     * Canonical local tenant. The slug is immutable after issuance and must
+     * match e-cert's NEXT_PUBLIC_CERT_TENANT_SLUG.
+     */
+    private const TENANT_ID = '91128f0a-df85-47a9-ae1d-5298904dacd5';
+    private const TENANT_SLUG = 'loa-e-cert';
+
     public function run(): void
     {
         if (app()->environment('production')) {
             return;
         }
 
-        $defaultRedirect = 'http://localhost:9001';
+        $defaultAppUrl = 'http://localhost:9001';
 
-        $tenant = Tenant::where('slug', 'cert-app')->first();
+        $tenant = Tenant::find(self::TENANT_ID);
 
         if (!$tenant) {
             $tenant = Tenant::create([
-                'slug' => 'cert-app',
+                'id' => self::TENANT_ID,
+                'slug' => self::TENANT_SLUG,
                 'name' => 'Local Cert App',
                 'status' => 'active',
-                'app_url' => $defaultRedirect,
-                'dev_app_url' => $defaultRedirect,
-                'redirect_origins' => [$defaultRedirect],
-                'dev_redirect_origins' => [$defaultRedirect],
+                'app_url' => $defaultAppUrl,
+                'dev_app_url' => $defaultAppUrl,
+                'redirect_origins' => ['http://localhost:3000'],
+                'dev_redirect_origins' => ['http://localhost:3000'],
             ]);
         } else {
+            // Never clobber redirect origins: they carry the e-cert dev
+            // origin used for SSO tenant resolution.
             $tenant->update([
                 'name' => 'Local Cert App',
                 'status' => 'active',
-                'app_url' => $defaultRedirect,
-                'dev_app_url' => $defaultRedirect,
-                'redirect_origins' => [$defaultRedirect],
-                'dev_redirect_origins' => [$defaultRedirect],
+                'app_url' => $tenant->app_url ?? $defaultAppUrl,
+                'dev_app_url' => $tenant->dev_app_url ?? $defaultAppUrl,
             ]);
         }
 
@@ -59,6 +68,20 @@ class LocalCertReadinessSeeder extends Seeder
                     'priority' => $priority,
                 ],
             );
+        }
+
+        // JWT permission-key claims consumed by jwt.permission:* middleware.
+        $adminGroup = UserGroup::where('tenant_id', $tenant->id)
+            ->where('name', 'cert-admin')
+            ->first();
+
+        if ($adminGroup) {
+            foreach (['users.view', 'users.manage'] as $claimKey) {
+                GroupClaim::updateOrCreate(
+                    ['group_id' => $adminGroup->id, 'claim_key' => $claimKey],
+                    ['scope_type' => 'none', 'scope_id' => null],
+                );
+            }
         }
     }
 }

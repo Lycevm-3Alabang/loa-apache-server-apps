@@ -2,7 +2,7 @@
 
 ## Product Assembly Component Specification
 
-**Version:** 0.4
+**Version:** 0.5
 **Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`) — operational provisioning runbook
 **Audience:** Architects, Engineers, AI Development Agents, Platform Admins
@@ -19,14 +19,14 @@ It answers:
 
 > **"What exactly must be provisioned in the Auth Platform so the Certificate Platform (`e-cert`) can authenticate users and enforce its endpoint grants?"**
 
-After the Auth Platform is deployed (`DEPLOY.md`), a platform admin provisions the `loa` tenant and the Cert access model once. Until this runbook is completed, `e-cert` SSO and Cert endpoint enforcement will not work.
+After the Auth Platform is deployed (`DEPLOY.md`), a platform admin provisions the `loa-e-cert` tenant and the Cert access model once. Until this runbook is completed, `e-cert` SSO and Cert endpoint enforcement will not work.
 
 ---
 
 ## 2. Scope & Ownership
 
 ### Owns
-- The `loa` tenant record (`slug`, `app_url`, `redirect_origins`).
+- The `loa-e-cert` tenant record (`slug`, `app_url`, `redirect_origins`).
 - The Cert endpoint catalog import (48 endpoints, Appendix A of `api-endpoints.md`).
 - The `cert-admin` / `cert-staff` / `cert-user` groups and their endpoint grants.
 
@@ -46,11 +46,11 @@ After the Auth Platform is deployed (`DEPLOY.md`), a platform admin provisions t
 
 > **Local development?** Skip §3–§7 against production and follow §8 (Docker Compose) instead — same tenant/catalog/groups/grants, run locally.
 
-> **Shortcut (fresh-database deploys):** `database/sql/cpanel-auth-db-install.sql` pre-provisions the schema, the `loa` tenant (production origins), the 56-endpoint catalog, all four groups, and the 99-row grant matrix in one phpMyAdmin import. If you use it, steps §4–§7 are already done — skip to §9 verification. See `docs/cpanel-db-migration-runbook.md` for the full fresh-database path.
+> **Shortcut (fresh-database deploys):** `database/sql/cpanel-auth-db-install.sql` pre-provisions the schema, the `loa-e-cert` tenant (production origins), the 56-endpoint catalog, all four groups, the 99-row grant matrix, and the JWT permission-key claims in one phpMyAdmin import. If you use it, steps §4–§7 are already done — skip to §9 verification. See `docs/cpanel-db-migration-runbook.md` for the full fresh-database path.
 
 ---
 
-## 4. Step 1 — Create the `loa` tenant
+## 4. Step 1 — Create the `loa-e-cert` tenant
 
 **Admin UI:** `Admin Dashboard → Tenants → Create Tenant` (`/admin/tenants/create`).
 
@@ -58,7 +58,7 @@ After the Auth Platform is deployed (`DEPLOY.md`), a platform admin provisions t
 
 | Field | Value |
 |-------|-------|
-| `slug` | `loa` |
+| `slug` | `loa-e-cert` (immutable after creation) |
 | `name` | `LOA Certificate Platform` |
 | `app_url` | `https://e-cert.vercel.app` |
 | `redirect_origins` | `https://e-cert.vercel.app` |
@@ -67,14 +67,27 @@ After the Auth Platform is deployed (`DEPLOY.md`), a platform admin provisions t
 > **Why this matters:** `web-ui.md` §3 resolves the tenant context from `?redirect=` against the tenant's `redirect_origins`. `AUTH_ALLOWED_REDIRECTS` is **bootstrap fallback only** and is not the effective allowlist once tenants are provisioned. The Cert SSO flow is:
 > `https://auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app` → `https://e-cert.vercel.app#payload=...` → `POST /api/v1/auth/callback`.
 
+### 4.1 Slug distribution checklist (all four must match)
+
+The tenant slug is validated **independently at every layer** — a mismatch at any one of them causes hard failures (403 at SSO callback, token rejection in the SPA, or `Tenant not configured` 500s). When provisioning a tenant (or renaming, which is only possible before first issuance), set the slug in **all four** places:
+
+| # | Layer | Where | Failure mode if stale |
+|---|-------|-------|------------------------|
+| 1 | Tenants table | `tenants.slug` (Admin UI §4 or installer SQL) | SSO login: "Access denied" (tenant not resolved from `?redirect=`) |
+| 2 | Tenant app backend validator | Cert Platform `config/cert-platform.php` → `CERT_TENANT_SLUG` env (`AuthCallbackController` payload check) | **403 Forbidden** on `POST /api/v1/auth/callback` |
+| 3 | Auth API middleware (optional per-app gate) | `TENANT_SLUG` env wherever `jwt.tenant` middleware is applied | 403 / 500 on guarded auth-api routes |
+| 4 | SPA | e-cert `NEXT_PUBLIC_CERT_TENANT_SLUG` (client-side JWT parse check in `src/lib/auth/jwt.ts`) | Token silently rejected → login redirect loop |
+
+> Rule of thumb: **one slug, four homes.** Change them together, then re-login to refresh any tokens minted under the old slug (access TTL 15 min).
+
 ---
 
 ## 5. Step 2 — Import the Cert endpoint catalog
 
-Import the 48 guarded Cert endpoints (the full payload below) for the `loa` tenant. This populates `tenant_app_endpoints`.
+Import the 48 guarded Cert endpoints (the full payload below) for the `loa-e-cert` tenant. This populates `tenant_app_endpoints`.
 
 ### 5.1 Admin UI
-`Admin Dashboard → Tenants → loa → Endpoints → Import` (`/admin/tenants/{tenant}/endpoints/import`): paste the JSON below with **Replace** checked.
+`Admin Dashboard → Tenants → loa-e-cert → Endpoints → Import` (`/admin/tenants/{tenant}/endpoints/import`): paste the JSON below with **Replace** checked.
 
 ### 5.2 JSON API
 `POST /api/v1/admin/tenants/{tenant}/endpoints/bulk` (`jwt.auth` + `users.manage`), `{ "replace": true, "endpoints": [...] }`.
@@ -143,7 +156,7 @@ Import the 48 guarded Cert endpoints (the full payload below) for the `loa` tena
 
 ## 6. Step 3 — Create the Cert groups
 
-Create three groups, each **scoped to the `loa` tenant** (`tenant_id = loa`). Groups are created tenant-scoped via the admin UI under the tenant (`/admin/tenants/{tenant}/groups`).
+Create three groups, each **scoped to the `loa-e-cert` tenant** (`tenant_id` = the tenant's UUID). Groups are created tenant-scoped via the admin UI under the tenant (`/admin/tenants/{tenant}/groups`).
 
 | Group | Description | Priority |
 |-------|-------------|----------|
@@ -160,7 +173,7 @@ Create three groups, each **scoped to the `loa` tenant** (`tenant_id = loa`). Gr
 Grant each group its level on the cataloged endpoints (populates `tenant_endpoint_grants`).
 
 ### 7.1 Admin UI
-`Admin Dashboard → Tenants → loa → Groups → {group} → Endpoints` (`/admin/tenants/{tenant}/groups/{group}/endpoints/manage`).
+`Admin Dashboard → Tenants → loa-e-cert → Groups → {group} → Endpoints` (`/admin/tenants/{tenant}/groups/{group}/endpoints/manage`).
 
 ### 7.2 JSON API
 `POST /api/v1/admin/tenants/{tenant}/groups/{group}/endpoints` (`jwt.auth` + `users.manage`), one call per (method, path):
@@ -277,29 +290,34 @@ docker compose exec auth-app php artisan config:cache
 
 ### 8.3 Provision the Cert readiness data locally
 
-**Automatic fast path — `LocalCertReadinessSeeder` (recommended).** When you run `php artisan db:seed` in the local Docker stack (`APP_ENV != production`), `DatabaseSeeder` automatically runs `LocalCertReadinessSeeder` (`assemblies/loa-auth-platform/database/seeders/LocalCertReadinessSeeder.php`). It creates the **`cert-app`** tenant (`name` = `Local Cert App`, `app_url`/`redirect_origins` = `http://localhost:9001`, matching the `cert-nginx` host port in the root `docker-compose.yml`) and the empty groups **`cert-admin`** (priority 2), **`cert-staff`** (3), **`cert-user`** (4). Idempotent (`updateOrCreate`) — safe to re-run. Covered by `tests/Feature/Seeders/LocalCertReadinessSeederTest.php`.
+**Automatic fast path — `LocalCertReadinessSeeder` (recommended).** When you run `php artisan db:seed` in the local Docker stack (`APP_ENV != production`), `DatabaseSeeder` automatically runs `LocalCertReadinessSeeder` (`assemblies/loa-auth-platform/database/seeders/LocalCertReadinessSeeder.php`). It creates the **`loa-e-cert`** tenant pinned to UUID `91128f0a-df85-47a9-ae1d-5298904dacd5` (`app_url` = `http://localhost:9001` matching the `cert-nginx` host port; `redirect_origins` = `http://localhost:3000` for e-cert SSO — preserved on re-runs, never clobbered), the groups **`cert-admin`** (priority 2), **`cert-staff`** (3), **`cert-user`** (4), and the JWT permission-key claims `users.view` + `users.manage` on `cert-admin`. Idempotent (`updateOrCreate`) — safe to re-run. Covered by `tests/Feature/Seeders/LocalCertReadinessSeederTest.php`.
 
-> **Note:** the local tenant slug is **`cert-app`** (the production §4–§7 payload uses `loa`) — keep them distinct because production provisioning is manual and the local one is auto. All local steps below target the `cert-app` tenant. The seeder does **not** create the catalog or grants (steps 2 and 4 below) — those still require the admin UI (or the §5.3 import).
+> **Note:** the tenant slug is **`loa-e-cert`** everywhere — local and production use the same slug, and it is immutable after issuance. It must match e-cert's `NEXT_PUBLIC_CERT_TENANT_SLUG`. The seeder does **not** create the endpoint catalog or grants (steps 2 and 4 below) — those still require the admin UI (or the §5.3 import).
 
 The production steps §4–§7 apply unchanged, run against the **local** admin UI at `http://localhost:8080/admin` (sign in with the seeded admin: `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`):
 
-1. **Tenant** (§4): `Tenants → Create Tenant`; `slug = cert-app`, `name` = `Local Cert App`, `app_url` + `redirect_origins` = `http://localhost:9001` (the local `cert-nginx` origin). Skip this step if you ran `db:seed` — `LocalCertReadinessSeeder` already created it.
-2. **Catalog** (§5): `Tenants → cert-app → Endpoints → Import` and paste the 48-endpoint Appendix A JSON (same payload as §5.3).
-3. **Groups** (§6): `Tenants → cert-app → Groups`; create `cert-admin` (priority 2), `cert-staff` (3), `cert-user` (4). Skip this step if you ran `db:seed` — the seeder already created them.
-4. **Grants** (§7): `Tenants → cert-app → Groups → {group} → Endpoints`; apply §7.4.
+1. **Tenant** (§4): `Tenants → Create Tenant`; `slug = loa-e-cert`, `name` = `Local Cert App`, `app_url` = `http://localhost:9001`, `redirect_origins` = `http://localhost:3000` (the e-cert dev origin). Skip this step if you ran `db:seed` — `LocalCertReadinessSeeder` already created it.
+2. **Catalog** (§5): `Tenants → loa-e-cert → Endpoints → Import` and paste the 48-endpoint Appendix A JSON (same payload as §5.3).
+3. **Groups** (§6): `Tenants → loa-e-cert → Groups`; create `cert-admin` (priority 2), `cert-staff` (3), `cert-user` (4). Skip this step if you ran `db:seed` — the seeder already created them.
+4. **Grants** (§7): `Tenants → loa-e-cert → Groups → {group} → Endpoints`; apply §7.4.
+5. **JWT claims**: ensure `group_claims` rows exist for `cert-admin` (`users.view`, `users.manage`) — without them tokens never carry permission keys and `jwt.permission:*` always returns 403. Skip if you ran `db:seed` or imported `cpanel-auth-db-install.sql`; both seed them.
 
 **Manual tinker fast path (alternative to the seeder)** — an operator creates the tenant + groups by pasting a one-liner into an interactive `php artisan tinker` session:
 
 ```php
 $t = App\Models\Tenant::updateOrCreate(
-    ['slug' => 'cert-app'],
-    ['name' => 'Local Cert App', 'status' => 'active',
+    ['id' => '91128f0a-df85-47a9-ae1d-5298904dacd5'],
+    ['slug' => 'loa-e-cert', 'name' => 'Local Cert App', 'status' => 'active',
      'app_url' => 'http://localhost:9001',
-     'redirect_origins' => ['http://localhost:9001']]
+     'redirect_origins' => ['http://localhost:3000']]
 );
 foreach (['cert-admin' => 2, 'cert-staff' => 3, 'cert-user' => 4] as $n => $p) {
     App\Models\UserGroup::updateOrCreate(['tenant_id' => $t->id, 'name' => $n],
         ['description' => 'Certificate platform ' . ($n === 'cert-user' ? 'participant' : ($n === 'cert-staff' ? 'staff' : 'administrator')), 'priority' => $p]);
+}
+$admin = App\Models\UserGroup::where('tenant_id', $t->id)->where('name', 'cert-admin')->first();
+foreach (['users.view', 'users.manage'] as $k) {
+    App\Models\GroupClaim::updateOrCreate(['group_id' => $admin->id, 'claim_key' => $k], ['scope_type' => 'none']);
 }
 ```
 
@@ -307,8 +325,9 @@ foreach (['cert-admin' => 2, 'cert-staff' => 3, 'cert-user' => 4] as $n => $p) {
 
 | | Tinker snippet | `LocalCertReadinessSeeder` (via `db:seed`) | Admin UI (steps 1–4) |
 |---|---|---|---|
-| Creates the `cert-app` tenant | ✅ | ✅ | ✅ |
+| Creates the `loa-e-cert` tenant | ✅ | ✅ | ✅ |
 | Creates `cert-admin` / `cert-staff` / `cert-user` (empty groups) | ✅ | ✅ | ✅ |
+| Seeds `cert-admin` JWT claims (`users.*`) | ✅ | ✅ | ❌ — still step 5 |
 | Imports the 48-endpoint catalog (§5.3 payload) | ❌ — still step 2 | ❌ — still step 2 | ✅ step 2 |
 | Applies the grant matrix (§7.4) | ❌ — still step 4 | ❌ — still step 4 | ✅ step 4 |
 | Runs automatically? | ❌ — operator pastes once, interactively | ✅ — on every local `db:seed` (non-prod only) | ❌ — operator clicks once |
@@ -328,10 +347,10 @@ Repeat §9 against the local base URL:
 
 ## 9. Step 5 — Verify
 
-1. **Catalog validate:** `Admin Dashboard → Tenants → loa → Endpoints → Validate` (`/admin/tenants/{tenant}/endpoints/validate`). Expect `valid: true`; **no** "no group grants" warnings (all 48 endpoints have at least the `cert-admin` grant).
-2. **Access config export:** `Admin Dashboard → Tenants → loa → Access Config → Export` should list the 48 cataloged endpoints and the three groups with their grants (idempotent check against §5.3 + §7.4).
+1. **Catalog validate:** `Admin Dashboard → Tenants → loa-e-cert → Endpoints → Validate` (`/admin/tenants/{tenant}/endpoints/validate`). Expect `valid: true`; **no** "no group grants" warnings (all 48 endpoints have at least the `cert-admin` grant).
+2. **Access config export:** `Admin Dashboard → Tenants → loa-e-cert → Access Config → Export` should list the 48 cataloged endpoints and the three groups with their grants (idempotent check against §5.3 + §7.4).
 3. **Per-user check:** for a sample user in each group, call `GET /api/v1/auth/access` (JWT) and confirm the `permissions` claim matches the §7.4 row set for that group.
-4. **SSO redirect test:** from a clean browser hit `https://auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app` — must authenticate and redirect to the e-cert origin (not reject for unknown origin). The Cert-side callback (`POST /api/v1/auth/callback`) and `jwt.tenant` claim (`tenant.slug = loa`) must validate (see `assemblies/loa-cert-platform/api-endpoints.md` §9).
+4. **SSO redirect test:** from a clean browser hit `https://auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app` — must authenticate and redirect to the e-cert origin (not reject for unknown origin). The Cert-side callback (`POST /api/v1/auth/callback`) and JWT claim (`tenant.slug = loa-e-cert`) must validate (see §4.1 slug checklist; `assemblies/loa-cert-platform/api-endpoints.md` §9).
 
 ---
 
@@ -360,6 +379,7 @@ Repeat §9 against the local base URL:
 | 0.2 | 2026-08-06 | §8.3 tinker fast path clarified: explicit "what it does / does not do" table (tenant+groups only; catalog+grants still via admin UI; operator-pasted one-liner, no seeder file, not in `DatabaseSeeder`/`database.sql`). |
 | 0.3 | 2026-08-07 | §8.3 now documents the **`LocalCertReadinessSeeder`** as the automatic local path (runs on local `db:seed` via `DatabaseSeeder`, non-prod guard only; creates `cert-app` tenant @ `localhost:9001` + groups). Decision note + §8.1 comment + "does/does not" table + closing paragraph updated. Production provisioning remains manual-only. |
 | 0.4 | 2026-08-07 | §8.3 local steps use the **`cert-app`** tenant slug consistently (admin UI steps 1–4 + tinker snippet now target `cert-app` @ `http://localhost:9001`, matching `LocalCertReadinessSeeder`). |
+| 0.5 | 2026-08-24 | **Tenant slug unified to `loa-e-cert`** (immutable; single slug for local + production, matches e-cert `NEXT_PUBLIC_CERT_TENANT_SLUG`). Tenant pinned to UUID `91128f0a-df85-47a9-ae1d-5298904dacd5` in seeder/installer/SQL. §8.3 rewritten: seeder no longer invents a separate local slug and never clobbers existing `redirect_origins`; added step 5 — JWT permission-key claims (`group_claims`) seeding; `cpanel-auth-db-install.sql` now seeds `group_claims`. Supersedes the 0.4 split-slug approach. |
 
 ### Open Questions
 - None.

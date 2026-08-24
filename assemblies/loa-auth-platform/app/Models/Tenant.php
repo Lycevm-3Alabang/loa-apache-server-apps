@@ -17,6 +17,7 @@ class Tenant extends Model
     protected $primaryKey = 'id';
 
     protected $fillable = [
+        'id',
         'slug',
         'name',
         'status',

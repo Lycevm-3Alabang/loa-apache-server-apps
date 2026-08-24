@@ -221,4 +221,33 @@ SET @admin_id = (SELECT `id` FROM `users` WHERE `email` = 'admin@lyceumalabang.e
 INSERT INTO `user_user_group` (`user_id`, `user_group_id`, `created_at`, `updated_at`) VALUES
 (@admin_id, 1, NOW(), NOW());
 
+-- ─── Tenant app: LOA E-Cert ─────────────────────────────────────────
+-- Slug is immutable after issuance and must match each tenant app's
+-- NEXT_PUBLIC_CERT_TENANT_SLUG / TENANT_SLUG configuration.
+SET @ecert_tenant_id = '91128f0a-df85-47a9-ae1d-5298904dacd5';
+
+INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES
+(@ecert_tenant_id, 'loa-e-cert', 'Local Cert App', 'active', 'http://localhost:9001', 'http://localhost:9001', JSON_ARRAY('http://localhost:3000'), JSON_ARRAY('http://localhost:3000'), NOW(), NOW());
+
+INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES
+(2, 'cert-admin', 'Local certificate administrator', 2, @ecert_tenant_id, NOW(), NOW()),
+(3, 'cert-staff', 'Local certificate staff', 3, @ecert_tenant_id, NOW(), NOW()),
+(4, 'cert-user', 'Local certificate user', 4, @ecert_tenant_id, NOW(), NOW());
+
+INSERT INTO `user_group_permission` (`user_group_id`, `permission_id`, `tenant_id`, `granted`) VALUES
+(2, 1, NULL, 1),
+(2, 2, NULL, 1);
+
+-- JWT permission-key claims (source of truth for jwt.permission:* middleware)
+INSERT INTO `group_claims` (`group_id`, `claim_key`, `scope_type`, `scope_id`, `created_at`, `updated_at`) VALUES
+(1, 'users.view', 'none', NULL, NOW(), NOW()),
+(1, 'users.manage', 'none', NULL, NOW(), NOW()),
+(1, 'groups.view', 'none', NULL, NOW(), NOW()),
+(1, 'groups.manage', 'none', NULL, NOW(), NOW()),
+(1, 'permissions.view', 'none', NULL, NOW(), NOW()),
+(1, 'permissions.manage', 'none', NULL, NOW(), NOW()),
+(1, 'auth.verify', 'none', NULL, NOW(), NOW()),
+(2, 'users.view', 'none', NULL, NOW(), NOW()),
+(2, 'users.manage', 'none', NULL, NOW(), NOW());
+
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;

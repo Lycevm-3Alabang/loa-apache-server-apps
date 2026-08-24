@@ -9,7 +9,7 @@
 --
 -- INCLUDED
 --   * Full schema (identity, sessions, cache, jobs, audit, activations...)
---   * Tenant 'loa' with PRODUCTION redirect origins (e-cert.vercel.app)
+--   * Tenant 'loa-e-cert' with redirect origins (e-cert.vercel.app)
 --   * Endpoint catalog (56 endpoints) + level-based grant matrix:
 --       cert-admin : 56 grants @ admin   (full control)
 --       cert-staff : 43 grants            (read/write levels; admin-only paths excluded)
@@ -382,7 +382,7 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 LOCK TABLES `tenants` WRITE;
-INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','loa','Local Cert App','active','http://localhost:9001','http://localhost:9001','[\"http://localhost:3000\"]','[\"http://localhost:3000\"]','2026-08-21 10:42:49','2026-08-21 15:36:35');
+INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','loa-e-cert','Local Cert App','active','http://localhost:9001','http://localhost:9001','[\"http://localhost:3000\"]','[\"http://localhost:3000\"]','2026-08-21 10:42:49','2026-08-21 15:36:35');
 UNLOCK TABLES;
 LOCK TABLES `user_groups` WRITE;
 INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (1,'loa-auth-admin','Platform administrator',10,NULL,'2026-08-21 10:42:48','2026-08-21 10:42:48');
@@ -409,6 +409,19 @@ INSERT INTO `user_group_permission` (`user_group_id`, `permission_id`, `tenant_i
 INSERT INTO `user_group_permission` (`user_group_id`, `permission_id`, `tenant_id`, `granted`) VALUES (1,7,NULL,1);
 INSERT INTO `user_group_permission` (`user_group_id`, `permission_id`, `tenant_id`, `granted`) VALUES (2,2,NULL,1);
 INSERT INTO `user_group_permission` (`user_group_id`, `permission_id`, `tenant_id`, `granted`) VALUES (2,1,NULL,1);
+UNLOCK TABLES;
+-- JWT permission-key claims (source of truth for jwt.permission:* middleware)
+LOCK TABLES `group_claims` WRITE;
+INSERT INTO `group_claims` (`group_id`, `claim_key`, `scope_type`, `scope_id`, `created_at`, `updated_at`) VALUES
+(1,'users.view','none',NULL,NOW(),NOW()),
+(1,'users.manage','none',NULL,NOW(),NOW()),
+(1,'groups.view','none',NULL,NOW(),NOW()),
+(1,'groups.manage','none',NULL,NOW(),NOW()),
+(1,'permissions.view','none',NULL,NOW(),NOW()),
+(1,'permissions.manage','none',NULL,NOW(),NOW()),
+(1,'auth.verify','none',NULL,NOW(),NOW()),
+(2,'users.view','none',NULL,NOW(),NOW()),
+(2,'users.manage','none',NULL,NOW(),NOW());
 UNLOCK TABLES;
 LOCK TABLES `tenant_app_endpoints` WRITE;
 INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `description`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/attendees/{id}',NULL,NULL,'write','2026-08-21 22:37:08','2026-08-21 22:37:08');

@@ -55,7 +55,7 @@ The access config payload has three top-level sections:
 {
   "version": "1.0",
   "exported_at": "2026-08-03T14:30:00Z",   // export only; ignored on import
-  "tenant_slug": "loa",                      // export only; ignored on import (target tenant from route)
+  "tenant_slug": "loa-e-cert",               // export only; ignored on import (target tenant from route)
 
   "groups": [
     {
