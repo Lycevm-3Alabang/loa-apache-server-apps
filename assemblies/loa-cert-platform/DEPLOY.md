@@ -82,6 +82,8 @@ composer install --no-dev --optimize-autoloader
 3. Create or update the `.env` file with the production values.
 4. Run the database work:
 
+> **Fresh-database path (drop → create → seed):** supported — but `db:seed` here is a **no-op** (empty seeder). After migrating you MUST insert the organization row or every event/template write fails with FK 1452. Full procedure incl. that SQL: root **`docs/cpanel-db-migration-runbook.md`** §5–§6.
+
 ```bash
 php artisan config:clear
 php artisan key:generate

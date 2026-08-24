@@ -200,6 +200,11 @@ Additional variables required by the web UI layer (see [web-ui.md](web-ui.md) §
 
 ### Migrating existing data
 
+Two supported paths — see **`docs/cpanel-db-migration-runbook.md`** (root) for the full side-by-side runbook:
+
+- **Fresh database (drop → create → seed)** — cleanest when local data needn't survive. Seeding provisions schema + admin only; tenants/catalog/groups/grants must be re-provisioned afterwards (§6 of the runbook), and cert needs its organization row.
+- **Carry existing data** — export from Docker MySQL, import via phpMyAdmin/SSH (below).
+
 If you want to carry your locally provisioned users/tenants/groups to production instead of starting from seeds:
 
 1. The production database and user are already provisioned in cPanel:
