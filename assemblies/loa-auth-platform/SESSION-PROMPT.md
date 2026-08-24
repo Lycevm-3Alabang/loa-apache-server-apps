@@ -41,33 +41,32 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-11
+### Date: 2026-08-24
 
 ### Completed
-- **SSO web auth fully implemented** — login, register, redirect splash, admin rejection, encrypted payload path:
-  - `WebAuthController`: `ssoLogin`, `ssoRegister`, `showSSOLogin`, `showSSORegister`, `showRedirect` methods
-  - Blade views: `sso-login.blade.php`, `sso-register.blade.php`
-  - Routes: `/sso/login`, `/sso/register`, `/redirect` (web, no CSRF)
-  - Registration restricted to `lyceumalabang.edu.ph` + `itmlyceumalabang.onmicrosoft.com`
-  - Admin users rejected from SSO login (redirects to admin dashboard instead)
-  - Splash page (`/redirect`) is one-time-use — clears session after reading
-- **EncryptionService::decrypt() bug fix** — the old code always appended `==` to the unpadded base64, which only decodes when `len % 4 == 2` (~1/3 of payloads). Fixed to pad to a multiple of 4 correctly. Verified with round-trip test.
-- **SsoAuthTest** — 15 tests, 54 assertions covering both encrypted and fragment payload paths, admin rejection, redirect validation, member-only access, one-time splash, registration domain restriction, duplicate email handling.
-- **Full auth suite: 210 tests, 498 assertions, all green.**
+- **Admin UI overhaul implemented + committed** (`4ed2e80`, `8d40f6b`):
+  - Breadcrumbs (`admin/partials/breadcrumbs.blade.php` + `.breadcrumbs` CSS) on **every** admin page incl. roots; all 12 "Back to" buttons removed
+  - Table row actions → **link-text style** (`.button-link`, danger variant for destructive); POST forms submit via confirm-then-submit anchors
+  - Platform-admin rows show `(Admin)` beside the name in the User column (no status action — backend forbids deactivation)
+  - Tenant detail redesigned: quick-action tiles (Edit / Manage groups / Manage endpoints / Import-Export Config) inside Tenant details card; tiles rolled out to group-show and user-detail ("Endpoint overrides" tile — previously an orphaned page)
+  - New button variants in `layouts/admin`: `.button-neutral`, `.button-soft-danger`, `.button-soft-success`; `.button-ghost` is light-theme by default (fixes white-on-white text), white scoped to `.admin-topbar`
+  - Full Web suite green after each step (**85 tests**)
+- **Password API documented**: complete endpoint/auth table (public forgot/reset; `jwt.auth` change + change-request) added to `web-ui.md` §12.3 and a new "API Surface" section in `kernels/identity/rules/password-reset-flow.md`
+- **JWT access TTL reverted to 15 min** per `kernels/identity/rules/token-lifecycle.md` policy (`37fcbb7`) — config/jwt.php code default, both compose files, `.env.example`s; containers recreated and verified live (`access_ttl=15`)
+- **cPanel production wiring** (`d031994`): real DB names/users across DEPLOY docs/env examples/environment.md — auth `lyceumalabang_auth_db` / `lyceumalabang_auth_admin`; cert `lyceumalabang_e_cert` / same admin user; passwords stay deploy-time placeholders; fixed `CACHE_STORE=redis` → `file` landmine in auth example (`5611d92`)
+- **DEPLOY.md hardened**: MAIL_* env table (+ silent-failure warning), ENCRYPTION_KEY/AUTH_ADMIN_GROUP rows, data-migration recipe (mysqldump from Docker → phpMyAdmin/SSH), server prerequisites, storage permissions, backup/rollback recipe, sync-mail note, expanded post-deploy verification (email arrival + SSO payload check)
+- **HeidiSQL guide** added to root `LOCAL-DEV-RUNBOOK.md` §14 (host port 33060; `loa`/`loa-secret`, root/`root-secret`)
+- **`.env.cpanel` production templates** created for auth + cert — full prod config with real DB names, `ENTER_*` placeholders for secrets; gitignored as `.env.cpanel` (`7deac3a`), verified untracked
 
 ### In Progress
-- **Cert Platform Phase D:** e-cert auth swap (CSR) — now unblocked (SSO entry point exists)
+- **Template visibility feature** — spec Final (`D:\loa\e-cert\specs\components\template-visibility.md` v1.1) and now **implemented in loa-cert-platform** (commit `9904746`, 2026-08-24; suite 168/557 green). Remaining: e-cert UI badge/toggle lands with Phase E/F.
 
 ### Next Action
-- [ ] Deploy auth to `auth.lyceumalabang.edu.ph` (provision per `cert-readiness.md` Final v0.4)
-- [ ] Focus on Cert Platform Phase D — e-cert auth swap (CSR)
+- [x] Implement template visibility in `loa-cert-platform` per the Final spec — DONE (`9904746`)
+- [ ] Phase D — e-cert auth swap (CSR)
 
 ### Backlog / Known Gaps
-- **Deployment not yet done** — Docker-verified only; `database.sql` rebuilt from migration schema (parity-checked).
-- Kernel specs (User, UserGroup, Permission, LoginAttempt, PasswordResetToken, Contracts, Events, Business Rules) remain **Draft** — code is ahead of several kernel specs.
-- No-terminal deploy requires uploading prebuilt `vendor/` (pure-PHP deps; safe cross-platform).
-- **Centralized Seq logging** (port 5341) now configured in root docker-compose.yml and auth app's config/logging.php — see LOCAL-DEV-RUNBOOK.md for details.
-- No logging spec exists for this change — pending spec creation before further logging enhancements.
+- Kernel specs remain Draft (unchanged); Auth deployment still deferred
 
 ---
 
@@ -93,6 +92,9 @@ Then:
 | 2026-08-07 (2) | **User Account Activation spec** written + promoted to **Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, admin resend). Committed + pushed. | Implement user account activation per spec |
 | 2026-08-08 | User Account Activation fully implemented (migrations, model, service, views, email template, routes, controllers, tests). Auth Platform work complete for now. Added centralized Seq logging infrastructure. | Focus on Cert Platform Phase C |
 | 2026-08-11 | SSO web auth implemented (login/register/redirect/blade views); fixed EncryptionService::decrypt() padding bug; SsoAuthTest (15 tests); full suite 210 tests pass | Deploy auth or Phase D e-cert auth swap |
+| 2026-08-24 | **Admin UI overhaul** (commits `4ed2e80`, `8d40f6b`): breadcrumbs on every page, 12 "Back to" buttons removed, link-text row actions, tenant/user/group detail quick-action tiles, ghost-button white-text fix | Implement template visibility (cert platform, spec Final) |
+| 2026-08-24 (2) | **Docs + prod wiring** (`37fcbb7`, `d031994`): password API auth model documented; JWT TTL reverted to 15m per policy; cPanel DB names/users wired into DEPLOY/env docs; DEPLOY.md hardened (MAIL_*, backup/rollback, prerequisites); HeidiSQL §14; `.env.cpanel` templates gitignored (`7deac3a`) | Phase D e-cert auth swap |
+| 2026-08-24 (3) | **Template visibility implemented in cert platform** (`9904746`, cross-assembly per Final spec): 23 new tests, suite 168/557 green; latent `jwt_claims.sub` bug fixed; inverted endpoint-policy unit test corrected. Cross-boundary record updated in PROJECT_UPDATES.md | Phase D e-cert auth swap; e-cert UI badge/toggle in Phase E/F |
 
 ---
 

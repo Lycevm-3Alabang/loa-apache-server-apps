@@ -58,10 +58,12 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 
 | App | Subdomain | Database | Framework | Purpose |
 |-----|-----------|----------|-----------|---------|
-| Auth | auth.lyceumalabang.edu.ph | loa_auth | Laravel 12 | JWT token service, user management, admin dashboard |
+| Auth | auth.lyceumalabang.edu.ph | lyceumalabang_auth_db (local: `loa_auth`) | Laravel 12 | JWT token service, user management, admin dashboard |
 | Consult | aces-api.lyceumalabang.edu.ph | loa_consult | Laravel 12 | Consultation booking + faculty evaluation (combined) |
-| Cert API | cert-api.lyceumalabang.edu.ph | loa_cert | Laravel 12 | Certificate issuance, verification, PDF/QR/email |
+| Cert API | cert-api.lyceumalabang.edu.ph | lyceumalabang_e_cert (local: `loa_cert`) | Laravel 12 | Certificate issuance, verification, PDF/QR/email |
 | e-cert UI | e-cert.vercel.app | — (Vercel) | Next.js 16 | Cert frontend; pure consumer of Auth + Cert APIs |
+
+> Production DB names/users provisioned in cPanel 2026-08-24: both apps use user `lyceumalabang_auth_admin`; passwords are deploy-time placeholders (never committed). See each platform's `DEPLOY.md` + `.env.cpanel` template.
 
 ### LOA Auth Platform — `assemblies/loa-auth-platform/`
 
@@ -74,6 +76,7 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 - **2026-08-05 changes:** domain correction across docs/configs/tests/blades; allowlists updated (`config/cors.php`, `config/auth-web.php`, `.env.example`, `DEPLOY.md`, `environment.md`) to include `https://e-cert.vercel.app`.
 - **Phase B (Cert readiness) — DEFERRED 2026-08-06:** user decision — **no Cert data baked into the production Auth seed path** (`DatabaseSeeder` production runs only `AdminSeeder`; `database/seeders/database.sql` untouched — a `CertReadinessSeeder` attempt was created then reverted). Provisioning is **manual at deploy-time** per the runbook **`cert-readiness.md`** (**Final v0.4**, branch `docs/cert-readiness-runbook`): `loa` tenant (`redirect_origins` incl. `https://e-cert.vercel.app`), 48-endpoint Appendix A catalog import, `cert-admin`/`cert-staff`/`cert-user` groups (priorities 2/3/4, created manually), 48-row grant matrix (admin 48 / staff 39 / user 7), verification steps. Payload + matrix parity-checked against `api-endpoints.md` Appendix A. **§8 Local Development (v0.2→v0.4):** local Docker provisioning via the **`LocalCertReadinessSeeder`** (runs automatically on local `db:seed` via `DatabaseSeeder` non-prod guard — creates `cert-app` tenant @ `localhost:9001` + groups; catalog/grants still via local admin UI) plus an optional tinker fast path; local origin/CORS/redirect table.
 - **Next:** Auth deployment **deferred** (user decision 2026-08-06 — focus on Cert platform). Provisioning per `cert-readiness.md` (**Final v0.4**) happens at deploy-time; no action needed until Auth is deployed. Three things lined up for the Cert platform: **(1) Phase C** — Laravel 12 Cert app **scaffold created 2026-08-06** (`cert-app/`: core models + migrations); next is the **unauth domain CRUD slice** (events/attendees/templates/certificates + tests); **(2) C-Auth phase** — SSO `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` middleware (deferred from Phase C per decision #20/D9); **(3) Phase D** — `e-cert` auth swap (CSR): in-memory token, silent refresh, SSO fragment handler, parse-only JWT, client auth guard (depends on C-Auth).
+- **2026-08-24 changes:** Admin UI overhaul committed (`4ed2e80`, `8d40f6b`) — breadcrumbs everywhere, link-text table actions, quick-action tiles; password API auth model documented (`37fcbb7`); JWT access TTL briefly 480 then **reverted to 15 min** per `token-lifecycle.md`; cPanel production DB names wired into DEPLOY/env docs (`d031994`); HeidiSQL runbook §14; `.env.cpanel` prod templates (gitignored). Details in `SESSION-PROMPT.md`.
 
 ### LOA Cert Platform — `assemblies/loa-cert-platform/`
 
@@ -91,6 +94,7 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
   - `config/cert-platform.php` (tenant, cookie), `config/jwt.php` (secret, TTL), `config/auth-platform.php` (base_url, encryption keys)
   - 126 tests, 386 assertions, all green (MySQL `loa_cert_test`)
 - **Next:** Phase D — `e-cert` auth swap (CSR): in-memory token, silent refresh, SSO fragment handler, parse-only JWT, client auth guard. **Unblocked — C-Auth complete.**
+- **2026-08-24:** **Template visibility spec Final + IMPLEMENTED** — `D:\loa\e-cert\specs\components\template-visibility.md` v1.1: `visibility ENUM(public,private)` + `updated_by` on `certificate_templates`; owner-set model (`created_by`/`updated_by`, never none); private = owners only, admin sees all; enforcement on list/show/**clone endpoints/event references** (side-door audit found unguarded `clone-template`/`clone-email-template`); 404-masking; migration mechanics (public backfill → app default private). Implementation commit `9904746`: 23 new visibility tests, full suite **168/557 green**; also fixed latent `jwt_claims.sub` dot-notation bug (`created_by` was never persisted) and corrected an inverted EndpointPolicy unit test. Also: runtime cache shards untracked.
 
 ### LOA Consult Platform — `assemblies/loa-consult-platform/`
 
@@ -105,6 +109,22 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 ---
 
 ## Last Session Notes
+
+### Date: 2026-08-24
+
+### Completed
+- **Admin UI overhaul (auth)** — breadcrumbs on every admin page incl. roots; 12 "Back to" buttons removed; link-text table actions; tenant/user/group detail quick-action tiles; `.button-ghost` white-text fix; new button variants (`neutral`/`soft-danger`/`soft-success`). Commits `4ed2e80`, `8d40f6b`; Web suite 85/85 green.
+- **Password API documented** — full endpoint/auth table (`forgot`/`reset` public by design; `PUT /password`, `change-request` jwt.auth) in `web-ui.md` §12.3 + `kernels/identity/rules/password-reset-flow.md`.
+- **JWT access TTL reverted to 15 min** (`37fcbb7`) — the 8-hour bump violated `token-lifecycle.md`; code default, compose, env examples all back to 15; containers recreated, verified live.
+- **cPanel production DB wiring** (`d031994`) — auth `lyceumalabang_auth_db`, cert `lyceumalabang_e_cert`, user `lyceumalabang_auth_admin` on both; passwords = placeholders only; fixed `CACHE_STORE=redis` landmine in auth example.
+- **DEPLOY.md hardened** — MAIL_* table, ENCRYPTION_KEY/AUTH_ADMIN_GROUP, data-migration recipe, server prerequisites, permissions, backup/rollback, sync-mail note.
+- **HeidiSQL guide** (root runbook §14) and **`.env.cpanel` prod templates** for both platforms (gitignored, untracked).
+- **Template visibility spec Final** in e-cert repo: `D:\loa\e-cert\specs\components\template-visibility.md` v1.1 — reviewed twice; caught side-doors (`clone-template`, `clone-email-template`, event references) + missing `updated_by`/owner-set model before promotion.
+- **Cert housekeeping** — runtime cache shards untracked; `EventController.organization_id` payload addition verified benign (EventTest 19/19) but left uncommitted.
+
+### Next Action
+- [x] Implement template visibility in `loa-cert-platform` per the Final spec — **DONE 2026-08-24, commit `9904746`** (23 new tests; suite 168/557 green)
+- [ ] Phase D — e-cert auth swap (CSR) — unblocked
 
 ### Date: 2026-08-11
 
@@ -267,4 +287,6 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 | 2026-08-07 (2) | **User Account Activation spec** written + promoted to **Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, admin resend). Committed + pushed. | Implement user account activation per spec |
 | 2026-08-08 | Added centralized Seq log server (datalust/seq) to root docker-compose.yml; both Auth and Cert app services now emit structured logs to Seq on port 5341. Created config/logging.php in both assemblies with a seq channel activated when SEQ_URL env var is present. Auth platform runbook updated with Seq instructions. | Verify Seq integration logs flow correctly; update Cert runbook |
 | 2026-08-10 | **Events & Attendees complete** (unauth CRUD slice): 13 event + 8 attendee endpoints (incl. stats, clone-template, bulk-issue, reissue, issue-completed, revoke-expired, import, destroy-with-cert, delete-preview, file-data), routes, OpenAPI, feature tests. Full suite green (91/334). Fixed seq/PDF/delete/expire/scope bugs surfaced by tests; added composer dev deps; renamed `database/Migrations`→`database/migrations`; removed dead Api controller. NOT committed. | Commit Events/Attendees work; remove `cert-app/` leftover |
-| 2026-08-11 | **Auth platform SSO implemented** (`/sso/login`, `/sso/register`, `/redirect`); fixed `EncryptionService::decrypt()` padding bug; `SsoAuthTest` (15 tests); full auth suite 210/498 green. FRONTEND-INTEGRATION.md updated. **Cert endpoint verification:** 48/50 domain endpoints fully implemented; 2 stubs (QR), 1 missing (email). | Deploy auth or Phase D e-cert auth swap |
+| 2026-08-11 | **Auth platform SSO implemented** (`/sso/login`, `/sso/register`, `/redirect`); fixed `EncryptionService::decrypt()` padding bug; `SsoAuthTest` (15 tests); full auth suite 210/498 green. FRONTEND-INTEGRATION.md updated. **Cert endpoint verification:** 48/50 domain endpoints fully implemented; 2 stubs (QR), 1 missing (email). |
+| 2026-08-24 | **Admin UI overhaul + docs/prod wiring (auth)**: breadcrumbs everywhere, link-text actions, quick-action tiles (`4ed2e80`,`8d40f6b`); password API auth model documented; JWT TTL reverted to 15m per policy (`37fcbb7`); cPanel DB names/users wired (`d031994`); DEPLOY.md hardened; HeidiSQL §14; `.env.cpanel` templates gitignored. **Cert/e-cert:** runtime cache shards untracked; template visibility spec authored, reviewed, promoted to **Final v1.1** in e-cert repo. | Implement template visibility in loa-cert-platform |
+| 2026-08-24 (2) | **Template visibility IMPLEMENTED** (`9904746`): migration + model owner-set helpers; templates store/update/index/show per spec; clone endpoints + event references guarded; 23 new tests; fixed latent `jwt_claims.sub` bug + inverted endpoint-policy unit test. Suite 168/557 green. Swagger regenerated. Trackers updated. | Phase D e-cert auth swap; e-cert UI badge/toggle with Phase E/F |
