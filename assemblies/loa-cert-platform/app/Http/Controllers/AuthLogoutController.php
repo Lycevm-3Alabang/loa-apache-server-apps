@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Http;
 
 class AuthLogoutController extends Controller
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request): JsonResponse
     {
         $cookieName = config('cert-platform.refresh_cookie', 'loa_cert_refresh');
         $refreshToken = $request->cookies->get($cookieName);
@@ -27,8 +28,7 @@ class AuthLogoutController extends Controller
             }
         }
 
-        $response = response()->json(null, 204);
-        $response->cookies->queue(
+        Cookie::queue(
             $cookieName,
             '',
             -1,
@@ -40,6 +40,6 @@ class AuthLogoutController extends Controller
             'lax'
         );
 
-        return $response;
+        return response()->json(null, 204);
     }
 }
