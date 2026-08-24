@@ -396,6 +396,14 @@ docker compose up -d --build
 
 See sections 7 (Useful troubleshooting commands), 8 (Test structure), and 9 (Known Issues & Gotchas) in this file, plus the assembly-specific runbooks linked above for additional port conflict notes and Seq setup details.
 
+### 502 after recreating an app container
+
+The nginx proxies resolve `auth-app:9000` / `cert-app:9000` **once at startup** and cache the container IP. If you recreate only the app containers (`docker compose up -d --force-recreate auth-app cert-app`), nginx keeps connecting to the stale IP → `502 Bad Gateway` with `connect() failed (111: Connection refused)` in its logs. Restart the proxies afterwards:
+
+```bash
+docker compose restart auth-nginx cert-nginx
+```
+
 ---
 
 ## 14. Connect to MySQL from the host with HeidiSQL
