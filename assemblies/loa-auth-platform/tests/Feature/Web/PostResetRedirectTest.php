@@ -127,26 +127,49 @@ class PostResetRedirectTest extends TestCase
         $this->assertStringContainsString(urlencode(self::ALLOWED_ORIGIN.'/login'), $html);
     }
 
-    // ─── Forgot page: return-to-app link ─────────────────────────────────────
+    // ─── Forgot page: back-to-referrer link ──────────────────────────────────
 
-    public function test_forgot_page_shows_return_to_app_for_allowlisted_redirect(): void
+    public function test_forgot_page_shows_back_to_referrer_for_allowlisted_redirect(): void
     {
         $response = $this->get('/forgot-password?'.http_build_query([
             'redirect' => self::ALLOWED_ORIGIN.'/login',
         ]));
 
         $response->assertOk();
-        $response->assertSee('Return to app', false);
+        $response->assertSee('Back to referrer', false);
         $response->assertSee(self::ALLOWED_ORIGIN.'/login', false);
         $response->assertDontSee('Back to sign in', false);
     }
 
-    public function test_forgot_page_shows_back_to_sign_in_without_redirect(): void
+    public function test_forgot_page_uses_allowlisted_referer_as_return_target(): void
+    {
+        $response = $this->get('/forgot-password', [
+            'referer' => self::ALLOWED_ORIGIN.'/events?tab=upcoming',
+        ]);
+
+        $response->assertOk();
+        $response->assertSee('Back to referrer', false);
+        $response->assertSee(self::ALLOWED_ORIGIN, false);
+        $response->assertDontSee('Back to sign in', false);
+    }
+
+    public function test_forgot_page_shows_back_to_sign_in_without_redirect_or_referer(): void
     {
         $this->get('/forgot-password')
             ->assertOk()
             ->assertSee('Back to sign in', false)
-            ->assertDontSee('Return to app', false);
+            ->assertDontSee('Back to referrer', false);
+    }
+
+    public function test_forgot_page_foreign_referer_falls_back_to_sign_in(): void
+    {
+        $response = $this->get('/forgot-password', [
+            'referer' => 'https://evil.example.test/phish',
+        ]);
+
+        $response->assertOk();
+        $response->assertSee('Back to sign in', false);
+        $response->assertDontSee('evil.example.test', false);
     }
 
     public function test_forgot_page_foreign_redirect_falls_back_to_sign_in(): void
@@ -160,7 +183,7 @@ class PostResetRedirectTest extends TestCase
         $response->assertDontSee('evil.example.test', false);
     }
 
-    public function test_validation_error_preserves_return_to_app_link(): void
+    public function test_validation_error_preserves_back_to_referrer_link(): void
     {
         $redirectTarget = self::ALLOWED_ORIGIN.'/login';
 
@@ -176,7 +199,7 @@ class PostResetRedirectTest extends TestCase
 
         $followUp = $this->get($response->headers->get('Location'));
         $followUp->assertOk();
-        $followUp->assertSee('Return to app', false);
+        $followUp->assertSee('Back to referrer', false);
         $followUp->assertSee($redirectTarget, false);
     }
 

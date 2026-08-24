@@ -260,12 +260,15 @@ https://auth.lyceumalabang.edu.ph/reset-password?token={rawToken}&email={email}&
 4. Always respond with a generic success message (anti-enumeration).
 5. Rate limit: 1 request per 60 seconds per email (Laravel throttle).
 
-### UI — Return-to-app link
+### UI — Back-to-referrer link
 
-`GET /forgot-password` accepts the same optional validated `redirect` parameter:
+`GET /forgot-password` resolves its back-link target in this order:
 
-- Present + allowlisted ⇒ the page shows **"Return to app"** linking to that URL (replaces "Back to sign in"), and keeps it in a hidden field so the POST re-embeds it into the emailed link.
-- Missing/invalid ⇒ default **"Back to sign in"** → `/login`.
+1. **`?redirect=` query param** — validated against the allowlist (active tenant `redirect_origins`, or `AUTH_ALLOWED_REDIRECTS`).
+2. **HTTP `Referer` header origin** — used when the param is absent; validated the same way. Browsers send only the origin cross-origin by default (`strict-origin-when-cross-origin`), which is sufficient for allowlist matching.
+3. Neither valid ⇒ default **"Back to sign in"** → `/login`.
+
+When 1 or 2 resolves, the page shows **"Back to referrer"** linking to that URL and keeps it in a hidden field so the POST re-embeds it into the emailed link.
 
 ---
 

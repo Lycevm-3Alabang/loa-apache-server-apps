@@ -225,12 +225,25 @@ class WebAuthController extends Controller
 
     public function showForgotPassword(Request $request): View
     {
-        // Validated against the redirect allowlist; null falls back to the login link.
-        $returnUrl = $this->safeRedirectUrl($request->query('redirect'));
+        // Resolution order: explicit ?redirect= → HTTP referrer origin (both
+        // validated against the allowlist); null falls back to the sign-in link.
+        $returnUrl = $this->safeRedirectUrl($request->query('redirect'))
+            ?? $this->referrerReturnUrl($request);
 
         return view('forgot-password', [
             'redirect' => $returnUrl,
         ]);
+    }
+
+    private function referrerReturnUrl(Request $request): ?string
+    {
+        $referer = $request->headers->get('referer');
+
+        if (!is_string($referer) || $referer === '') {
+            return null;
+        }
+
+        return $this->safeRedirectUrl($referer);
     }
 
     public function sendResetLinkEmail(Request $request): RedirectResponse

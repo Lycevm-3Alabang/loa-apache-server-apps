@@ -20,7 +20,7 @@
     </form>
 
     @if (!empty($redirect))
-        <a class="back-link" href="{{ $redirect }}">Return to app</a>
+        <a class="back-link" href="{{ $redirect }}">Back to referrer</a>
     @else
         <a class="back-link" href="{{ route('login') }}">Back to sign in</a>
     @endif
