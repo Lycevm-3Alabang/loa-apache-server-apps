@@ -89,6 +89,10 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
         ->name('admin.tenants.group.endpoints');
     Route::post('/tenants/{tenant}/groups/{group}/endpoints', [WebAdminController::class, 'tenantsGroupsEndpointsStore'])
         ->name('admin.tenants.group.endpoints.save');
+
+    // NEW: Tenant group effective permissions (auth API keys)
+    Route::post('/tenants/{tenant}/groups/{group}/permissions', [WebAdminController::class, 'tenantsGroupsPermissionsStore'])
+        ->name('admin.tenants.group.permissions.save');
     
     // NEW: Group members page
     Route::get('/tenants/{tenant}/groups/{group}/members', [WebAdminController::class, 'tenantsGroupMembers'])

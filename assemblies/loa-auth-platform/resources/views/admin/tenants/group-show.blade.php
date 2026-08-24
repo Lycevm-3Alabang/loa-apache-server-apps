@@ -54,4 +54,32 @@
             </a>
         </div>
     </div>
+
+    {{-- Effective Permissions (auth API keys) --}}
+    <div class="detail-card">
+        <div class="section-header">
+            <h2>Effective Permissions</h2>
+        </div>
+        <p class="muted" style="margin:0 0 1rem;font-size:0.8125rem;">
+            Auth API access keys granted to every member of this group. Claims are refreshed the next time a member logs in.
+        </p>
+        <form method="post" action="{{ route('admin.tenants.group.permissions.save', [$tenant, $group]) }}">
+            @csrf
+            <div class="perm-grid">
+                @foreach ($allPermissions as $perm)
+                    @php
+                        $pivot = $group->permissions->firstWhere('id', $perm->id);
+                        $granted = $pivot?->pivot->granted ?? false;
+                    @endphp
+                    <label class="perm-check">
+                        <input type="checkbox" name="permissions[]" value="{{ $perm->id }}" @checked($granted)>
+                        <span>{{ $perm->key }}</span>
+                    </label>
+                @endforeach
+            </div>
+            <div style="margin-top:1rem;">
+                <button class="button" type="submit">Save permissions</button>
+            </div>
+        </form>
+    </div>
 @endsection

@@ -348,7 +348,42 @@ class WebAdminController extends Controller
             'tenant' => $tenant,
             'group' => $group,
             'membersCount' => $group->users()->count(),
+            'allPermissions' => Permission::orderBy('key')->get(),
         ]);
+    }
+
+    public function tenantsGroupsPermissionsStore(Request $request, Tenant $tenant, UserGroup $group): RedirectResponse
+    {
+        if ($group->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'integer|exists:permissions,id',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->with('error', 'Invalid permission data.');
+        }
+
+        $allowedIds = array_map('intval', $request->input('permissions', []));
+
+        DB::transaction(function () use ($group, $allowedIds) {
+            $allPermissions = Permission::pluck('id');
+            $syncData = [];
+
+            foreach ($allPermissions as $permId) {
+                $syncData[$permId] = [
+                    'granted' => in_array($permId, $allowedIds, true),
+                    'tenant_id' => null,
+                ];
+            }
+
+            $group->permissions()->sync($syncData);
+        });
+
+        return back()->with('status', 'Permissions updated.');
     }
 
     public function tenantsGroupEndpoints(Tenant $tenant, UserGroup $group): View
@@ -452,37 +487,6 @@ class WebAdminController extends Controller
         ]);
 
         return back()->with('status', 'Group created.');
-    }
-
-    public function tenantsGroupsPermissions(Request $request, Tenant $tenant, UserGroup $group): RedirectResponse
-    {
-        if ($group->tenant_id !== $tenant->id) {
-            return back()->with('error', 'Group does not belong to this tenant.');
-        }
-
-        $validator = Validator::make($request->all(), [
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'integer|exists:permissions,id',
-        ]);
-
-        if ($validator->fails()) {
-            return back()->with('error', 'Invalid permission data.');
-        }
-
-        $allowedIds = $request->input('permissions', []);
-
-        DB::transaction(function () use ($group, $tenant, $allowedIds) {
-            $allPermissions = Permission::pluck('id');
-
-            foreach ($allPermissions as $permId) {
-                $group->permissions()->updateExistingPivot(
-                    $permId,
-                    ['granted' => in_array($permId, $allowedIds, true), 'tenant_id' => $tenant->id],
-                );
-            }
-        });
-
-        return back()->with('status', 'Permissions updated.');
     }
 
     // ─── v2: Tenant members ────────────────────────────────────────
@@ -589,7 +593,7 @@ class WebAdminController extends Controller
             return back()->with('error', 'Invalid permission data.');
         }
 
-        $allowedIds = $request->input('permissions', []);
+        $allowedIds = array_map('intval', $request->input('permissions', []));
 
         DB::transaction(function () use ($group, $allowedIds) {
             $allPermissions = Permission::pluck('id');

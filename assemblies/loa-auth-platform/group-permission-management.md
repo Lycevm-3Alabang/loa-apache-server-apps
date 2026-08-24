@@ -1,7 +1,7 @@
 # LOA Auth Platform — Group & Permission Management
 ## Product Assembly Component Specification
 
-**Version:** 2.0
+**Version:** 2.1
 **Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -403,6 +403,31 @@ Shows group info, assigned permissions, and members.
 | Add member | POST | `/admin/groups/{id}/members` |
 | Remove member | POST | `/admin/groups/{id}/members/{userId}/remove` |
 
+## 6.4 Tenant Group Detail Page
+
+**Route:** `GET /admin/tenants/{tenant}/groups/{group}`
+
+Tenant-scoped group detail page (primary navigation path: **Admin → Tenants → {tenant} → Groups → {group}**). Shows group info plus the same permission configuration as §6.3, so auth API keys are managed where tenant groups actually live.
+
+**Sections:**
+
+1. **Group Info** — name, description, priority, scope, member count
+2. **Effective Permissions** — editable checkbox grid of the auth API permission catalog; checked = granted to every member of the group (same pivot rows as §6.3, `tenant_id = NULL` on grants)
+3. **Quick Actions** — links to endpoint grants and members pages
+
+**Actions:**
+
+| Action | Method | Route |
+|--------|--------|-------|
+| Update permissions | POST | `/admin/tenants/{tenant}/groups/{group}/permissions` |
+
+**Behavior:**
+
+1. Validates that `$group->tenant_id === $tenant->id` (404 otherwise)
+2. Validates `permissions[]` as an array of existing permission IDs (empty array = revoke all)
+3. Syncs the full granted map in a transaction — identical semantics to §6.3 (`granted` boolean per key, `tenant_id = NULL`)
+4. Members receive the new claims on their next login (tokens carry claims frozen at issuance)
+
 ---
 
 # 7. Route Summary
@@ -444,6 +469,9 @@ POST   /admin/groups
 POST   /admin/groups/{id}/permissions
 POST   /admin/groups/{id}/members
 POST   /admin/groups/{id}/members/{userId}/remove
+
+# Tenant Group Detail
+POST   /admin/tenants/{tenant}/groups/{group}/permissions
 
 # User Detail
 GET    /admin/users/{id}
