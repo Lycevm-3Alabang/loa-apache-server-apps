@@ -19,7 +19,7 @@ User permissions =
 ### Rules
 
 1. **Union of groups:** Permissions from all groups the user belongs to are merged (OR logic)
-2. **Deny wins within a group:** If a group has both grant and deny for the same permission, deny takes precedence
+2. **Deny wins across groups:** A deny for a permission in any of the user's groups removes it from the effective set, even when another group grants it (matches `AuthorizationService::getPermissions()`: granted keys minus denied keys)
 3. **User override:** A user-level explicit grant can override a group-level deny. A user-level explicit deny can override a group-level grant
 4. **Final decision:** If any effective rule grants the permission after applying overrides, access is allowed
 
