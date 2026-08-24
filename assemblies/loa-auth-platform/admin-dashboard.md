@@ -100,9 +100,48 @@ The admin layout (`resources/views/layouts/admin.blade.php`) provides the admin 
   - `q` — substring match on `name` OR `email` (case-insensitive).
   - `status` — `active` | `disabled` | `locked` | `all` (default `all`).
 - Columns: name, email, status badge, failed attempts, locked until, created at, actions.
-- Actions (per row): an **Enable**/**Disable** button rendered as a `POST` form with `@csrf`.
+- **Platform-admin rows** show `(Admin)` beside the user name in the User column and offer no status action (the backend refuses to deactivate platform administrators).
+- Actions (per row): a `View` link plus one status action rendered as **link text** (`.button-link`), not solid buttons — `Activate` for pending/locked, `Disable` for active non-admin non-self rows, `Enable` for disabled rows; POST forms submit via a confirm-then-submit anchor.
 - The list must never expose the password hash or password-reset tokens (`User::$hidden` covers this).
 - If `q` or `status` is present, filter the query accordingly; keep filters on re-render (query-string links, not a stateful UI).
+
+---
+
+# 6a. Admin UI Conventions
+
+Shared chrome and interaction patterns for all `/admin/*` pages (styles live in `layouts/admin.blade.php`):
+
+## Breadcrumbs
+
+- Partial: `resources/views/admin/partials/breadcrumbs.blade.php` (`@include('admin.partials.breadcrumbs', ['items' => [['label' => ..., 'url' => ?], ...]])`).
+- Rendered on **every** admin page, including roots (single crumb: `Users`, `Tenants`, `Groups`); last item is the current page (non-link), earlier items link up the hierarchy (e.g., `Tenants › {tenant} › Groups › {group} › Members`).
+- Pure-navigation "Back to …" buttons are **removed**; breadcrumbs replace them. Form `Cancel` buttons and import-wizard resets (`Start Over`, `Start New Import`) remain.
+
+## Table Row Actions = Link Text, Not Buttons
+
+- In-table actions use `.button-link` (plain text links; danger variant `.button-danger` for destructive ones) — never solid buttons inside tables.
+- State-changing rows still POST via hidden `@csrf` forms; anchors submit with `onclick="... this.closest('form').submit()"` and a `confirm()` guard.
+- Solid buttons are reserved for form submits outside tables (Save/Create/Add).
+
+## Quick-Action Tiles
+
+Detail pages surface sub-navigation as tiles (`.quick-actions` / `.action-tile`) inside their first detail card — accent icon + label + one-line description + chevron:
+
+| Page | Tiles |
+|------|-------|
+| Tenant detail | Edit tenant · Manage groups · Manage endpoints · Import/Export Config |
+| Tenant group detail | Endpoints & permissions · Members |
+| User detail | Endpoint overrides |
+
+## Button Variants
+
+| Class | Use |
+|-------|-----|
+| `.button` (solid brand) | Primary form submits only (topbar Sign out uses ghost) |
+| `.button-neutral` | Secondary/outline actions on redesigned pages |
+| `.button-link` (+`.button-danger`) | Link-text table row actions |
+| `.button-soft-danger` / `.button-soft-success` | Destructive/activating status toggles (e.g., Suspend/Activate tenant) |
+| `.button-ghost` | Light-theme by default in content; white variant scoped to `.admin-topbar` |
 
 ---
 
@@ -315,7 +354,7 @@ Add to `WebAdminController`:
 | Controller | `WebAdminController` (`index`, `updateStatus`, `invalidateSessions`, `logout`, `tenantsIndex`, `tenantsCreate`, `tenantsStore`, `tenantsShow`, `tenantsStatus`, `tenantsGroups`, `tenantsGroupsStore`, `tenantsGroupsPermissions`, `tenantsMembersStore`, `create`, `store`) |
 | Middleware | `web.admin` (new) — group check using `auth-web.admin_group` |
 | Routes | `routes/web.php` — admin group, `auth` + `web.admin` |
-| Views | `layouts/admin.blade.php`, `admin/users/index.blade.php`, `admin/tenants/index.blade.php`, `admin/tenants/create.blade.php`, `admin/tenants/show.blade.php`, `admin/tenants/groups.blade.php`, `admin/users/create.blade.php` |
+| Views | `layouts/admin.blade.php`, `admin/partials/breadcrumbs.blade.php` (included by every admin page), plus all views under `resources/views/admin/{users,groups,tenants}/` |
 | Config | `config/auth-web.php` → add `admin_group` (env `AUTH_ADMIN_GROUP`, default `loa-auth-admin`) |
 | Services (existing) | `IdentityService::register()`, `IdentityService::setUserStatus()`, `AuthorizationService::hasPermission()`, `TenantService` |
 

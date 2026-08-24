@@ -31,7 +31,7 @@ This document is the handoff from the Cert Platform backend to the e-cert fronte
 | Config | Key | Default |
 |--------|-----|---------|
 | `config/jwt.php` | `secret` | `dev-only-secret-change-before-production` |
-| `config/jwt.php` | `access_ttl` | `15` (minutes) |
+| `config/jwt.php` | `access_ttl` | `15` (minutes; per `token-lifecycle.md` access tokens stay short-lived) |
 | `config/jwt.php` | `algo` | `HS256` |
 | `config/cert-platform.php` | `tenant_slug` | `loa` |
 | `config/cert-platform.php` | `refresh_cookie` | `loa_cert_refresh` |

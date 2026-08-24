@@ -41,6 +41,17 @@ Forget-password and change-password are the **same flow** with different trigger
 
 Both produce a `PasswordResetToken` consumed by the same `/reset-password` form. No duplicated logic.
 
+### API Surface
+
+| Endpoint | Auth | Purpose |
+|----------|------|---------|
+| `POST /api/v1/auth/password/forgot` | public (`password.reset.throttle`) | Send reset/change link to email |
+| `POST /api/v1/auth/password/reset` | public | Consume `{token, password}`; revokes all refresh tokens |
+| `PUT /api/v1/auth/password` | `jwt.auth` | Authenticated change with `old_password` |
+| `POST /api/v1/auth/password/change-request` | `jwt.auth` | Email a change link to self |
+
+`forgot` and `reset` are intentionally **public**: the requester has forgotten their password, so the emailed single-use token is the identity proof. A JWT requirement there would be unsatisfiable by definition.
+
 ### Token Properties
 
 | Property | Value |

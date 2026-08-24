@@ -415,6 +415,17 @@ POST /api/v1/auth/password/change-request    [jwt.auth]    → 204
 
 No body. Uses the authenticated user; sends the change-password email to that user's address.
 
+### Password API Surface (complete)
+
+| Endpoint | Auth | Purpose |
+|----------|------|---------|
+| `POST /api/v1/auth/password/forgot` | public (`password.reset.throttle`) | Send reset/change link |
+| `POST /api/v1/auth/password/reset` | public | Reset with `{token, password}` (min 8, upper/lower/digit); revokes all refresh tokens |
+| `PUT /api/v1/auth/password` | `jwt.auth` | Change with `{old_password, new_password}` |
+| `POST /api/v1/auth/password/change-request` | `jwt.auth` | Email a change link to self |
+
+`forgot` and `reset` are intentionally public — the emailed single-use token replaces JWT as the identity proof for forgotten passwords. See `kernels/identity/rules/password-reset-flow.md`.
+
 ---
 
 # 10. Security Checklist

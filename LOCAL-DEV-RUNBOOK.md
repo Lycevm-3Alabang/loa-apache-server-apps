@@ -395,3 +395,47 @@ docker compose up -d --build
 ## 13. Gotchas & Troubleshooting
 
 See sections 7 (Useful troubleshooting commands), 8 (Test structure), and 9 (Known Issues & Gotchas) in this file, plus the assembly-specific runbooks linked above for additional port conflict notes and Seq setup details.
+
+---
+
+## 14. Connect to MySQL from the host with HeidiSQL
+
+The `mysql` service exposes MySQL 8.0 on **host port `33060`** (mapped to container port 3306), so desktop tools can connect while the stack is up.
+
+### Connection settings (HeidiSQL)
+
+1. Open HeidiSQL → **New** (create a new session).
+2. **Network type**: `MariaDB or MySQL (TCP/IP)`.
+3. Fill in the **Session** tab:
+
+| Setting | Value |
+|---------|-------|
+| Hostname / IP | `127.0.0.1` |
+| Username | `loa` |
+| Password | `loa-secret` |
+| Port | `33060` |
+| Databases | leave empty to see all |
+
+4. Click **Save** → **Open**.
+
+### Credentials reference (from docker-compose.yml)
+
+| User | Password | Notes |
+|------|----------|-------|
+| `loa` | `loa-secret` | App user — full access to both app databases |
+| `root` | `root-secret` | Full administrative access |
+
+### Databases you will see
+
+| Database | Used by |
+|----------|---------|
+| `loa_auth` | Auth Platform (`auth-app`) |
+| `loa_cert` | Cert Platform (`cert-app`) — created by [docker/mysql/init.sql](docker/mysql/init.sql) on first boot |
+
+### Notes & gotchas
+
+- The container must be running (`docker compose ps` should show `mysql` as healthy) before connecting.
+- Use `127.0.0.1`, not the service name `mysql` — that only resolves inside the Docker network.
+- The same port/credentials apply to the standalone assembly stacks (`assemblies/loa-*-platform/docker-compose.yml`), but per the **Port Isolation Strategy** (section 10) never run a standalone MySQL at the same time as the root-stack MySQL — both claim `33060`.
+- These are development-only credentials; do not reuse them in production.
+
