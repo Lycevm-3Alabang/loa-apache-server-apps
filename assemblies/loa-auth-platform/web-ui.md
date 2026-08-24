@@ -59,6 +59,20 @@ The web UI (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/admi
 
 # 4. Flows
 
+## 4.0 Session Expiry on Form Submission
+
+Auth forms never surface the raw `419 Page Expired` error page. When a POST arrives with an expired/absent CSRF session (idle past `SESSION_LIFETIME`, stale tab after `session()->regenerate()`, orphaned cookie), the handler re-renders the originating form with a fresh token and flashes **"Your session has expired. Please try again."**
+
+| POST route | Re-render target |
+|------------|------------------|
+| `/login` | `/login` |
+| `/sso/login`, `/sso/register` | `/sso/login` |
+| `/forgot-password` | `/forgot-password` |
+| `/reset-password` | `/reset-password` (carries `token` + `email`) |
+| Any other web form (admin) | previous URL (`redirect()->back()`) |
+
+API requests receive `419` JSON instead of HTML.
+
 ## 4.1 Admin Login
 
 ### Routes

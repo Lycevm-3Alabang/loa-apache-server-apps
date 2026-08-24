@@ -22,5 +22,34 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Auth forms never show the raw 419 page (web-ui.md §4.0): re-render
+        // the originating form with a fresh CSRF token instead. The framework
+        // converts TokenMismatchException to HttpException(419) before render
+        // callbacks run, so we must match on the converted exception.
+        $exceptions->render(function (Symfony\Component\HttpKernel\Exception\HttpException $e, Illuminate\Http\Request $request) {
+            if ($e->getStatusCode() !== 419) {
+                return null;
+            }
+
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json(['message' => 'CSRF token mismatch.'], 419);
+            }
+
+            $target = match (true) {
+                $request->is('login') => '/login',
+                $request->is('sso/*') => '/sso/login',
+                $request->is('forgot-password') => '/forgot-password',
+                $request->is('reset-password') => '/reset-password?'.http_build_query(array_filter([
+                    'token' => (string) $request->input('token'),
+                    'email' => (string) $request->input('email'),
+                ])),
+                default => null,
+            };
+
+            $redirect = $target !== null ? redirect()->to($target) : redirect()->back();
+
+            return $redirect
+                ->withInput($request->except('password', 'password_confirmation', '_token'))
+                ->withErrors(['session' => 'Your session has expired. Please try again.']);
+        });
     })->create();
