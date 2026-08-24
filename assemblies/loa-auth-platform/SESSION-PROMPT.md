@@ -59,7 +59,7 @@ Then:
 - **`.env.cpanel` production templates** created for auth + cert — full prod config with real DB names, `ENTER_*` placeholders for secrets; gitignored as `.env.cpanel` (`7deac3a`), verified untracked
 
 ### In Progress
-- **Post-reset redirect (§4.3a, web-ui.md v1.3)** — implemented this session, awaiting commit
+- **Post-reset redirect (§4.3a, web-ui.md v1.3)** — implemented and committed (`28f152e`)
 - **Template visibility feature** — spec Final (`D:\loa\e-cert\specs\components\template-visibility.md` v1.1) and now **implemented in loa-cert-platform** (commit `9904746`, 2026-08-24; suite 168/557 green). Remaining: e-cert UI badge/toggle lands with Phase E/F.
 
 ### Next Action
