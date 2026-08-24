@@ -27,6 +27,7 @@ return [
         ['method' => 'GET',    'path' => '/api/v1/events/{id}/attendees',         'required_level' => 'read'],
         ['method' => 'POST',   'path' => '/api/v1/events/{id}/attendees',         'required_level' => 'write'],
         ['method' => 'POST',   'path' => '/api/v1/events/{id}/attendees/import',  'required_level' => 'write'],
+        ['method' => 'GET',    'path' => '/api/v1/attendees/lookup',              'required_level' => 'read'],
         ['method' => 'PATCH',  'path' => '/api/v1/attendees/{id}',                'required_level' => 'write'],
         ['method' => 'DELETE', 'path' => '/api/v1/attendees/{id}',                'required_level' => 'write'],
         ['method' => 'DELETE', 'path' => '/api/v1/attendees/{id}/with-cert',      'required_level' => 'admin'],

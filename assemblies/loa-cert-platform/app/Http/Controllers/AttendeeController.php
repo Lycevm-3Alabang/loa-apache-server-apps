@@ -547,4 +547,74 @@ class AttendeeController extends Controller
 
         return Storage::disk('public')->download($path, $metadata['file_name'] ?? basename($path));
     }
+
+    /**
+     * Cross-event attendee lookup by email (single aggregate query set — spec
+     * e-cert specs/auth/user-activity.md §3.3). Returns every event roster the
+     * email appears on plus certificate totals. No match → empty data, 200.
+     */
+    public function lookup(Request $request): JsonResponse
+    {
+        $email = strtolower(trim((string) $request->query('email', '')));
+
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'A valid email query parameter is required.',
+            ], 422);
+        }
+
+        $attendees = EventAttendee::query()
+            ->with('event:id,name')
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->orderByDesc('updated_at')
+            ->get();
+
+        $certificateIds = $attendees
+            ->map(fn (EventAttendee $attendee) => $attendee->certificate_id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $revokedCertificateIds = $certificateIds->isEmpty()
+            ? collect()
+            : Certificate::whereIn('id', $certificateIds)
+                ->whereNotNull('revoked_at')
+                ->pluck('id');
+
+        $events = $attendees->map(fn (EventAttendee $attendee) => [
+            'id' => $attendee->event_id,
+            'name' => $attendee->event?->name,
+            'attended' => (bool) $attendee->attended,
+            'completed' => (bool) $attendee->completed,
+            'attended_at' => $attendee->attended_at?->toIso8601String(),
+            'completed_at' => $attendee->completed_at?->toIso8601String(),
+            'has_certificate' => $attendee->certificate_id !== null,
+            'certificate_revoked' => $attendee->certificate_id !== null
+                && $revokedCertificateIds->contains($attendee->certificate_id),
+        ]);
+
+        $standaloneCertificates = Certificate::whereRaw('LOWER(recipient_email) = ?', [$email]);
+
+        return response()->json([
+            'data' => [
+                'email' => $email,
+                'events' => $events,
+                'totals' => [
+                    'events' => $events->count(),
+                    'attended' => $events->where('attended', true)->count(),
+                    'certificates_active' => (clone $standaloneCertificates)
+                        ->whereNull('revoked_at')
+                        ->where(function ($q) {
+                            $q->whereNull('expires_at')
+                                ->orWhere('expires_at', '>=', now());
+                        })
+                        ->count(),
+                    'certificates_revoked' => (clone $standaloneCertificates)
+                        ->whereNotNull('revoked_at')
+                        ->count(),
+                ],
+            ],
+        ]);
+    }
 }

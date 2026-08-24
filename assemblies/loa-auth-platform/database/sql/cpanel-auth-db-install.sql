@@ -10,8 +10,8 @@
 -- INCLUDED
 --   * Full schema (identity, sessions, cache, jobs, audit, activations...)
 --   * Tenant 'loa-e-cert' with redirect origins (e-cert.vercel.app)
---   * Endpoint catalog (56 endpoints) + level-based grant matrix:
---       cert-admin : 56 grants @ admin   (full control)
+--   * Endpoint catalog (57 endpoints incl. attendees/lookup) + level-based grant matrix:
+--       cert-admin : 57 grants @ admin   (full control)
 --       cert-staff : 43 grants            (read/write levels; admin-only paths excluded)
 --       cert-user  :  5 grants @ read    (/me/* participant scope)
 --   * Permissions registry (7 keys) + platform-admin claim grants (9)
@@ -480,6 +480,7 @@ INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `des
 INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `description`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/reissue',NULL,NULL,'admin','2026-08-21 22:37:08','2026-08-21 22:37:08');
 INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `description`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/revoke-expired',NULL,NULL,'admin','2026-08-21 22:37:08','2026-08-21 22:37:08');
 INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `description`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/templates',NULL,NULL,'write','2026-08-21 22:37:08','2026-08-21 22:37:08');
+INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `description`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/attendees/lookup','Attendee lookup by email','Cross-event attendee and certificate summary for a single email address','read','2026-08-24 00:00:00','2026-08-24 00:00:00');
 UNLOCK TABLES;
 LOCK TABLES `tenant_endpoint_grants` WRITE;
 INSERT INTO `tenant_endpoint_grants` (`group_id`, `method`, `path`, `tenant_id`, `level`, `created_at`, `updated_at`) VALUES (2,'DELETE','/api/v1/attendees/{id}','91128f0a-df85-47a9-ae1d-5298904dacd5','admin','2026-08-21 22:38:45','2026-08-21 22:38:45');
@@ -494,6 +495,7 @@ INSERT INTO `tenant_endpoint_grants` (`group_id`, `method`, `path`, `tenant_id`,
 INSERT INTO `tenant_endpoint_grants` (`group_id`, `method`, `path`, `tenant_id`, `level`, `created_at`, `updated_at`) VALUES (2,'GET','/api/v1/attendees/{id}/file-data','91128f0a-df85-47a9-ae1d-5298904dacd5','admin','2026-08-21 22:38:45','2026-08-21 22:38:45');
 INSERT INTO `tenant_endpoint_grants` (`group_id`, `method`, `path`, `tenant_id`, `level`, `created_at`, `updated_at`) VALUES (2,'GET','/api/v1/audit','91128f0a-df85-47a9-ae1d-5298904dacd5','admin','2026-08-21 22:38:45','2026-08-21 22:38:45');
 INSERT INTO `tenant_endpoint_grants` (`group_id`, `method`, `path`, `tenant_id`, `level`, `created_at`, `updated_at`) VALUES (2,'GET','/api/v1/certificates','91128f0a-df85-47a9-ae1d-5298904dacd5','admin','2026-08-21 22:38:45','2026-08-21 22:38:45');
+INSERT INTO `tenant_endpoint_grants` (`group_id`, `method`, `path`, `tenant_id`, `level`, `created_at`, `updated_at`) VALUES (2,'GET','/api/v1/attendees/lookup','91128f0a-df85-47a9-ae1d-5298904dacd5','admin','2026-08-24 00:00:00','2026-08-24 00:00:00');
 INSERT INTO `tenant_endpoint_grants` (`group_id`, `method`, `path`, `tenant_id`, `level`, `created_at`, `updated_at`) VALUES (2,'GET','/api/v1/certificates/{id}','91128f0a-df85-47a9-ae1d-5298904dacd5','admin','2026-08-21 22:38:45','2026-08-21 22:38:45');
 INSERT INTO `tenant_endpoint_grants` (`group_id`, `method`, `path`, `tenant_id`, `level`, `created_at`, `updated_at`) VALUES (2,'GET','/api/v1/certificates/{id}/download','91128f0a-df85-47a9-ae1d-5298904dacd5','admin','2026-08-21 22:38:45','2026-08-21 22:38:45');
 INSERT INTO `tenant_endpoint_grants` (`group_id`, `method`, `path`, `tenant_id`, `level`, `created_at`, `updated_at`) VALUES (2,'GET','/api/v1/certificates/{id}/email-logs','91128f0a-df85-47a9-ae1d-5298904dacd5','admin','2026-08-21 22:38:45','2026-08-21 22:38:45');

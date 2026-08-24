@@ -95,6 +95,8 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::prefix('attendees')->group(function () {
+            // Literal route MUST precede the {id} wildcard GETs below.
+            Route::get('/lookup', [AttendeeController::class, 'lookup']);
             Route::patch('/{id}', [AttendeeController::class, 'update']);
             Route::delete('/{id}', [AttendeeController::class, 'destroy']);
             Route::delete('/{id}/with-cert', [AttendeeController::class, 'destroyWithCert']);
