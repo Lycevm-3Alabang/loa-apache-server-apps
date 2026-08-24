@@ -1,7 +1,7 @@
 # LOA Cert Platform — API Endpoints
 ## Product Assembly Component Specification
 
-**Version:** 1.5
+**Version:** 1.6
 **Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -343,6 +343,8 @@ Clone a certificate template under a name derived from the event and attach it t
 
 **Auth:** `write`
 
+**Visibility (template-visibility spec §5.6):** the source template must be visible to the caller (`public`, or caller is owner/cert-admin). Non-visible sources return **404** — same shape as a missing template.
+
 **Body:**
 
 ```json
@@ -352,9 +354,9 @@ Clone a certificate template under a name derived from the event and attach it t
 }
 ```
 
-**Response 200:** `{ "data": { "template_id": "uuid", "name": "SPARK Bootcamp 2026 Certificate" } }` — template is attached as the event's `template_id` if it wasn't already.
+**Response 200:** `{ "data": { "template_id": "uuid", "name": "SPARK Bootcamp 2026 Certificate" } }` — template is attached as the event's `template_id` if it wasn't already. The clone is created `visibility=private` and owned by the **caller** (`created_by = updated_by = jwt.sub`).
 
-**Errors:** 401, 403, 404 (source template), 422.
+**Errors:** 401, 403, 404 (missing or non-visible source), 422.
 
 ### `POST /api/v1/events/{id}/clone-email-template`
 Same as clone-template but for `type=email`; attaches as `email_template_id`.
@@ -363,7 +365,7 @@ Same as clone-template but for `type=email`; attaches as `email_template_id`.
 
 **Body:** `{ "source_template_id": "uuid", "name": "SPARK Bootcamp 2026 Email" }`
 
-**Errors:** 401, 403, 404, 422.
+**Errors:** 401, 403, 404 (missing or non-visible source), 422.
 
 ### `POST /api/v1/events/{id}/bulk-issue`
 Bulk-issue certificates for selected attendees of the event.
@@ -613,8 +615,11 @@ List templates.
       "type": "certificate",
       "html_content": "<div>{{recipient_name}}</div>",
       "css_content": "body { width: 1123px; height: 794px; }",
+      "visibility": "public",
       "is_locked": true,
       "locked_reason": "Referenced by event SPARK Bootcamp 2026",
+      "created_by": "jwt-sub-uuid",
+      "updated_by": "jwt-sub-uuid",
       "created_at": "2026-08-01T09:00:00Z",
       "updated_at": "2026-08-01T09:00:00Z"
     }
@@ -624,6 +629,7 @@ List templates.
 ```
 
 - `is_locked` is true when a template is referenced by an event or issued certificate. Locked templates reject update/delete with `409` (unless `force` is sent for delete; force still fails if certificates reference it).
+- **Visibility:** list/show return only `public` templates plus those owned by the caller (`created_by`/`updated_by` contains `sub`); `cert-admin` sees all (template-visibility spec §5.4–§5.5). Non-visible show → `404`.
 
 **Errors:** 401, 403.
 
@@ -640,7 +646,8 @@ Create a template.
   "description": "Standard landscape certificate",
   "type": "certificate",
   "html_content": "<div>{{recipient_name}}</div>",
-  "css_content": "body { width: 1123px; height: 794px; }"
+  "css_content": "body { width: 1123px; height: 794px; }",
+  "visibility": "private"
 }
 ```
 
@@ -651,6 +658,7 @@ Create a template.
 | `type` | string | yes | `certificate` \| `email` |
 | `html_content` | string | yes | supports placeholders (§7.5) |
 | `css_content` | string | no | default empty; certificate templates default canvas `1123x794` |
+| `visibility` | string | no | `public` \| `private`; **default `private`** when omitted |
 
 **Response 201:** template resource. **Errors:** 401, 403, 409 (duplicate name), 422.
 
@@ -659,14 +667,17 @@ Get a template (full content).
 
 **Auth:** `read`
 
-**Response 200.** **Errors:** 401, 403, 404.
+**Response 200.** Private templates return **404** to non-owners/non-admins. **Errors:** 401, 403, 404.
 
 ### `PATCH /api/v1/templates/{id}`
 Partial update.
 
 **Auth:** `write`
 
-**Body:** any subset of create fields.
+**Body:** any subset of create fields (including `visibility`).
+
+- Every successful update re-stamps `updated_by` with the caller's `sub`.
+- Changing `visibility` requires the caller to be an owner (`created_by`/`updated_by` contains `sub`) or hold the `cert-admin` group; others receive **403** — even when the template itself is public/visible to them.
 
 **Response 200.** **Errors:** 401, 403, 404, 409 (locked), 422.
 
@@ -1201,8 +1212,9 @@ Auth group (public, §9):
 `id` PK, `name` TEXT NOT NULL, `slug` TEXT UNIQUE NOT NULL (`loa`), `created_at`, `updated_at`.
 
 ### certificate_templates
-`id` PK, `organization_id` FK CASCADE, `name` NOT NULL, `description`, `type` (`certificate`|`email`) NOT NULL DEFAULT `certificate`, `html_content` NOT NULL, `css_content` DEFAULT ``, `created_by` TEXT NULL (opaque Auth `sub`, no FK — author scope, §9.6), `created_at`, `updated_at`.
+`id` PK, `organization_id` FK CASCADE, `name` NOT NULL, `description`, `type` (`certificate`|`email`) NOT NULL DEFAULT `certificate`, `html_content` NOT NULL, `css_content` DEFAULT ``, `visibility` ENUM(`public`|`private`) NOT NULL DEFAULT `private` (API-created; DB column default is `public` for backfill parity — see template-visibility spec §4), `created_by` TEXT NULL (opaque Auth `sub`, no FK — author scope, §9.6), `updated_by` TEXT NULL (opaque Auth `sub` — re-stamped on every successful update), `created_at`, `updated_at`.
 - `UNIQUE(organization_id, name)`.
+- **Visibility rules** (template-visibility spec, Final v1.1): list/show return only `public` templates or those owned by the caller (`created_by`/`updated_by` contains JWT `sub`); `cert-admin` group sees all. Non-visible show/clone → `404`. Changing `visibility` via PATCH requires owner or `cert-admin` → else `403`. Event `template_id`/`email_template_id` references must point to visible templates → else field-level `422`. Governing spec: e-cert repo `specs/components/template-visibility.md`.
 
 ### events
 `id` PK, `organization_id` FK CASCADE, `template_id` FK NULL, `email_template_id` FK NULL, `name` NOT NULL, `description`, `event_date` DATE, `location`, `organizer`, `certificate_title` DEFAULT `Certificate of Participation`, `certificate_number_pattern` TEXT NOT NULL (user-configurable, must contain `####`), `valid_until` DATE, `status` (`draft`|`active`|`archive`) DEFAULT `draft`, `created_by` TEXT NULL (opaque Auth `sub`, no FK — author scope, §9.6), `created_at`, `updated_at`.
@@ -1609,4 +1621,4 @@ The import payload for Auth `POST /api/v1/admin/tenants/{tenant}/endpoints/bulk`
 
 ## Document Control
 
-- **Status:** Final v1.5 — 2026-08-11: **C-Auth implemented** (§13 items marked done). Auth endpoints (callback/refresh/logout) live; `jwt.auth` + `jwt.endpoint` middleware enforced on all non-public routes; 126 tests green. v1.4 (2026-08-06): decision #20 — auth deferred. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`.
+- **Status:** Final v1.6 — 2026-08-24: **Template visibility** (governing spec: e-cert repo `specs/components/template-visibility.md` Final v1.1). Templates gain `visibility` (`public`|`private`, default private on API create) + `updated_by`; list/show masked to owners/cert-admin (404 masking); PATCH `visibility` gated owner-or-admin (403); clone endpoints return 404 for non-visible sources and attribute clones to the cloner; event template references validated (422). Implementation commit `9904746`. v1.5 (2026-08-11): **C-Auth implemented** (§13 items marked done). Auth endpoints (callback/refresh/logout) live; `jwt.auth` + `jwt.endpoint` middleware enforced on all non-public routes; 126 tests green. v1.4 (2026-08-06): decision #20 — auth deferred. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`.

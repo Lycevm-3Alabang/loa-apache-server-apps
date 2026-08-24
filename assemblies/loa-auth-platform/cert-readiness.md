@@ -46,6 +46,8 @@ After the Auth Platform is deployed (`DEPLOY.md`), a platform admin provisions t
 
 > **Local development?** Skip §3–§7 against production and follow §8 (Docker Compose) instead — same tenant/catalog/groups/grants, run locally.
 
+> **Shortcut (fresh-database deploys):** `database/sql/cpanel-auth-db-install.sql` pre-provisions the schema, the `loa` tenant (production origins), the 56-endpoint catalog, all four groups, and the 99-row grant matrix in one phpMyAdmin import. If you use it, steps §4–§7 are already done — skip to §9 verification. See `docs/cpanel-db-migration-runbook.md` for the full fresh-database path.
+
 ---
 
 ## 4. Step 1 — Create the `loa` tenant
