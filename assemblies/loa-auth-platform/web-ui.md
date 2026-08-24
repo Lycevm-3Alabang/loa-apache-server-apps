@@ -75,12 +75,25 @@ POST /login
 3. System validates via `IdentityService::login()` (respects account lockout and brute-force rules).
 4. On success: check if user is a platform admin (belongs to `loa-auth-admin` group).
 5. If admin: establish web session → `302` to `/admin/users`.
-6. If not admin: reject with generic "Access denied" error (no redirect, no SSO).
+6. If not admin: resolve tenant from the carried `redirect` value (hidden field, origin must match an active tenant's `redirect_origins`) and verify membership.
+   - Tenant member → deliver tokens via splash page → tenant app (same delivery as §4.2, no web session).
+   - Otherwise → reject with generic "Invalid credentials" error.
 7. On failure: re-render the form with a generic "Invalid credentials" error.
 
 **Platform admin** = the authenticated user belongs to the group named by `auth-web.admin_group` (default `loa-auth-admin`). Membership is read from the database (`User::inGroup()`), never from token claims.
 
-**This route is admin-only.** Non-admin users attempting to log in here receive a generic error. They should use `/sso/login` instead.
+**Admin status is assignable to any account.** No email or domain is privileged: adding any active user to the `loa-auth-admin` group (Admin UI → Users → {user} → Add to group) makes them a platform admin with session access via this route. The seeded `ADMIN_EMAIL` account (`AdminSeeder`, default `admin@lyceumalabang.edu.ph`) is bootstrap convenience only. A user may simultaneously hold platform-admin and tenant-group memberships; each surface applies its own check.
+
+### Route Admission Matrix
+
+| Caller | `POST /login` | `POST /sso/login` |
+|--------|---------------|-------------------|
+| `loa-auth-admin` member | ✅ web session → `/admin/users` | ❌ "Access denied" |
+| Tenant member + valid tenant `?redirect=` | ✅ token delivery → tenant app | ✅ token delivery → tenant app |
+| Tenant member without valid redirect | ❌ "Invalid credentials" | ❌ "Access denied" |
+| Non-member of target tenant | ❌ "Invalid credentials" | ❌ "Access denied" |
+
+The two flows are mutually exclusive for admins by design: `/login` is the staff/admin door, `/sso/login` is the tenant-app door.
 
 ---
 
@@ -638,7 +651,8 @@ On cPanel, the document root is `public/`. The `index.php` inside `public/` hand
 |-------|----------|
 | `GET /login` | 200, returns admin login form HTML |
 | `POST /login` (admin credentials) | 302 → `/admin/users`; admin session cookie set |
-| `POST /login` (non-admin) | 200, re-renders form with generic "Access denied" |
+| `POST /login` (non-admin, no/invalid redirect) | 200, re-renders form with generic "Invalid credentials" |
+| `POST /login` (non-admin + tenant `?redirect=` + member) | 302 → `/redirect` → `{appUrl}#payload={encrypted}` |
 | `GET /sso/login` | 200, returns SSO login form HTML |
 | `POST /sso/login` (non-admin + valid `?redirect=`) | 302 → `/redirect` → `{appUrl}#payload={encrypted}` |
 | `POST /sso/login` (admin) | 200, re-renders form with generic "Access denied" |
