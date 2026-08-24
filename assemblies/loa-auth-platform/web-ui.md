@@ -385,10 +385,11 @@ MAIL_HOST=...
 MAIL_PORT=587
 MAIL_USERNAME=...
 MAIL_PASSWORD=...
-MAIL_ENCRYPTION=tls
 MAIL_FROM_ADDRESS=noreply@lyceumalabang.edu.ph
 MAIL_FROM_NAME="LOA Platform"
 ```
+
+- STARTTLS is automatic on port `587` (no scheme needed). Set `MAIL_SCHEME=smtps` only for implicit-TLS port `465`. The legacy `MAIL_ENCRYPTION` key is not read by the mailer and must not be used.
 
 - Templates (Blade):
   - `resources/views/emails/reset-password.blade.php`

@@ -193,7 +193,7 @@ Additional variables required by the web UI layer (see [web-ui.md](web-ui.md) §
 | `MAIL_HOST` | cPanel SMTP host | Outgoing mail server |
 | `MAIL_PORT` | `587` | Submission port |
 | `MAIL_USERNAME` / `MAIL_PASSWORD` | mailbox credentials | SMTP auth |
-| `MAIL_ENCRYPTION` | `tls` | Transport security |
+| `MAIL_SCHEME` | unset (STARTTLS auto on 587) | Set `smtps` only for port `465`; do **not** use legacy `MAIL_ENCRYPTION` — unsupported by the mailer scheme API |
 | `MAIL_FROM_ADDRESS` | `noreply@lyceumalabang.edu.ph` | Sender identity for reset/activation links |
 
 > Without correct `MAIL_*` values, password-reset and account-activation emails fail silently at runtime — test the forgot-password flow right after deploy (§3).
