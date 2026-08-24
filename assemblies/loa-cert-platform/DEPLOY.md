@@ -107,9 +107,9 @@ php artisan l5-swagger:generate
 | `APP_URL` | `https://cert-api.lyceumalabang.edu.ph` | Yes |
 | `DB_HOST` | `localhost` | Yes |
 | `DB_PORT` | `3306` | Yes |
-| `DB_DATABASE` | `loa_cert` | Yes |
-| `DB_USERNAME` | cPanel DB user | Yes |
-| `DB_PASSWORD` | cPanel DB password | Yes |
+| `DB_DATABASE` | `lyceumalabang_e_cert` | Yes |
+| `DB_USERNAME` | `lyceumalabang_auth_admin` (all privileges on `lyceumalabang_e_cert`) — password provided at deploy time, never committed | Yes |
+| `DB_PASSWORD` | provided at deploy time — never committed | Yes |
 | `JWT_SECRET` | random 32+ chars | Yes |
 | `CORS_ALLOWED_ORIGINS` | `https://auth.lyceumalabang.edu.ph,https://e-cert.vercel.app` | Yes |
 

@@ -104,8 +104,8 @@ docker compose down -v               # stop + delete DB volume (fresh start)
 | `APP_URL` | `http://localhost:8080` | `https://auth.lyceumalabang.edu.ph` | Yes |
 | `DB_HOST` | `mysql` | MySQL host | Yes |
 | `DB_PORT` | `3306` | `3306` | Yes |
-| `DB_DATABASE` | `loa_auth` | `loa_auth` | Yes |
-| `DB_USERNAME` | `loa` | cPanel DB user | Yes |
+| `DB_DATABASE` | `loa_auth` | `lyceumalabang_auth_db` | Yes |
+| `DB_USERNAME` | `loa` | `lyceumalabang_auth_admin` | Yes |
 | `DB_PASSWORD` | `loa-secret` | cPanel DB password | Yes |
 | `JWT_SECRET` | dev value (32+ chars) | random 32+ chars | **Yes** |
 | `JWT_ACCESS_TTL` | `15` | `15` | No |
