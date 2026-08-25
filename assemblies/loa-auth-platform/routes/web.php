@@ -98,6 +98,11 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::get('/tenants/{tenant}/groups/{group}/members', [WebAdminController::class, 'tenantsGroupMembers'])
         ->name('admin.tenants.group.members');
     Route::post('/tenants/{tenant}/members', [WebAdminController::class, 'tenantsMembersStore'])->name('admin.tenants.members');
+Route::get('/tenants/{tenant}/members/import', [\App\Http\Controllers\TenantMemberImportController::class, 'showForm'])->name('admin.tenants.members.import');
+Route::post('/tenants/{tenant}/members/import/preview', [\App\Http\Controllers\TenantMemberImportController::class, 'preview'])->name('admin.tenants.members.import.preview');
+Route::post('/tenants/{tenant}/members/import/process', [\App\Http\Controllers\TenantMemberImportController::class, 'process'])->name('admin.tenants.members.import.process');
+Route::get('/tenants/{tenant}/members/import/failed', [\App\Http\Controllers\TenantMemberImportController::class, 'downloadFailed'])->name('admin.tenants.members.import.failed');
+Route::post('/tenants/{tenant}/members/import/discard', [\App\Http\Controllers\TenantMemberImportController::class, 'discard'])->name('admin.tenants.members.import.discard');
 
     // Tenant endpoint catalog
     Route::get('/tenants/{tenant}/endpoints', [EndpointGrantController::class, 'catalogIndex'])->name('admin.tenants.endpoints');

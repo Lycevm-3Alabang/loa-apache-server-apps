@@ -23,4 +23,4 @@ assemblies/loa-auth-platform/storage/framework/cache/
 .env.local
 assemblies/loa-cert-platform/cert-app/bootstrap/cache/
 loa_auth_dump.sql
-assemblies/loa-auth-platform/.dist-stage/
+assemblies/loa-auth-platform/.dist-stage/assemblies/loa-auth-platform/.env.example

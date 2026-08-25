@@ -116,10 +116,14 @@
         </div>
     </div>
 
+    {{-- Pending import banner --}}
+    @include('admin.tenants._import-pending', ['tenant' => $tenant])
+
     {{-- Members --}}
     <div class="detail-card">
         <div class="section-header">
             <h2>Members ({{ $tenant->users_count }})</h2>
+            <a class="button button-ghost" href="{{ route('admin.tenants.members.import', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Import members</a>
         </div>
 
         {{-- Add member --}}

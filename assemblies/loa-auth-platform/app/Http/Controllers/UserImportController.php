@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserImportController extends Controller
 {
-    private const BATCH_SIZE = 50;
+    protected const BATCH_SIZE = 50;
 
     public function __construct(
         private readonly IdentityService $identity,
@@ -265,7 +265,7 @@ class UserImportController extends Controller
         }, 200, $headers);
     }
 
-    private function parseCsv($file): array
+    protected function parseCsv($file): array
     {
         $content = file_get_contents($file->getRealPath());
         $content = str_replace(["\r\n", "\r"], "\n", $content);
@@ -330,7 +330,7 @@ class UserImportController extends Controller
         return ['error' => null, 'rows' => $rows, 'headers' => $headers];
     }
 
-    private function validateRows(array $rows): array
+    protected function validateRows(array $rows): array
     {
         $seenEmails = [];
         $emailCounts = [];
@@ -440,7 +440,7 @@ class UserImportController extends Controller
         return $rows;
     }
 
-    private function buildSummary(array $rows): array
+    protected function buildSummary(array $rows): array
     {
         $summary = [
             'total' => count($rows),
@@ -463,7 +463,7 @@ class UserImportController extends Controller
         return $summary;
     }
 
-    private function executeImport(Collection $rows): array
+    protected function executeImport(Collection $rows): array
     {
         $results = ['successful' => 0, 'failed' => 0, 'failed_rows' => []];
 
@@ -500,7 +500,7 @@ class UserImportController extends Controller
         return $results;
     }
 
-    private function processRow(array $row): void
+    protected function processRow(array $row): void
     {
         $tenant = Tenant::where('slug', $row['tenant_app'])->firstOrFail();
         $group = UserGroup::where('name', $row['user_group'])
