@@ -77,12 +77,15 @@ For cPanel deployments without terminal access, use the `generate-dist.ps1` scri
 
 - Docker Desktop running with the shared stack started (`docker compose up -d` from workspace root)
 
-**Run from the assembly directory:**
+**Build command (works from any directory):**
 
 ```powershell
-cd assemblies/loa-auth-platform
-.\generate-dist.ps1 -Path "D:\builds"
+powershell -NoProfile -ExecutionPolicy Bypass -File "D:\loa\loa-apache-server-apps\assemblies\loa-auth-platform\generate-dist.ps1" -Path "D:\builds"
 ```
+
+- Run it again after the first build to **re-zip only** (skips staging + composer if the dist folder exists)
+- Add `-Force` for a clean rebuild
+- Requires Docker running for the vendor install step
 
 **Output:**
 
@@ -100,7 +103,7 @@ cd assemblies/loa-auth-platform
 **Skip the vendor step** (if you plan to run `composer install` on the server):
 
 ```powershell
-.\generate-dist.ps1 -Path "D:\builds" -SkipVendor
+powershell -NoProfile -ExecutionPolicy Bypass -File "D:\loa\loa-apache-server-apps\assemblies\loa-auth-platform\generate-dist.ps1" -Path "D:\builds" -SkipVendor
 ```
 
 **Then upload the zip to cPanel** and extract in `~/loa-auth-platform/`.
