@@ -69,6 +69,42 @@ docker compose down -v
 4. Set `APP_ENV=production` and `APP_DEBUG=false`.
 5. Generate a fresh `JWT_SECRET` and keep it consistent with the Auth Platform.
 
+### Building the distribution package
+
+For cPanel deployments without terminal access, use the `generate-dist.ps1` script to create a deployable zip with pre-installed Linux-compatible vendor dependencies.
+
+**Prerequisites:**
+
+- Docker Desktop running with the shared stack started (`docker compose up -d` from workspace root)
+
+**Run from the assembly directory:**
+
+```powershell
+cd assemblies/loa-cert-platform
+.\generate-dist.ps1 -Path "D:\builds"
+```
+
+**Output:**
+
+- `D:\builds\loa-cert-platform-dist\` — clean folder with production dependencies
+- `D:\builds\loa-cert-platform-dist.zip` — zip ready for upload to cPanel
+- The zip is **password-protected by default** (`password123`) so cPanel's upload virus scan cannot inspect archive contents; File Manager's Extract prompts for the password. Override with `-ZipPassword <pass>` or disable with `-NoEncrypt`.
+
+**What the script does:**
+
+1. Copies source files to a staging folder (excludes `.git`, `node_modules`, `vendor`, `docker`, `cert-app`, tests, `.env*`)
+2. Runs `composer install --no-dev --optimize-autoloader` **inside the Docker container** to install Linux-compatible vendor dependencies
+3. Moves the staging folder to the dist output directory
+4. Creates a zip file of the dist folder
+
+**Skip the vendor step** (if you plan to run `composer install` on the server):
+
+```powershell
+.\generate-dist.ps1 -Path "D:\builds" -SkipVendor
+```
+
+**Then upload the zip to cPanel** and extract in `~/loa-cert-platform/`.
+
 ### Deploy steps
 
 1. Upload the application files to `~/loa-cert-platform/` via SFTP or File Manager.

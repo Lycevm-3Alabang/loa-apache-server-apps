@@ -1,6 +1,7 @@
 loa-auth-dist/
 loa-auth-dist.zip
 *.zip
+*.ps1
 vendor/
 tmp/
 
@@ -8,23 +9,18 @@ tmp/
 .phpunit.cache/
 
 # Laravel
-storage/framework/cache/*
+storage/framework/cache/
 !storage/framework/cache/.gitkeep
-storage/framework/cache/data/*
-!storage/framework/cache/data/.gitkeep
+storage/framework/cache/data/
+!storage/framework/cache/data/
 storage/framework/sessions/
 storage/framework/views/
 storage/logs/
 bootstrap/cache/
 app/bootstrap/cache/
-assemblies/loa-auth-platform/storage/framework/cache/*
-!assemblies/loa-auth-platform/storage/framework/cache/.gitkeep
-!assemblies/loa-auth-platform/storage/framework/cache/data/
-!assemblies/loa-auth-platform/storage/framework/cache/data/*
-!assemblies/loa-auth-platform/storage/framework/cache/data/.gitkeep
-
+assemblies/loa-auth-platform/storage/framework/cache/
 # Environment files
 .env.local
 assemblies/loa-cert-platform/cert-app/bootstrap/cache/
-assemblies/loa-auth-platform/resources/views/admin/tenants/group-endpoints.blade.php
 loa_auth_dump.sql
+assemblies/loa-auth-platform/.dist-stage/
