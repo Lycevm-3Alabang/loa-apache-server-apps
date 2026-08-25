@@ -85,13 +85,15 @@ class AuthCallbackController extends Controller
             ],
         ]);
 
+        // Secure flag is env-driven: plain-http local dev cannot store
+        // Secure cookies, which would silently kill the refresh flow.
         $response->withCookie(cookie(
             $cookieName,
             $refreshToken,
             $cookieTtl,
             '/api/v1/auth',
             null,
-            true,
+            (bool) config('cert-platform.refresh_cookie_secure', true),
             true,
             false,
             'lax'

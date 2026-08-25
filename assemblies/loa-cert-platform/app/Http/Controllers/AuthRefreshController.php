@@ -49,7 +49,7 @@ class AuthRefreshController extends Controller
             (int) config('cert-platform.refresh_cookie_ttl', 10080),
             '/api/v1/auth',
             null,
-            true,
+            (bool) config('cert-platform.refresh_cookie_secure', true),
             true,
             false,
             'lax'
@@ -73,7 +73,7 @@ class AuthRefreshController extends Controller
             -1,
             '/api/v1/auth',
             null,
-            true,
+            (bool) config('cert-platform.refresh_cookie_secure', true),
             true,
             false,
             'lax'
