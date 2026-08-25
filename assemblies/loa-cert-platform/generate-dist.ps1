@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$app = 'loa-auth-platform'
+$app = 'loa-cert-platform'
 $dst = Join-Path $Path "$app-dist"
 
 if (-not (Test-Path -LiteralPath $Path)) {
@@ -20,7 +20,7 @@ New-Item -ItemType Directory -Path $dst | Out-Null
 Get-ChildItem -LiteralPath $PSScriptRoot | Where-Object {
     $_.Name -notin @(
         '.git', 'node_modules', 'vendor', 'docker', 'docker-compose.yml',
-        '.phpunit.cache', '.phpunit.result.cache', 'tmp', 'loa_auth',
+        'cert-app', '.phpunit.cache', '.phpunit.result.cache', 'tmp', 'loa_auth',
         'generate-dist.ps1'
     )
 } | ForEach-Object {
