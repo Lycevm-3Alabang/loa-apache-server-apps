@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\ActivationService;
+use App\Services\AuditLogger;
 use App\Services\EncryptionService;
 use App\Services\IdentityService;
 use App\Services\PasswordResetNotificationService;
@@ -24,21 +25,38 @@ class WebAuthController extends Controller
         private readonly TenantService $tenants,
         private readonly EncryptionService $encryption,
         private readonly ActivationService $activation,
+        private readonly AuditLogger $audit,
     ) {
     }
 
     public function showLogin(Request $request): View|RedirectResponse
     {
         if (Auth::guard('web')->check()) {
-            return redirect()->route('admin.users');
+            return $this->routeAuthenticatedUser(
+                $request,
+                Auth::guard('web')->user(),
+                $this->resolveRedirect($request->query('redirect')),
+                null,
+            );
         }
 
         return view('login', [
             'redirect' => $this->resolveRedirect($request->query('redirect')),
+            'context' => 'portal',
         ]);
     }
 
     public function login(Request $request): RedirectResponse
+    {
+        return $this->handleWebLogin($request, false);
+    }
+
+    /**
+     * Unified credential pipeline for POST /login and POST /sso/login
+     * (unified-auth-flow.md §3). SSO mode requires a validated redirect intent;
+     * every authenticated user leaves with a portal session (§4).
+     */
+    private function handleWebLogin(Request $request, bool $requireTenantIntent): RedirectResponse
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
@@ -53,14 +71,19 @@ class WebAuthController extends Controller
         }
 
         $target = $this->resolveRedirect($request->input('redirect'));
-        $tenant = $this->resolveTenant($target);
+
+        if ($requireTenantIntent && !$target) {
+            return back()
+                ->withInput($request->except('password'))
+                ->withErrors(['credentials' => 'Invalid credentials']);
+        }
 
         try {
             $tokens = $this->identity->login(
                 $request->string('email')->toString(),
                 $request->string('password')->toString(),
                 $request->ip(),
-                $tenant,
+                $this->resolveTenant($target),
             );
         } catch (\Throwable) {
             return back()
@@ -70,56 +93,15 @@ class WebAuthController extends Controller
 
         $user = User::where('email', $request->string('email')->toString())->first();
 
-        if ($this->isAdmin($user)) {
-            $this->identity->logout($tokens['refresh_token']);
-
-            Auth::guard('web')->login($user);
-            $request->session()->regenerate();
-
-            return redirect()->route('admin.users');
-        }
-
-        if (!$tenant || !$this->tenants->isMember($user->id, $tenant->id)) {
-            $this->identity->logout($tokens['refresh_token']);
-
+        if (!$user) {
             return back()
-                ->withInput($request->except('password'))
                 ->withErrors(['credentials' => 'Invalid credentials']);
         }
 
-        $fragment = http_build_query($tokens, '', '&', PHP_QUERY_RFC3986);
+        Auth::guard('web')->login($user);
+        $request->session()->regenerate();
 
-        if ($this->encryption->isConfigured()) {
-            $payload = [
-                'access_token' => $tokens['access_token'],
-                'refresh_token' => $tokens['refresh_token'],
-                'token_type' => $tokens['token_type'],
-                'expires_in' => $tokens['expires_in'],
-                'user' => [
-                    'id' => $user->id,
-                    'email' => $user->email,
-                    'name' => $user->name,
-                ],
-                'tenant' => $tenant ? [
-                    'id' => $tenant->id,
-                    'slug' => $tenant->slug,
-                ] : null,
-                'iat' => time(),
-                'exp' => time() + $tokens['expires_in'],
-            ];
-
-            $encrypted = $this->encryption->encrypt($payload);
-
-            $request->session()->put('redirect_payload', $encrypted);
-        } else {
-            $fragment = http_build_query($tokens, '', '&', PHP_QUERY_RFC3986);
-
-            $request->session()->put('redirect_fragment', $fragment);
-        }
-
-        $request->session()->put('redirect_url', $target);
-
-        return redirect()->route('auth.redirect');
+        return $this->routeAuthenticatedUser($request, $user, $target, $tokens);
     }
 
     public function showRegister(): View
@@ -182,9 +164,13 @@ class WebAuthController extends Controller
 
         try {
             $user = $this->activation->activate($request->input('token'), $request->input('password'));
-            
-            // Redirect to login with success message
-            return redirect()->route('login')->with('status', 'Account activated. Please sign in.');
+
+            // Portal session + smart routing (unified-auth-flow.md §7): the new
+            // user lands on the launcher, or straight into their only app.
+            Auth::guard('web')->login($user);
+            $request->session()->regenerate();
+
+            return $this->routeAuthenticatedUser($request, $user, null, null);
         } catch (\Exception $e) {
             return back()
                 ->withInput($request->except('password', 'password_confirmation'))
@@ -273,101 +259,32 @@ class WebAuthController extends Controller
         return back()->with('status', 'If the email exists, a reset link has been sent.');
     }
 
-    public function showSSOLogin(Request $request): View
+    public function showSSOLogin(Request $request): View|RedirectResponse
     {
-        return view('sso-login', [
-            'redirect' => $this->resolveSSORedirect($request->query('redirect')),
+        if (Auth::guard('web')->check()) {
+            $target = $this->resolveRedirect($request->query('redirect'));
+
+            if ($target) {
+                return $this->routeAuthenticatedUser(
+                    $request,
+                    Auth::guard('web')->user(),
+                    $target,
+                    null,
+                );
+            }
+
+            return redirect()->route('portal.launcher');
+        }
+
+        return view('login', [
+            'redirect' => $this->resolveRedirect($request->query('redirect')),
+            'context' => 'sso',
         ]);
     }
 
     public function ssoLogin(Request $request): RedirectResponse
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required|string',
-            'redirect' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return back()
-                ->withInput($request->except('password'))
-                ->withErrors($validator);
-        }
-
-        $target = $this->resolveSSORedirect($request->input('redirect'));
-
-        if (!$target) {
-            return back()
-                ->withInput($request->except('password'))
-                ->withErrors(['credentials' => 'Access denied']);
-        }
-
-        $tenant = $this->resolveTenant($target);
-
-        if (!$tenant) {
-            return back()
-                ->withInput($request->except('password'))
-                ->withErrors(['credentials' => 'Access denied']);
-        }
-
-        try {
-            $tokens = $this->identity->login(
-                $request->string('email')->toString(),
-                $request->string('password')->toString(),
-                $request->ip(),
-                $tenant,
-            );
-        } catch (\Throwable) {
-            return back()
-                ->withInput($request->except('password'))
-                ->withErrors(['credentials' => 'Invalid credentials']);
-        }
-
-        $user = User::where('email', $request->string('email')->toString())->first();
-
-        if ($this->isAdmin($user)) {
-            $this->identity->logout($tokens['refresh_token']);
-
-            return back()
-                ->withInput($request->except('password'))
-                ->withErrors(['credentials' => 'Access denied']);
-        }
-
-        if (!$this->tenants->isMember($user->id, $tenant->id)) {
-            $this->identity->logout($tokens['refresh_token']);
-
-            return back()
-                ->withInput($request->except('password'))
-                ->withErrors(['credentials' => 'Access denied']);
-        }
-
-        $payload = [
-            'access_token' => $tokens['access_token'],
-            'refresh_token' => $tokens['refresh_token'],
-            'token_type' => $tokens['token_type'],
-            'expires_in' => $tokens['expires_in'],
-            'user' => [
-                'id' => $user->id,
-                'email' => $user->email,
-                'name' => $user->name,
-            ],
-            'tenant' => [
-                'id' => $tenant->id,
-                'slug' => $tenant->slug,
-            ],
-            'iat' => time(),
-            'exp' => time() + $tokens['expires_in'],
-        ];
-
-        if ($this->encryption->isConfigured()) {
-            $request->session()->put('redirect_payload', $this->encryption->encrypt($payload));
-        } else {
-            $request->session()->put('redirect_fragment', http_build_query($tokens, '', '&', PHP_QUERY_RFC3986));
-        }
-
-        $request->session()->put('redirect_url', $target);
-
-        return redirect()->route('auth.redirect');
+        return $this->handleWebLogin($request, true);
     }
 
     public function showSSORegister(): View
@@ -438,25 +355,91 @@ class WebAuthController extends Controller
         ]);
     }
 
-    private function resolveSSORedirect(?string $candidate): ?string
+    /**
+     * Destination resolver shared by login, activation and authenticated GETs
+     * (unified-auth-flow.md §5): validated intent → straight handoff for
+     * members; single tenant membership → auto-enter; otherwise the launcher.
+     */
+    private function routeAuthenticatedUser(
+        Request $request,
+        User $user,
+        ?string $target,
+        ?array $tokens,
+    ): RedirectResponse {
+        if ($target !== null) {
+            $intentTenant = $this->resolveTenant($target);
+
+            if ($intentTenant && $this->tenants->isMember($user->id, $intentTenant->id)) {
+                return $this->enterTenant($request, $user, $intentTenant, $target, $tokens);
+            }
+
+            $this->revokeTokens($tokens);
+
+            return redirect()
+                ->route('portal.launcher')
+                ->with('error', 'You do not have access to that application.');
+        }
+
+        $memberships = $this->activeMemberships($user);
+
+        if (!$this->isAdmin($user) && $memberships->count() === 1) {
+            $tenant = $memberships->first();
+            $url = $tenant->effectiveAppUrl();
+
+            if ($url) {
+                return $this->enterTenant($request, $user, $tenant, $url, $tokens);
+            }
+        }
+
+        $this->revokeTokens($tokens);
+
+        return redirect()->route('portal.launcher');
+    }
+
+    /**
+     * Mints a tenant-scoped token pair from the portal session and queues the
+     * /redirect interstitial (unified-auth-flow.md §3 tail). Any login-time
+     * pair minted without the target tenant's claims is revoked first.
+     */
+    private function enterTenant(
+        Request $request,
+        User $user,
+        Tenant $tenant,
+        string $url,
+        ?array $previousTokens,
+    ): RedirectResponse {
+        $this->revokeTokens($previousTokens);
+
+        $tokens = $this->identity->issueForUser($user, $tenant);
+
+        $this->queueHandoff($request, $this->encryption, $user, $url, $tokens, $tenant);
+
+        // admin-audit-log.md §5: admin entries into tenant apps are evidence.
+        if ($this->isAdmin($user)) {
+            $this->audit->recordSafe(
+                'auth.tenant_entry',
+                'tenant',
+                $tenant->id,
+                ['tenant' => $tenant->slug, 'via' => 'sso'],
+            );
+        }
+
+        return redirect()->route('auth.redirect');
+    }
+
+    private function revokeTokens(?array $tokens): void
     {
-        $candidate = is_string($candidate) ? trim($candidate) : '';
-
-        if ($candidate === '' || !filter_var($candidate, FILTER_VALIDATE_URL)) {
-            return null;
+        if ($tokens) {
+            $this->identity->logout($tokens['refresh_token']);
         }
+    }
 
-        $origin = $this->extractOrigin($candidate);
-
-        if ($origin === null) {
-            return null;
-        }
-
-        if ($this->tenants->resolveTenantByRedirectOrigin($origin)) {
-            return $this->removeFragment($candidate);
-        }
-
-        return null;
+    private function activeMemberships(User $user): \Illuminate\Database\Eloquent\Collection
+    {
+        return $user->tenants()
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
     }
 
     private function isAllowedRegistrationDomain(string $email): bool
@@ -504,14 +487,6 @@ class WebAuthController extends Controller
         }
 
         return $origin;
-    }
-
-    private function allowedOrigins(): array
-    {
-        return array_map(
-            static fn (string $url): string => rtrim(strtolower($url), '/'),
-            (array) config('auth-web.allowed_redirects', []),
-        );
     }
 
     private function removeFragment(string $url): string

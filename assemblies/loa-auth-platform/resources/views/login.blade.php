@@ -2,11 +2,13 @@
 
 @section('title', 'Sign in | Lyceum of Alabang')
 @section('eyebrow', 'Welcome back')
-@section('heading', 'Sign in to your account')
-@section('intro', 'Access the LOA digital campus with your credentials.')
+@section('heading', $context === 'sso' ? 'Sign in to LOA Platform' : 'Sign in to your account')
+@section('intro', $context === 'sso'
+    ? 'Access your LOA application with your credentials.'
+    : 'Access the LOA digital campus with your credentials.')
 
 @section('content')
-    <form class="auth-form" method="post" action="{{ url('/login') }}">
+    <form class="auth-form" method="post" action="{{ url($context === 'sso' ? '/sso/login' : '/login') }}">
         @csrf
         <input type="hidden" name="redirect" value="{{ old('redirect', $redirect) }}">
 

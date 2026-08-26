@@ -80,6 +80,23 @@ class IdentityService
         return $this->generateTokenPair($user, null, $tenant);
     }
 
+    /**
+     * Mints a fresh token pair for an already-authenticated user without
+     * re-checking credentials (unified-auth-flow.md §6 portal.go / auto-enter).
+     */
+    public function issueForUser(User $user, ?Tenant $tenant = null): array
+    {
+        if (!$user->isActive()) {
+            throw new \Exception('User not found or inactive');
+        }
+
+        if ($tenant && !$tenant->isActive()) {
+            throw new \Exception('Invalid credentials');
+        }
+
+        return $this->generateTokenPair($user, null, $tenant);
+    }
+
     public function refresh(string $refreshToken): array
     {
         $claims = $this->jwt->validate($refreshToken);

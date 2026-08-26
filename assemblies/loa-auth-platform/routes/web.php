@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AccessConfigController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\EndpointGrantController;
+use App\Http\Controllers\PortalController;
 use App\Http\Controllers\WebAdminController;
 use App\Http\Controllers\WebAuthController;
 use App\Http\Controllers\WebResetController;
@@ -41,6 +43,20 @@ Route::post('/reset-password', [WebResetController::class, 'reset']);
 
 Route::get('/redirect', [WebAuthController::class, 'showRedirect'])
     ->name('auth.redirect');
+
+// Portal launcher + account (unified-auth-flow.md §6/§9) — any authenticated user
+Route::get('/launcher', [PortalController::class, 'launcher'])
+    ->middleware('auth:web')
+    ->name('portal.launcher');
+Route::post('/launcher/go/{tenant}', [PortalController::class, 'go'])
+    ->middleware('auth:web', 'throttle:30,60')
+    ->name('portal.go');
+Route::get('/account', [PortalController::class, 'account'])
+    ->middleware('auth:web')
+    ->name('portal.account');
+Route::post('/account/password', [PortalController::class, 'updatePassword'])
+    ->middleware('auth:web', 'throttle:10,60')
+    ->name('portal.account.password');
 
 Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     // Bulk User Import (must come before /users/{id} route)
@@ -98,6 +114,13 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::get('/tenants/{tenant}/groups/{group}/members', [WebAdminController::class, 'tenantsGroupMembers'])
         ->name('admin.tenants.group.members');
     Route::post('/tenants/{tenant}/members', [WebAdminController::class, 'tenantsMembersStore'])->name('admin.tenants.members');
+
+    // Audit log browser (admin-audit-log.md §6) — read-only evidence
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs');
+    Route::get('/audit-logs/export', [AuditLogController::class, 'export'])->name('admin.audit-logs.export');
+Route::get('/tenants/{tenant}/members/search', [WebAdminController::class, 'searchMembers'])
+    ->name('admin.tenants.members.search')
+    ->middleware('throttle:120,1');
 Route::get('/tenants/{tenant}/members/import', [\App\Http\Controllers\TenantMemberImportController::class, 'showForm'])->name('admin.tenants.members.import');
 Route::post('/tenants/{tenant}/members/import/preview', [\App\Http\Controllers\TenantMemberImportController::class, 'preview'])->name('admin.tenants.members.import.preview');
 Route::post('/tenants/{tenant}/members/import/process', [\App\Http\Controllers\TenantMemberImportController::class, 'process'])->name('admin.tenants.members.import.process');
