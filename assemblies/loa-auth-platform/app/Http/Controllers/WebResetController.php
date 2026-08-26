@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\IdentityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
@@ -57,8 +58,17 @@ class WebResetController extends Controller
                 ->withErrors(['token' => 'Invalid or expired token.']);
         }
 
+        // D18 (dashboard-account.md v1.3): a completed reset signs the user
+        // out of every LOA surface — resetPassword() already revoked all
+        // refresh tokens; end this browser's portal session too. Harmless
+        // no-op for the guest forgot-password flow (no session to kill).
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         // Return the user to the tenant app that started the flow when the
         // origin is allowlisted; otherwise fall back to the login page (§4.3a).
+        // `redirect` is request input, so reading it after invalidation is safe.
         $target = $this->safeRedirectUrl($request->input('redirect'));
 
         if ($target !== null) {

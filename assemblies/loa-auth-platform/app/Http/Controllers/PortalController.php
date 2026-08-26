@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\AuditLogger;
-use App\Services\IdentityService;
+use App\Services\PasswordResetNotificationService;
 use App\Services\PortalRouter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,9 +20,9 @@ use Illuminate\View\View;
 class PortalController extends Controller
 {
     public function __construct(
-        private readonly IdentityService $identity,
         private readonly PortalRouter $router,
         private readonly AuditLogger $audit,
+        private readonly PasswordResetNotificationService $passwordResets,
     ) {
     }
 
@@ -138,52 +138,29 @@ class PortalController extends Controller
     }
 
     /**
-     * Standalone change-password page (dashboard-account.md §5): linked from
-     * /account instead of embedding the form, and deep-linkable from tenant
-     * apps (capture.return preserves the intent across an expired session).
+     * Change-password = emailed reset link (dashboard-account.md v1.3 D17).
+     * Reuses the platform's change-request notification path so token TTL and
+     * email template match the rest of the identity surface; possession of
+     * the emailed signed token replaces current-password verification. No
+     * navigation away — flash + stay. Using the link signs the user out of
+     * every LOA application (WebResetController + refresh-token revocation).
      */
-    public function showPasswordForm(): View
-    {
-        return view('account-password');
-    }
-
-    /**
-     * Change-password for the portal session (unified-auth-flow.md §9).
-     * Reuses the platform password policy and IdentityService, which revokes
-     * every refresh token on success; the web session itself is kept.
-     */
-    public function updatePassword(Request $request): RedirectResponse
+    public function emailResetLink(Request $request): RedirectResponse
     {
         $user = $this->authUser();
 
-        $validator = Validator::make($request->all(), [
-            'current_password' => 'required|string',
-            'password' => [
-                'required',
-                'string',
-                'min:8',
-                'regex:/[A-Z]/',
-                'regex:/[a-z]/',
-                'regex:/[0-9]/',
-                'confirmed',
-            ],
-        ]);
+        $this->passwordResets->sendChangePasswordLink($user);
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator);
-        }
+        $this->audit->recordSafe(
+            'auth.profile.password_reset_request',
+            'user',
+            $user->id,
+            ['email' => $user->email],
+        );
 
-        try {
-            $this->identity->updatePassword(
-                $user->id,
-                $request->string('current_password')->toString(),
-                $request->string('password')->toString(),
-            );
-        } catch (\Throwable $e) {
-            return back()->withErrors(['current_password' => $e->getMessage()]);
-        }
-
-        return back()->with('status', 'Password updated.');
+        // Authenticated context: no anti-enumeration copy needed — the user
+        // is signed in with this address.
+        return back()->with('status', "Reset link sent to {$user->email}.");
     }
 
     private function authUser(): User

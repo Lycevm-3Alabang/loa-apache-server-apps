@@ -93,12 +93,105 @@
             gap: 1rem;
         }
 
-        .topbar-nav .user-chip {
-            color: var(--slate-400);
+        /* Account menu (dashboard-account.md v1.2 D14): zero-JS disclosure —
+           no role="menu" ARIA (arrow-key contract needs JS); plain
+           link/button semantics instead. */
+        .user-menu { position: relative; }
+
+        .user-menu-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            max-width: 13rem;
+            padding: 0.3rem 0.7rem 0.3rem 0.3rem;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #f8fafc;
+            cursor: pointer;
+            font-family: inherit;
             font-size: 0.8125rem;
+            font-weight: 600;
+            list-style: none;
         }
 
-        .topbar-nav form { margin: 0; }
+        .user-menu-trigger::-webkit-details-marker { display: none; }
+        .user-menu-trigger:hover { background: rgba(255, 255, 255, 0.12); }
+        .user-menu-trigger:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+
+        .user-menu-avatar {
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            width: 1.75rem;
+            height: 1.75rem;
+            border-radius: 999px;
+            background: var(--brand-500);
+            color: #1c1917;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .user-menu-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .user-menu-caret {
+            flex-shrink: 0;
+            width: 0;
+            height: 0;
+            border-left: 0.28rem solid transparent;
+            border-right: 0.28rem solid transparent;
+            border-top: 0.34rem solid currentColor;
+            transition: transform 140ms ease;
+        }
+
+        .user-menu[open] .user-menu-caret { transform: rotate(180deg); }
+
+        .user-menu-panel {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            z-index: 60;
+            min-width: 15rem;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            background: var(--surface);
+            box-shadow: 0 12px 32px rgba(2, 6, 23, 0.16);
+        }
+
+        .user-menu-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-secondary);
+        }
+
+        .user-menu-title { font-size: 0.875rem; font-weight: 600; overflow-wrap: anywhere; }
+        .user-menu-email { color: var(--text-muted); font-size: 0.78125rem; overflow-wrap: anywhere; }
+
+        .user-menu-panel a,
+        .user-menu-panel button {
+            display: block;
+            width: 100%;
+            padding: 0.65rem 1rem;
+            border: 0;
+            background: transparent;
+            color: var(--text);
+            text-align: left;
+            text-decoration: none;
+            font-family: inherit;
+            font-size: 0.84375rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .user-menu-panel a:hover,
+        .user-menu-panel button:hover { background: var(--surface-secondary); color: var(--text); }
+
+        .user-menu-panel form { margin: 0; border-top: 1px solid var(--border); }
 
         .button {
             display: inline-flex;
@@ -635,6 +728,7 @@
             .filters form .field { flex: 1; }
             .filters form .field input,
             .filters form .field select { width: 100%; }
+            .user-menu-name { display: none; }
         }
     </style>
 </head>
@@ -658,11 +752,24 @@
                 <a href="{{ route('admin.tenants') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Tenants</a>
                 <a href="{{ route('admin.audit-logs') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Audit log</a>
             @endif
-            <span class="user-chip">{{ Auth::guard('web')->user()?->name ?? '' }}</span>
-            <form method="post" action="{{ route('console.logout') }}">
-                @csrf
-                <button class="button button-ghost" type="submit">Sign out</button>
-            </form>
+            <details class="user-menu">
+                <summary class="user-menu-trigger">
+                    <span class="user-menu-avatar" aria-hidden="true">{{ mb_substr(Auth::guard('web')->user()?->name ?? '?', 0, 1) }}</span>
+                    <span class="user-menu-name">{{ Auth::guard('web')->user()?->name ?? '' }}</span>
+                    <span class="user-menu-caret" aria-hidden="true"></span>
+                </summary>
+                <div class="user-menu-panel">
+                    <div class="user-menu-header">
+                        <span class="user-menu-title">{{ Auth::guard('web')->user()?->name }}</span>
+                        <span class="user-menu-email">{{ Auth::guard('web')->user()?->email }}</span>
+                    </div>
+                    <a href="{{ route('portal.account') }}">Manage account</a>
+                    <form method="post" action="{{ route('console.logout') }}">
+                        @csrf
+                        <button type="submit">Sign out</button>
+                    </form>
+                </div>
+            </details>
         </nav>
     </header>
 

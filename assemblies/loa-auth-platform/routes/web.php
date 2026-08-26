@@ -65,12 +65,12 @@ Route::get('/account', [PortalController::class, 'account'])
 Route::post('/account/name', [PortalController::class, 'updateName'])
     ->middleware('auth:web', 'throttle:10,60')
     ->name('portal.account.name');
-Route::get('/account/password', [PortalController::class, 'showPasswordForm'])
-    ->middleware('capture.return', 'auth:web')
-    ->name('portal.account.password.show');
-Route::post('/account/password', [PortalController::class, 'updatePassword'])
-    ->middleware('auth:web', 'throttle:10,60')
-    ->name('portal.account.password');
+// Change-password = emailed reset link (dashboard-account.md v1.3 D17).
+// The former GET/POST /account/password form pair is removed — the emailed
+// signed token replaces current-password verification.
+Route::post('/account/password/email', [PortalController::class, 'emailResetLink'])
+    ->middleware('auth:web', 'password.reset.throttle')
+    ->name('portal.account.password.email');
 
 // Shared sign-out for every console user (dashboard-account.md v1.1): the
 // admin layout is now rendered to non-admins too, so logout cannot sit

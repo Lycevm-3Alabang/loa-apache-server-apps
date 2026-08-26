@@ -11,8 +11,8 @@ use Tests\TestCase;
 
 /**
  * dashboard-account.md §11 checklist: root router, /health, launcher alias,
- * return intent for tenant-app deep links, self-service name update and the
- * standalone change-password page.
+ * return intent for tenant-app deep links (targeting /account since v1.3),
+ * self-service name update and the emailed-reset-link password flow.
  */
 class PortalDashboardTest extends TestCase
 {
@@ -94,8 +94,23 @@ class PortalDashboardTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Portal Member');
         $response->assertSee('me@lyceumalabang.edu.ph');
-        $response->assertSee('Active', false);
         $response->assertSee('Manage account');
+    }
+
+    public function test_zero_membership_platform_admin_sees_empty_state_panel(): void
+    {
+        // v1.2 D13/D15: admins render the same launcher — with zero
+        // memberships that means the reassurance panel, never an empty grid.
+        $group = UserGroup::create([
+            'name' => config('auth-web.admin_group', 'loa-auth-admin'),
+        ]);
+        $admin = User::factory()->create(['status' => 'active']);
+        $admin->userGroups()->attach($group->id);
+
+        $response = $this->actingAs($admin, 'web')->get('/');
+
+        $response->assertStatus(200);
+        $response->assertSee("don't have access to any applications", false);
     }
 
     // ─── Console access boundary (dashboard-account.md v1.1 D9/D10) ──────────
@@ -185,12 +200,14 @@ class PortalDashboardTest extends TestCase
 
     // ─── Return intent (dashboard-account.md §6) ─────────────────────────────
 
-    public function test_guest_password_page_captures_return_intent(): void
+    public function test_guest_account_page_captures_return_intent(): void
     {
-        $this->get('/account/password')
+        // v1.3: /account is the single self-service surface — the removed
+        // /account/password capture mount is gone with the page (D17).
+        $this->get('/account')
             ->assertRedirect('/login');
 
-        $this->assertSame('/account/password', $this->app['session']->get('return_to'));
+        $this->assertSame('/account', $this->app['session']->get('return_to'));
     }
 
     public function test_login_returns_user_to_captured_intent(): void
@@ -202,13 +219,13 @@ class PortalDashboardTest extends TestCase
         $cert = $this->tenant('consult', 'Consult Platform');
         $user->tenants()->attach($cert->id);
 
-        $response = $this->withSession(['return_to' => '/account/password'])
+        $response = $this->withSession(['return_to' => '/account'])
             ->post('/login', [
                 'email' => 'staff@lyceumalabang.edu.ph',
                 'password' => 'Test1234',
             ]);
 
-        $response->assertRedirect('/account/password');
+        $response->assertRedirect('/account');
         $this->assertNull($this->app['session']->get('return_to'));
     }
 
@@ -221,7 +238,7 @@ class PortalDashboardTest extends TestCase
         $cert = $this->tenant('consult', 'Consult Platform');
         $user->tenants()->attach($cert->id);
 
-        $response = $this->withSession(['return_to' => '/account/password'])
+        $response = $this->withSession(['return_to' => '/account'])
             ->post('/sso/login', [
                 'email' => 'staff@lyceumalabang.edu.ph',
                 'password' => 'Test1234',
@@ -255,7 +272,7 @@ class PortalDashboardTest extends TestCase
 
     // ─── Account rework (dashboard-account.md §5) ────────────────────────────
 
-    public function test_account_page_hides_password_form_and_offers_link(): void
+    public function test_account_page_hides_password_form_and_offers_email_link(): void
     {
         $user = User::factory()->create([
             'email' => 'me@lyceumalabang.edu.ph',
@@ -268,8 +285,19 @@ class PortalDashboardTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('me@lyceumalabang.edu.ph');
         $response->assertSee('Change password');
+        $response->assertSee(route('portal.account.password.email'));
+        // v1.3 D16: console chrome — topbar brand + account menu, not the
+        // split-screen auth layout.
+        $response->assertSee('user-menu-trigger', false);
+        $response->assertSee('Sign out');
         $response->assertDontSee('name="current_password"', false);
         $response->assertDontSee('name="password"', false);
+    }
+
+    public function test_removed_password_form_page_returns_404(): void
+    {
+        // v1.3 D17: no alias by design.
+        $this->get('/account/password')->assertNotFound();
     }
 
     public function test_name_edit_reveals_input_and_saves(): void

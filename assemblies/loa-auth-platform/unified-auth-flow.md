@@ -2,8 +2,8 @@
 
 ## Product Assembly Component Specification
 
-**Version:** 1.0
-**Status:** Final
+**Version:** 1.1
+**Status:** Final — §6 launcher and §9 account contracts amended by `dashboard-account.md` v1.1–v1.3 (console dashboard at `/`, apps-first launcher chrome, emailed-reset-link account); superseded text retained as history with amendment notes
 **Layer:** Product Assembly (`loa-auth-platform`) — web auth surface
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -25,7 +25,7 @@
 | D3 | Single-app users | **Skip launcher** — exactly one tile (no admin console) → auto-enter — **SUPERSEDED by `dashboard-account.md` v1.1 D11: auto-enter removed, everyone lands on the dashboard** |
 | D4 | Post-activation destination | **Launcher** (then D3 shortcut applies) — **destination is now the console dashboard `/` per `dashboard-account.md` v1.1; no shortcut applies** |
 | D5 | Portal session | **Yes** — persistent web-guard session on the auth domain for ALL users, members included |
-| D6 | Member self-service | **Minimal `/account` page** (profile + change password) — P2 |
+| D6 | Member self-service | ~~Minimal `/account` page (profile + change-password form)~~ — **superseded by `dashboard-account.md` v1.3 D16–D18**: `/account` renders in console chrome; change-password is a single POST that emails a reset link (`POST /account/password/email`); the inline current/new/confirm form is removed |
 | D7 | Redirect policy | **Tenant rows only** — `safeRedirectUrl()` accepts exclusively active-tenant origins (`app_url`/`dev_app_url`, `redirect_origins`/`dev_redirect_origins`); `AUTH_ALLOWED_REDIRECTS` is retired from the validation path (config key removed in P3 cleanup) |
 | D8 | Public endpoints | **Both URLs permanent** — `/login` primary; `/sso/login` kept indefinitely as functional alias, marked deprecated in docs only |
 | D9 | Error vocabulary & audit | **Single string** `"Invalid credentials"` on every login failure class. Platform-admin **audit log is a SEPARATE spec** (not yet written) — this spec references it by name, never implements it |
@@ -154,6 +154,13 @@ Membership check: `TenantService::isMember()` (:130) — admins have NO bypass (
 
 ## 6. Launcher
 
+> **Superseded by `dashboard-account.md` v1.1–v1.2.** `/launcher` is now a
+> redirecting alias to the console dashboard at `/`. The dashboard body is an
+> apps-first launcher: no **Auth Admin Console** tile (v1.2 D13 — admin entry
+> lives in the topbar nav) and no Account tile (identity moved into the
+> topbar account menu, D14). Empty-state gate is plain membership count.
+> Retained below as build history.
+
 ```
 GET  /launcher            name: portal.launcher    middleware: auth:web
 POST /launcher/go/{tenant} name: portal.go         middleware: auth:web + throttle:30,60
@@ -202,6 +209,13 @@ Failure paths unchanged (redirect `/login` + error flash — now visible).
 ---
 
 ## 9. Account page (P2)
+
+> **Superseded by `dashboard-account.md` v1.3 (D16–D18).** The
+> `POST /account/password` contract below no longer exists — the route pair
+> was replaced by `POST /account/password/email` (emailed reset link), the
+> page renders in console chrome, and completing a reset signs the portal
+> session out. See §5 there for the authoritative contract. Retained as
+> build history.
 
 ```
 GET  /account     name: portal.account     middleware: auth:web
