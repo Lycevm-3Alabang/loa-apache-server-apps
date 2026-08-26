@@ -11,10 +11,10 @@ use Illuminate\Http\Request;
 /**
  * Smart-routing primitives shared by the login pipeline
  * (unified-auth-flow.md §5) and the portal dashboard root router
- * (dashboard-account.md §3): validated intent → straight handoff for members;
- * single tenant membership → auto-enter; otherwise the caller renders its own
- * surface (launcher/dashboard). Handoff minting + /redirect queueing lives
- * here so every entry path shares one implementation.
+ * (dashboard-account.md §1.1): a validated redirect intent hands members
+ * straight into the tenant app; every other path lands on the console
+ * dashboard at `/`. Handoff minting + /redirect queueing lives here so every
+ * entry path shares one implementation.
  */
 class PortalRouter
 {
@@ -28,8 +28,9 @@ class PortalRouter
 
     /**
      * Destination resolver for authenticated users: validated intent →
-     * straight handoff for members; single tenant membership → auto-enter;
-     * otherwise the launcher.
+     * straight handoff for members; otherwise the dashboard at `/`
+     * (dashboard-account.md v1.1: auto-enter removed — no membership count
+     * ever skips the dashboard).
      */
     public function route(
         Request $request,
@@ -41,27 +42,14 @@ class PortalRouter
             return $this->enterForTarget($request, $user, $target, $tokens);
         }
 
-        $autoEnter = $this->autoEnterTenant($user);
-
-        if ($autoEnter !== null) {
-            return $this->enterTenant(
-                $request,
-                $user,
-                $autoEnter,
-                (string) $autoEnter->effectiveAppUrl(),
-                $tokens,
-                'sso',
-            );
-        }
-
         $this->revokeTokens($tokens);
 
-        return redirect()->route('portal.launcher');
+        return redirect()->route('home');
     }
 
     /**
      * Explicit-redirect branch (dashboard-account.md §3): members enter the
-     * tenant app; non-members land on the launcher with a denial flash and
+     * tenant app; non-members land on the dashboard with a denial flash and
      * any login-time token pair revoked.
      */
     public function enterForTarget(
@@ -79,30 +67,8 @@ class PortalRouter
         $this->revokeTokens($tokens);
 
         return redirect()
-            ->route('portal.launcher')
+            ->route('home')
             ->with('error', 'You do not have access to that application.');
-    }
-
-    /**
-     * The single-membership auto-enter candidate (unified-auth-flow.md §0 D3),
-     * or null when the caller should render its own surface. Admins never
-     * auto-enter; the membership's tenant must expose an app URL.
-     */
-    public function autoEnterTenant(User $user): ?Tenant
-    {
-        if ($this->isAdmin($user)) {
-            return null;
-        }
-
-        $memberships = $this->activeMemberships($user);
-
-        if ($memberships->count() !== 1) {
-            return null;
-        }
-
-        $tenant = $memberships->first();
-
-        return $tenant->effectiveAppUrl() ? $tenant : null;
     }
 
     /**

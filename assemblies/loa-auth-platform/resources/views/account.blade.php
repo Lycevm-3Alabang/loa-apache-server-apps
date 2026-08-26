@@ -51,5 +51,5 @@
 
     <p><a href="{{ route('portal.account.password.show') }}">Change password</a></p>
 
-    <p class="back-link"><a href="{{ route('portal.home') }}">Back to dashboard</a></p>
+    <p class="back-link"><a href="{{ route('home') }}">Back to dashboard</a></p>
 @endsection

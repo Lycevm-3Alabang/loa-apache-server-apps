@@ -36,9 +36,9 @@ class ActivationTest extends TestCase
             'password_confirmation' => 'Test1234!',
         ]);
 
-        // Activation lands on the portal (unified-auth-flow.md §7); this user
-        // has no tenant memberships, so the router sends them to the launcher.
-        $response->assertRedirect(route('portal.launcher'));
+        // Activation lands on the console dashboard (dashboard-account.md
+        // v1.1 D11) — no auto-enter, regardless of membership count.
+        $response->assertRedirect(route('home'));
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
             'status' => 'active',

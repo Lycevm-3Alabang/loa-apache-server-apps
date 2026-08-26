@@ -639,17 +639,27 @@
     </style>
 </head>
 <body>
+    @php
+        // dashboard-account.md v1.1 D10: nav visibility is presentation only;
+        // authorization stays in WebAdminMiddleware. Computed here so no
+        // admin view needs per-page plumbing.
+        $isAdmin = Auth::guard('web')->check()
+            && Auth::guard('web')->user()->inGroup((string) config('auth-web.admin_group'));
+    @endphp
     <header class="admin-topbar">
-        <a class="brand-lockup" href="{{ route('admin.users') }}">
+        <a class="brand-lockup" href="{{ route('home') }}">
             <span class="brand-mark" aria-hidden="true">LOA</span>
-            <span>LOA Admin</span>
+            <span>LOA Platform</span>
         </a>
-        <nav class="topbar-nav" aria-label="Admin">
-            <a href="{{ route('admin.users') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Users</a>
-            <a href="{{ route('admin.tenants') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Tenants</a>
-            <a href="{{ route('admin.audit-logs') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Audit log</a>
-            <span class="user-chip">{{ Auth::guard('web')->user()?->name ?? 'Admin' }}</span>
-            <form method="post" action="{{ route('admin.logout') }}">
+        <nav class="topbar-nav" aria-label="Console">
+            <a href="{{ route('home') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Dashboard</a>
+            @if ($isAdmin)
+                <a href="{{ route('admin.users') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Users</a>
+                <a href="{{ route('admin.tenants') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Tenants</a>
+                <a href="{{ route('admin.audit-logs') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Audit log</a>
+            @endif
+            <span class="user-chip">{{ Auth::guard('web')->user()?->name ?? '' }}</span>
+            <form method="post" action="{{ route('console.logout') }}">
                 @csrf
                 <button class="button button-ghost" type="submit">Sign out</button>
             </form>

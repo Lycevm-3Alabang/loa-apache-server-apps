@@ -281,7 +281,7 @@ class WebAuthController extends Controller
                 );
             }
 
-            return redirect()->route('portal.launcher');
+            return redirect()->route('home');
         }
 
         return view('login', [

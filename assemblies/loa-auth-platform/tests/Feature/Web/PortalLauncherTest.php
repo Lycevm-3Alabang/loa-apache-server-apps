@@ -49,7 +49,7 @@ class PortalLauncherTest extends TestCase
 
         $this->actingAs($user, 'web')
             ->get('/launcher')
-            ->assertRedirect(route('portal.home'));
+            ->assertRedirect(route('home'));
     }
 
     public function test_launcher_lists_tenant_memberships_with_account_tile(): void
@@ -64,7 +64,7 @@ class PortalLauncherTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('LOA Certificates');
         $response->assertSee('Consult Platform');
-        $response->assertSee('Account');
+        $response->assertSee('Manage account');
         $response->assertDontSee('Auth Admin Console');
     }
 
@@ -77,12 +77,12 @@ class PortalLauncherTest extends TestCase
         $admin = User::factory()->create(['status' => 'active']);
         $admin->userGroups()->attach($group->id);
 
-        // No tenant memberships: tiles must still include Console + Account.
+        // No tenant memberships: tiles must still include Console for admins.
         $response = $this->actingAs($admin, 'web')->get('/');
 
         $response->assertStatus(200);
         $response->assertSee('Auth Admin Console');
-        $response->assertSee('Account');
+        $response->assertSee('Manage account');
     }
 
     public function test_launcher_shows_empty_state_without_memberships(): void
@@ -122,7 +122,7 @@ class PortalLauncherTest extends TestCase
 
         $response = $this->actingAs($outsider, 'web')->post("/launcher/go/{$cert->id}");
 
-        $response->assertRedirect(route('portal.launcher'));
+        $response->assertRedirect(route('home'));
         $response->assertSessionHas('error');
 
         $this->assertDatabaseMissing('refresh_tokens', [

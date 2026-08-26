@@ -4,8 +4,9 @@ namespace Tests\Feature\Web;
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\UserGroup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 /**
@@ -57,19 +58,23 @@ class PortalDashboardTest extends TestCase
             ]);
     }
 
-    public function test_single_tenant_member_auto_enters_from_root(): void
+    public function test_single_tenant_member_sees_dashboard_without_handoff(): void
     {
+        // v1.1 D11: auto-enter removed — direct navigation never mints a
+        // handoff, regardless of membership count.
         $user = User::factory()->create(['status' => 'active']);
         $cert = $this->tenant('loa', 'LOA Certificates');
         $user->tenants()->attach($cert->id);
 
         $response = $this->actingAs($user, 'web')->get('/');
 
-        $response->assertRedirect('/redirect');
-        $this->assertSame(
-            'https://loa.lyceumalabang.edu.ph',
-            $this->app['session']->get('redirect_url')
-        );
+        $response->assertOk();
+        $response->assertSee('LOA Certificates');
+        $response->assertSee('Manage account');
+        $this->assertDatabaseMissing('refresh_tokens', [
+            'user_id' => $user->id,
+            'revoked_at' => null,
+        ]);
     }
 
     public function test_multi_tenant_member_sees_dashboard_with_account_summary(): void
@@ -91,6 +96,80 @@ class PortalDashboardTest extends TestCase
         $response->assertSee('me@lyceumalabang.edu.ph');
         $response->assertSee('Active', false);
         $response->assertSee('Manage account');
+    }
+
+    // ─── Console access boundary (dashboard-account.md v1.1 D9/D10) ──────────
+
+    public function test_platform_admin_sees_restricted_console_nav(): void
+    {
+        $group = UserGroup::create([
+            'name' => config('auth-web.admin_group', 'loa-auth-admin'),
+        ]);
+        $admin = User::factory()->create(['status' => 'active']);
+        $admin->userGroups()->attach($group->id);
+
+        $response = $this->actingAs($admin, 'web')->get('/');
+
+        $response->assertOk();
+        $response->assertSee(route('admin.users'));
+        $response->assertSee(route('admin.tenants'));
+        $response->assertSee(route('admin.audit-logs'));
+        $response->assertSee(route('console.logout'));
+    }
+
+    public function test_non_admin_does_not_see_restricted_console_nav(): void
+    {
+        $user = User::factory()->create(['status' => 'active']);
+
+        $response = $this->actingAs($user, 'web')->get('/');
+
+        $response->assertOk();
+        $response->assertDontSee(route('admin.users'));
+        $response->assertDontSee(route('admin.tenants'));
+        $response->assertDontSee(route('admin.audit-logs'));
+        $response->assertSee(route('console.logout'));
+    }
+
+    public function test_non_admin_still_gets_403_on_admin_sections(): void
+    {
+        // D9: hiding the nav never grants a route; only platform-admin group
+        // membership passes web.admin.
+        $user = User::factory()->create(['status' => 'active']);
+
+        $this->actingAs($user, 'web')
+            ->get('/admin/users')
+            ->assertStatus(403);
+    }
+
+    public function test_tenant_scoped_admin_role_confers_nothing_here(): void
+    {
+        // A user in a tenant-style "cert-admin" group has no weight on this
+        // app (D9) — only config('auth-web.admin_group') matters.
+        $group = UserGroup::create(['name' => 'cert-admin']);
+        $user = User::factory()->create(['status' => 'active']);
+        $user->userGroups()->attach($group->id);
+
+        $this->actingAs($user, 'web')
+            ->get('/admin/users')
+            ->assertStatus(403);
+
+        $response = $this->actingAs($user, 'web')->get('/');
+        $response->assertDontSee(route('admin.users'));
+    }
+
+    public function test_console_logout_signs_out_any_user(): void
+    {
+        $user = User::factory()->create(['status' => 'active']);
+
+        $response = $this->actingAs($user, 'web')->post('/logout');
+
+        $response->assertRedirect(route('login'));
+        $this->assertFalse(Auth::guard('web')->check());
+    }
+
+    public function test_console_logout_requires_authentication(): void
+    {
+        $this->post('/logout')->assertRedirect(route('login'));
     }
 
     public function test_root_with_valid_redirect_enters_target_tenant_for_member(): void
@@ -163,12 +242,14 @@ class PortalDashboardTest extends TestCase
         $user->tenants()->attach($cert->id);
 
         foreach (['//evil.com', 'https://evil.com', '/\\evil.com'] as $badIntent) {
+            // Invalid intents are discarded and normal routing applies
+            // (v1.1 D11: dashboard, no handoff).
             $this->withSession(['return_to' => $badIntent])
                 ->post('/login', [
                     'email' => 'staff@lyceumalabang.edu.ph',
                     'password' => 'Test1234',
                 ])
-                ->assertRedirect('/redirect');
+                ->assertRedirect(route('home'));
         }
     }
 

@@ -10,8 +10,9 @@ use App\Http\Controllers\WebResetController;
 use Illuminate\Support\Facades\Route;
 
 // Default entry (dashboard-account.md §3): guests route to login / sso-login,
-// authenticated users hit the smart router — dashboard unless auto-enter applies.
-Route::get('/', [PortalController::class, 'home'])->name('portal.home');
+// authenticated users hit the smart router — payload intents enter the target
+// app, everyone else lands on the console dashboard (v1.1 D11).
+Route::get('/', [PortalController::class, 'home'])->name('home');
 
 // Relocated health payload (was on /) so uptime checks keep a stable endpoint.
 Route::get('/health', function () {
@@ -49,10 +50,10 @@ Route::post('/reset-password', [WebResetController::class, 'reset']);
 Route::get('/redirect', [WebAuthController::class, 'showRedirect'])
     ->name('auth.redirect');
 
-// Portal launcher + account (unified-auth-flow.md §6/§9, dashboard-account.md
-// §3/§5) — any authenticated user. /launcher survives as a redirecting alias;
-// the route name is preserved for every existing route() caller.
-Route::get('/launcher', fn () => redirect()->route('portal.home'))
+// Portal dashboard + account (dashboard-account.md) — any authenticated user.
+// /launcher survives as a redirecting alias; the route name is preserved for
+// every existing route() caller.
+Route::get('/launcher', fn () => redirect()->route('home'))
     ->middleware('auth:web')
     ->name('portal.launcher');
 Route::post('/launcher/go/{tenant}', [PortalController::class, 'go'])
@@ -71,6 +72,16 @@ Route::post('/account/password', [PortalController::class, 'updatePassword'])
     ->middleware('auth:web', 'throttle:10,60')
     ->name('portal.account.password');
 
+// Shared sign-out for every console user (dashboard-account.md v1.1): the
+// admin layout is now rendered to non-admins too, so logout cannot sit
+// behind the web.admin gate. admin.logout stays as a compatible alias.
+Route::post('/logout', [WebAdminController::class, 'logout'])
+    ->middleware('auth:web')
+    ->name('console.logout');
+Route::post('/admin/logout', [WebAdminController::class, 'logout'])
+    ->middleware('auth:web')
+    ->name('admin.logout');
+
 Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     // Bulk User Import (must come before /users/{id} route)
     Route::get('/users/import', [App\Http\Controllers\UserImportController::class, 'showForm'])->name('admin.users.import');
@@ -88,7 +99,6 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::post('/users/{id}/permissions', [WebAdminController::class, 'storeUserPermission'])->name('admin.users.permissions.store');
     Route::post('/users/{id}/permissions/{key}/remove', [WebAdminController::class, 'removeUserPermission'])->name('admin.users.permissions.remove');
     Route::post('/users/{id}/status', [WebAdminController::class, 'updateStatus'])->name('admin.users.status');
-    Route::post('/logout', [WebAdminController::class, 'logout'])->name('admin.logout');
 
     Route::get('/groups', [WebAdminController::class, 'groupsIndex'])->name('admin.groups');
     Route::get('/groups/create', [WebAdminController::class, 'groupsCreate'])->name('admin.groups.create');

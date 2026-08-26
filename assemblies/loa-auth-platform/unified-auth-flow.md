@@ -22,8 +22,8 @@
 |---|---|---|
 | D1 | Admin access to tenant apps | **Explicit membership only** — admins enter tenant apps solely via `user_tenants`; no implicit super-access |
 | D2 | When launcher appears | **Smart routing** — login initiated from a tenant app (`redirect=` present) goes straight there; login started at the auth domain lands on the launcher |
-| D3 | Single-app users | **Skip launcher** — exactly one tile (no admin console) → auto-enter |
-| D4 | Post-activation destination | **Launcher** (then D3 shortcut applies) |
+| D3 | Single-app users | **Skip launcher** — exactly one tile (no admin console) → auto-enter — **SUPERSEDED by `dashboard-account.md` v1.1 D11: auto-enter removed, everyone lands on the dashboard** |
+| D4 | Post-activation destination | **Launcher** (then D3 shortcut applies) — **destination is now the console dashboard `/` per `dashboard-account.md` v1.1; no shortcut applies** |
 | D5 | Portal session | **Yes** — persistent web-guard session on the auth domain for ALL users, members included |
 | D6 | Member self-service | **Minimal `/account` page** (profile + change password) — P2 |
 | D7 | Redirect policy | **Tenant rows only** — `safeRedirectUrl()` accepts exclusively active-tenant origins (`app_url`/`dev_app_url`, `redirect_origins`/`dev_redirect_origins`); `AUTH_ALLOWED_REDIRECTS` is retired from the validation path (config key removed in P3 cleanup) |

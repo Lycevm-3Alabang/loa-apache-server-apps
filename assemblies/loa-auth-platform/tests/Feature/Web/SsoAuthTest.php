@@ -149,7 +149,7 @@ class SsoAuthTest extends TestCase
             'redirect' => 'https://e-cert.vercel.app',
         ]);
 
-        $response->assertRedirect(route('portal.launcher'));
+        $response->assertRedirect(route('home'));
         $response->assertSessionHas('error');
 
         $admin = User::where('email', 'admin@lyceumalabang.edu.ph')->first();
@@ -201,9 +201,9 @@ class SsoAuthTest extends TestCase
             'redirect' => 'https://e-cert.vercel.app',
         ]);
 
-        // Valid origin but no membership → launcher with a denial flash,
+        // Valid origin but no membership - dashboard with a denial flash,
         // tokens revoked (unified-auth-flow.md §10).
-        $response->assertRedirect(route('portal.launcher'));
+        $response->assertRedirect(route('home'));
         $response->assertSessionHas('error');
 
         $user = User::where('email', 'outsider@lyceumalabang.edu.ph')->first();
@@ -237,7 +237,7 @@ class SsoAuthTest extends TestCase
             'password' => 'Test1234',
         ]);
 
-        $response->assertRedirect(route('portal.launcher'));
+        $response->assertRedirect(route('home'));
         $this->assertTrue(Auth::guard('web')->check());
 
         $admin = User::where('email', 'admin@lyceumalabang.edu.ph')->first();
@@ -270,22 +270,23 @@ class SsoAuthTest extends TestCase
         ]);
     }
 
-    public function test_login_autoenters_single_tenant_member_without_redirect(): void
+    public function test_login_lands_single_tenant_member_on_dashboard_without_redirect(): void
     {
         $this->memberUser();
 
-        // No redirect intent: exactly one membership → straight handoff (D3).
+        // No redirect intent (dashboard-account.md v1.1 D11): everyone lands
+        // on the console dashboard; no handoff is minted.
         $response = $this->post('/login', [
             'email' => 'staff@lyceumalabang.edu.ph',
             'password' => 'Test1234',
         ]);
 
-        $response->assertRedirect('/redirect');
-        $this->assertSame('https://e-cert.vercel.app', $this->app['session']->get('redirect_url'));
+        $response->assertRedirect(route('home'));
+        $this->assertNull($this->app['session']->get('redirect_url'));
         $this->assertTrue(Auth::guard('web')->check());
     }
 
-    public function test_login_drops_unknown_redirect_origin_and_autoenters(): void
+    public function test_login_drops_unknown_redirect_origin_and_lands_on_dashboard(): void
     {
         $this->memberUser();
 
@@ -295,9 +296,9 @@ class SsoAuthTest extends TestCase
             'redirect' => 'https://evil.example.com',
         ]);
 
-        // The invalid origin is discarded, then normal portal routing applies.
-        $response->assertRedirect('/redirect');
-        $this->assertSame('https://e-cert.vercel.app', $this->app['session']->get('redirect_url'));
+        // The invalid origin is discarded; v1.1 D11 routes to the dashboard.
+        $response->assertRedirect(route('home'));
+        $this->assertNull($this->app['session']->get('redirect_url'));
     }
 
     public function test_login_lands_multi_app_member_on_launcher(): void
@@ -318,7 +319,7 @@ class SsoAuthTest extends TestCase
             'password' => 'Test1234',
         ]);
 
-        $response->assertRedirect(route('portal.launcher'));
+        $response->assertRedirect(route('home'));
     }
 
     public function test_splash_redirects_to_login_without_session(): void

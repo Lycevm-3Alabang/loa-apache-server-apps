@@ -13,11 +13,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 /**
- * Post-login portal surface (unified-auth-flow.md §6, dashboard-account.md):
- * the default dashboard entry point, launcher tiles for every active tenant
- * membership, admin console entry for platform admins, and a minimal account
- * page. Entry into tenant apps re-checks membership server-side before
- * minting a scoped token pair.
+ * Post-login portal surface (dashboard-account.md): the console dashboard at
+ * `/` for every authenticated user, tile entry into tenant apps with
+ * server-side membership re-checks, and a minimal account page.
  */
 class PortalController extends Controller
 {
@@ -29,10 +27,11 @@ class PortalController extends Controller
     }
 
     /**
-     * Default page (dashboard-account.md §3): authenticated users get the
-     * dashboard unless a validated ?redirect= intent or the single-membership
-     * auto-enter rule routes them into a tenant app; guests fall through to
-     * login / sso-login.
+     * Default page (dashboard-account.md v1.1): the console-styled dashboard
+     * for EVERY authenticated user — enrolled app tiles + account summary.
+     * Only a validated ?redirect= intent routes away (straight into that
+     * tenant app); guests fall through to login / sso-login. There is no
+     * auto-enter: membership count never skips the dashboard.
      */
     public function home(Request $request): View|RedirectResponse
     {
@@ -48,26 +47,12 @@ class PortalController extends Controller
             return redirect()->route('login');
         }
 
-        /** @var User $user */
-        $user = Auth::guard('web')->user();
+        $user = $this->authUser();
 
         $target = $this->safeRedirectUrl($request->query('redirect'));
 
         if ($target !== null) {
             return $this->router->enterForTarget($request, $user, $target);
-        }
-
-        $autoEnter = $this->router->autoEnterTenant($user);
-
-        if ($autoEnter !== null) {
-            return $this->router->enterTenant(
-                $request,
-                $user,
-                $autoEnter,
-                (string) $autoEnter->effectiveAppUrl(),
-                null,
-                'portal',
-            );
         }
 
         return view('dashboard', [
@@ -89,7 +74,7 @@ class PortalController extends Controller
 
         if (!$tenant) {
             return redirect()
-                ->route('portal.launcher')
+                ->route('home')
                 ->with('error', 'You do not have access to that application.');
         }
 
@@ -97,7 +82,7 @@ class PortalController extends Controller
 
         if (!$url) {
             return redirect()
-                ->route('portal.launcher')
+                ->route('home')
                 ->with('error', 'That application is not available right now.');
         }
 

@@ -2,7 +2,7 @@
 ## Product Assembly Component Specification
 
 **Version:** 3.0
-**Status:** Final (v1 + v2 + v3 + v4 implemented)
+**Status:** Final (v1 + v2 + v3 + v4 implemented). v1.1 note — the console chrome (`layouts/admin`) is now **shared** with the universal dashboard at `/` (`dashboard-account.md` v1.1): non-admins render the topbar without Users/Tenants/Audit-log links, sign-out moved to shared `POST /logout`; every `/admin/**` route stays platform-admin-only via `web.admin` (403)
 **Layer:** Product Assembly (`loa-auth-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 

@@ -1,5 +1,21 @@
 # AI Agent Instructions
 
+## ⛔ MANDATORY: Docker From Repo Root Only — User Runs It
+
+**NEVER run `docker compose` yourself. The USER runs docker commands.**
+
+- All docker work goes through the **root-level** `docker-compose.yml` (project `loa-platform`) — never an assembly-level compose file (e.g. `assemblies/*/docker-compose.yml` creates a duplicate, stale stack).
+- To ask the user to run tests, give them exactly:
+
+  ```powershell
+  cd D:\loa\loa-apache-server-apps
+  docker compose exec auth-app php artisan view:clear
+  docker compose exec auth-app php artisan test
+  ```
+
+- Never launch overlapping/backgrounded runs — two concurrent suites deadlock the shared test DB (lock-wait timeouts masquerade as failures).
+- Wait for the user to paste results; do not poll or re-run on your own.
+
 ## ⛔ MANDATORY: Specs Before Code
 
 **NEVER write code until the spec exists.**
