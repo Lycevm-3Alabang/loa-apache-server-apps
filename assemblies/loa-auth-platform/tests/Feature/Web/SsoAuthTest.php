@@ -124,7 +124,22 @@ class SsoAuthTest extends TestCase
         $this->assertSame('loa', $payload['tenant']['slug']);
     }
 
-    public function test_sso_login_rejects_admin(): void
+    public function test_sso_login_admits_admin_with_tenant_membership(): void
+    {
+        $admin = $this->adminUser();
+        $admin->tenants()->attach($this->tenant->id);
+
+        $response = $this->post('/sso/login', [
+            'email' => 'admin@lyceumalabang.edu.ph',
+            'password' => 'Test1234',
+            'redirect' => 'https://e-cert.vercel.app',
+        ]);
+
+        $response->assertRedirect('/redirect');
+        $this->assertTrue(Auth::guard('web')->check());
+    }
+
+    public function test_sso_login_denies_admin_without_membership_via_launcher(): void
     {
         $this->adminUser();
 
@@ -134,14 +149,10 @@ class SsoAuthTest extends TestCase
             'redirect' => 'https://e-cert.vercel.app',
         ]);
 
-        $response->assertStatus(302);
-        $response->assertSessionHasErrors('credentials');
+        $response->assertRedirect(route('portal.launcher'));
+        $response->assertSessionHas('error');
 
         $admin = User::where('email', 'admin@lyceumalabang.edu.ph')->first();
-
-        $this->assertDatabaseHas('refresh_tokens', [
-            'user_id' => $admin->id,
-        ]);
 
         $this->assertDatabaseMissing('refresh_tokens', [
             'user_id' => $admin->id,
@@ -176,7 +187,7 @@ class SsoAuthTest extends TestCase
         $response->assertSessionHasErrors('credentials');
     }
 
-    public function test_sso_login_rejects_non_member_user(): void
+    public function test_sso_login_sends_non_member_to_launcher(): void
     {
         User::factory()->create([
             'email' => 'outsider@lyceumalabang.edu.ph',
@@ -190,8 +201,17 @@ class SsoAuthTest extends TestCase
             'redirect' => 'https://e-cert.vercel.app',
         ]);
 
-        $response->assertStatus(302);
-        $response->assertSessionHasErrors('credentials');
+        // Valid origin but no membership → launcher with a denial flash,
+        // tokens revoked (unified-auth-flow.md §10).
+        $response->assertRedirect(route('portal.launcher'));
+        $response->assertSessionHas('error');
+
+        $user = User::where('email', 'outsider@lyceumalabang.edu.ph')->first();
+
+        $this->assertDatabaseMissing('refresh_tokens', [
+            'user_id' => $user->id,
+            'revoked_at' => null,
+        ]);
     }
 
     public function test_sso_login_invalid_credentials(): void
@@ -208,7 +228,7 @@ class SsoAuthTest extends TestCase
         $response->assertSessionHasErrors('credentials');
     }
 
-    public function test_login_admits_admin_with_web_session(): void
+    public function test_login_lands_admin_on_launcher_with_web_session(): void
     {
         $this->adminUser();
 
@@ -217,7 +237,7 @@ class SsoAuthTest extends TestCase
             'password' => 'Test1234',
         ]);
 
-        $response->assertRedirect(route('admin.users'));
+        $response->assertRedirect(route('portal.launcher'));
         $this->assertTrue(Auth::guard('web')->check());
 
         $admin = User::where('email', 'admin@lyceumalabang.edu.ph')->first();
@@ -240,7 +260,7 @@ class SsoAuthTest extends TestCase
 
         $response->assertRedirect('/redirect');
         $this->assertSame('https://e-cert.vercel.app', $this->app['session']->get('redirect_url'));
-        $this->assertFalse(Auth::guard('web')->check());
+        $this->assertTrue(Auth::guard('web')->check());
 
         $user = User::where('email', 'staff@lyceumalabang.edu.ph')->first();
 
@@ -250,27 +270,22 @@ class SsoAuthTest extends TestCase
         ]);
     }
 
-    public function test_login_rejects_tenant_member_without_redirect(): void
+    public function test_login_autoenters_single_tenant_member_without_redirect(): void
     {
         $this->memberUser();
 
+        // No redirect intent: exactly one membership → straight handoff (D3).
         $response = $this->post('/login', [
             'email' => 'staff@lyceumalabang.edu.ph',
             'password' => 'Test1234',
         ]);
 
-        $response->assertStatus(302);
-        $response->assertSessionHasErrors('credentials');
-
-        $user = User::where('email', 'staff@lyceumalabang.edu.ph')->first();
-
-        $this->assertDatabaseMissing('refresh_tokens', [
-            'user_id' => $user->id,
-            'revoked_at' => null,
-        ]);
+        $response->assertRedirect('/redirect');
+        $this->assertSame('https://e-cert.vercel.app', $this->app['session']->get('redirect_url'));
+        $this->assertTrue(Auth::guard('web')->check());
     }
 
-    public function test_login_rejects_unknown_redirect_origin(): void
+    public function test_login_drops_unknown_redirect_origin_and_autoenters(): void
     {
         $this->memberUser();
 
@@ -280,8 +295,30 @@ class SsoAuthTest extends TestCase
             'redirect' => 'https://evil.example.com',
         ]);
 
-        $response->assertStatus(302);
-        $response->assertSessionHasErrors('credentials');
+        // The invalid origin is discarded, then normal portal routing applies.
+        $response->assertRedirect('/redirect');
+        $this->assertSame('https://e-cert.vercel.app', $this->app['session']->get('redirect_url'));
+    }
+
+    public function test_login_lands_multi_app_member_on_launcher(): void
+    {
+        $member = $this->memberUser();
+
+        $second = Tenant::create([
+            'slug' => 'consult',
+            'name' => 'Consult Platform',
+            'status' => 'active',
+            'app_url' => 'https://consult.lyceumalabang.edu.ph',
+            'redirect_origins' => ['https://consult.lyceumalabang.edu.ph'],
+        ]);
+        $member->tenants()->attach($second->id);
+
+        $response = $this->post('/login', [
+            'email' => 'staff@lyceumalabang.edu.ph',
+            'password' => 'Test1234',
+        ]);
+
+        $response->assertRedirect(route('portal.launcher'));
     }
 
     public function test_splash_redirects_to_login_without_session(): void
