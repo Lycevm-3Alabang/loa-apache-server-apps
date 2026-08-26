@@ -59,7 +59,9 @@ if ($rebuild) {
         Write-Host 'Installing production dependencies (linux, via docker)...'
         $prevEap = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
-        docker exec $container composer install --no-dev --optimize-autoloader --working-dir "/var/www/html/.dist-stage/$app" --no-interaction --prefer-dist
+        # COMPOSER_PROCESS_TIMEOUT: default 300s aborts single large package
+        # downloads on slow uplinks (exit 1 mid-install).
+        docker exec -e COMPOSER_PROCESS_TIMEOUT=3600 $container composer install --no-dev --optimize-autoloader --working-dir "/var/www/html/.dist-stage/$app" --no-interaction --prefer-dist
         $composerExit = $LASTEXITCODE
         $ErrorActionPreference = $prevEap
         if ($composerExit -ne 0) {
