@@ -9,7 +9,12 @@ use App\Http\Controllers\WebAuthController;
 use App\Http\Controllers\WebResetController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
+// Default entry (dashboard-account.md §3): guests route to login / sso-login,
+// authenticated users hit the smart router — dashboard unless auto-enter applies.
+Route::get('/', [PortalController::class, 'home'])->name('portal.home');
+
+// Relocated health payload (was on /) so uptime checks keep a stable endpoint.
+Route::get('/health', function () {
     return response()->json([
         'service' => 'LOA Auth Platform',
         'version' => '1.0.0',
@@ -44,16 +49,24 @@ Route::post('/reset-password', [WebResetController::class, 'reset']);
 Route::get('/redirect', [WebAuthController::class, 'showRedirect'])
     ->name('auth.redirect');
 
-// Portal launcher + account (unified-auth-flow.md §6/§9) — any authenticated user
-Route::get('/launcher', [PortalController::class, 'launcher'])
+// Portal launcher + account (unified-auth-flow.md §6/§9, dashboard-account.md
+// §3/§5) — any authenticated user. /launcher survives as a redirecting alias;
+// the route name is preserved for every existing route() caller.
+Route::get('/launcher', fn () => redirect()->route('portal.home'))
     ->middleware('auth:web')
     ->name('portal.launcher');
 Route::post('/launcher/go/{tenant}', [PortalController::class, 'go'])
     ->middleware('auth:web', 'throttle:30,60')
     ->name('portal.go');
 Route::get('/account', [PortalController::class, 'account'])
-    ->middleware('auth:web')
+    ->middleware('capture.return', 'auth:web')
     ->name('portal.account');
+Route::post('/account/name', [PortalController::class, 'updateName'])
+    ->middleware('auth:web', 'throttle:10,60')
+    ->name('portal.account.name');
+Route::get('/account/password', [PortalController::class, 'showPasswordForm'])
+    ->middleware('capture.return', 'auth:web')
+    ->name('portal.account.password.show');
 Route::post('/account/password', [PortalController::class, 'updatePassword'])
     ->middleware('auth:web', 'throttle:10,60')
     ->name('portal.account.password');

@@ -2,18 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Tenant;
 use App\Models\User;
 use App\Services\ActivationService;
-use App\Services\AuditLogger;
-use App\Services\EncryptionService;
 use App\Services\IdentityService;
 use App\Services\PasswordResetNotificationService;
-use App\Services\TenantService;
+use App\Services\PortalRouter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
@@ -22,17 +18,15 @@ class WebAuthController extends Controller
     public function __construct(
         private readonly IdentityService $identity,
         private readonly PasswordResetNotificationService $passwordResetNotifications,
-        private readonly TenantService $tenants,
-        private readonly EncryptionService $encryption,
+        private readonly PortalRouter $router,
         private readonly ActivationService $activation,
-        private readonly AuditLogger $audit,
     ) {
     }
 
     public function showLogin(Request $request): View|RedirectResponse
     {
         if (Auth::guard('web')->check()) {
-            return $this->routeAuthenticatedUser(
+            return $this->router->route(
                 $request,
                 Auth::guard('web')->user(),
                 $this->resolveRedirect($request->query('redirect')),
@@ -83,7 +77,7 @@ class WebAuthController extends Controller
                 $request->string('email')->toString(),
                 $request->string('password')->toString(),
                 $request->ip(),
-                $this->resolveTenant($target),
+                $this->router->resolveTenant($target),
             );
         } catch (\Throwable) {
             return back()
@@ -101,7 +95,17 @@ class WebAuthController extends Controller
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
 
-        return $this->routeAuthenticatedUser($request, $user, $target, $tokens);
+        // dashboard-account.md §6: an explicit tenant intent outranks a
+        // captured return path (which is discarded); otherwise deliver the
+        // user to the internal portal URL they were bounced from (e.g.
+        // tenant-app change-password deep link across an expired session).
+        $returnTo = $this->consumeReturnIntent($request);
+
+        if ($target === null && $returnTo !== null) {
+            return redirect()->to($returnTo);
+        }
+
+        return $this->router->route($request, $user, $target, $tokens);
     }
 
     public function showRegister(): View
@@ -170,7 +174,11 @@ class WebAuthController extends Controller
             Auth::guard('web')->login($user);
             $request->session()->regenerate();
 
-            return $this->routeAuthenticatedUser($request, $user, null, null);
+            if (($returnTo = $this->consumeReturnIntent($request))) {
+                return redirect()->to($returnTo);
+            }
+
+            return $this->router->route($request, $user, null, null);
         } catch (\Exception $e) {
             return back()
                 ->withInput($request->except('password', 'password_confirmation'))
@@ -265,7 +273,7 @@ class WebAuthController extends Controller
             $target = $this->resolveRedirect($request->query('redirect'));
 
             if ($target) {
-                return $this->routeAuthenticatedUser(
+                return $this->router->route(
                     $request,
                     Auth::guard('web')->user(),
                     $target,
@@ -356,91 +364,10 @@ class WebAuthController extends Controller
     }
 
     /**
-     * Destination resolver shared by login, activation and authenticated GETs
-     * (unified-auth-flow.md §5): validated intent → straight handoff for
-     * members; single tenant membership → auto-enter; otherwise the launcher.
+     * Destination resolver shared by login, activation and authenticated
+     * GETs lives in PortalRouter (unified-auth-flow.md §5,
+     * dashboard-account.md §3).
      */
-    private function routeAuthenticatedUser(
-        Request $request,
-        User $user,
-        ?string $target,
-        ?array $tokens,
-    ): RedirectResponse {
-        if ($target !== null) {
-            $intentTenant = $this->resolveTenant($target);
-
-            if ($intentTenant && $this->tenants->isMember($user->id, $intentTenant->id)) {
-                return $this->enterTenant($request, $user, $intentTenant, $target, $tokens);
-            }
-
-            $this->revokeTokens($tokens);
-
-            return redirect()
-                ->route('portal.launcher')
-                ->with('error', 'You do not have access to that application.');
-        }
-
-        $memberships = $this->activeMemberships($user);
-
-        if (!$this->isAdmin($user) && $memberships->count() === 1) {
-            $tenant = $memberships->first();
-            $url = $tenant->effectiveAppUrl();
-
-            if ($url) {
-                return $this->enterTenant($request, $user, $tenant, $url, $tokens);
-            }
-        }
-
-        $this->revokeTokens($tokens);
-
-        return redirect()->route('portal.launcher');
-    }
-
-    /**
-     * Mints a tenant-scoped token pair from the portal session and queues the
-     * /redirect interstitial (unified-auth-flow.md §3 tail). Any login-time
-     * pair minted without the target tenant's claims is revoked first.
-     */
-    private function enterTenant(
-        Request $request,
-        User $user,
-        Tenant $tenant,
-        string $url,
-        ?array $previousTokens,
-    ): RedirectResponse {
-        $this->revokeTokens($previousTokens);
-
-        $tokens = $this->identity->issueForUser($user, $tenant);
-
-        $this->queueHandoff($request, $this->encryption, $user, $url, $tokens, $tenant);
-
-        // admin-audit-log.md §5: admin entries into tenant apps are evidence.
-        if ($this->isAdmin($user)) {
-            $this->audit->recordSafe(
-                'auth.tenant_entry',
-                'tenant',
-                $tenant->id,
-                ['tenant' => $tenant->slug, 'via' => 'sso'],
-            );
-        }
-
-        return redirect()->route('auth.redirect');
-    }
-
-    private function revokeTokens(?array $tokens): void
-    {
-        if ($tokens) {
-            $this->identity->logout($tokens['refresh_token']);
-        }
-    }
-
-    private function activeMemberships(User $user): \Illuminate\Database\Eloquent\Collection
-    {
-        return $user->tenants()
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->get();
-    }
 
     private function isAllowedRegistrationDomain(string $email): bool
     {
@@ -449,44 +376,22 @@ class WebAuthController extends Controller
         return in_array($domain, ['lyceumalabang.edu.ph', 'itmlyceumalabang.onmicrosoft.com'], true);
     }
 
-    private function isAdmin(?User $user): bool
+    /**
+     * dashboard-account.md §6: consumes the pending internal-path return
+     * intent captured for guests bounced off protected portal URLs. Only
+     * same-app relative paths (single leading slash, never another slash or
+     * backslash) ever qualify — open-redirect proof.
+     */
+    private function consumeReturnIntent(Request $request): ?string
     {
-        if (!$user) {
-            return false;
-        }
+        $path = $request->session()->pull('return_to');
 
-        return $user->inGroup((string) config('auth-web.admin_group'));
+        return is_string($path) && preg_match('#^/[^/\\\\]#', $path) ? $path : null;
     }
 
     private function resolveRedirect(?string $candidate): ?string
     {
         return $this->safeRedirectUrl($candidate);
-    }
-
-    private function resolveTenant(?string $target): ?Tenant
-    {
-        if (!$target) {
-            return null;
-        }
-
-        return $this->tenants->resolveTenantByRedirectOrigin($this->extractOrigin($target) ?? '');
-    }
-
-    private function extractOrigin(string $url): ?string
-    {
-        $parts = parse_url($url);
-
-        if (!$parts || empty($parts['scheme']) || empty($parts['host'])) {
-            return null;
-        }
-
-        $origin = strtolower($parts['scheme']).'://'.strtolower($parts['host']);
-
-        if (isset($parts['port'])) {
-            $origin .= ':'.$parts['port'];
-        }
-
-        return $origin;
     }
 
     private function removeFragment(string $url): string

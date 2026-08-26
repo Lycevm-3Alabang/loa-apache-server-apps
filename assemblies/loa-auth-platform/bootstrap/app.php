@@ -19,7 +19,18 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.tenant' => \App\Http\Middleware\JwtTenantMiddleware::class,
             'password.reset.throttle' => \App\Http\Middleware\PasswordResetThrottle::class,
             'web.admin' => \App\Http\Middleware\WebAdminMiddleware::class,
+            'capture.return' => \App\Http\Middleware\CaptureReturnIntent::class,
         ]);
+
+        // dashboard-account.md §6: the return-intent capture must observe the
+        // guest request BEFORE auth:web throws its AuthenticationException
+        // (an exception unwinds past StartSession and the captured session
+        // write would be discarded). Authenticate sits on the framework's
+        // middleware-priority list, so the capture has to be prioritized too.
+        $middleware->prependToPriorityList(
+            \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
+            \App\Http\Middleware\CaptureReturnIntent::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // Auth forms never show the raw 419 page (web-ui.md §4.0): re-render

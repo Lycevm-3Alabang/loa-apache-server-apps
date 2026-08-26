@@ -35,8 +35,21 @@ class PortalLauncherTest extends TestCase
 
     public function test_guest_is_redirected_to_login(): void
     {
+        $this->get('/')->assertRedirect('/login');
         $this->get('/launcher')->assertRedirect('/login');
         $this->get('/account')->assertRedirect('/login');
+    }
+
+    public function test_launcher_alias_redirects_to_dashboard(): void
+    {
+        $user = User::factory()->create(['status' => 'active']);
+        $cert = $this->tenant('loa', 'LOA Certificates');
+        $consult = $this->tenant('consult', 'Consult Platform');
+        $user->tenants()->attach([$cert->id, $consult->id]);
+
+        $this->actingAs($user, 'web')
+            ->get('/launcher')
+            ->assertRedirect(route('portal.home'));
     }
 
     public function test_launcher_lists_tenant_memberships_with_account_tile(): void
@@ -46,7 +59,7 @@ class PortalLauncherTest extends TestCase
         $consult = $this->tenant('consult', 'Consult Platform');
         $user->tenants()->attach([$cert->id, $consult->id]);
 
-        $response = $this->actingAs($user, 'web')->get('/launcher');
+        $response = $this->actingAs($user, 'web')->get('/');
 
         $response->assertStatus(200);
         $response->assertSee('LOA Certificates');
@@ -65,7 +78,7 @@ class PortalLauncherTest extends TestCase
         $admin->userGroups()->attach($group->id);
 
         // No tenant memberships: tiles must still include Console + Account.
-        $response = $this->actingAs($admin, 'web')->get('/launcher');
+        $response = $this->actingAs($admin, 'web')->get('/');
 
         $response->assertStatus(200);
         $response->assertSee('Auth Admin Console');
@@ -76,7 +89,7 @@ class PortalLauncherTest extends TestCase
     {
         $user = User::factory()->create(['status' => 'active']);
 
-        $response = $this->actingAs($user, 'web')->get('/launcher');
+        $response = $this->actingAs($user, 'web')->get('/');
 
         $response->assertStatus(200);
         $response->assertSee("don't have access to any applications", false);
