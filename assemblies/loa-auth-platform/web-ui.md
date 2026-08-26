@@ -2,7 +2,7 @@
 ## Product Assembly Component Specification
 
 **Version:** 1.4
-**Status:** Final
+**Status:** Final — login/SSO destination matrix superseded by `unified-auth-flow.md` (Final v1.0): unified pipeline, portal sessions, launcher routing, single error string
 **Layer:** Product Assembly (`loa-auth-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -278,8 +278,8 @@ https://auth.lyceumalabang.edu.ph/reset-password?token={rawToken}&email={email}&
 
 `GET /forgot-password` resolves its back-link target in this order:
 
-1. **`?redirect=` query param** — validated against the allowlist (active tenant `redirect_origins`, or `AUTH_ALLOWED_REDIRECTS`).
-2. **HTTP `Referer` header origin** — used when the param is absent; validated the same way. Browsers send only the origin cross-origin by default (`strict-origin-when-cross-origin`), which is sufficient for allowlist matching.
+1. **`?redirect=` query param** — validated against active tenant `redirect_origins` (tenant rows are the only allowlist — unified-auth-flow.md §0 D7).
+2. **HTTP `Referer` header origin** — used when the param is absent; validated the same way. Browsers send only the origin cross-origin by default (`strict-origin-when-cross-origin`), which is sufficient for origin matching.
 3. Neither valid ⇒ default **"Back to sign in"** → `/login`.
 
 When 1 or 2 resolves, the page shows **"Back to referrer"** linking to that URL and keeps it in a hidden field so the POST re-embeds it into the emailed link.
@@ -311,9 +311,9 @@ POST /reset-password
 
 After **Update password** succeeds on `/reset-password`, the user is returned to the app that started the flow — not stranded on the auth login page:
 
-1. **Generation time** (`POST /forgot-password` form and `POST /api/v1/auth/password/forgot`): an optional `redirect` value is accepted and validated — only origins matching an active tenant's `redirect_origins`, or entries in the `AUTH_ALLOWED_REDIRECTS` bootstrap allowlist, are embedded into the emailed link as `&redirect=`. Everything else is dropped.
+1. **Generation time** (`POST /forgot-password` form and `POST /api/v1/auth/password/forgot`): an optional `redirect` value is accepted and validated — only origins matching an active tenant's `redirect_origins` are embedded into the emailed link as `&redirect=`. Everything else is dropped.
 2. **Form carry-through**: `/reset-password?...&redirect=...` keeps the value in a hidden field so it survives the POST.
-3. **Consumption time**: on successful reset, the posted `redirect` is re-validated with the same allowlist rule (never trust the round-trip blindly).
+3. **Consumption time**: on successful reset, the posted `redirect` is re-validated with the same rule (never trust the round-trip blindly).
 4. **Outcome**: valid ⇒ `302` to that app URL; missing/invalid ⇒ fall back to `/login`.
 5. Session semantics: `IdentityService::resetPassword()` already revoked all refresh tokens; landing on the tenant app forces immediate re-login there. Any live access token simply expires within its TTL.
 
@@ -426,7 +426,7 @@ ENCRYPTION_KEY=<hex-encoded-32-byte-key>
 - `ENCRYPTION_KEY` — shared AES-256 key for encrypting redirect payloads (hex-encoded, 64 chars). Generate with: `openssl rand -hex 32`
 - `ENCRYPTION_KEY_PREVIOUS` — (optional) previous key for graceful rotation. Accept payloads encrypted with this key during rotation grace period.
 - Tenant redirect origins are stored per tenant (`tenants.redirect_origins`) and resolved by `TenantService::resolveTenantByRedirectOrigin` (see `kernels/identity/tenancy.md`).
-- `AUTH_ALLOWED_REDIRECTS` — **bootstrap fallback only**, used when no tenants are provisioned. Not the primary mechanism.
+- `AUTH_ALLOWED_REDIRECTS` — **RETIRED** (unified-auth-flow.md §0 D7): tenant rows are the only redirect allowlist; register origins on tenants instead.
 - `AUTH_REDIRECT_URL` — **deprecated.** No longer used to decide the login destination. Kept only for backwards compatibility; the login destination is resolved strictly per the decision table in section 4.1.
 
 ---
@@ -652,7 +652,7 @@ Add to `.env` for the web UI layer:
 | `SESSION_DRIVER` | `database` | Preferred; `file` also works on cPanel |
 | `SESSION_LIFETIME` | `480` | Admin sessions |
 | `SESSION_SECURE` | `true` | HTTPS in production only |
-| `AUTH_ALLOWED_REDIRECTS` | `https://aces-api.lyceumalabang.edu.ph,https://e-cert.vercel.app` | Comma-separated origin allowlist (tenant contexts) |
+| `AUTH_ALLOWED_REDIRECTS` | *(removed)* | **Retired** — origins now live on tenant rows only (`unified-auth-flow.md` §0 D7) |
 | `AUTH_ADMIN_GROUP` | `loa-auth-admin` | User-group treated as platform admins |
 | `MAIL_*` | (see section 7) | SMTP credentials |
 | `JWT_SECRET` | (same as other apps) | Required for token signing |

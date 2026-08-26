@@ -64,7 +64,7 @@ After the Auth Platform is deployed (`DEPLOY.md`), a platform admin provisions t
 | `redirect_origins` | `https://e-cert.vercel.app` |
 | `status` | `active` (default) |
 
-> **Why this matters:** `web-ui.md` §3 resolves the tenant context from `?redirect=` against the tenant's `redirect_origins`. `AUTH_ALLOWED_REDIRECTS` is **bootstrap fallback only** and is not the effective allowlist once tenants are provisioned. The Cert SSO flow is:
+> **Why this matters:** `web-ui.md` §3 resolves the tenant context from `?redirect=` against the tenant's `redirect_origins`. Tenant rows are the only redirect allowlist — `AUTH_ALLOWED_REDIRECTS` was retired in `unified-auth-flow.md` §0 D7 (P3). The Cert SSO flow is:
 > `https://auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app` → `https://e-cert.vercel.app#payload=...` → `POST /api/v1/auth/callback`.
 
 ### 4.1 Slug distribution checklist (all four must match)
@@ -274,12 +274,12 @@ docker compose exec auth-app php artisan db:seed       # admin user (env ADMIN_*
 | `APP_URL` | `https://auth.lyceumalabang.edu.ph` | `http://localhost:8080` |
 | `SESSION_SECURE` | `true` | `false` (plain HTTP) |
 | `CORS_ALLOWED_ORIGINS` | includes `https://e-cert.vercel.app` | **must also include** the e-cert origin you are testing against (see below) |
-| `AUTH_ALLOWED_REDIRECTS` | `https://aces-api.lyceumalabang.edu.ph,https://e-cert.vercel.app` | same list; add a local origin when testing a local e-cert dev server |
+| `AUTH_ALLOWED_REDIRECTS` | *(removed)* | **Retired** (`unified-auth-flow.md` §0 D7) — redirect origins live on tenant rows only |
 
 The tenant-level `redirect_origins` (set in §8.3 / §4) must always list the **actual e-cert UI origin** used for SSO:
 
 - Testing against the deployed Vercel e-cert: `https://e-cert.vercel.app` — no change from production.
-- Testing against a **local e-cert dev server** (e.g. Next.js on `http://localhost:3000`): add that origin to the tenant `redirect_origins`, to `CORS_ALLOWED_ORIGINS`, and to `AUTH_ALLOWED_REDIRECTS`. Unlisted origins are rejected (Origin-middleware + SSO redirect allow-list).
+- Testing against a **local e-cert dev server** (e.g. Next.js on `http://localhost:3000`): add that origin to the tenant `redirect_origins` and to `CORS_ALLOWED_ORIGINS`. Unlisted origins are rejected (Origin-middleware + SSO redirect validation).
 
 After editing `.env` (CORS/redirects), refresh the config cache inside the container:
 

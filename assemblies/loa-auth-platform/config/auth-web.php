@@ -7,13 +7,9 @@ return [
 
     'redirect_url' => env('AUTH_REDIRECT_URL', 'https://aces-api.lyceumalabang.edu.ph'),
 
-    'allowed_redirects' => array_values(array_filter(array_map(
-        static fn (string $url): string => trim($url),
-        explode(',', env(
-            'AUTH_ALLOWED_REDIRECTS',
-            'https://aces-api.lyceumalabang.edu.ph,https://e-cert.vercel.app',
-        )),
-    ))),
+    // Redirect allowlist note (unified-auth-flow.md §0 D7): tenant rows are
+    // the only accepted redirect origins; the former AUTH_ALLOWED_REDIRECTS
+    // bootstrap list was retired in P3.
 
     'encryption_key' => env('ENCRYPTION_KEY', ''),
     'encryption_key_previous' => env('ENCRYPTION_KEY_PREVIOUS', ''),

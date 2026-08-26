@@ -2,15 +2,21 @@
 
 namespace Tests\Feature\Web;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
  * web-ui.md §4.0 — expired/absent CSRF sessions on auth forms must re-render
  * the originating form with a fresh token, never the raw 419 error page.
  * Unlike SsoAuthTest, the CSRF middleware is intentionally left ENABLED here.
+ *
+ * RefreshDatabase is required: the 419 handler and login/forgot flows query
+ * users/tenants, which only exist on a migrated (isolated :memory:) database.
  */
 class CsrfExpiryTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_login_post_without_session_rerenders_fresh_form(): void
     {
         $response = $this->post('/login', [

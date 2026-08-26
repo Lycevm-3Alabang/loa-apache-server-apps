@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\UserGroup;
 use App\Services\ActivationService;
+use App\Services\AuditLogger;
 use App\Services\AuthorizationService;
 use App\Services\IdentityService;
 use App\Services\PasswordResetNotificationService;
@@ -30,7 +31,36 @@ class WebAdminController extends Controller
         private readonly AuthorizationService $authorization,
         private readonly PasswordResetNotificationService $passwordResetNotifications,
         private readonly ActivationService $activation,
+        private readonly AuditLogger $audit,
     ) {
+    }
+
+    /**
+     * Emits group-membership audit rows (admin-audit-log.md §5): every
+     * membership change gets group.member_*, and the platform-admin group
+     * additionally gets the dedicated admin_group.* evidence keys.
+     */
+    private function auditGroupMembership(string $direction, UserGroup $group, string $userId): void
+    {
+        $memberEmail = User::find($userId)?->email;
+
+        $this->audit->recordSafe(
+            "group.member_{$direction}",
+            'user',
+            $userId,
+            ['group' => $group->name, 'member_email' => $memberEmail],
+        );
+
+        if ($group->name === (string) config('auth-web.admin_group')) {
+            $evidenceKey = $direction === 'added' ? 'admin_group.granted' : 'admin_group.revoked';
+
+            $this->audit->recordSafe(
+                $evidenceKey,
+                'user',
+                $userId,
+                ['group' => $group->name, 'member_email' => $memberEmail],
+            );
+        }
     }
 
     // ─── v1: User management ───────────────────────────────────────
@@ -97,6 +127,13 @@ class WebAdminController extends Controller
         } catch (\Throwable) {
             return back()->with('error', 'Unable to update user status.');
         }
+
+        $this->audit->recordSafe(
+            'user.status_changed',
+            'user',
+            $user->id,
+            ['from' => $user->status, 'to' => $request->input('status')],
+        );
 
         return back()->with('status', 'User status updated.');
     }
@@ -439,6 +476,38 @@ class WebAdminController extends Controller
         ]);
     }
 
+    public function searchMembers(Request $request, Tenant $tenant): JsonResponse
+    {
+        $term = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($term) < 2) {
+            return response()->json(['data' => []]);
+        }
+
+        $like = '%' . addcslashes(strtolower($term), '%_\\') . '%';
+        $exactEmail = strtolower($term);
+        $escapeChar = '\\';
+
+        $users = User::query()
+            ->where(function ($q) use ($like, $escapeChar) {
+                $q->whereRaw('LOWER(name) LIKE ? ESCAPE ?', [$like, $escapeChar])
+                    ->orWhereRaw('LOWER(email) LIKE ? ESCAPE ?', [$like, $escapeChar]);
+            })
+            ->where('status', '!=', 'disabled')
+            ->whereNotExists(function ($sub) use ($tenant) {
+                $sub->selectRaw(1)
+                    ->from('user_tenants')
+                    ->whereColumn('user_tenants.user_id', 'users.id')
+                    ->where('user_tenants.tenant_id', $tenant->id);
+            })
+            ->orderByRaw('CASE WHEN LOWER(email) = ? THEN 0 ELSE 1 END', [$exactEmail])
+            ->orderBy('email')
+            ->limit(20)
+            ->get(['id', 'name', 'email', 'status']);
+
+        return response()->json(['data' => $users]);
+    }
+
     public function tenantsShow(Tenant $tenant): View
     {
         $tenant->loadCount('users');
@@ -448,14 +517,9 @@ class WebAdminController extends Controller
             ->orderBy('email')
             ->paginate(25);
 
-        $nonMembers = User::whereNotIn('id', $tenant->users()->pluck('users.id'))
-            ->orderBy('email')
-            ->get();
-
         return view('admin.tenants.show', [
             'tenant' => $tenant,
             'members' => $members,
-            'nonMembers' => $nonMembers,
         ]);
     }
 
@@ -504,14 +568,30 @@ class WebAdminController extends Controller
 
         $userId = $request->input('user_id');
         $action = $request->input('action');
+        $memberEmail = User::find($userId)?->email;
 
         try {
             if ($action === 'add') {
                 $this->tenants->addUserToTenant($userId, $tenant->id);
+
+                $this->audit->recordSafe(
+                    'tenant.member_added',
+                    'tenant',
+                    $tenant->id,
+                    ['tenant' => $tenant->slug, 'member_email' => $memberEmail],
+                );
+
                 return back()->with('status', 'User added to tenant.');
             }
 
             $this->tenants->removeUserFromTenant($userId, $tenant->id);
+
+            $this->audit->recordSafe(
+                'tenant.member_removed',
+                'tenant',
+                $tenant->id,
+                ['tenant' => $tenant->slug, 'member_email' => $memberEmail],
+            );
 
             return back()->with('status', 'User removed from tenant.');
         } catch (\Throwable) {
@@ -630,12 +710,16 @@ class WebAdminController extends Controller
 
         $this->authorization->addToGroup($userId, $group->id);
 
+        $this->auditGroupMembership('added', $group, $userId);
+
         return back()->with('status', 'User added to group.');
     }
 
     public function groupsMembersRemove(UserGroup $group, string $userId): RedirectResponse
     {
         $this->authorization->removeFromGroup($userId, $group->id);
+
+        $this->auditGroupMembership('removed', $group, $userId);
 
         return back()->with('status', 'User removed from group.');
     }
@@ -685,12 +769,20 @@ class WebAdminController extends Controller
             return back()->with('error', 'Unable to add user to group.');
         }
 
+        if ($group = UserGroup::find($groupId)) {
+            $this->auditGroupMembership('added', $group, $userId);
+        }
+
         return back()->with('status', 'User added to group.');
     }
 
     public function removeUserGroup(string $id, string $groupId): RedirectResponse
     {
         $this->authorization->removeFromGroup($id, $groupId);
+
+        if ($group = UserGroup::find($groupId)) {
+            $this->auditGroupMembership('removed', $group, $id);
+        }
 
         return back()->with('status', 'User removed from group.');
     }

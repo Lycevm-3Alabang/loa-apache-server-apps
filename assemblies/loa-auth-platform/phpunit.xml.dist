@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="tests/bootstrap.php"
          colors="true"
          failOnRisky="true"
          failOnWarning="true"
@@ -12,14 +12,18 @@
         </testsuite>
     </testsuites>
     <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
-        <env name="JWT_SECRET" value="test-secret-key-for-testing-only-32chars"/>
-        <env name="CACHE_DRIVER" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="SESSION_DRIVER" value="array"/>
-        <env name="APP_URL" value="http://localhost"/>
+        <!-- All test-critical vars are pinned in tests/bootstrap.php (force
+             here is unreliable for vars the host already exports).
+             APP_ENV pins to local so CSRF stays enforced for CsrfExpiryTest;
+             the seed migration guards test runs via sqlite :memory:. -->
+        <env name="APP_ENV" value="local" force="true"/>
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
+        <env name="JWT_SECRET" value="test-secret-key-for-testing-only-32chars" force="true"/>
+        <env name="CACHE_DRIVER" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="APP_URL" value="http://localhost" force="true"/>
     </php>
 </phpunit>
