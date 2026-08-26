@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\UserGroup;
 
 class TenantService
 {
@@ -118,6 +119,12 @@ class TenantService
         }
 
         $user->tenants()->detach($tenantId);
+
+        $tenantScopedGroupIds = UserGroup::where('tenant_id', $tenantId)->pluck('id')->all();
+
+        if (!empty($tenantScopedGroupIds)) {
+            $user->userGroups()->detach($tenantScopedGroupIds);
+        }
     }
 
     public function isMember(string $userId, string $tenantId): bool

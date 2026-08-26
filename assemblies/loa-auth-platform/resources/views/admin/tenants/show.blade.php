@@ -123,30 +123,38 @@
     <div class="detail-card">
         <div class="section-header">
             <h2>Members ({{ $tenant->users_count }})</h2>
-            <a class="button button-ghost" href="{{ route('admin.tenants.members.import', $tenant) }}" style="border-color:var(--border);color:var(--text-secondary);">Import members</a>
         </div>
 
-        {{-- Add member --}}
-        @if ($nonMembers->isNotEmpty())
-            <form method="post" action="{{ route('admin.tenants.members', $tenant) }}" class="inline-form" style="margin-bottom:1.25rem;">
+        {{-- Add member toolbar: search -> stage -> add, plus bulk import secondary action --}}
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1.25rem;">
+            @php $stagedGroupCount = 0; @endphp
+            <div style="position:relative;flex:1 1 16rem;">
+                <input type="text" id="member-search" name="q" autocomplete="off"
+                       placeholder="Search by name or email…"
+                       style="width:100%;height:2.5rem;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-family:inherit;font-size:0.875rem;">
+                <div id="member-suggestions" style="display:none;position:absolute;top:calc(100% + 0.25rem);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-md, 0 8px 24px rgba(0,0,0,0.12));max-height:18rem;overflow-y:auto;z-index:20;"></div>
+            </div>
+
+            <span id="staged-user" style="display:none;align-items:center;gap:0.375rem;height:2.5rem;padding:0 0.75rem;border:1.5px solid var(--border-accent,#93c5fd);border-radius:var(--radius-xl);background:#eff6ff;font-size:0.8125rem;">
+                <span id="staged-user-label" style="max-width:16rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+                <button type="button" id="staged-user-clear" title="Unstage" style="background:none;border:none;cursor:pointer;font-size:0.875rem;line-height:1;color:var(--text-secondary);padding:0;">✕</button>
+            </span>
+
+            <form method="post" action="{{ route('admin.tenants.members', $tenant) }}" id="add-member-form" class="inline-form" style="display:flex;">
                 @csrf
                 <input type="hidden" name="action" value="add">
-                <div class="field">
-                    <select name="user_id" required style="height:2.5rem;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-family:inherit;font-size:0.875rem;">
-                        <option value="">Select a user…</option>
-                        @foreach ($nonMembers as $user)
-                            <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
-                        @endforeach
-                    </select>
-                </div>
-                <button class="button button-neutral" type="submit">Add to tenant</button>
+                <input type="hidden" name="user_id" id="staged-user-id">
+                <button class="button" type="submit" id="add-member-btn" disabled>Add to tenant</button>
             </form>
-        @endif
+
+            <a class="button button-ghost" href="{{ route('admin.tenants.members.import', $tenant) }}"
+               style="border-color:var(--border);color:var(--text-secondary);height:2.5rem;display:inline-flex;align-items:center;margin-left:auto;">⇪ Import members</a>
+        </div>
 
         {{-- Members list --}}
         <div class="table-wrap">
             @if ($members->isEmpty())
-                <div class="empty-state">No members yet. Add users to this tenant above.</div>
+                <div class="empty-state">No members yet. Search for a user above or import a CSV.</div>
             @else
                 <table>
                     <thead>
@@ -167,9 +175,18 @@
                                 </td>
                                 <td><span class="badge badge-{{ $member->status }}">{{ $member->status }}</span></td>
                                 <td class="muted">
-                                    @if ($member->userGroups->where('tenant_id', $tenant->id)->isNotEmpty())
-                                        @foreach ($member->userGroups->where('tenant_id', $tenant->id) as $mGroup)
-                                            <a href="{{ route('admin.tenants.group.show', [$tenant, $mGroup]) }}">{{ $mGroup->name }}</a><br>
+                                    @php $tenantScopedGroups = $member->userGroups->where('tenant_id', $tenant->id); @endphp
+                                    @if ($tenantScopedGroups->isNotEmpty())
+                                        @foreach ($tenantScopedGroups as $mGroup)
+                                            <span style="display:inline-flex;align-items:center;gap:0.25rem;margin:0 0.375rem 0.375rem 0;padding:0.125rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-xl,999px);background:var(--surface-secondary);">
+                                                <a href="{{ route('admin.tenants.group.show', [$tenant, $mGroup]) }}">{{ $mGroup->name }}</a>
+                                                <form method="post" action="{{ route('admin.groups.members.remove', [$mGroup, $member->id]) }}" style="display:inline;">
+                                                    @csrf
+                                                    <button type="submit" title="Unenroll from {{ $mGroup->name }}"
+                                                            onclick="return confirm('Unenroll this user from {{ $mGroup->name }}?');"
+                                                            style="background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:0.75rem;line-height:1;padding:0;">✕</button>
+                                                </form>
+                                            </span>
                                         @endforeach
                                     @else
                                         <span class="muted">None</span>
@@ -196,4 +213,104 @@
             {{ $members->links() }}
         </div>
     </div>
+
+    <script>
+        (function () {
+            var input = document.getElementById('member-search');
+            var panel = document.getElementById('member-suggestions');
+            var stagedBox = document.getElementById('staged-user');
+            var stagedLabel = document.getElementById('staged-user-label');
+            var stagedClear = document.getElementById('staged-user-clear');
+            var stagedId = document.getElementById('staged-user-id');
+            var addBtn = document.getElementById('add-member-btn');
+            var addForm = document.getElementById('add-member-form');
+            var abortCtrl = null;
+            var debounceTimer = null;
+            var stagedUser = null;
+
+            function setStaged(user) {
+                stagedUser = user || null;
+                if (stagedUser) {
+                    stagedLabel.textContent = stagedUser.name + ' — ' + stagedUser.email;
+                    stagedLabel.title = stagedUser.name + ' — ' + stagedUser.email;
+                    stagedId.value = stagedUser.id;
+                    stagedBox.style.display = 'inline-flex';
+                    addBtn.disabled = false;
+                    hidePanel();
+                } else {
+                    stagedId.value = '';
+                    stagedBox.style.display = 'none';
+                    addBtn.disabled = true;
+                }
+            }
+
+            function hidePanel() {
+                panel.style.display = 'none';
+                panel.innerHTML = '';
+            }
+
+            function renderPanel(items, q) {
+                if (!items.length) {
+                    panel.innerHTML = '<div style="padding:0.5rem 0.75rem;font-size:0.8125rem;color:var(--text-secondary);">No matches for "' +
+                        q.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '"</div>';
+                    panel.style.display = 'block';
+                    return;
+                }
+                items.forEach(function (u) {
+                    var row = document.createElement('div');
+                    row.setAttribute('role', 'button');
+                    row.style.cssText = 'display:flex;justify-content:space-between;gap:0.75rem;padding:0.5rem 0.75rem;cursor:pointer;font-size:0.8125rem;';
+                    row.innerHTML =
+                        '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + u.name + '">' + u.name + '</span>' +
+                        '<span style="color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + u.email + '">' + u.email + '</span>' +
+                        (u.status === 'pending' ? '<span style="color:#b45309;white-space:nowrap;">pending</span>' : '');
+                    row.addEventListener('click', function () { setStaged(u); });
+                    row.addEventListener('mouseover', function () { row.style.background = 'var(--surface-secondary)'; });
+                    row.addEventListener('mouseout', function () { row.style.background = ''; });
+                    panel.appendChild(row);
+                });
+                panel.style.display = 'block';
+            }
+
+            input.addEventListener('input', function () {
+                clearTimeout(debounceTimer);
+                var q = input.value.trim();
+
+                if (q.length < 2) {
+                    hidePanel();
+                    return;
+                }
+
+                debounceTimer = setTimeout(function () {
+                    if (abortCtrl) abortCtrl.abort();
+                    abortCtrl = new AbortController();
+
+                    panel.innerHTML = '<div style="padding:0.5rem 0.75rem;font-size:0.8125rem;color:var(--text-secondary);">Searching…</div>';
+                    panel.style.display = 'block';
+
+                    fetch('{{ route('admin.tenants.members.search', $tenant) }}?q=' + encodeURIComponent(q), {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        signal: abortCtrl.signal,
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (json) { renderPanel(json.data || [], q); })
+                        .catch(function () { if (panel.innerHTML.indexOf('Searching') !== -1) hidePanel(); });
+                }, 250);
+            });
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    if (stagedUser) { setStaged(null); } else { hidePanel(); }
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (stagedUser && !addBtn.disabled) { addForm.requestSubmit ? addForm.requestSubmit() : addForm.submit(); }
+                }
+            });
+
+            stagedClear.addEventListener('click', function () { setStaged(null); input.focus(); });
+            document.addEventListener('click', function (e) {
+                if (!panel.contains(e.target) && e.target !== input) { hidePanel(); }
+            });
+        })();
+    </script>
 @endsection
