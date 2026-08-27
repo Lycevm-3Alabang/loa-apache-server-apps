@@ -3,12 +3,12 @@
 -- Target database : lyceumalabang_auth_db
 --                   (create it first in cPanel, collation utf8mb4_unicode_ci,
 --                    then select it in phpMyAdmin before importing this file)
--- Generated       : 2026-08-24 from a freshly migrated schema plus provisioned
+-- Generated       : 2026-08-27 from a freshly migrated schema plus provisioned
 --                   reference data (tenant, catalog, groups, grants).
 -- Re-runnable     : yes - every table is DROP TABLE IF EXISTS'd first.
 --
 -- INCLUDED
---   * Full schema (identity, sessions, cache, jobs, audit, activations...)
+--   * Full schema (identity, sessions, cache, jobs, audit, activations, tenant_api_keys...)
 --   * Tenant 'loa-e-cert' with redirect origins (e-cert.vercel.app)
 --   * Endpoint catalog (57 endpoints incl. attendees/lookup) + level-based grant matrix:
 --       cert-admin : 57 grants @ admin   (full control)
@@ -53,6 +53,7 @@ DROP TABLE IF EXISTS `tenant_app_endpoints`;
 DROP TABLE IF EXISTS `tenant_endpoint_grants`;
 DROP TABLE IF EXISTS `tenant_endpoint_overrides`;
 DROP TABLE IF EXISTS `tenants`;
+DROP TABLE IF EXISTS `tenant_api_keys`;
 DROP TABLE IF EXISTS `user_claim_overrides`;
 DROP TABLE IF EXISTS `user_group_permission`;
 DROP TABLE IF EXISTS `user_groups`;
@@ -301,6 +302,28 @@ CREATE TABLE `tenants` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `tenants_slug_unique` (`slug`),
   KEY `tenants_status_index` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `tenant_api_keys`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `tenant_api_keys` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tenant_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `key_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `secret_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `revoked_at` timestamp NULL DEFAULT NULL,
+  `created_by` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `tenant_api_keys_key_hash_unique` (`key_hash`),
+  KEY `tenant_api_keys_tenant_id_index` (`tenant_id`),
+  CONSTRAINT `tenant_api_keys_tenant_id_foreign` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `tenant_api_keys_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `user_claim_overrides`;
@@ -660,4 +683,5 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- SELECT COUNT(*) AS groups       FROM user_groups;              -- 4
 -- SELECT COUNT(*) AS grants_total FROM tenant_endpoint_grants;   -- 99
 -- SELECT COUNT(*) AS users        FROM users;                    -- 1
+-- SELECT COUNT(*) AS api_keys     FROM tenant_api_keys;          -- 0
 -- SELECT redirect_origins FROM tenants WHERE slug = 'loa';     -- ["https://e-cert.vercel.app"]

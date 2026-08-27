@@ -206,4 +206,9 @@ Route::post('/tenants/{tenant}/members/import/discard', [\App\Http\Controllers\T
     Route::get('/tenants/{tenant}/access-config/export', [AccessConfigController::class, 'export'])->name('admin.tenants.access-config.export');
     Route::get('/tenants/{tenant}/access-config/import', [AccessConfigController::class, 'importForm'])->name('admin.tenants.access-config.import');
     Route::post('/tenants/{tenant}/access-config/import', [AccessConfigController::class, 'import'])->name('admin.tenants.access-config.import.store');
+
+    // API key management
+    Route::get('/tenants/{tenant}/api-keys', [App\Http\Controllers\TenantApiKeyController::class, 'index'])->name('admin.tenants.api-keys.index');
+    Route::post('/tenants/{tenant}/api-keys', [App\Http\Controllers\TenantApiKeyController::class, 'store'])->name('admin.tenants.api-keys.store');
+    Route::delete('/tenants/{tenant}/api-keys/{keyId}', [App\Http\Controllers\TenantApiKeyController::class, 'destroy'])->name('admin.tenants.api-keys.destroy');
 });

@@ -237,6 +237,9 @@
         </div>
     </div>
 
+    {{-- API Keys --}}
+    @include('admin.tenants._api-keys', ['tenant' => $tenant])
+
     <script>
         (function () {
             var input = document.getElementById('member-search');

@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'password.reset.throttle' => \App\Http\Middleware\PasswordResetThrottle::class,
             'web.admin' => \App\Http\Middleware\WebAdminMiddleware::class,
             'capture.return' => \App\Http\Middleware\CaptureReturnIntent::class,
+            'api.key.auth' => \App\Http\Middleware\ApiKeyAuthMiddleware::class,
         ]);
 
         // dashboard-account.md §6: the return-intent capture must observe the

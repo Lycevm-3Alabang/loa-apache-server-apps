@@ -94,5 +94,16 @@ Route::prefix('v1')->group(function () {
         Route::get('/{tenant}/access-config/template', [App\Http\Controllers\AccessConfigController::class, 'template']);
         Route::get('/{tenant}/access-config/export', [App\Http\Controllers\AccessConfigController::class, 'export']);
         Route::post('/{tenant}/access-config/import', [App\Http\Controllers\AccessConfigController::class, 'import']);
+
+        Route::get('/{tenant}/api-keys', [App\Http\Controllers\TenantApiKeyController::class, 'index']);
+        Route::post('/{tenant}/api-keys', [App\Http\Controllers\TenantApiKeyController::class, 'store']);
+        Route::delete('/{tenant}/api-keys/{keyId}', [App\Http\Controllers\TenantApiKeyController::class, 'destroy']);
+    });
+
+    Route::prefix('tenant')->middleware(['api.key.auth', 'throttle:60,1'])->group(function () {
+        Route::get('/members', [App\Http\Controllers\TenantMemberApiController::class, 'index']);
+        Route::post('/members', [App\Http\Controllers\TenantMemberApiController::class, 'store']);
+        Route::delete('/members/{userId}', [App\Http\Controllers\TenantMemberApiController::class, 'destroy']);
+        Route::post('/members/invite', [App\Http\Controllers\TenantMemberApiController::class, 'invite']);
     });
 });

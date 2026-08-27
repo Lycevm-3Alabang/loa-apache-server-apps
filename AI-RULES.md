@@ -252,6 +252,25 @@ public class Vehicle
 }
 ```
 
+## UUID Generation
+
+Prefer the `HasUuids` trait for new models:
+
+```php
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
+class MyModel extends Model
+{
+    use HasUuids;
+    // No need to set $incrementing or $keyType — trait handles it
+}
+```
+
+Migration: `$table->uuid('id')->primary();`
+
+Legacy alternative (used by `Tenant`, `AuditLog`, `User`): manual `Str::uuid()` in `boot()`.
+Both approaches are valid; new code should use `HasUuids`.
+
 ---
 
 # 6. Event Naming Conventions
