@@ -1,4 +1,4 @@
--- ============================================================================
+﻿-- ============================================================================
 -- LOA AUTH PLATFORM - cPanel DATABASE INSTALLER
 -- Target database : lyceumalabang_auth_db
 --                   (create it first in cPanel, collation utf8mb4_unicode_ci,
@@ -36,6 +36,30 @@ SET FOREIGN_KEY_CHECKS = 0;
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+-- FIX v2: purge ALL tables up-front so no stale/incompatible definitions
+-- from previous import attempts can collide with foreign keys below.
+DROP TABLE IF EXISTS `activations`;
+DROP TABLE IF EXISTS `claims`;
+DROP TABLE IF EXISTS `group_claims`;
+DROP TABLE IF EXISTS `login_attempts`;
+DROP TABLE IF EXISTS `migrations`;
+DROP TABLE IF EXISTS `password_reset_tokens`;
+DROP TABLE IF EXISTS `permissions`;
+DROP TABLE IF EXISTS `refresh_tokens`;
+DROP TABLE IF EXISTS `route_policies`;
+DROP TABLE IF EXISTS `sessions`;
+DROP TABLE IF EXISTS `tenant_app_endpoints`;
+DROP TABLE IF EXISTS `tenant_endpoint_grants`;
+DROP TABLE IF EXISTS `tenant_endpoint_overrides`;
+DROP TABLE IF EXISTS `tenants`;
+DROP TABLE IF EXISTS `user_claim_overrides`;
+DROP TABLE IF EXISTS `user_group_permission`;
+DROP TABLE IF EXISTS `user_groups`;
+DROP TABLE IF EXISTS `user_permission`;
+DROP TABLE IF EXISTS `user_tenants`;
+DROP TABLE IF EXISTS `user_user_group`;
+DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `activations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -123,6 +147,23 @@ CREATE TABLE `password_reset_tokens` (
   KEY `password_reset_tokens_token_index` (`token`),
   KEY `password_reset_tokens_user_id_created_at_index` (`user_id`,`created_at`),
   CONSTRAINT `password_reset_tokens_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `password_set_tokens`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `password_set_tokens` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  `used_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `password_set_tokens_token_index` (`token`),
+  KEY `password_set_tokens_user_id_created_at_index` (`user_id`,`created_at`),
+  CONSTRAINT `password_set_tokens_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `permissions`;
@@ -560,6 +601,12 @@ INSERT INTO `users` (`id`, `email`, `password`, `name`, `status`, `created_at`, 
  'Super Admin', 'active', NOW(), NOW());
 INSERT INTO `user_user_group` (`user_id`, `user_group_id`, `created_at`, `updated_at`) VALUES
 ('4f09e69e-4b82-4c9f-bfe0-4ccae5256b1e', 1, NOW(), NOW());
+-- --- Auth tenant (LOA Auth Platform) -----------------------------------------
+-- slug = 'auth', read-only (redirect_origins = empty), app_url = NULL
+-- Members are assigned to platform-level groups (tenant_id = NULL) so the
+-- session redirects to platform groups, not back to /auth/login.
+INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'auth', 'LOA Auth Platform', 'active', NULL, NULL, '[]', '[]', NOW(), NOW());
 -- --- Generated staff/user endpoint grants --------------------------------------
 -- cert-staff: every read/write catalog endpoint at its own level (admin-only excluded)
 -- cert-user : GET read-level /me/* endpoints only

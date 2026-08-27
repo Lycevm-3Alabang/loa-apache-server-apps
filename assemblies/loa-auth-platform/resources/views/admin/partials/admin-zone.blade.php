@@ -202,6 +202,7 @@
         <div class="quick-row">
             <a href="{{ route('admin.users.create') }}">New user</a>
             <a href="{{ route('admin.tenants.create') }}">New tenant</a>
+            <a href="{{ route('admin.groups') }}">Platform groups</a>
             <a href="{{ route('admin.users.import') }}">Import users</a>
             <a href="{{ route('admin.audit-logs') }}">Audit log</a>
         </div>

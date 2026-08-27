@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
 
         if (!app()->environment('production')) {
             $this->call(LocalCertReadinessSeeder::class);
+            $this->call(LocalAuthTenantSeeder::class);
         }
     }
 }

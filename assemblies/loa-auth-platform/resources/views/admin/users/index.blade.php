@@ -11,7 +11,6 @@
             <p>Search, filter, and control account access.</p>
         </div>
         <div class="page-actions">
-            <a class="button button-ghost" href="{{ route('admin.users.import') }}" style="border-color:var(--border);color:var(--text-secondary);">Import Users</a>
             <a class="button" href="{{ route('admin.users.create') }}">Create User</a>
         </div>
     </div>
@@ -27,6 +26,7 @@
                         <select name="status" aria-label="Filter by status">
                             <option value="all" @selected($status === 'all')>All statuses</option>
                             <option value="active" @selected($status === 'active')>Active</option>
+                            <option value="pending" @selected($status === 'pending')>Pending</option>
                             <option value="disabled" @selected($status === 'disabled')>Disabled</option>
                             <option value="locked" @selected($status === 'locked')>Locked</option>
                         </select>
@@ -44,6 +44,7 @@
                     <thead>
                         <tr>
                             <th>User</th>
+                            <th>Groups</th>
                             <th>Status</th>
                             <th>Failed attempts</th>
                             <th>Locked until</th>
@@ -57,6 +58,22 @@
                                 <td class="cell-user">
                                     <strong>{{ $user->name }} @if ($user->inGroup((string) config('auth-web.admin_group')))<span class="muted">(Admin)</span>@endif</strong>
                                     <span>{{ $user->email }}</span>
+                                </td>
+                                <td class="muted">
+                                    @php $groups = $user->userGroups->sortBy('name'); @endphp
+                                    @if ($groups->isNotEmpty())
+                                        @foreach ($groups as $group)
+                                            <span style="display:inline-flex;align-items:center;gap:0.25rem;margin:0 0.375rem 0.375rem 0;padding:0.125rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-xl,999px);background:var(--surface-secondary);font-size:0.8125rem;">
+                                                @if ($group->tenant_id)
+                                                    <a href="{{ route('admin.tenants.group.show', [$group->tenant_id, $group]) }}">{{ $group->name }}</a>
+                                                @else
+                                                    <a href="{{ route('admin.groups.show', $group) }}">{{ $group->name }}</a>
+                                                @endif
+                                            </span>
+                                        @endforeach
+                                    @else
+                                        <span>—</span>
+                                    @endif
                                 </td>
                                 <td><span class="badge badge-{{ $user->status }}">{{ $user->status }}</span></td>
                                 <td class="muted">{{ $user->failed_attempts }}</td>

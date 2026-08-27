@@ -16,15 +16,15 @@
         </div>
     </div>
 
-    {{-- §12: Add member (two-tier search) --}}
+    {{-- §12: Add member (two-tier search, multi-select) --}}
     <div class="detail-card">
         <div class="section-header">
             <h2>Add member</h2>
         </div>
         <form id="addMemberForm" method="post" action="{{ route('admin.tenants.group.members.store', [$tenant, $group]) }}">
             @csrf
-            <input type="hidden" name="user_id" id="selectedUserId">
-            <input type="hidden" name="tier" id="selectedTier">
+            <div id="userIdInputs"></div>
+            <div id="tierInputs"></div>
             <div class="field" style="position:relative;">
                 <input type="text"
                        id="memberSearch"
@@ -33,12 +33,8 @@
                        style="height:2.5rem;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-family:inherit;font-size:0.875rem;width:100%;max-width:24rem;">
                 <div id="searchResults" style="display:none;position:absolute;top:100%;left:0;right:0;max-width:24rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);z-index:100;max-height:16rem;overflow-y:auto;"></div>
             </div>
-            <div id="selectedUser" style="display:none;margin-top:0.5rem;padding:0.5rem 0.75rem;background:var(--surface-secondary);border-radius:var(--radius);font-size:0.875rem;">
-                <span id="selectedUserName"></span>
-                <span id="selectedTierBadge" class="badge" style="margin-left:0.5rem;"></span>
-                <button type="button" onclick="clearSelection()" style="margin-left:0.5rem;background:none;border:none;cursor:pointer;color:var(--text-muted);">&times;</button>
-            </div>
-            <button class="button" type="submit" id="addMemberBtn" disabled style="margin-top:0.75rem;">Add to group</button>
+            <div id="selectedChips" style="display:flex;flex-wrap:wrap;gap:0.375rem;margin:0.5rem 0;min-height:0;"></div>
+            <button class="button" type="submit" id="addMemberBtn" disabled>Add N member(s)</button>
         </form>
     </div>
 
@@ -100,13 +96,62 @@
     (function () {
         const searchInput = document.getElementById('memberSearch');
         const resultsDiv = document.getElementById('searchResults');
-        const selectedUserId = document.getElementById('selectedUserId');
-        const selectedTier = document.getElementById('selectedTier');
-        const selectedUserDiv = document.getElementById('selectedUser');
-        const selectedUserName = document.getElementById('selectedUserName');
-        const selectedTierBadge = document.getElementById('selectedTierBadge');
+        const chipsDiv = document.getElementById('selectedChips');
+        const userIdInputs = document.getElementById('userIdInputs');
+        const tierInputs = document.getElementById('tierInputs');
         const addBtn = document.getElementById('addMemberBtn');
         let debounceTimer = null;
+        let selected = {};
+
+        function updateForm() {
+            userIdInputs.innerHTML = '';
+            tierInputs.innerHTML = '';
+            var count = Object.keys(selected).length;
+            Object.keys(selected).forEach(function (id) {
+                var u = selected[id];
+                var h = document.createElement('input');
+                h.type = 'hidden';
+                h.name = 'user_ids[]';
+                h.value = id;
+                userIdInputs.appendChild(h);
+
+                var t = document.createElement('input');
+                t.type = 'hidden';
+                t.name = 'tiers[]';
+                t.value = u.tier;
+                tierInputs.appendChild(t);
+            });
+            addBtn.disabled = count === 0;
+            addBtn.textContent = count > 0 ? 'Add ' + count + ' member(s)' : 'Add N member(s)';
+        }
+
+        function renderChips() {
+            chipsDiv.innerHTML = '';
+            Object.keys(selected).forEach(function (id) {
+                var u = selected[id];
+                var chip = document.createElement('span');
+                chip.style.cssText = 'display:inline-flex;align-items:center;gap:0.25rem;padding:0.25rem 0.5rem;border:1.5px solid ' + (u.tier === 'secondary' ? '#fbbf24' : 'var(--border-accent,#93c5fd)') + ';border-radius:var(--radius-xl);background:' + (u.tier === 'secondary' ? '#fef3c7' : '#eff6ff') + ';font-size:0.8125rem;';
+                var tierLabel = u.tier === 'secondary' ? ' (new)' : '';
+                chip.innerHTML = '<span style="max-width:14rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + u.name + ' — ' + u.email + ' [' + u.tier + ']">' + u.name + tierLabel + '</span>' +
+                    '<button type="button" data-remove="' + id + '" title="Remove" style="background:none;border:none;cursor:pointer;font-size:0.75rem;line-height:1;color:var(--text-secondary);padding:0;">✕</button>';
+                chipsDiv.appendChild(chip);
+            });
+            updateForm();
+        }
+
+        function addUser(id, name, email, tier) {
+            if (selected[id]) return;
+            selected[id] = { name: name, email: email, tier: tier };
+            renderChips();
+            searchInput.value = '';
+            resultsDiv.style.display = 'none';
+            searchInput.focus();
+        }
+
+        function removeUser(id) {
+            delete selected[id];
+            renderChips();
+        }
 
         searchInput.addEventListener('input', function () {
             clearTimeout(debounceTimer);
@@ -123,6 +168,7 @@
                         }
                         resultsDiv.innerHTML = json.data.map(u =>
                             '<div class="search-result" data-id="' + u.id + '" data-name="' + u.name + '" data-email="' + u.email + '" data-tier="' + json.tier + '" style="padding:0.5rem 0.75rem;cursor:pointer;border-bottom:1px solid var(--border);">'
+                            + (selected[u.id] ? '<span style="color:#16a34a;">✓</span> ' : '')
                             + '<strong>' + u.name + '</strong>'
                             + '<br><small style="color:var(--text-muted);">' + u.email + '</small>'
                             + '</div>'
@@ -130,31 +176,17 @@
                         resultsDiv.style.display = 'block';
                         resultsDiv.querySelectorAll('.search-result').forEach(el => {
                             el.addEventListener('click', function () {
-                                selectUser(this.dataset.id, this.dataset.name, this.dataset.email, this.dataset.tier);
+                                addUser(this.dataset.id, this.dataset.name, this.dataset.email, this.dataset.tier);
                             });
                         });
                     });
             }, 300);
         });
 
-        function selectUser(id, name, email, tier) {
-            selectedUserId.value = id;
-            selectedTier.value = tier;
-            selectedUserName.textContent = name + ' (' + email + ')';
-            selectedTierBadge.textContent = tier === 'secondary' ? 'New to tenant' : 'Tenant member';
-            selectedTierBadge.className = 'badge ' + (tier === 'secondary' ? 'badge-pending' : 'badge-active');
-            selectedUserDiv.style.display = 'block';
-            searchInput.value = '';
-            resultsDiv.style.display = 'none';
-            addBtn.disabled = false;
-        }
-
-        window.clearSelection = function () {
-            selectedUserId.value = '';
-            selectedTier.value = '';
-            selectedUserDiv.style.display = 'none';
-            addBtn.disabled = true;
-        };
+        chipsDiv.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-remove]');
+            if (btn) { removeUser(btn.getAttribute('data-remove')); }
+        });
 
         document.addEventListener('click', function (e) {
             if (!resultsDiv.contains(e.target) && e.target !== searchInput) {

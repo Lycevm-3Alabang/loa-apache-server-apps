@@ -64,7 +64,7 @@ on `CREATE TABLE group_claims`.
 Cause: `group_claims` is created (line ~72) BEFORE the fresh DROP+CREATE of `user_groups`
 (line ~300). A stale `user_groups` from a previous import attempt with an older column
 definition satisfied the FK reference and failed type-compatibility.
-Fix: rebuilt installer `database/sql/cpanel-auth-db-install-fixed.sql` which purges ALL
+Fix: rebuilt installer `database/sql/cpanel-auth-db-install.sql` which purges ALL
 21 tables up-front (right after FOREIGN_KEY_CHECKS=0) before any CREATE runs.
 Re-runnable: yes, drops everything each run (wipes data).
 

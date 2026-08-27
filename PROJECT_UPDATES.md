@@ -70,9 +70,9 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 - **Scoped session prompt:** `assemblies/loa-auth-platform/SESSION-PROMPT.md`
 - **Status:** Scaffolded + largely implemented (Phase 1). **Not yet deployed** to `auth.lyceumalabang.edu.ph`. SSO entry point is live (`/sso/login`, `/sso/register`, `/redirect`).
 - **Kernel:** Identity v3.0 (tenancy) implemented in code; many kernel specs still Draft.
-- **Final specs (implemented):** `web-ui.md` v1.2 (destination resolution), `admin-dashboard.md` (v1 + v2), `tenant-endpoint-catalog.md` v3.2, `tenant-group-endpoint-grants.md` v1.1 (group priority), `access-config-import-export.md` v1.0, data-driven permission policy v1.0, RefreshToken, `admin-dashboard-home.md` v1.0 (platform-admin zone on `/`).
-- **Final specs (pending implementation):** `user-account-activation.md` v1.0 — replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, email, admin resend).
-- **Implemented highlights:** tenants + `user_tenants` (000011–000012), tenant-scoped groups/grants (000013–000015), `tenant` JWT claim + `jwt.tenant` middleware, admin dashboard v1/v2 (tenant CRUD, groups, per-group permissions, members, suspend/activate), group priority resolution (`user_groups.priority`, default 10, 1 = highest), endpoint catalog + bulk import, access config import/export, SSO web auth (login/register/redirect), EncryptionService decrypt bug fix. **210 tests pass**.
+- **Final specs (implemented):** `web-ui.md` v1.2 (destination resolution), `admin-dashboard.md` (v1 + v2), `tenant-endpoint-catalog.md` v3.2, `tenant-group-endpoint-grants.md` v1.1 (group priority), `access-config-import-export.md` v1.0, data-driven permission policy v1.0, RefreshToken, `admin-dashboard-home.md` v1.0 (platform-admin zone on `/`), `group-permission-management.md` v3.0 (§12 tenant group membership restructure), `auth-tenant.md` v1.0 (auth tenant, search-first Add Member, CSV import, Create User + set-password, Platform Groups shortcut).
+- **Final specs (pending implementation):** `user-account-activation.md` v1.0 (replaces self-registration with backend-provisioned activation flow).
+- **Implemented highlights:** tenants + `user_tenants` (000011–000012), tenant-scoped groups/grants (000013–000015), `tenant` JWT claim + `jwt.tenant` middleware, admin dashboard v1/v2 (tenant CRUD, groups, per-group permissions, members, suspend/activate), group priority resolution (`user_groups.priority`, default 10, 1 = highest), endpoint catalog + bulk import, access config import/export, SSO web auth (login/register/redirect), EncryptionService decrypt bug fix, auth tenant (slug `auth`, read-only, badge), search-first multi-select Add Member on all surfaces, CSV multi-group import, Create User + set-password email flow, Platform Groups dashboard shortcut. **Tests pass.**
 - **2026-08-05 changes:** domain correction across docs/configs/tests/blades; allowlists updated (`config/cors.php`, `config/auth-web.php`, `.env.example`, `DEPLOY.md`, `environment.md`) to include `https://e-cert.vercel.app`.
 - **Phase B (Cert readiness) — DEFERRED 2026-08-06:** user decision — **no Cert data baked into the production Auth seed path** (`DatabaseSeeder` production runs only `AdminSeeder`; `database/seeders/database.sql` untouched — a `CertReadinessSeeder` attempt was created then reverted). Provisioning is **manual at deploy-time** per the runbook **`cert-readiness.md`** (**Final v0.4**, branch `docs/cert-readiness-runbook`): `loa` tenant (`redirect_origins` incl. `https://e-cert.vercel.app`), 48-endpoint Appendix A catalog import, `cert-admin`/`cert-staff`/`cert-user` groups (priorities 2/3/4, created manually), 48-row grant matrix (admin 48 / staff 39 / user 7), verification steps. Payload + matrix parity-checked against `api-endpoints.md` Appendix A. **§8 Local Development (v0.2→v0.4):** local Docker provisioning via the **`LocalCertReadinessSeeder`** (runs automatically on local `db:seed` via `DatabaseSeeder` non-prod guard — creates `cert-app` tenant @ `localhost:9001` + groups; catalog/grants still via local admin UI) plus an optional tinker fast path; local origin/CORS/redirect table.
 - **Next:** Auth deployment **deferred** (user decision 2026-08-06 — focus on Cert platform). Provisioning per `cert-readiness.md` (**Final v0.4**) happens at deploy-time; no action needed until Auth is deployed. Three things lined up for the Cert platform: **(1) Phase C** — Laravel 12 Cert app **scaffold created 2026-08-06** (`cert-app/`: core models + migrations); next is the **unauth domain CRUD slice** (events/attendees/templates/certificates + tests); **(2) C-Auth phase** — SSO `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` middleware (deferred from Phase C per decision #20/D9); **(3) Phase D** — `e-cert` auth swap (CSR): in-memory token, silent refresh, SSO fragment handler, parse-only JWT, client auth guard (depends on C-Auth).
@@ -113,14 +113,18 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 
 ## Last Session Notes
 
-### Date: 2026-08-26
+### Date: 2026-08-27
 
 ### Completed
-- **Admin dashboard home implemented** per `admin-dashboard-home.md` v1.0 Final: controller data assembly (stat cards, attention queue, activity feed), admin-zone Blade partial (stat strip, attention list, activity table, quick actions), `?status=pending` fix, dashboard `@include` gated by `$isAdmin`. Zero-JS, H4 fail-degrade, link-out only. I1 attention item conditionally omitted (GPM v3.0 still Draft).
+- **auth-tenant.md implemented** — all 8 items: LocalAuthTenantSeeder, Tenant.isPlatform(), auth tenant read-only, "Platform" badge, CSV multi-group support, Create User + set-password flow, multi-select search on all 3 surfaces, dashboard shortcut.
+- **SQL scripts** — migration `2026_08_27_000001_add_password_set_tokens_table.sql`, consolidated `cpanel-auth-db-install.sql` (single file, upfront DROP pattern), updated `database.sql` (local dev seed). Fixed auth tenant INSERT (status enum, not is_active).
+- **Test fixes** — 4 failures corrected (AdminAuditLogTest, TenantGroupMembershipTest, TenantMemberImportTest, TenantMemberPickerTest).
+- **PasswordSetToken HasUuids fix** — missing trait caused SQL 1364 on user creation.
+- **User Management improvements** — removed Import Users button, added "Pending" status filter, added Groups column with linked badges, eager-loaded userGroups.
 
 ### Next Action
-- [ ] Run tests + lint to verify
-- [ ] Phase D — e-cert auth swap (CSR)
+- [ ] Run tests + lint to verify all changes
+- [ ] Commit + push
 
 ### Date: 2026-08-24
 

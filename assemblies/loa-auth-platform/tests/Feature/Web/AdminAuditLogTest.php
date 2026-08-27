@@ -218,7 +218,7 @@ class AdminAuditLogTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $response->assertSessionHas('status', 'User added to group.');
+        $response->assertSessionHas('status', '1 user(s) added to group.');
         $this->assertDatabaseHas('user_user_group', [
             'user_id' => $member->id,
             'user_group_id' => $this->adminGroup->id,

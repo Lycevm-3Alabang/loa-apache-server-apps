@@ -41,29 +41,18 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-26
+### Date: 2026-08-27
 
 ### Completed
-- **Admin dashboard home spec promoted to Final v1.0** (`admin-dashboard-home.md`): platform-admin-only zone on `/` beneath apps grid — stat strip (Users/Tenants/Sessions/Memberships), attention queue (priorities 2–6, 5-item cap + aggregate line), activity feed (last 10, no `auth.tenant_entry`), quick actions (4 buttons). H1–H5 locked, zero-JS, link-out only, H4 fail-degrade. I1 attention item conditionally omitted (GPM v3.0 still Draft).
-- **Controller data assembly** (`PortalController.php`): `adminZoneData()` (try/catch per H4), `buildStatCards()` (raw select for user/tenant counts, distinct `refresh_tokens` for sessions, `user_tenants` pivot count), `buildAttentionQueue()` (priorities 2–6 with session-based import failures, zero-member tenants, dev_app_url in prod), `buildActivityFeed()` (10 rows, excludes `auth.tenant_entry`, deep-links to audit browser filtered by action). New imports: `AuditLog`, `RefreshToken`, `Tenant`, `DB`.
-- **WebAdminController `?status=pending`** — added to allowed status filter array so pending users link works.
-- **Admin zone Blade partial** (`resources/views/admin/partials/admin-zone.blade.php`): stat grid, attention list with aggregate handling, activity table with `diffForHumans()`, quick action buttons, inline CSS, responsive breakpoint (720px). Zone-degrade message for H4 failures.
-- **Dashboard updated** (`dashboard.blade.php`): `@include('admin.partials.admin-zone')` gated by `@if ($isAdmin)`.
-- **§12 Group-Permission-Management spec promoted to Final v3.0**: tenant group membership ownership restructure — I1 invariant enforcement, two-tier search, cascade confirmation interstitial, M2/M5/M6/M8 guards, Q3 resolved (report-only repair command), 26 test items.
-- **AuthorizationService changes**: I1 guard on `addToGroup()` (422 if user lacks tenant pivot), M8 self-revocation guard on `removeFromGroup()`, new `addToGroupTransactional()` (atomic tenant pivot + group add).
-- **Route changes**: 5 new routes (tenant group members search/store/remove/confirm, platform-permissions toggle), 2 old user-detail routes removed, platform group routes scoped with M6 guard comment.
-- **Controller changes**: 6 new methods (`tenantGroupMemberSearch`, `tenantGroupMembersStore`, `tenantGroupMemberRemoveConfirm`, `tenantGroupMemberRemove`, `tenantGroupPlatformPermissions`), 2 modified with M6 guards (`groupsMembersStore`, `groupsMembersRemove`, `groupsShow`, `groupsPermissions`), 2 old methods removed (`storeUserGroup`, `removeUserGroup`).
-- **View changes**: user detail rewrote to read-only memberships, group-members rewrote with two-tier search + remove button, new member-remove-confirm interstitial, platform group show scoped with M6 guard.
-- **Artisan command**: `auth:repair-i1-violations` (report-only, exit 1 if violations found).
-- **Tests**: 25 new test cases in `TenantGroupMembershipTest.php`, 5 AdminAuditLogTest routes updated.
+- **auth-tenant.md spec promoted to Final v1.0** — covers: auth tenant (slug `auth`, read-only, badge), search-first "Add Member" pattern (multi-select, batch add) on all 3 surfaces, CSV import (editable preview, tenant-scoped groups, set-password email), Create User flow (creates user + emails set-password link), Dashboard "Platform Groups" shortcut (admin-only).
 
 ### In Progress
-- **§12 implementation complete** — all 6 phases done, tests run, fixes applied (search table name, M6 guards, M8 test approach, audit test routes). Awaiting final test verification.
+- **§12 implementation** — all 6 phases done, committed + pushed (`f8cd6d9`). Tests not yet re-run after 9-fix round.
 
 ### Next Action
 - [ ] Run tests: `docker compose exec auth-app php artisan view:clear && docker compose exec auth-app php artisan test`
 - [ ] Run lint: `docker compose exec auth-app php vendor/bin/pint --test`
-- [ ] Phase D — e-cert auth swap (CSR)
+- [ ] Implement auth-tenant.md per Final spec (auth tenant seeder, search-first multi-select, CSV import, create user + set-password flow, dashboard shortcut)
 
 ### Backlog / Known Gaps
 - Kernel specs remain Draft (unchanged); Auth deployment still deferred
@@ -98,7 +87,10 @@ Then:
 | 2026-08-24 (4) | **Post-reset redirect implemented per web-ui.md v1.3 §4.3a**: forgot-password (web+API) accepts allowlisted `redirect`, embedded into emailed link; reset form carries hidden field; success redirects to app (fallback `/login`); shared `safeRedirectUrl()` moved to base Controller (WebAuthController::resolveRedirect delegates). 9 new tests; suite 219/528 green | Commit post-reset redirect work |
 | 2026-08-24 (5) | **Forgot page return-to-app link** per web-ui.md v1.4 §4.2 UI: `/forgot-password?redirect=` shows validated "Return to app" link (else "Back to sign in"); hidden field carries redirect through POST into the emailed link; validation-error path re-renders via GET with sanitized redirect so the link survives typos. 3 new tests; suite 222/538 green | Phase D e-cert auth swap |
 | 2026-08-26 | **Admin dashboard home implemented** per `admin-dashboard-home.md` v1.0 Final: controller data assembly (`adminZoneData`, stat cards, attention queue, activity feed), admin-zone Blade partial (stat strip, attention list, activity table, quick actions), `?status=pending` fix, dashboard `@include` gated by `$isAdmin`. Zero-JS, H4 fail-degrade, link-out only | Run tests + lint; Phase D e-cert auth swap |
-| 2026-08-26 (2) | **§12 Group-Permission-Management implemented** (all 6 phases): spec promoted to Final v3.0; AuthorizationService I1/M8 guards + `addToGroupTransactional()`; 5 new routes, 2 removed, 2 old methods deleted, 6 new controller methods, 2 modified with M6 guards; user detail rewrote to read-only, group-members rewrote with two-tier search + remove, new member-remove-confirm interstitial, platform group show scoped; `auth:repair-i1-violations` command; 25 new tests; fixed search table name + M6 guards + audit test routes | Run tests + lint; Phase D e-cert auth swap |
+| 2026-08-26 (2) | **§12 Group-Permission-Management implemented** (all 6 phases): spec promoted to Final v3.0; AuthorizationService I1/M8 guards + `addToGroupTransactional()`; 5 new routes, 2 removed, 2 old methods deleted, 6 new controller methods, 2 modified with M6 guards; user detail rewrote to read-only, group-members rewrote with two-tier search + remove, new member-remove-confirm interstitial, platform group show scoped; `auth:repair-i1-violations` command; 25 new tests; fixed search table name + M6 guards + audit test routes | Run tests + lint; auth-tenant.md implementation |
+| 2026-08-27 | **auth-tenant.md spec promoted to Final v1.0**: auth tenant (slug `auth`, read-only, badge), search-first Add Member (multi-select, batch add) on all surfaces, CSV import (editable preview, tenant-scoped groups), Create User + set-password email flow, Platform Groups dashboard shortcut | Implement auth-tenant.md per Final spec |
+| 2026-08-27 (2) | **auth-tenant.md fully implemented** (all 8 items): LocalAuthTenantSeeder, Tenant.isPlatform() helper, auth tenant read-only (UI + server guards), "Platform" badge, CSV multi-group support, Create User + set-password flow (migration, model, controller, mail, views, routes), multi-select search on all 3 surfaces, dashboard Platform Groups shortcut. SQL scripts created/updated (migration + consolidated cPanel install + local dev seed). | Run tests + lint |
+| 2026-08-27 (3) | **Test fixes** (4 failures): AdminAuditLogTest flash message, TenantGroupMembershipTest duplicate error, TenantMemberImportTest additive behavior, TenantMemberPickerTest button text. **PasswordSetToken HasUuids fix** (missing trait caused SQL 1364 on create). **SQL consolidation**: merged cpanel-auth-db-install-fixed.sql → cpanel-auth-db-install.sql (single file, upfront DROP pattern); fixed auth tenant INSERT (status enum, not is_active). **User Management improvements**: removed Import Users button, added "Pending" to status filter, added Groups column with linked badges, eager-loaded userGroups. | Run tests + lint; commit + push |
 
 ---
 

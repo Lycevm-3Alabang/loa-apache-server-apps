@@ -34,7 +34,7 @@
                             <tr>
                                 <td class="cell-user">
                                     <strong>{{ $tenant->name }}</strong>
-                                    <span>{{ $tenant->slug }}</span>
+                                    <span>{{ $tenant->slug }}@if ($tenant->isPlatform()) <span class="badge badge-info" style="font-size:0.6875rem;margin-left:0.25rem;">Platform</span>@endif</span>
                                 </td>
                                 <td><span class="badge badge-{{ $tenant->status === 'active' ? 'active' : 'disabled' }}">{{ $tenant->status }}</span></td>
                                 <td class="muted">{{ $tenant->users_count }}</td>

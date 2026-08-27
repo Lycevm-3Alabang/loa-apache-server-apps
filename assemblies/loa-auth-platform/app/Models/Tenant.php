@@ -58,6 +58,11 @@ class Tenant extends Model
         return $this->status === 'active';
     }
 
+    public function isPlatform(): bool
+    {
+        return $this->slug === 'auth';
+    }
+
     public function effectiveAppUrl(): ?string
     {
         return app()->environment('production')

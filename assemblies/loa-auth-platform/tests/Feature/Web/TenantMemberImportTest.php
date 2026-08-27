@@ -368,7 +368,8 @@ class TenantMemberImportTest extends TestCase
 
         $this->assertEquals(1, $summary['successful']);
         $this->assertTrue($member->userGroups()->whereKey($groupB->id)->exists());
-        $this->assertFalse($member->userGroups()->whereKey($groupA->id)->exists());
+        // Multi-group import is additive: old group is NOT removed
+        $this->assertTrue($member->userGroups()->whereKey($groupA->id)->exists());
     }
 
     public function testProcessBlockedForInactiveTenant(): void

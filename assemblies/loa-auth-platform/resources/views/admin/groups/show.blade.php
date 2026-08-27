@@ -77,21 +77,21 @@
             <h2>Members ({{ $group->users->count() }})</h2>
         </div>
 
-        {{-- Add member --}}
-        @if ($nonMembers->isNotEmpty())
-            <form method="post" action="{{ route('admin.groups.members.store', $group) }}" class="inline-form" style="margin-bottom:1.25rem;">
+        {{-- Add member (search-first multi-select) --}}
+        <div style="margin-bottom:1.25rem;">
+            <div style="position:relative;margin-bottom:0.5rem;">
+                <input type="text" id="member-search" autocomplete="off"
+                       placeholder="Search by name or email…"
+                       style="width:100%;max-width:24rem;height:2.5rem;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-family:inherit;font-size:0.875rem;">
+                <div id="member-suggestions" style="display:none;position:absolute;top:calc(100% + 0.25rem);left:0;right:0;max-width:24rem;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-md, 0 8px 24px rgba(0,0,0,0.12));max-height:18rem;overflow-y:auto;z-index:20;"></div>
+            </div>
+            <div id="selected-chips" style="display:flex;flex-wrap:wrap;gap:0.375rem;margin-bottom:0.5rem;min-height:0;"></div>
+            <form method="post" action="{{ route('admin.groups.members.store', $group) }}" id="add-member-form" class="inline-form">
                 @csrf
-                <div class="field">
-                    <select name="user_id" required style="height:2.5rem;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-family:inherit;font-size:0.875rem;">
-                        <option value="">Select a user…</option>
-                        @foreach ($nonMembers as $user)
-                            <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
-                        @endforeach
-                    </select>
-                </div>
-                <button class="button" type="submit">Add to group</button>
+                <div id="user-id-inputs"></div>
+                <button class="button" type="submit" id="add-member-btn" disabled>Add N member(s)</button>
             </form>
-        @endif
+        </div>
 
         {{-- Members list --}}
         <div class="table-wrap">
@@ -128,4 +128,107 @@
         </div>
     </div>
     @endif
+
+    <script>
+    (function () {
+        var input = document.getElementById('member-search');
+        if (!input) return;
+        var panel = document.getElementById('member-suggestions');
+        var chipsContainer = document.getElementById('selected-chips');
+        var userIdInputs = document.getElementById('user-id-inputs');
+        var addBtn = document.getElementById('add-member-btn');
+        var abortCtrl = null;
+        var debounceTimer = null;
+        var selected = {};
+
+        function updateForm() {
+            userIdInputs.innerHTML = '';
+            var count = Object.keys(selected).length;
+            Object.keys(selected).forEach(function (id) {
+                var h = document.createElement('input');
+                h.type = 'hidden';
+                h.name = 'user_ids[]';
+                h.value = id;
+                userIdInputs.appendChild(h);
+            });
+            addBtn.disabled = count === 0;
+            addBtn.textContent = count > 0 ? 'Add ' + count + ' member(s)' : 'Add N member(s)';
+        }
+
+        function renderChips() {
+            chipsContainer.innerHTML = '';
+            Object.keys(selected).forEach(function (id) {
+                var u = selected[id];
+                var chip = document.createElement('span');
+                chip.style.cssText = 'display:inline-flex;align-items:center;gap:0.25rem;padding:0.25rem 0.5rem;border:1.5px solid var(--border-accent,#93c5fd);border-radius:var(--radius-xl);background:#eff6ff;font-size:0.8125rem;';
+                chip.innerHTML = '<span style="max-width:14rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + u.name + ' — ' + u.email + '">' + u.name + '</span>' +
+                    '<button type="button" data-remove="' + id + '" title="Remove" style="background:none;border:none;cursor:pointer;font-size:0.75rem;line-height:1;color:var(--text-secondary);padding:0;">✕</button>';
+                chipsContainer.appendChild(chip);
+            });
+            updateForm();
+        }
+
+        function addUser(u) {
+            if (selected[u.id]) return;
+            selected[u.id] = u;
+            renderChips();
+            panel.style.display = 'none';
+            panel.innerHTML = '';
+            input.value = '';
+            input.focus();
+        }
+
+        function removeUser(id) {
+            delete selected[id];
+            renderChips();
+        }
+
+        input.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            var q = input.value.trim();
+            if (q.length < 2) { panel.style.display = 'none'; return; }
+            debounceTimer = setTimeout(function () {
+                if (abortCtrl) abortCtrl.abort();
+                abortCtrl = new AbortController();
+                panel.innerHTML = '<div style="padding:0.5rem 0.75rem;font-size:0.8125rem;color:var(--text-secondary);">Searching…</div>';
+                panel.style.display = 'block';
+                fetch('{{ route("admin.groups.members.search", $group) }}?q=' + encodeURIComponent(q), {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: abortCtrl.signal,
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (json) {
+                        var items = json.data || [];
+                        if (!items.length) {
+                            panel.innerHTML = '<div style="padding:0.5rem 0.75rem;font-size:0.8125rem;color:var(--text-secondary);">No matches</div>';
+                            return;
+                        }
+                        panel.innerHTML = '';
+                        items.forEach(function (u) {
+                            var row = document.createElement('div');
+                            row.setAttribute('role', 'button');
+                            row.style.cssText = 'display:flex;justify-content:space-between;gap:0.75rem;padding:0.5rem 0.75rem;cursor:pointer;font-size:0.8125rem;';
+                            var check = selected[u.id] ? '<span style="color:#16a34a;">✓</span> ' : '';
+                            row.innerHTML = '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + u.name + '">' + check + u.name + '</span>' +
+                                '<span style="color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + u.email + '">' + u.email + '</span>';
+                            row.addEventListener('click', function () { addUser(u); });
+                            row.addEventListener('mouseover', function () { row.style.background = 'var(--surface-secondary)'; });
+                            row.addEventListener('mouseout', function () { row.style.background = ''; });
+                            panel.appendChild(row);
+                        });
+                    })
+                    .catch(function () {});
+            }, 250);
+        });
+
+        chipsContainer.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-remove]');
+            if (btn) { removeUser(btn.getAttribute('data-remove')); }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!panel.contains(e.target) && e.target !== input) { panel.style.display = 'none'; }
+        });
+    })();
+    </script>
 @endsection

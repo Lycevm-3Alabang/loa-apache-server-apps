@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\SetPasswordMail;
+use App\Models\PasswordSetToken;
 use App\Models\Permission;
 use App\Models\Tenant;
 use App\Models\User;
@@ -67,7 +69,7 @@ class WebAdminController extends Controller
 
     public function index(Request $request): View
     {
-        $query = User::query()->orderByDesc('created_at');
+        $query = User::query()->with('userGroups')->orderByDesc('created_at');
 
         $q = trim((string) $request->query('q', ''));
 
@@ -296,6 +298,10 @@ class WebAdminController extends Controller
 
     public function tenantsUpdate(Request $request, Tenant $tenant): RedirectResponse
     {
+        if ($tenant->isPlatform()) {
+            abort(422, 'The auth tenant cannot be edited.');
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'app_url' => 'nullable|url|max:255',
@@ -335,6 +341,10 @@ class WebAdminController extends Controller
 
     public function tenantsStatus(Request $request, Tenant $tenant): RedirectResponse
     {
+        if ($tenant->isPlatform()) {
+            abort(422, 'The auth tenant cannot be suspended or activated.');
+        }
+
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:active,suspended',
         ]);
@@ -562,37 +572,46 @@ class WebAdminController extends Controller
             abort(404);
         }
 
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-            'tier' => 'required|in:primary,secondary',
-        ]);
+        $userIds = $request->input('user_ids', []);
+        $tiers = $request->input('tiers', []);
+        $singleId = $request->input('user_id');
+        $singleTier = $request->input('tier');
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator);
+        if (!empty($singleId) && empty($userIds)) {
+            $userIds = [$singleId];
+            $tiers = [$singleTier ?? 'primary'];
         }
 
-        $userId = $request->input('user_id');
-        $tier = $request->input('tier');
-
-        if ($group->users()->where('users.id', $userId)->exists()) {
-            return back()->with('error', 'User is already in this group.');
+        if (empty($userIds)) {
+            return back()->with('error', 'No users selected.');
         }
 
-        try {
-            if ($tier === 'secondary') {
-                // Secondary tier: create tenant pivot + group membership atomically
-                $this->authorization->addToGroupTransactional($userId, $group->id);
-            } else {
-                // Primary tier: user already has tenant pivot
-                $this->authorization->addToGroup($userId, $group->id);
+        $added = 0;
+        foreach ($userIds as $index => $userId) {
+            $tier = $tiers[$index] ?? 'primary';
+
+            if ($group->users()->where('users.id', $userId)->exists()) {
+                if (count($userIds) === 1) {
+                    return back()->with('error', 'User is already a member of this group.');
+                }
+                continue;
             }
-        } catch (\Throwable $e) {
-            return back()->with('error', $e->getMessage());
+
+            try {
+                if ($tier === 'secondary') {
+                    $this->authorization->addToGroupTransactional($userId, $group->id);
+                } else {
+                    $this->authorization->addToGroup($userId, $group->id);
+                }
+
+                $this->auditGroupMembership('added', $group, $userId);
+                $added++;
+            } catch (\Throwable) {
+                // skip individual failures
+            }
         }
 
-        $this->auditGroupMembership('added', $group, $userId);
-
-        return back()->with('status', 'Member added to group.');
+        return back()->with('status', $added . ' member(s) added to group.');
     }
 
     public function tenantGroupMemberRemoveConfirm(Tenant $tenant, UserGroup $group, string $userId): View
@@ -723,22 +742,51 @@ class WebAdminController extends Controller
 
     public function tenantsMembersStore(Request $request, Tenant $tenant): RedirectResponse
     {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-            'action' => 'required|in:add,remove',
-        ]);
+        $action = $request->input('action');
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator);
+        if ($action === 'remove') {
+            $validator = Validator::make($request->all(), [
+                'user_id' => 'required|exists:users,id',
+            ]);
+
+            if ($validator->fails()) {
+                return back()->withErrors($validator);
+            }
+
+            $userId = $request->input('user_id');
+            $memberEmail = User::find($userId)?->email;
+
+            try {
+                $this->tenants->removeUserFromTenant($userId, $tenant->id);
+
+                $this->audit->recordSafe(
+                    'tenant.member_removed',
+                    'tenant',
+                    $tenant->id,
+                    ['tenant' => $tenant->slug, 'member_email' => $memberEmail],
+                );
+
+                return back()->with('status', 'User removed from tenant.');
+            } catch (\Throwable) {
+                return back()->with('error', 'Unable to update membership.');
+            }
         }
 
-        $userId = $request->input('user_id');
-        $action = $request->input('action');
-        $memberEmail = User::find($userId)?->email;
+        $userIds = $request->input('user_ids', []);
+        $singleId = $request->input('user_id');
+        if (!empty($singleId) && empty($userIds)) {
+            $userIds = [$singleId];
+        }
 
-        try {
-            if ($action === 'add') {
+        if (empty($userIds)) {
+            return back()->with('error', 'No users selected.');
+        }
+
+        $added = 0;
+        foreach ($userIds as $userId) {
+            try {
                 $this->tenants->addUserToTenant($userId, $tenant->id);
+                $memberEmail = User::find($userId)?->email;
 
                 $this->audit->recordSafe(
                     'tenant.member_added',
@@ -747,21 +795,66 @@ class WebAdminController extends Controller
                     ['tenant' => $tenant->slug, 'member_email' => $memberEmail],
                 );
 
-                return back()->with('status', 'User added to tenant.');
+                $added++;
+            } catch (\Throwable) {
+                // skip individual failures
             }
+        }
 
-            $this->tenants->removeUserFromTenant($userId, $tenant->id);
+        return back()->with('status', $added . ' user(s) added to tenant.');
+    }
+
+    public function tenantsCreateUser(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        try {
+            $user = $this->identity->register(
+                $request->input('email'),
+                '',
+                $request->input('name'),
+            );
+            $user->update(['status' => 'pending']);
+
+            $user->tenants()->syncWithoutDetaching([$tenant->id]);
+
+            $rawToken = bin2hex(random_bytes(32));
+            $hashedToken = hash('sha256', $rawToken);
+
+            PasswordSetToken::where('user_id', $user->id)->delete();
+
+            PasswordSetToken::create([
+                'user_id' => $user->id,
+                'token' => $hashedToken,
+                'expires_at' => now()->addHours(48),
+            ]);
+
+            Mail::to($user->email)->queue(new SetPasswordMail($user, $rawToken));
 
             $this->audit->recordSafe(
-                'tenant.member_removed',
-                'tenant',
-                $tenant->id,
-                ['tenant' => $tenant->slug, 'member_email' => $memberEmail],
+                'user.created',
+                'user',
+                $user->id,
+                ['email' => $user->email, 'name' => $user->name, 'tenant' => $tenant->slug],
             );
 
-            return back()->with('status', 'User removed from tenant.');
-        } catch (\Throwable) {
-            return back()->with('error', 'Unable to update membership.');
+            $this->audit->recordSafe(
+                'tenant.member_added',
+                'tenant',
+                $tenant->id,
+                ['tenant' => $tenant->slug, 'member_email' => $user->email],
+            );
+
+            return back()->with('status', 'User created and set-password email sent.');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Unable to create user: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -822,14 +915,9 @@ class WebAdminController extends Controller
 
         $allPermissions = Permission::orderBy('key')->get();
 
-        $nonMembers = User::whereNotIn('id', $group->users->pluck('id'))
-            ->orderBy('email')
-            ->get();
-
         return view('admin.groups.show', [
             'group' => $group,
             'allPermissions' => $allPermissions,
-            'nonMembers' => $nonMembers,
         ]);
     }
 
@@ -868,6 +956,38 @@ class WebAdminController extends Controller
         return back()->with('status', 'Permissions updated.');
     }
 
+    public function platformGroupMemberSearch(Request $request, UserGroup $group): JsonResponse
+    {
+        if ($group->tenant_id !== null) {
+            abort(404);
+        }
+
+        $term = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($term) < 2) {
+            return response()->json(['data' => []]);
+        }
+
+        $like = '%' . addcslashes(strtolower($term), '%_\\') . '%';
+        $escapeChar = '\\';
+
+        $users = User::query()
+            ->where(function ($q) use ($like, $escapeChar) {
+                $q->whereRaw('LOWER(name) LIKE ? ESCAPE ?', [$like, $escapeChar])
+                    ->orWhereRaw('LOWER(email) LIKE ? ESCAPE ?', [$like, $escapeChar]);
+            })
+            ->where('status', '!=', 'disabled')
+            ->whereNotIn('id', function ($sub) use ($group) {
+                $sub->select('user_id')->from('user_user_group')
+                    ->where('user_group_id', $group->id);
+            })
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'name', 'email', 'status']);
+
+        return response()->json(['data' => $users]);
+    }
+
     public function groupsMembersStore(Request $request, UserGroup $group): RedirectResponse
     {
         // §12 M6: Platform group member management — reject tenant-scoped groups
@@ -875,25 +995,29 @@ class WebAdminController extends Controller
             abort(404);
         }
 
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-        ]);
+        $userIds = $request->input('user_ids', []);
+        $singleId = $request->input('user_id');
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator);
+        if (!empty($singleId) && empty($userIds)) {
+            $userIds = [$singleId];
         }
 
-        $userId = $request->input('user_id');
-
-        if ($group->users()->where('users.id', $userId)->exists()) {
-            return back()->with('error', 'User is already in this group.');
+        if (empty($userIds)) {
+            return back()->with('error', 'No users selected.');
         }
 
-        $this->authorization->addToGroup($userId, $group->id);
+        $added = 0;
+        foreach ($userIds as $userId) {
+            if ($group->users()->where('users.id', $userId)->exists()) {
+                continue;
+            }
 
-        $this->auditGroupMembership('added', $group, $userId);
+            $this->authorization->addToGroup($userId, $group->id);
+            $this->auditGroupMembership('added', $group, $userId);
+            $added++;
+        }
 
-        return back()->with('status', 'User added to group.');
+        return back()->with('status', $added . ' user(s) added to group.');
     }
 
     public function groupsMembersRemove(UserGroup $group, string $userId): RedirectResponse

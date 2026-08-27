@@ -291,15 +291,29 @@ class TenantMemberImportController extends UserImportController
 
         $expected = ['name', 'email', 'user_group'];
 
-        if ($headers !== $expected) {
-            $missing = array_diff($expected, $headers);
-            $extra = array_diff($headers, $expected);
+        $normalizedHeaders = array_map(
+            fn ($h) => str_replace('-', '_', $h),
+            $headers,
+        );
+
+        $canonicalHeaders = $normalizedHeaders;
+
+        if (in_array('groups', $canonicalHeaders, true) && !in_array('user_group', $canonicalHeaders, true)) {
+            $canonicalHeaders = array_map(
+                fn ($h) => $h === 'groups' ? 'user_group' : $h,
+                $canonicalHeaders,
+            );
+        }
+
+        if ($canonicalHeaders !== $expected) {
+            $missing = array_diff($expected, $canonicalHeaders);
+            $extra = array_diff($canonicalHeaders, $expected);
 
             return [
-                'error' => 'Invalid headers. Expected: name,email,user_group (or name,email,user-group). ' .
+                'error' => 'Invalid headers. Expected: name,email,user_group (or name,email,groups). ' .
                            (!empty($missing) ? 'Missing: ' . implode(',', $missing) . '. ' : '') .
                            (!empty($extra) ? 'Extra: ' . implode(',', $extra) . '. ' : '') .
-                           ($headers !== $expected && empty($missing) && empty($extra) ? 'Wrong order. ' : '') .
+                           ($canonicalHeaders !== $expected && empty($missing) && empty($extra) ? 'Wrong order. ' : '') .
                            'Headers must be exactly: name,email,user_group',
                 'rows' => [],
                 'headers' => $headers,
@@ -336,12 +350,16 @@ class TenantMemberImportController extends UserImportController
                 continue;
             }
 
+            $groupsRaw = $this->normalizeGroupField($fields[2]);
+            $groupNames = $this->parseGroupList($groupsRaw);
+
             $rows[] = [
                 'row_number' => $rowNumber,
                 'name' => $fields[0],
                 'email' => $fields[1],
                 'tenant_app' => $this->tenant->slug,
-                'user_group' => $this->normalizeGroupField($fields[2]),
+                'user_group' => $groupsRaw,
+                'group_names' => $groupNames,
                 'status' => 'pending',
                 'remarks' => '',
             ];
@@ -356,9 +374,20 @@ class TenantMemberImportController extends UserImportController
         return preg_replace('/\s+/', ' ', trim($value)) ?? '';
     }
 
+    private function parseGroupList(string $value): array
+    {
+        if ($value === '') {
+            return [];
+        }
+
+        return array_map('trim', explode(',', $value));
+    }
+
     protected function validateRows(array $rows): array
     {
         $rows = parent::validateRows($rows);
+
+        $tenantGroups = $this->tenant->userGroups()->pluck('name')->map(fn ($n) => strtolower($n))->all();
 
         foreach ($rows as $index => $row) {
             $tooLong = [];
@@ -373,6 +402,19 @@ class TenantMemberImportController extends UserImportController
 
             if (mb_strlen($row['user_group']) > self::FIELD_MAX_LENGTH) {
                 $tooLong[] = 'user_group is too long (max ' . self::FIELD_MAX_LENGTH . ')';
+            }
+
+            $invalidGroups = [];
+            $groupNames = $row['group_names'] ?? ($row['user_group'] ? [$row['user_group']] : []);
+
+            foreach ($groupNames as $gName) {
+                if (!in_array(strtolower($gName), $tenantGroups, true)) {
+                    $invalidGroups[] = $gName;
+                }
+            }
+
+            if (!empty($invalidGroups)) {
+                $tooLong[] = 'group not found in tenant: ' . implode(', ', $invalidGroups);
             }
 
             if (!empty($tooLong)) {
@@ -471,10 +513,15 @@ class TenantMemberImportController extends UserImportController
     protected function processRow(array $row): void
     {
         $emailKey = strtolower(trim($row['email']));
-        $groupId = $this->groupsByName[$row['user_group']] ?? null;
+        $groupNames = $row['group_names'] ?? ($row['user_group'] ? [$row['user_group']] : []);
 
-        if ($groupId === null) {
-            throw new \Exception('user_group does not exist in this tenant');
+        $groupIds = [];
+        foreach ($groupNames as $gName) {
+            $gid = $this->groupsByName[$gName] ?? null;
+            if ($gid === null) {
+                throw new \Exception("group '{$gName}' does not exist in this tenant");
+            }
+            $groupIds[] = (int) $gid;
         }
 
         $user = $this->usersByEmail[$emailKey] ?? null;
@@ -500,25 +547,17 @@ class TenantMemberImportController extends UserImportController
             throw new \Exception('Account is disabled');
         }
 
-        $wasMember = isset($this->memberUserIds[$user->id]);
-        $currentGroupIds = collect($this->currentGroupsByUser[$user->id] ?? []);
-
-        if ($wasMember && $currentGroupIds->contains((int) $groupId)) {
-            return;
-        }
-
         $user->tenants()->syncWithoutDetaching([$this->tenant->id]);
         $this->memberUserIds[$user->id] = true;
 
-        $staleIds = $currentGroupIds->reject(fn ($id) => $id === (int) $groupId)->values()->all();
+        if (!empty($groupIds)) {
+            $currentGroupIds = collect($this->currentGroupsByUser[$user->id] ?? []);
+            $newGroupIds = collect($groupIds)->reject(fn ($id) => $currentGroupIds->contains($id))->values()->all();
 
-        if (!empty($staleIds)) {
-            $user->userGroups()->detach($staleIds);
-            $this->currentGroupsByUser[$user->id] = [(int) $groupId];
-        } else {
-            $this->currentGroupsByUser[$user->id][] = (int) $groupId;
+            if (!empty($newGroupIds)) {
+                $user->userGroups()->syncWithoutDetaching($newGroupIds);
+                $this->currentGroupsByUser[$user->id] = array_unique(array_merge($currentGroupIds->all(), $newGroupIds));
+            }
         }
-
-        $user->userGroups()->syncWithoutDetaching([(int) $groupId]);
     }
 }

@@ -176,7 +176,7 @@ class TenantMemberPickerTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Search by name or email…');
-        $response->assertSee('Import members');
+        $response->assertSee('Import CSV');
         $response->assertDontSee('<option value="">Select a user…</option>', false);
         $response->assertDontSee('$nonMembers');
 

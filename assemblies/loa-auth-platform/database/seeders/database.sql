@@ -160,6 +160,20 @@ CREATE TABLE `password_reset_tokens` (
   CONSTRAINT `password_reset_tokens_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `password_set_tokens` (
+  `id` char(36) NOT NULL,
+  `user_id` char(36) NOT NULL,
+  `token` varchar(255) NOT NULL,
+  `expires_at` timestamp NOT NULL,
+  `used_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `password_set_tokens_token_index` (`token`),
+  KEY `password_set_tokens_user_id_created_at_index` (`user_id`,`created_at`),
+  CONSTRAINT `password_set_tokens_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `refresh_tokens` (
   `id` char(36) NOT NULL,
   `user_id` char(36) NOT NULL,
@@ -228,6 +242,10 @@ SET @ecert_tenant_id = '91128f0a-df85-47a9-ae1d-5298904dacd5';
 
 INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES
 (@ecert_tenant_id, 'loa-e-cert', 'Local Cert App', 'active', 'http://localhost:9001', 'http://localhost:9001', JSON_ARRAY('http://localhost:3000'), JSON_ARRAY('http://localhost:3000'), NOW(), NOW());
+
+-- Auth tenant (LOA Auth Platform) — slug = 'auth', read-only, app_url = NULL
+INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'auth', 'LOA Auth Platform', 'active', NULL, NULL, JSON_ARRAY(), JSON_ARRAY(), NOW(), NOW());
 
 INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES
 (2, 'cert-admin', 'Local certificate administrator', 2, @ecert_tenant_id, NOW(), NOW()),

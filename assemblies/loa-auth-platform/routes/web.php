@@ -4,6 +4,7 @@ use App\Http\Controllers\AccessConfigController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\EndpointGrantController;
 use App\Http\Controllers\PortalController;
+use App\Http\Controllers\SetPasswordController;
 use App\Http\Controllers\WebAdminController;
 use App\Http\Controllers\WebAuthController;
 use App\Http\Controllers\WebResetController;
@@ -46,6 +47,9 @@ Route::post('/forgot-password', [WebAuthController::class, 'sendResetLinkEmail']
 Route::get('/reset-password', [WebResetController::class, 'showResetForm'])
     ->name('password.reset');
 Route::post('/reset-password', [WebResetController::class, 'reset']);
+
+Route::get('/set-password', [SetPasswordController::class, 'show'])->name('set-password');
+Route::post('/set-password', [SetPasswordController::class, 'set'])->name('set-password.process');
 
 Route::get('/redirect', [WebAuthController::class, 'showRedirect'])
     ->name('auth.redirect');
@@ -104,6 +108,9 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::get('/groups/{group}', [WebAdminController::class, 'groupsShow'])->name('admin.groups.show');
     Route::post('/groups/{group}/permissions', [WebAdminController::class, 'groupsPermissions'])->name('admin.groups.permissions');
     // §12 M6: Platform group member management — scoped to platform groups only (tenant_id IS NULL)
+    Route::get('/groups/{group}/members/search', [WebAdminController::class, 'platformGroupMemberSearch'])
+        ->name('admin.groups.members.search')
+        ->middleware('throttle:120,1');
     Route::post('/groups/{group}/members', [WebAdminController::class, 'groupsMembersStore'])->name('admin.groups.members.store');
     Route::post('/groups/{group}/members/{userId}/remove', [WebAdminController::class, 'groupsMembersRemove'])->name('admin.groups.members.remove');
 
@@ -159,6 +166,8 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
 Route::get('/tenants/{tenant}/members/search', [WebAdminController::class, 'searchMembers'])
     ->name('admin.tenants.members.search')
     ->middleware('throttle:120,1');
+Route::post('/tenants/{tenant}/users', [WebAdminController::class, 'tenantsCreateUser'])
+    ->name('admin.tenants.users.store');
 Route::get('/tenants/{tenant}/members/import', [\App\Http\Controllers\TenantMemberImportController::class, 'showForm'])->name('admin.tenants.members.import');
 Route::post('/tenants/{tenant}/members/import/preview', [\App\Http\Controllers\TenantMemberImportController::class, 'preview'])->name('admin.tenants.members.import.preview');
 Route::post('/tenants/{tenant}/members/import/process', [\App\Http\Controllers\TenantMemberImportController::class, 'process'])->name('admin.tenants.members.import.process');
