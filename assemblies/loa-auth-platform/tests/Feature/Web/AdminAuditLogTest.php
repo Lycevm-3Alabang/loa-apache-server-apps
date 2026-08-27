@@ -63,8 +63,8 @@ class AdminAuditLogTest extends TestCase
         $admin = $this->actingAdmin();
         $member = User::factory()->create();
 
-        $this->post("/admin/users/{$member->id}/groups", [
-            'group_id' => $this->adminGroup->id,
+        $this->post("/admin/groups/{$this->adminGroup->id}/members", [
+            'user_id' => $member->id,
         ])->assertRedirect();
 
         $log = AuditLog::where('action', 'admin_group.granted')->firstOrFail();
@@ -84,7 +84,7 @@ class AdminAuditLogTest extends TestCase
         $member = User::factory()->create();
         $member->userGroups()->attach($this->adminGroup->id);
 
-        $this->post("/admin/users/{$member->id}/groups/{$this->adminGroup->id}/remove")
+        $this->post("/admin/groups/{$this->adminGroup->id}/members/{$member->id}/remove")
             ->assertRedirect();
 
         $this->assertDatabaseHas('audit_logs', ['action' => 'admin_group.revoked']);
@@ -95,8 +95,8 @@ class AdminAuditLogTest extends TestCase
         $this->actingAdmin();
         $member = User::factory()->create();
 
-        $this->post("/admin/users/{$member->id}/groups", [
-            'group_id' => $this->plainGroup->id,
+        $this->post("/admin/groups/{$this->plainGroup->id}/members", [
+            'user_id' => $member->id,
         ])->assertRedirect();
 
         $this->assertDatabaseHas('audit_logs', ['action' => 'group.member_added']);
@@ -109,8 +109,8 @@ class AdminAuditLogTest extends TestCase
         $admin = $this->actingAdmin();
         $member = User::factory()->create();
 
-        $this->post("/admin/users/{$member->id}/groups", [
-            'group_id' => $this->adminGroup->id,
+        $this->post("/admin/groups/{$this->adminGroup->id}/members", [
+            'user_id' => $member->id,
         ])->assertRedirect();
 
         $member->delete();
@@ -213,8 +213,8 @@ class AdminAuditLogTest extends TestCase
             ->andThrow(new \RuntimeException('storage down'));
         $this->app->instance(AuditLogger::class, $failing);
 
-        $response = $this->post("/admin/users/{$member->id}/groups", [
-            'group_id' => $this->adminGroup->id,
+        $response = $this->post("/admin/groups/{$this->adminGroup->id}/members", [
+            'user_id' => $member->id,
         ]);
 
         $response->assertRedirect();

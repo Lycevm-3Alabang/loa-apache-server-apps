@@ -142,4 +142,13 @@
             @endforeach
         </div>
     @endif
+
+    @if ($isAdmin)
+        @include('admin.partials.admin-zone', [
+            'adminStats' => $adminStats ?? [],
+            'adminAttention' => $adminAttention ?? [],
+            'adminActivity' => $adminActivity ?? [],
+            'adminZoneFailed' => $adminZoneFailed ?? true,
+        ])
+    @endif
 @endsection

@@ -57,25 +57,7 @@
             <h2>Group Membership ({{ $groups->count() }})</h2>
         </div>
 
-        {{-- Add to group --}}
-        @if ($allGroups->isNotEmpty())
-            <form method="post" action="{{ route('admin.users.groups.store', $user) }}" class="inline-form" style="margin-bottom:1.25rem;">
-                @csrf
-                <div class="field">
-                    <select name="group_id" required style="height:2.5rem;padding:0.5rem 0.75rem;border:1.5px solid var(--border);border-radius:var(--radius-xl);background:var(--surface-secondary);font-family:inherit;font-size:0.875rem;">
-                        <option value="">Select a group…</option>
-                        @foreach ($allGroups as $group)
-                            @unless ($groups->contains('id', $group->id))
-                                <option value="{{ $group->id }}">{{ $group->name }}</option>
-                            @endunless
-                        @endforeach
-                    </select>
-                </div>
-                <button class="button" type="submit">Add to group</button>
-            </form>
-        @endif
-
-        {{-- Groups list --}}
+        {{-- §12 M2: Read-only membership list (add/remove moved to tenant group members page) --}}
         <div class="table-wrap">
             @if ($groups->isEmpty())
                 <div class="empty-state">User is not a member of any groups.</div>
@@ -86,7 +68,6 @@
                             <th>Group</th>
                             <th>Description</th>
                             <th>Scope</th>
-                            <th class="row-actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -103,12 +84,6 @@
                                 </td>
                                 <td class="muted">{{ $group->description ?? '—' }}</td>
                                 <td class="muted">{{ $group->tenant_id ? 'Tenant' : 'Platform' }}</td>
-                                <td class="row-actions">
-                                    <form method="post" action="{{ route('admin.users.groups.remove', [$user, $group->id]) }}">
-                                        @csrf
-                                        <a class="button button-link button-danger" role="button" href="#" onclick="event.preventDefault(); if (confirm('Remove from this group?')) this.closest('form').submit();">Remove</a>
-                                    </form>
-                                </td>
                             </tr>
                         @endforeach
                     </tbody>

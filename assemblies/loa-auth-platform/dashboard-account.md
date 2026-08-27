@@ -33,7 +33,7 @@
 |---|---|---|
 | D13 | Console tile removed | The dashboard body never renders an **Auth Admin Console** tile — including for platform-admins. Admin entry lives solely in the topbar nav links (D10). The dashboard is an **application launcher**, nothing else |
 | D14 | Topbar account menu | The bare name chip + standalone Sign-out button are replaced by a **user dropdown** in the topbar: the trigger shows the signed-in user's name; the open menu lists **Manage account** (`portal.account`) and **Sign out** (`POST console.logout`, CSRF). Implemented with `<details>/<summary>` — the zero-JS invariant holds. Renders for every console user on every page using `layouts/admin` |
-| D15 | Role-split dashboard | Non-admins get the **apps-first launcher** (§4). The dedicated admin dashboard is **deferred to a future spec**; until then admins render the same launcher for their own memberships, with console access via the topbar nav |
+| D15 | Role-split dashboard | Non-admins get the **apps-first launcher** (§4). The dedicated admin dashboard is **deferred to a future spec** — now drafted as `admin-dashboard-home.md` (v0.1 Draft); until that ships, admins render the same launcher for their own memberships, with console access via the topbar nav |
 
 ### v1.1 additions
 

@@ -94,8 +94,6 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::get('/users/create', [WebAdminController::class, 'create'])->name('admin.users.create');
     Route::post('/users', [WebAdminController::class, 'store'])->name('admin.users.store');
     Route::get('/users/{id}', [WebAdminController::class, 'showUser'])->name('admin.users.show');
-    Route::post('/users/{id}/groups', [WebAdminController::class, 'storeUserGroup'])->name('admin.users.groups.store');
-    Route::post('/users/{id}/groups/{groupId}/remove', [WebAdminController::class, 'removeUserGroup'])->name('admin.users.groups.remove');
     Route::post('/users/{id}/permissions', [WebAdminController::class, 'storeUserPermission'])->name('admin.users.permissions.store');
     Route::post('/users/{id}/permissions/{key}/remove', [WebAdminController::class, 'removeUserPermission'])->name('admin.users.permissions.remove');
     Route::post('/users/{id}/status', [WebAdminController::class, 'updateStatus'])->name('admin.users.status');
@@ -105,6 +103,7 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::post('/groups', [WebAdminController::class, 'groupsStore'])->name('admin.groups.store');
     Route::get('/groups/{group}', [WebAdminController::class, 'groupsShow'])->name('admin.groups.show');
     Route::post('/groups/{group}/permissions', [WebAdminController::class, 'groupsPermissions'])->name('admin.groups.permissions');
+    // §12 M6: Platform group member management — scoped to platform groups only (tenant_id IS NULL)
     Route::post('/groups/{group}/members', [WebAdminController::class, 'groupsMembersStore'])->name('admin.groups.members.store');
     Route::post('/groups/{group}/members/{userId}/remove', [WebAdminController::class, 'groupsMembersRemove'])->name('admin.groups.members.remove');
 
@@ -129,13 +128,29 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::post('/tenants/{tenant}/groups/{group}/endpoints', [WebAdminController::class, 'tenantsGroupsEndpointsStore'])
         ->name('admin.tenants.group.endpoints.save');
 
-    // NEW: Tenant group effective permissions (auth API keys)
+    // Tenant group effective permissions (auth API keys)
     Route::post('/tenants/{tenant}/groups/{group}/permissions', [WebAdminController::class, 'tenantsGroupsPermissionsStore'])
         ->name('admin.tenants.group.permissions.save');
+    // §12 M2: Platform-permissions toggle (grant/deny platform-group permissions from tenant group members page)
+    Route::post('/tenants/{tenant}/groups/{group}/platform-permissions', [WebAdminController::class, 'tenantGroupPlatformPermissions'])
+        ->name('admin.tenants.group.platform-permissions');
     
-    // NEW: Group members page
+    // Group members page
     Route::get('/tenants/{tenant}/groups/{group}/members', [WebAdminController::class, 'tenantsGroupMembers'])
         ->name('admin.tenants.group.members');
+    // §12: Two-tier member search (primary = tenant members not in group, secondary = non-tenant users)
+    Route::get('/tenants/{tenant}/groups/{group}/members/search', [WebAdminController::class, 'tenantGroupMemberSearch'])
+        ->name('admin.tenants.group.members.search')
+        ->middleware('throttle:120,1');
+    // §12: Add member to tenant group (primary-tier direct, secondary-tier via addToGroupTransactional)
+    Route::post('/tenants/{tenant}/groups/{group}/members', [WebAdminController::class, 'tenantGroupMembersStore'])
+        ->name('admin.tenants.group.members.store');
+    // §12: Remove member from tenant group (with cascade confirmation interstitial)
+    Route::get('/tenants/{tenant}/groups/{group}/members/{userId}/remove', [WebAdminController::class, 'tenantGroupMemberRemoveConfirm'])
+        ->name('admin.tenants.group.members.remove.confirm');
+    Route::post('/tenants/{tenant}/groups/{group}/members/{userId}/remove', [WebAdminController::class, 'tenantGroupMemberRemove'])
+        ->name('admin.tenants.group.members.remove');
+    // Tenant-scoped member add (legacy route name preserved)
     Route::post('/tenants/{tenant}/members', [WebAdminController::class, 'tenantsMembersStore'])->name('admin.tenants.members');
 
     // Audit log browser (admin-audit-log.md §6) — read-only evidence

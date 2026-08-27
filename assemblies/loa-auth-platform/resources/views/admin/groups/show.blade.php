@@ -70,7 +70,8 @@
         </form>
     </div>
 
-    {{-- Members --}}
+    {{-- §12 M6: Members — platform groups only --}}
+    @if ($group->tenant_id === null)
     <div class="detail-card">
         <div class="section-header">
             <h2>Members ({{ $group->users->count() }})</h2>
@@ -126,4 +127,5 @@
             @endif
         </div>
     </div>
+    @endif
 @endsection

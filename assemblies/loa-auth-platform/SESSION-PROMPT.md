@@ -41,30 +41,28 @@ Then:
 
 ## Last Session Notes
 
-### Date: 2026-08-24
+### Date: 2026-08-26
 
 ### Completed
-- **Admin UI overhaul implemented + committed** (`4ed2e80`, `8d40f6b`):
-  - Breadcrumbs (`admin/partials/breadcrumbs.blade.php` + `.breadcrumbs` CSS) on **every** admin page incl. roots; all 12 "Back to" buttons removed
-  - Table row actions → **link-text style** (`.button-link`, danger variant for destructive); POST forms submit via confirm-then-submit anchors
-  - Platform-admin rows show `(Admin)` beside the name in the User column (no status action — backend forbids deactivation)
-  - Tenant detail redesigned: quick-action tiles (Edit / Manage groups / Manage endpoints / Import-Export Config) inside Tenant details card; tiles rolled out to group-show and user-detail ("Endpoint overrides" tile — previously an orphaned page)
-  - New button variants in `layouts/admin`: `.button-neutral`, `.button-soft-danger`, `.button-soft-success`; `.button-ghost` is light-theme by default (fixes white-on-white text), white scoped to `.admin-topbar`
-  - Full Web suite green after each step (**85 tests**)
-- **Password API documented**: complete endpoint/auth table (public forgot/reset; `jwt.auth` change + change-request) added to `web-ui.md` §12.3 and a new "API Surface" section in `kernels/identity/rules/password-reset-flow.md`
-- **JWT access TTL reverted to 15 min** per `kernels/identity/rules/token-lifecycle.md` policy (`37fcbb7`) — config/jwt.php code default, both compose files, `.env.example`s; containers recreated and verified live (`access_ttl=15`)
-- **cPanel production wiring** (`d031994`): real DB names/users across DEPLOY docs/env examples/environment.md — auth `lyceumalabang_auth_db` / `lyceumalabang_auth_admin`; cert `lyceumalabang_e_cert` / same admin user; passwords stay deploy-time placeholders; fixed `CACHE_STORE=redis` → `file` landmine in auth example (`5611d92`)
-- **DEPLOY.md hardened**: MAIL_* env table (+ silent-failure warning), ENCRYPTION_KEY/AUTH_ADMIN_GROUP rows, data-migration recipe (mysqldump from Docker → phpMyAdmin/SSH), server prerequisites, storage permissions, backup/rollback recipe, sync-mail note, expanded post-deploy verification (email arrival + SSO payload check)
-- **HeidiSQL guide** added to root `LOCAL-DEV-RUNBOOK.md` §14 (host port 33060; `loa`/`loa-secret`, root/`root-secret`)
-- **`.env.cpanel` production templates** created for auth + cert — full prod config with real DB names, `ENTER_*` placeholders for secrets; gitignored as `.env.cpanel` (`7deac3a`), verified untracked
+- **Admin dashboard home spec promoted to Final v1.0** (`admin-dashboard-home.md`): platform-admin-only zone on `/` beneath apps grid — stat strip (Users/Tenants/Sessions/Memberships), attention queue (priorities 2–6, 5-item cap + aggregate line), activity feed (last 10, no `auth.tenant_entry`), quick actions (4 buttons). H1–H5 locked, zero-JS, link-out only, H4 fail-degrade. I1 attention item conditionally omitted (GPM v3.0 still Draft).
+- **Controller data assembly** (`PortalController.php`): `adminZoneData()` (try/catch per H4), `buildStatCards()` (raw select for user/tenant counts, distinct `refresh_tokens` for sessions, `user_tenants` pivot count), `buildAttentionQueue()` (priorities 2–6 with session-based import failures, zero-member tenants, dev_app_url in prod), `buildActivityFeed()` (10 rows, excludes `auth.tenant_entry`, deep-links to audit browser filtered by action). New imports: `AuditLog`, `RefreshToken`, `Tenant`, `DB`.
+- **WebAdminController `?status=pending`** — added to allowed status filter array so pending users link works.
+- **Admin zone Blade partial** (`resources/views/admin/partials/admin-zone.blade.php`): stat grid, attention list with aggregate handling, activity table with `diffForHumans()`, quick action buttons, inline CSS, responsive breakpoint (720px). Zone-degrade message for H4 failures.
+- **Dashboard updated** (`dashboard.blade.php`): `@include('admin.partials.admin-zone')` gated by `@if ($isAdmin)`.
+- **§12 Group-Permission-Management spec promoted to Final v3.0**: tenant group membership ownership restructure — I1 invariant enforcement, two-tier search, cascade confirmation interstitial, M2/M5/M6/M8 guards, Q3 resolved (report-only repair command), 26 test items.
+- **AuthorizationService changes**: I1 guard on `addToGroup()` (422 if user lacks tenant pivot), M8 self-revocation guard on `removeFromGroup()`, new `addToGroupTransactional()` (atomic tenant pivot + group add).
+- **Route changes**: 5 new routes (tenant group members search/store/remove/confirm, platform-permissions toggle), 2 old user-detail routes removed, platform group routes scoped with M6 guard comment.
+- **Controller changes**: 6 new methods (`tenantGroupMemberSearch`, `tenantGroupMembersStore`, `tenantGroupMemberRemoveConfirm`, `tenantGroupMemberRemove`, `tenantGroupPlatformPermissions`), 2 modified with M6 guards (`groupsMembersStore`, `groupsMembersRemove`, `groupsShow`, `groupsPermissions`), 2 old methods removed (`storeUserGroup`, `removeUserGroup`).
+- **View changes**: user detail rewrote to read-only memberships, group-members rewrote with two-tier search + remove button, new member-remove-confirm interstitial, platform group show scoped with M6 guard.
+- **Artisan command**: `auth:repair-i1-violations` (report-only, exit 1 if violations found).
+- **Tests**: 25 new test cases in `TenantGroupMembershipTest.php`, 5 AdminAuditLogTest routes updated.
 
 ### In Progress
-- **Post-reset redirect (§4.3a, web-ui.md v1.3)** — implemented and committed (`28f152e`)
-- **Template visibility feature** — spec Final (`D:\loa\e-cert\specs\components\template-visibility.md` v1.1) and now **implemented in loa-cert-platform** (commit `9904746`, 2026-08-24; suite 168/557 green). Remaining: e-cert UI badge/toggle lands with Phase E/F.
+- **§12 implementation complete** — all 6 phases done, tests run, fixes applied (search table name, M6 guards, M8 test approach, audit test routes). Awaiting final test verification.
 
 ### Next Action
-- [x] Implement template visibility in `loa-cert-platform` per the Final spec — DONE (`9904746`)
-- [x] Implement post-reset redirect per web-ui.md v1.3 §4.3a — code + 9 tests green (219/528), uncommitted
+- [ ] Run tests: `docker compose exec auth-app php artisan view:clear && docker compose exec auth-app php artisan test`
+- [ ] Run lint: `docker compose exec auth-app php vendor/bin/pint --test`
 - [ ] Phase D — e-cert auth swap (CSR)
 
 ### Backlog / Known Gaps
@@ -99,6 +97,8 @@ Then:
 | 2026-08-24 (3) | **Template visibility implemented in cert platform** (`9904746`, cross-assembly per Final spec): 23 new tests, suite 168/557 green; latent `jwt_claims.sub` bug fixed; inverted endpoint-policy unit test corrected. Cross-boundary record updated in PROJECT_UPDATES.md | Phase D e-cert auth swap; e-cert UI badge/toggle in Phase E/F |
 | 2026-08-24 (4) | **Post-reset redirect implemented per web-ui.md v1.3 §4.3a**: forgot-password (web+API) accepts allowlisted `redirect`, embedded into emailed link; reset form carries hidden field; success redirects to app (fallback `/login`); shared `safeRedirectUrl()` moved to base Controller (WebAuthController::resolveRedirect delegates). 9 new tests; suite 219/528 green | Commit post-reset redirect work |
 | 2026-08-24 (5) | **Forgot page return-to-app link** per web-ui.md v1.4 §4.2 UI: `/forgot-password?redirect=` shows validated "Return to app" link (else "Back to sign in"); hidden field carries redirect through POST into the emailed link; validation-error path re-renders via GET with sanitized redirect so the link survives typos. 3 new tests; suite 222/538 green | Phase D e-cert auth swap |
+| 2026-08-26 | **Admin dashboard home implemented** per `admin-dashboard-home.md` v1.0 Final: controller data assembly (`adminZoneData`, stat cards, attention queue, activity feed), admin-zone Blade partial (stat strip, attention list, activity table, quick actions), `?status=pending` fix, dashboard `@include` gated by `$isAdmin`. Zero-JS, H4 fail-degrade, link-out only | Run tests + lint; Phase D e-cert auth swap |
+| 2026-08-26 (2) | **§12 Group-Permission-Management implemented** (all 6 phases): spec promoted to Final v3.0; AuthorizationService I1/M8 guards + `addToGroupTransactional()`; 5 new routes, 2 removed, 2 old methods deleted, 6 new controller methods, 2 modified with M6 guards; user detail rewrote to read-only, group-members rewrote with two-tier search + remove, new member-remove-confirm interstitial, platform group show scoped; `auth:repair-i1-violations` command; 25 new tests; fixed search table name + M6 guards + audit test routes | Run tests + lint; Phase D e-cert auth swap |
 
 ---
 

@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Permission;
 use App\Models\User;
 use App\Models\UserGroup;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AuthorizationService
 {
@@ -111,6 +113,18 @@ class AuthorizationService
             throw new \Exception('User or group not found');
         }
 
+        // I1 invariant: user in tenant-scoped group ⇒ user must have that tenant's pivot
+        if ($group->tenant_id !== null) {
+            $hasPivot = DB::table('user_tenants')
+                ->where('user_id', $userId)
+                ->where('tenant_id', $group->tenant_id)
+                ->exists();
+
+            if (!$hasPivot) {
+                throw new HttpException(422, 'User must belong to the tenant before being added to a tenant-scoped group.');
+            }
+        }
+
         $user->userGroups()->syncWithoutDetaching([$groupId]);
     }
 
@@ -123,7 +137,42 @@ class AuthorizationService
             return;
         }
 
+        // M8: prevent self-revocation of platform admin group
+        $adminGroup = config('auth-web.admin_group', 'loa-auth-admin');
+        if (auth()->check() && auth()->id() === $userId && $group->name === $adminGroup) {
+            throw new HttpException(422, 'You cannot revoke your own platform admin membership.');
+        }
+
         $user->userGroups()->detach($groupId);
+    }
+
+    public function addToGroupTransactional(string $userId, string $groupId): void
+    {
+        DB::transaction(function () use ($userId, $groupId) {
+            $group = UserGroup::find($groupId);
+
+            if (!$group) {
+                throw new \Exception('Group not found');
+            }
+
+            // If group is tenant-scoped and user lacks pivot, create it
+            if ($group->tenant_id !== null) {
+                $hasPivot = DB::table('user_tenants')
+                    ->where('user_id', $userId)
+                    ->where('tenant_id', $group->tenant_id)
+                    ->exists();
+
+                if (!$hasPivot) {
+                    $user = User::find($userId);
+                    if (!$user) {
+                        throw new \Exception('User not found');
+                    }
+                    $user->tenants()->attach($group->tenant_id);
+                }
+            }
+
+            $this->addToGroup($userId, $groupId);
+        });
     }
 
     public function grantGroupPermission(string $groupId, string $permissionKey, ?string $tenantId = null): void

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
+use App\Models\RefreshToken;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\PasswordResetNotificationService;
@@ -9,6 +12,7 @@ use App\Services\PortalRouter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
@@ -55,11 +59,19 @@ class PortalController extends Controller
             return $this->router->enterForTarget($request, $user, $target);
         }
 
-        return view('dashboard', [
+        $isAdmin = $this->router->isAdmin($user);
+
+        $viewData = [
             'tenants' => $this->router->activeMemberships($user),
-            'isAdmin' => $this->router->isAdmin($user),
+            'isAdmin' => $isAdmin,
             'portalUser' => $user,
-        ]);
+        ];
+
+        if ($isAdmin) {
+            $viewData = array_merge($viewData, $this->adminZoneData());
+        }
+
+        return view('dashboard', $viewData);
     }
 
     public function go(Request $request, string $tenant): RedirectResponse
@@ -169,5 +181,166 @@ class PortalController extends Controller
         $user = Auth::guard('web')->user();
 
         return $user;
+    }
+
+    /**
+     * Assembles data for the platform-admin zone on the dashboard
+     * (admin-dashboard-home.md §4). Wrapped in try/catch per H4: query
+     * failures degrade to an empty zone, never break the apps grid.
+     */
+    private function adminZoneData(): array
+    {
+        try {
+            return $this->buildAdminZoneData();
+        } catch (\Throwable $e) {
+            report($e);
+
+            return ['adminZoneFailed' => true];
+        }
+    }
+
+    private function buildAdminZoneData(): array
+    {
+        $stats = $this->buildStatCards();
+        $attention = $this->buildAttentionQueue();
+        $activity = $this->buildActivityFeed();
+
+        return [
+            'adminZoneFailed' => false,
+            'adminStats' => $stats,
+            'adminAttention' => $attention,
+            'adminActivity' => $activity,
+        ];
+    }
+
+    private function buildStatCards(): array
+    {
+        $userCounts = User::selectRaw("
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN status = 'disabled' THEN 1 ELSE 0 END) as disabled
+        ")->first();
+
+        $tenantCounts = Tenant::selectRaw("
+            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN status != 'active' THEN 1 ELSE 0 END) as inactive
+        ")->first();
+
+        $activeSessions = RefreshToken::whereNull('revoked_at')
+            ->distinct('user_id')
+            ->count('user_id');
+
+        $memberships = DB::table('user_tenants')->count();
+
+        return [
+            'users_total' => (int) ($userCounts->total ?? 0),
+            'users_pending' => (int) ($userCounts->pending ?? 0),
+            'users_disabled' => (int) ($userCounts->disabled ?? 0),
+            'tenants_active' => (int) ($tenantCounts->active ?? 0),
+            'tenants_inactive' => (int) ($tenantCounts->inactive ?? 0),
+            'active_sessions' => $activeSessions,
+            'memberships' => $memberships,
+        ];
+    }
+
+    private function buildAttentionQueue(): array
+    {
+        $items = [];
+
+        // Priority 2: pending users
+        $pendingCount = User::where('status', 'pending')->count();
+        if ($pendingCount > 0) {
+            $items[] = [
+                'priority' => 2,
+                'copy' => "{$pendingCount} user".($pendingCount !== 1 ? 's' : '')." awaiting activation",
+                'url' => route('admin.users', ['status' => 'pending']),
+            ];
+        }
+
+        // Priority 3: failed user-import rows (session-based)
+        $importFailed = session('import_failed_rows', []);
+        if (!empty($importFailed)) {
+            $items[] = [
+                'priority' => 3,
+                'copy' => 'Last user import had failures',
+                'url' => route('admin.users.import.failed'),
+            ];
+        }
+
+        // Priority 4: failed tenant-member-import rows (session-based)
+        $tenantImportFailed = session('tenant_member_import_failed_rows', []);
+        if (!empty($tenantImportFailed)) {
+            $items[] = [
+                'priority' => 4,
+                'copy' => 'Tenant member import has failures',
+                'url' => '#', // No dedicated route; linked from tenant context
+            ];
+        }
+
+        // Priority 5: active tenants with zero members
+        $emptyTenants = Tenant::where('status', 'active')
+            ->whereDoesntHave('users')
+            ->pluck('name', 'id');
+
+        foreach ($emptyTenants as $tenantId => $tenantName) {
+            $items[] = [
+                'priority' => 5,
+                'copy' => "{$tenantName} has no members",
+                'url' => route('admin.tenants.show', $tenantId),
+            ];
+        }
+
+        // Priority 6: dev_app_url configured in production
+        if (app()->environment('production')) {
+            $devUrlTenants = Tenant::where('status', 'active')
+                ->whereNotNull('dev_app_url')
+                ->whereColumn('dev_app_url', '!=', 'app_url')
+                ->pluck('name', 'id');
+
+            foreach ($devUrlTenants as $tenantId => $tenantName) {
+                $items[] = [
+                    'priority' => 6,
+                    'copy' => "{$tenantName} has dev URL configured in production",
+                    'url' => route('admin.tenants.edit', $tenantId),
+                ];
+            }
+        }
+
+        // Sort by priority, cap at 5
+        usort($items, fn ($a, $b) => $a['priority'] <=> $b['priority']);
+
+        $hidden = array_slice($items, 5);
+        $items = array_slice($items, 0, 5);
+
+        // Build aggregate line for hidden items
+        if (!empty($hidden)) {
+            $categories = array_map(fn ($item) => $item['copy'], $hidden);
+            $items[] = [
+                'priority' => 99,
+                'copy' => count($hidden).' more: '.implode(', ', $categories),
+                'url' => null,
+                'aggregate' => true,
+            ];
+        }
+
+        return $items;
+    }
+
+    private function buildActivityFeed(): array
+    {
+        return AuditLog::where('action', '!=', 'auth.tenant_entry')
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get()
+            ->map(fn (AuditLog $log) => [
+                'created_at' => $log->created_at,
+                'actor_email' => $log->actor_email ?? 'system',
+                'action' => $log->action,
+                'entity_type' => $log->entity_type,
+                'entity_id' => $log->entity_id,
+                'details' => $log->details,
+                'url' => route('admin.audit-logs', ['action' => $log->action]),
+            ])
+            ->toArray();
     }
 }

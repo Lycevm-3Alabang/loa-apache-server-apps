@@ -79,7 +79,7 @@ class WebAdminController extends Controller
 
         $status = (string) $request->query('status', 'all');
 
-        if (in_array($status, ['active', 'disabled', 'locked'], true)) {
+        if (in_array($status, ['active', 'disabled', 'locked', 'pending'], true)) {
             $query->where('status', $status);
         }
 
@@ -508,6 +508,172 @@ class WebAdminController extends Controller
         return response()->json(['data' => $users]);
     }
 
+    // ─── §12: Tenant group membership management ────────────────────
+
+    public function tenantGroupMemberSearch(Request $request, Tenant $tenant, UserGroup $group): JsonResponse
+    {
+        if ($group->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $term = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($term) < 2) {
+            return response()->json(['data' => [], 'tier' => 'none']);
+        }
+
+        $like = '%' . addcslashes(strtolower($term), '%_\\') . '%';
+        $exactEmail = strtolower($term);
+        $escapeChar = '\\';
+
+        $nameEmail = fn ($q) => $q->whereRaw('LOWER(name) LIKE ? ESCAPE ?', [$like, $escapeChar])
+            ->orWhereRaw('LOWER(email) LIKE ? ESCAPE ?', [$like, $escapeChar]);
+
+        // Primary tier: tenant members NOT in this group
+        $primary = $tenant->users()
+            ->where('status', '!=', 'disabled')
+            ->where(fn ($q) => $nameEmail($q))
+            ->whereNotIn('users.id', fn ($q) => $q->select('user_id')->from('user_user_group')->where('user_group_id', $group->id))
+            ->orderByRaw('CASE WHEN LOWER(email) = ? THEN 0 ELSE 1 END', [$exactEmail])
+            ->orderBy('email')
+            ->limit(20)
+            ->get(['users.id', 'name', 'email', 'status']);
+
+        if ($primary->isNotEmpty()) {
+            return response()->json(['data' => $primary, 'tier' => 'primary']);
+        }
+
+        // Secondary tier: non-tenant users (need tenant pivot on add)
+        $secondary = User::query()
+            ->where('status', '!=', 'disabled')
+            ->where(fn ($q) => $nameEmail($q))
+            ->whereNotIn('id', fn ($q) => $q->select('user_id')->from('user_tenants')->where('tenant_id', $tenant->id))
+            ->orderByRaw('CASE WHEN LOWER(email) = ? THEN 0 ELSE 1 END', [$exactEmail])
+            ->orderBy('email')
+            ->limit(20)
+            ->get(['id', 'name', 'email', 'status']);
+
+        return response()->json(['data' => $secondary, 'tier' => 'secondary']);
+    }
+
+    public function tenantGroupMembersStore(Request $request, Tenant $tenant, UserGroup $group): RedirectResponse
+    {
+        if ($group->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'tier' => 'required|in:primary,secondary',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        $userId = $request->input('user_id');
+        $tier = $request->input('tier');
+
+        if ($group->users()->where('users.id', $userId)->exists()) {
+            return back()->with('error', 'User is already in this group.');
+        }
+
+        try {
+            if ($tier === 'secondary') {
+                // Secondary tier: create tenant pivot + group membership atomically
+                $this->authorization->addToGroupTransactional($userId, $group->id);
+            } else {
+                // Primary tier: user already has tenant pivot
+                $this->authorization->addToGroup($userId, $group->id);
+            }
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        $this->auditGroupMembership('added', $group, $userId);
+
+        return back()->with('status', 'Member added to group.');
+    }
+
+    public function tenantGroupMemberRemoveConfirm(Tenant $tenant, UserGroup $group, string $userId): View
+    {
+        if ($group->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $user = User::findOrFail($userId);
+
+        if (!$group->users()->where('users.id', $userId)->exists()) {
+            abort(404);
+        }
+
+        $isLastAdmin = $group->name === (string) config('auth-web.admin_group')
+            && $group->users()->where('users.id', '!=', $userId)->count() === 0
+            && $userId === Auth::id();
+
+        return view('admin.tenants.member-remove-confirm', [
+            'tenant' => $tenant,
+            'group' => $group,
+            'user' => $user,
+            'isLastAdmin' => $isLastAdmin,
+            'otherGroups' => $user->userGroups()
+                ->where('tenant_id', $tenant->id)
+                ->where('id', '!=', $group->id)
+                ->get(),
+        ]);
+    }
+
+    public function tenantGroupMemberRemove(Request $request, Tenant $tenant, UserGroup $group, string $userId): RedirectResponse
+    {
+        if ($group->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $user = User::findOrFail($userId);
+
+        if (!$group->users()->where('users.id', $userId)->exists()) {
+            return back()->with('error', 'User is not in this group.');
+        }
+
+        // M8: prevent self-revocation of platform admin group
+        if ($group->name === (string) config('auth-web.admin_group') && $userId === Auth::id()) {
+            return back()->with('error', 'You cannot revoke your own platform admin membership.');
+        }
+
+        $this->authorization->removeFromGroup($userId, $group->id);
+
+        $this->auditGroupMembership('removed', $group, $userId);
+
+        return redirect()->route('admin.tenants.group.members', ['tenant' => $tenant->id, 'group' => $group->id])
+            ->with('status', 'Member removed from group.');
+    }
+
+    public function tenantGroupPlatformPermissions(Request $request, Tenant $tenant, UserGroup $group): RedirectResponse
+    {
+        if ($group->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'permissions' => 'required|array',
+            'permissions.*.id' => 'required|exists:permissions,id',
+            'permissions.*.granted' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        foreach ($request->input('permissions') as $item) {
+            $this->authorization->grantGroupPermission($group->id, Permission::find($item['id'])->key);
+            if (!$item['granted']) {
+                $this->authorization->revokeGroupPermission($group->id, Permission::find($item['id'])->key);
+            }
+        }
+
+        return back()->with('status', 'Platform permissions updated.');
+    }
+
     public function tenantsShow(Tenant $tenant): View
     {
         $tenant->loadCount('users');
@@ -647,6 +813,11 @@ class WebAdminController extends Controller
 
     public function groupsShow(UserGroup $group): View
     {
+        // §12 M6: Platform group page — reject tenant-scoped groups
+        if ($group->tenant_id !== null) {
+            abort(404);
+        }
+
         $group->load(['users', 'permissions']);
 
         $allPermissions = Permission::orderBy('key')->get();
@@ -664,6 +835,11 @@ class WebAdminController extends Controller
 
     public function groupsPermissions(Request $request, UserGroup $group): RedirectResponse
     {
+        // §12 M6: Platform group permissions — reject tenant-scoped groups
+        if ($group->tenant_id !== null) {
+            abort(404);
+        }
+
         $validator = Validator::make($request->all(), [
             'permissions' => 'nullable|array',
             'permissions.*' => 'integer|exists:permissions,id',
@@ -694,6 +870,11 @@ class WebAdminController extends Controller
 
     public function groupsMembersStore(Request $request, UserGroup $group): RedirectResponse
     {
+        // §12 M6: Platform group member management — reject tenant-scoped groups
+        if ($group->tenant_id !== null) {
+            abort(404);
+        }
+
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
         ]);
@@ -717,6 +898,11 @@ class WebAdminController extends Controller
 
     public function groupsMembersRemove(UserGroup $group, string $userId): RedirectResponse
     {
+        // §12 M6: Platform group member management — reject tenant-scoped groups
+        if ($group->tenant_id !== null) {
+            abort(404);
+        }
+
         $this->authorization->removeFromGroup($userId, $group->id);
 
         $this->auditGroupMembership('removed', $group, $userId);
@@ -748,43 +934,6 @@ class WebAdminController extends Controller
             'allGroups' => $allGroups,
             'allPermissions' => $allPermissions,
         ]);
-    }
-
-    public function storeUserGroup(Request $request, string $id): RedirectResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'group_id' => 'required|exists:user_groups,id',
-        ]);
-
-        if ($validator->fails()) {
-            return back()->withErrors($validator);
-        }
-
-        $userId = $id;
-        $groupId = $request->input('group_id');
-
-        try {
-            $this->authorization->addToGroup($userId, $groupId);
-        } catch (\Throwable) {
-            return back()->with('error', 'Unable to add user to group.');
-        }
-
-        if ($group = UserGroup::find($groupId)) {
-            $this->auditGroupMembership('added', $group, $userId);
-        }
-
-        return back()->with('status', 'User added to group.');
-    }
-
-    public function removeUserGroup(string $id, string $groupId): RedirectResponse
-    {
-        $this->authorization->removeFromGroup($id, $groupId);
-
-        if ($group = UserGroup::find($groupId)) {
-            $this->auditGroupMembership('removed', $group, $id);
-        }
-
-        return back()->with('status', 'User removed from group.');
     }
 
     public function storeUserPermission(Request $request, string $id): RedirectResponse
