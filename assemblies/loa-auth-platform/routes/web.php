@@ -101,6 +101,7 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::post('/users/{id}/permissions', [WebAdminController::class, 'storeUserPermission'])->name('admin.users.permissions.store');
     Route::post('/users/{id}/permissions/{key}/remove', [WebAdminController::class, 'removeUserPermission'])->name('admin.users.permissions.remove');
     Route::post('/users/{id}/status', [WebAdminController::class, 'updateStatus'])->name('admin.users.status');
+    Route::post('/users/{id}/delete', [WebAdminController::class, 'deleteUser'])->name('admin.users.delete');
 
     Route::get('/groups', [WebAdminController::class, 'groupsIndex'])->name('admin.groups');
     Route::get('/groups/create', [WebAdminController::class, 'groupsCreate'])->name('admin.groups.create');

@@ -327,6 +327,8 @@ Add to `WebAdminController`:
 - [ ] Session ID regenerated on admin login and on logout (session-fixation prevention)
 - [ ] Non-admins never receive a web auth session
 - [ ] Self-disable forbidden
+- [ ] Self-deletion forbidden
+- [ ] Platform-admin deletion forbidden
 - [ ] Self-session-invalidation forbidden
 - [ ] `users.manage` enforced on status changes and session invalidation (defense in depth)
 - [ ] Search/filter responses never leak password hashes or reset tokens
@@ -342,16 +344,77 @@ Add to `WebAdminController`:
 | Any authenticated web user reaching `/admin/*` | Scope escalation | `web.admin` group gate on every admin route |
 | Creating a web session for non-admins | Scope escalation | Only platform admins get a web session |
 | Disabling your own admin account | Locks out the only dashboard session | Forbid self-disable |
+| Deleting your own admin account | Locks out the only dashboard session | Forbid self-deletion |
+| Deleting a platform admin | Removes privileged access without audit trail | Forbid admin deletion, require disable instead |
 | Invalidating your own sessions | Locks out the only admin session | Forbid self-session-invalidation |
 | Managing groups/permissions in v1 | Unnecessary scope | Deferred to `group-permission-management.md` (v4) |
 
 ---
 
-# 14. Implementation Inventory
+# 14. Delete User (v5)
+
+Permanently removes a user and **all** related records from the database. This is a hard delete, distinct from Disable (which preserves the account for reactivation).
+
+## Route
+
+| Method | URI | Action | Route name |
+|--------|-----|--------|------------|
+| `POST` | `/admin/users/{id}/delete` | hard-delete user and related data | `admin.users.delete` |
+
+Requires `auth` (web guard) + `web.admin` + `users.manage` permission.
+
+## Behavior
+
+- **Preconditions checked before delete:**
+  1. Target user must exist (404 otherwise).
+  2. Admin must have `users.manage` permission (via `AuthorizationService`).
+  3. Admin **cannot delete themselves** — would strand the session.
+  4. Platform-admin users **cannot be deleted** — refuse with error flash.
+- **Cascade cleanup** — the database FKs handle most records automatically (`ON DELETE CASCADE`):
+  - `user_user_group` (pivot) — CASCADE
+  - `user_tenants` (pivot) — CASCADE
+  - `user_permission` (pivot) — CASCADE
+  - `password_reset_tokens` — CASCADE
+  - `refresh_tokens` — CASCADE
+  - `activations` — CASCADE
+  - `user_claim_overrides` — CASCADE
+  - `password_set_tokens` — CASCADE
+  - `tenant_endpoint_overrides` — CASCADE
+  - `login_attempts.user_id` — SET NULL (audit trail preserved)
+  - `tenant_api_keys.created_by` — SET NULL
+  - `sessions.user_id` — no FK; stale sessions are harmless (expire naturally)
+- **Audit log entry:** `user.deleted` recorded with `actor_id`, `target_id`, `target_email`.
+- **UI:** a `Delete` link-text (`.button-danger`) in the Actions column, guarded by `confirm('Permanently delete this user? This cannot be undone.')` before submitting the POST form.
+
+## Controller
+
+| Method | Responsibility |
+|--------|----------------|
+| `deleteUser(Request $request, string $id)` | Validate preconditions, audit-log, call `$user->delete()`, redirect with flash |
+
+## Views
+
+| View | Change |
+|------|--------|
+| `resources/views/admin/users/index.blade.php` | Add delete action link per row (after existing status actions) |
+
+## Security Checklist
+
+- [x] Requires `web.admin` group gate
+- [x] Requires `users.manage` permission (defense in depth)
+- [x] CSRF on all forms
+- [x] Self-deletion forbidden
+- [x] Platform-admin deletion forbidden
+- [x] Hard delete cascades via DB FK (no orphan records)
+- [x] Audit trail entry created before deletion
+
+---
+
+# 15. Implementation Inventory
 
 | Item | Detail |
 |------|--------|
-| Controller | `WebAdminController` (`index`, `updateStatus`, `invalidateSessions`, `logout`, `tenantsIndex`, `tenantsCreate`, `tenantsStore`, `tenantsShow`, `tenantsStatus`, `tenantsGroups`, `tenantsGroupsStore`, `tenantsGroupsPermissions`, `tenantsMembersStore`, `create`, `store`) |
+| Controller | `WebAdminController` (`index`, `updateStatus`, `deleteUser`, `invalidateSessions`, `logout`, `tenantsIndex`, `tenantsCreate`, `tenantsStore`, `tenantsShow`, `tenantsStatus`, `tenantsGroups`, `tenantsGroupsStore`, `tenantsGroupsPermissions`, `tenantsMembersStore`, `create`, `store`) |
 | Middleware | `web.admin` (new) — group check using `auth-web.admin_group` |
 | Routes | `routes/web.php` — admin group, `auth` + `web.admin` |
 | Views | `layouts/admin.blade.php`, `admin/partials/breadcrumbs.blade.php` (included by every admin page), plus all views under `resources/views/admin/{users,groups,tenants}/` |

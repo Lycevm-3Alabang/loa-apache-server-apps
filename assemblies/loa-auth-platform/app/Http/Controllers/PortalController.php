@@ -277,8 +277,10 @@ class PortalController extends Controller
             ];
         }
 
-        // Priority 5: active tenants with zero members
+        // Priority 5: active tenants with zero members (exclude platform tenant —
+        // its members use platform-level groups with tenant_id = NULL)
         $emptyTenants = Tenant::where('status', 'active')
+            ->where('slug', '!=', 'auth')
             ->whereDoesntHave('users')
             ->pluck('name', 'id');
 

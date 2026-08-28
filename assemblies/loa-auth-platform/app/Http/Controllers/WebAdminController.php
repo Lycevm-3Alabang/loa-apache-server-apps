@@ -231,6 +231,46 @@ class WebAdminController extends Controller
         return back()->with('status', 'Activation email resent successfully.');
     }
 
+    public function deleteUser(Request $request, string $id): RedirectResponse
+    {
+        $admin = Auth::guard('web')->user();
+
+        if (!$this->authorization->hasPermission($admin->id, 'users.manage')) {
+            return back()->with('error', 'You are not allowed to manage users.');
+        }
+
+        if ($admin->id === $id) {
+            return back()->with('error', 'You cannot delete your own account.');
+        }
+
+        $user = User::find($id);
+
+        if (!$user) {
+            return back()->with('error', 'User not found.');
+        }
+
+        if ($user->inGroup((string) config('auth-web.admin_group'))) {
+            return back()->with('error', 'Platform administrators cannot be deleted.');
+        }
+
+        $email = $user->email;
+
+        try {
+            $user->delete();
+        } catch (\Throwable) {
+            return back()->with('error', 'Unable to delete user.');
+        }
+
+        $this->audit->recordSafe(
+            'user.deleted',
+            'user',
+            $user->id,
+            ['email' => $email],
+        );
+
+        return redirect()->route('admin.users')->with('status', "User {$email} has been permanently deleted.");
+    }
+
     // ─── v2: Tenant management ─────────────────────────────────────
 
     public function tenantsIndex(): View

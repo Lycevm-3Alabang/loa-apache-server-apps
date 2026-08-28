@@ -100,6 +100,12 @@
                                             <a class="button button-link" role="button" href="#" onclick="event.preventDefault(); this.closest('form').submit();">Enable</a>
                                         </form>
                                     @endif
+                                    @if ($user->id !== $currentUserId && !$user->inGroup((string) config('auth-web.admin_group')))
+                                        <form method="post" action="{{ route('admin.users.delete', $user->id) }}">
+                                            @csrf
+                                            <a class="button button-link button-danger" role="button" href="#" onclick="event.preventDefault(); if (confirm('Permanently delete this user? This cannot be undone.')) this.closest('form').submit();">Delete</a>
+                                        </form>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach

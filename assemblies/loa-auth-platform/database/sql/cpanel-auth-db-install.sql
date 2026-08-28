@@ -8,7 +8,7 @@
 -- Re-runnable     : yes - every table is DROP TABLE IF EXISTS'd first.
 --
 -- INCLUDED
---   * Full schema (identity, sessions, cache, jobs, audit, activations, tenant_api_keys...)
+--   * Full schema (identity, sessions, cache, jobs, audit_logs, activations, tenant_api_keys...)
 --   * Tenant 'loa-e-cert' with redirect origins (e-cert.vercel.app)
 --   * Endpoint catalog (57 endpoints incl. attendees/lookup) + level-based grant matrix:
 --       cert-admin : 57 grants @ admin   (full control)
@@ -61,6 +61,7 @@ DROP TABLE IF EXISTS `user_permission`;
 DROP TABLE IF EXISTS `user_tenants`;
 DROP TABLE IF EXISTS `user_user_group`;
 DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `audit_logs`;
 DROP TABLE IF EXISTS `activations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -437,6 +438,26 @@ CREATE TABLE `users` (
   KEY `users_status_index` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `audit_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `audit_logs` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `actor_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `actor_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `action` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `source` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'web',
+  `entity_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `entity_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `details` json DEFAULT NULL,
+  `ip_address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `audit_logs_action_created_at_index` (`action`,`created_at`),
+  KEY `audit_logs_entity_type_entity_id_index` (`entity_type`,`entity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
@@ -612,7 +633,7 @@ UPDATE `tenants` SET
   `redirect_origins` = '["https://e-cert.vercel.app"]',
   `dev_app_url` = NULL,
   `dev_redirect_origins` = NULL
-WHERE `slug` = 'loa';
+WHERE `slug` = 'loa-e-cert';
 UPDATE `user_groups` SET `description` = 'Certificate administrator' WHERE `name` = 'cert-admin';
 UPDATE `user_groups` SET `description` = 'Certificate staff'         WHERE `name` = 'cert-staff';
 UPDATE `user_groups` SET `description` = 'Certificate participant'   WHERE `name` = 'cert-user';
@@ -630,6 +651,10 @@ INSERT INTO `user_user_group` (`user_id`, `user_group_id`, `created_at`, `update
 -- session redirects to platform groups, not back to /auth/login.
 INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'auth', 'LOA Auth Platform', 'active', NULL, NULL, '[]', '[]', NOW(), NOW());
+-- --- Admin tenant memberships (required for SSO + dashboard tile access) -------
+INSERT INTO `user_tenants` (`user_id`, `tenant_id`, `created_at`, `updated_at`) VALUES
+('4f09e69e-4b82-4c9f-bfe0-4ccae5256b1e', '91128f0a-df85-47a9-ae1d-5298904dacd5', NOW(), NOW()),
+('4f09e69e-4b82-4c9f-bfe0-4ccae5256b1e', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', NOW(), NOW());
 -- --- Generated staff/user endpoint grants --------------------------------------
 -- cert-staff: every read/write catalog endpoint at its own level (admin-only excluded)
 -- cert-user : GET read-level /me/* endpoints only
