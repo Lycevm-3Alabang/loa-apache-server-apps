@@ -268,6 +268,23 @@ class TenantMemberImportController extends UserImportController
         }, 200, $headers);
     }
 
+    public function downloadTemplate(?Tenant $tenant = null): StreamedResponse
+    {
+        $filename = ($tenant?->slug ?? 'tenant') . '-members-template.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        return response()->stream(function () {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['name', 'email', 'user_group']);
+            fputcsv($handle, ['John Doe', 'john@example.com', 'cert-admin']);
+            fclose($handle);
+        }, 200, $headers);
+    }
+
     protected function parseCsv($file): array
     {
         $content = file_get_contents($file->getRealPath());

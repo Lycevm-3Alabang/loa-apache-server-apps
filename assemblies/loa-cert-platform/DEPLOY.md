@@ -95,7 +95,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "D:\loa\loa-apache-server-ap
 
 **What the script does:**
 
-1. Copies source files to a staging folder (excludes `.git`, `node_modules`, `vendor`, `docker`, `cert-app`, tests, `.env*`)
+1. Copies source files to a staging folder (excludes `.git`, `node_modules`, `vendor`, `docker`, tests, `.env*`)
 2. Runs `composer install --no-dev --optimize-autoloader` **inside the Docker container** to install Linux-compatible vendor dependencies
 3. Moves the staging folder to the dist output directory
 4. Creates a zip file of the dist folder

@@ -2,8 +2,8 @@
 
 ## Product Assembly Component Specification
 
-**Version:** 0.1 (Draft)
-**Status:** Proposed
+**Version:** 0.2 (Final)
+**Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`) — admin surface, tenant context
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -47,10 +47,11 @@ GET  /admin/tenants/{tenant}/members/import           form (wizard step 1)
 POST /admin/tenants/{tenant}/members/import/preview   dry-run validation
 POST /admin/tenants/{tenant}/members/import/process   execute
 GET  /admin/tenants/{tenant}/members/import/failed    failed-rows CSV download
+GET  /admin/tenants/{tenant}/members/import/template  CSV template download
 ```
 
 All behind existing `auth:web` + `web.admin` middleware group.
-Route names: `admin.tenants.members.import`, `.preview`, `.process`, `.failed`.
+Route names: `admin.tenants.members.import`, `.preview`, `.process`, `.failed`, `.template`.
 
 ### API parity (optional phase 2)
 
@@ -139,6 +140,15 @@ Platform-admin groups are never touched by this rule.
 - Steps 2–4 (preview table, confirm summary, results + failed download) identical to
   the base wizard.
 
+### Template download
+
+- **Download Template** button on step 1 (member-import.blade.php) generates a CSV with:
+  - Headers: `name,email,user_group`
+  - One example row with placeholder data: `John Doe,john@example.com,cert-admin`
+- File name: `{tenant-slug}-members-template.csv`
+- Route: `GET /admin/tenants/{tenant}/members/import/template`
+- The template helps admins understand the exact format required.
+
 ---
 
 ## 8. Failure handling
@@ -185,3 +195,4 @@ Platform-admin groups are never touched by this rule.
 - [ ] Failed-row CSV downloads and round-trips through a re-import
 - [ ] Non-admin session cannot reach any route (403)
 - [ ] API parity routes enforce `users.manage`
+- [ ] Template download returns CSV with headers and example row

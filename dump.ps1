@@ -133,3 +133,12 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Dist ready ($Target):"
 Write-Host "  Folder: $dst"
 Write-Host "  Zip:    $zip"
+
+# ── Copy the SQL installer to the output directory ─────────────────────
+$sqlSrc = Join-Path $PSScriptRoot "assemblies\$app\database\sql\cpanel-$Target-db-install.sql"
+if (Test-Path $sqlSrc) {
+    Copy-Item $sqlSrc -Destination $Path -Force
+    Write-Host "  SQL:    $(Join-Path $Path "cpanel-$Target-db-install.sql")"
+} else {
+    Write-Warning "SQL installer not found: $sqlSrc"
+}

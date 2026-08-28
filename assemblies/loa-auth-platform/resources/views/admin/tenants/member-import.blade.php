@@ -23,6 +23,7 @@
     <pre style="background:var(--surface-secondary);padding:1rem;border-radius:var(--radius-lg);font-family:monospace;font-size:0.8125rem;">name,email,user_group</pre>
     <p class="muted" style="margin-top:0.5rem;font-size:0.8125rem;">Example: John Doe,john@test.com,cert-admin</p>
     <p class="muted" style="margin-top:0.5rem;font-size:0.8125rem;">The tenant is implied by this page — no tenant column needed.</p>
+    <a href="{{ route('admin.tenants.members.import.template', $tenant) }}" class="button button-secondary" style="margin-top:1rem;">Download Template</a>
 </div>
 
 <div class="detail-card">

@@ -33,7 +33,7 @@ if ($rebuild) {
     Get-ChildItem -LiteralPath $PSScriptRoot | Where-Object {
         $_.Name -notin @(
             '.git', 'node_modules', 'vendor', 'docker', 'docker-compose.yml',
-            'cert-app', '.phpunit.cache', '.phpunit.result.cache', 'tmp', 'loa_auth',
+            '.phpunit.cache', '.phpunit.result.cache', 'tmp', 'loa_auth',
             '.dist-stage', 'generate-dist.ps1'
         )
     } | ForEach-Object {

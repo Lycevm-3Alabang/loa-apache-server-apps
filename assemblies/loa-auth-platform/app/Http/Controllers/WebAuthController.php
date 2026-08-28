@@ -295,6 +295,19 @@ class WebAuthController extends Controller
         return $this->handleWebLogin($request, true);
     }
 
+    public function ssoLogout(Request $request): RedirectResponse
+    {
+        if (Auth::guard('web')->check()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        $target = $this->safeRedirectUrl($request->query('redirect'));
+
+        return redirect($target ?? route('login'));
+    }
+
     public function showSSORegister(): View
     {
         return view('sso-register');

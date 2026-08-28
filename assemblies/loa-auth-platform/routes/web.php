@@ -35,6 +35,8 @@ Route::get('/sso/register', [WebAuthController::class, 'showSSORegister'])->name
 Route::post('/sso/register', [WebAuthController::class, 'ssoRegister'])
     ->middleware('throttle:5,60');
 
+Route::get('/sso/logout', [WebAuthController::class, 'ssoLogout'])->name('sso.logout');
+
 Route::get('/activate', [WebAuthController::class, 'showActivate'])->name('activate');
 Route::post('/activate', [WebAuthController::class, 'activate'])
     ->middleware('throttle:5,60');
@@ -173,6 +175,7 @@ Route::get('/tenants/{tenant}/members/import', [\App\Http\Controllers\TenantMemb
 Route::post('/tenants/{tenant}/members/import/preview', [\App\Http\Controllers\TenantMemberImportController::class, 'preview'])->name('admin.tenants.members.import.preview');
 Route::post('/tenants/{tenant}/members/import/process', [\App\Http\Controllers\TenantMemberImportController::class, 'process'])->name('admin.tenants.members.import.process');
 Route::get('/tenants/{tenant}/members/import/failed', [\App\Http\Controllers\TenantMemberImportController::class, 'downloadFailed'])->name('admin.tenants.members.import.failed');
+Route::get('/tenants/{tenant}/members/import/template', [\App\Http\Controllers\TenantMemberImportController::class, 'downloadTemplate'])->name('admin.tenants.members.import.template');
 Route::post('/tenants/{tenant}/members/import/discard', [\App\Http\Controllers\TenantMemberImportController::class, 'discard'])->name('admin.tenants.members.import.discard');
 
     // Tenant endpoint catalog
