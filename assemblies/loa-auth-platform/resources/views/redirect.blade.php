@@ -2,8 +2,8 @@
 
 @section('title', 'Redirecting | LOA Platform')
 @section('eyebrow', 'Leaving LOA Platform')
-@section('heading', 'Redirecting...')
-@section('intro', 'You are being redirected to the application.')
+@section('heading', 'Ready to redirect')
+@section('intro', 'Click the button below to continue to the application.')
 
 @section('content')
     <div style="text-align:center;padding:1.5rem 0;">
@@ -18,23 +18,26 @@
             Redirecting to<br>
             <strong style="color:var(--text);word-break:break-all;">{{ $url }}</strong>
         </p>
-        <p style="color:var(--text-muted);font-size:0.8125rem;margin:0 0 1.5rem;">
-            If you are not redirected automatically,
-        </p>
         <a class="button" href="{{ $full_url }}" style="display:inline-flex;width:auto;text-decoration:none;">
-            Click here to continue
+            Continue to application
         </a>
+        @if($is_admin)
+            <p style="margin-top:1rem;">
+                <a href="{{ config('app.url') }}" style="font-size:0.8125rem;color:var(--text-muted);text-decoration:underline;">
+                    Back to Admin Console
+                </a>
+            </p>
+        @endif
     </div>
 
+    @if(!$is_admin)
     <script>
-        console.log('[SSO Redirect] Target URL:', @json($full_url));
-        console.log('[SSO Redirect] URL only:', @json($url));
-
-        requestAnimationFrame(function() {
-            console.log('[SSO Redirect] Navigating to:', @json($full_url));
-            window.location.replace({!! json_encode($full_url) !!});
-        });
+        // Non-admins auto-redirect — no manual click needed.
+        setTimeout(function () {
+            window.location.href = @json($full_url);
+        }, 300);
     </script>
+    @endif
 
     <style>
         @keyframes pulse {

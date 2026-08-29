@@ -126,6 +126,12 @@ class AdminAuditLogTest extends TestCase
         $admin = $this->actingAdmin();
         $admin->tenants()->attach($this->tenant->id);
 
+        $tenantGroup = UserGroup::create([
+            'name' => 'cert-admin',
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $admin->userGroups()->attach($tenantGroup->id);
+
         $this->post("/launcher/go/{$this->tenant->id}")->assertRedirect('/redirect');
 
         $log = AuditLog::where('action', 'auth.tenant_entry')->firstOrFail();

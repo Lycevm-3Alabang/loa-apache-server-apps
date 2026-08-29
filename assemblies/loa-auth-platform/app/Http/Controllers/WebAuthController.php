@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\ActivationService;
+use App\Services\EncryptionService;
 use App\Services\IdentityService;
 use App\Services\PasswordResetNotificationService;
 use App\Services\PortalRouter;
@@ -20,6 +21,7 @@ class WebAuthController extends Controller
         private readonly PasswordResetNotificationService $passwordResetNotifications,
         private readonly PortalRouter $router,
         private readonly ActivationService $activation,
+        private readonly EncryptionService $encryption,
     ) {
     }
 
@@ -370,9 +372,16 @@ class WebAuthController extends Controller
 
         $request->session()->forget(['redirect_url', 'redirect_payload', 'redirect_fragment']);
 
+        $isAdmin = false;
+        if ($payload) {
+            $decrypted = $this->encryption->decrypt($payload);
+            $isAdmin = is_array($decrypted) && ($decrypted['is_admin'] ?? false);
+        }
+
         return view('redirect', [
             'url' => $targetUrl,
             'full_url' => $fullUrl,
+            'is_admin' => $isAdmin,
         ]);
     }
 

@@ -39,6 +39,15 @@ class PortalDashboardTest extends TestCase
         ]);
     }
 
+    private function attachGroupToUser(User $user, Tenant $tenant, string $groupName = 'cert-staff'): void
+    {
+        $group = UserGroup::create([
+            'name' => $groupName,
+            'tenant_id' => $tenant->id,
+        ]);
+        $user->userGroups()->attach($group->id);
+    }
+
     // ─── Root router (dashboard-account.md §3) ───────────────────────────────
 
     public function test_guest_root_with_redirect_query_routes_to_sso_login_preserving_query(): void
@@ -192,6 +201,7 @@ class PortalDashboardTest extends TestCase
         $user = User::factory()->create(['status' => 'active']);
         $cert = $this->tenant('loa', 'LOA Certificates');
         $user->tenants()->attach($cert->id);
+        $this->attachGroupToUser($user, $cert);
 
         $this->actingAs($user, 'web')
             ->get('/?redirect=https://loa.lyceumalabang.edu.ph')
@@ -237,6 +247,7 @@ class PortalDashboardTest extends TestCase
         ]);
         $cert = $this->tenant('consult', 'Consult Platform');
         $user->tenants()->attach($cert->id);
+        $this->attachGroupToUser($user, $cert);
 
         $response = $this->withSession(['return_to' => '/account'])
             ->post('/sso/login', [

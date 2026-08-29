@@ -33,6 +33,15 @@ class PortalLauncherTest extends TestCase
         ]);
     }
 
+    private function attachGroupToUser(User $user, Tenant $tenant, string $groupName = 'cert-staff'): void
+    {
+        $group = UserGroup::create([
+            'name' => $groupName,
+            'tenant_id' => $tenant->id,
+        ]);
+        $user->userGroups()->attach($group->id);
+    }
+
     public function test_guest_is_redirected_to_login(): void
     {
         $this->get('/')->assertRedirect('/login');
@@ -104,6 +113,7 @@ class PortalLauncherTest extends TestCase
         $user = User::factory()->create(['status' => 'active']);
         $cert = $this->tenant('loa', 'LOA Certificates');
         $user->tenants()->attach($cert->id);
+        $this->attachGroupToUser($user, $cert);
 
         $response = $this->actingAs($user, 'web')->post("/launcher/go/{$cert->id}");
 

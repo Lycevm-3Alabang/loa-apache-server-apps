@@ -4,6 +4,7 @@ use App\Http\Controllers\AttendeeController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthCallbackController;
 use App\Http\Controllers\AuthLogoutController;
+use App\Http\Controllers\AuthProxyController;
 use App\Http\Controllers\AuthRefreshController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CertificateTemplateController;
@@ -102,6 +103,16 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}/with-cert', [AttendeeController::class, 'destroyWithCert']);
             Route::get('/{id}/delete-preview', [AttendeeController::class, 'deletePreview']);
             Route::get('/{id}/file-data', [AttendeeController::class, 'fileData']);
+        });
+
+        Route::prefix('service')->group(function () {
+            Route::get('/users', [AuthProxyController::class, 'listUsers']);
+            Route::patch('/users/{id}/status', [AuthProxyController::class, 'updateUserStatus']);
+            Route::get('/groups', [AuthProxyController::class, 'listGroups']);
+            Route::get('/members', [AuthProxyController::class, 'listMembers']);
+            Route::post('/members', [AuthProxyController::class, 'storeMember']);
+            Route::delete('/members/{userId}', [AuthProxyController::class, 'destroyMember']);
+            Route::post('/members/invite', [AuthProxyController::class, 'inviteMember']);
         });
 
     });
