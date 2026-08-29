@@ -10,4 +10,6 @@ return [
 
     'http_timeout' => (int) env('AUTH_HTTP_TIMEOUT', 5),
 
+    'api_key' => env('AUTH_API_KEY', ''),
+
 ];

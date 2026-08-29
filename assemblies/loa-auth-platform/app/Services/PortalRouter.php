@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 /**
  * Smart-routing primitives shared by the login pipeline
@@ -37,7 +38,7 @@ class PortalRouter
         User $user,
         ?string $target,
         ?array $tokens,
-    ): RedirectResponse {
+    ): View|RedirectResponse {
         if ($target !== null) {
             return $this->enterForTarget($request, $user, $target, $tokens);
         }
@@ -57,10 +58,19 @@ class PortalRouter
         User $user,
         string $target,
         ?array $tokens = null,
-    ): RedirectResponse {
+    ): View|RedirectResponse {
         $intentTenant = $this->resolveTenant($target);
 
         if ($intentTenant && $this->tenants->isMember($user->id, $intentTenant->id)) {
+            if (!$this->tenants->hasTenantGroups($user->id, $intentTenant->id)) {
+                $this->revokeTokens($tokens);
+
+                return view('tenant-denial', [
+                    'tenantName' => $intentTenant->name,
+                    'tenantAppUrl' => $intentTenant->effectiveAppUrl(),
+                ]);
+            }
+
             return $this->enterTenant($request, $user, $intentTenant, $target, $tokens, 'sso');
         }
 
@@ -104,6 +114,7 @@ class PortalRouter
             ],
             'iat' => time(),
             'exp' => time() + $tokens['expires_in'],
+            'is_admin' => $this->isAdmin($user),
         ];
 
         if ($this->encryption->isConfigured()) {

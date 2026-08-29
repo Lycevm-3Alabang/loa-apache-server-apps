@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\PasswordResetNotificationService;
 use App\Services\PortalRouter;
+use App\Services\TenantService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +28,7 @@ class PortalController extends Controller
         private readonly PortalRouter $router,
         private readonly AuditLogger $audit,
         private readonly PasswordResetNotificationService $passwordResets,
+        private readonly TenantService $tenants,
     ) {
     }
 
@@ -74,7 +76,7 @@ class PortalController extends Controller
         return view('dashboard', $viewData);
     }
 
-    public function go(Request $request, string $tenant): RedirectResponse
+    public function go(Request $request, string $tenant): View|RedirectResponse
     {
         $user = $this->authUser();
 
@@ -96,6 +98,13 @@ class PortalController extends Controller
             return redirect()
                 ->route('home')
                 ->with('error', 'That application is not available right now.');
+        }
+
+        if (!$this->tenants->hasTenantGroups($user->id, $tenant->id)) {
+            return view('tenant-denial', [
+                'tenantName' => $tenant->name,
+                'tenantAppUrl' => $url,
+            ]);
         }
 
         return $this->router->enterTenant($request, $user, $tenant, (string) $url, null, 'portal');

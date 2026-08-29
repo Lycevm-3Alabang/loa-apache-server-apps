@@ -35,12 +35,18 @@ class SsoAuthTest extends TestCase
 
     private function memberUser(): User
     {
+        $group = UserGroup::create([
+            'name' => 'cert-staff',
+            'tenant_id' => $this->tenant->id,
+        ]);
+
         $user = User::factory()->create([
             'email' => 'staff@lyceumalabang.edu.ph',
             'name' => 'Staff User',
             'status' => 'active',
         ]);
         $user->tenants()->attach($this->tenant->id);
+        $user->userGroups()->attach($group->id);
 
         return $user;
     }
@@ -128,6 +134,12 @@ class SsoAuthTest extends TestCase
     {
         $admin = $this->adminUser();
         $admin->tenants()->attach($this->tenant->id);
+
+        $group = UserGroup::create([
+            'name' => 'cert-admin',
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $admin->userGroups()->attach($group->id);
 
         $response = $this->post('/sso/login', [
             'email' => 'admin@lyceumalabang.edu.ph',

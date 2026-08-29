@@ -138,6 +138,15 @@ class TenantService
         return $user->tenants()->where('tenant_id', $tenantId)->exists();
     }
 
+    public function hasTenantGroups(string $userId, string $tenantId): bool
+    {
+        return \DB::table('user_user_group')
+            ->join('user_groups', 'user_groups.id', '=', 'user_user_group.user_group_id')
+            ->where('user_user_group.user_id', $userId)
+            ->where('user_groups.tenant_id', $tenantId)
+            ->exists();
+    }
+
     public function normalizeOrigin(string $origin): string
     {
         $origin = strtolower(trim($origin));

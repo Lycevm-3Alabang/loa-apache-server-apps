@@ -60,6 +60,15 @@ return [
         ['method' => 'GET',    'path' => '/api/v1/dashboard/activity',            'required_level' => 'read'],
         ['method' => 'GET',    'path' => '/api/v1/admin/audit-logs',              'required_level' => 'admin'],
         ['method' => 'GET',    'path' => '/api/v1/admin/audit-logs/export',       'required_level' => 'admin'],
+
+        // Service proxy — auth platform user/group/membership endpoints
+        ['method' => 'GET',    'path' => '/api/v1/service/users',                 'required_level' => 'read'],
+        ['method' => 'PATCH',  'path' => '/api/v1/service/users/{id}/status',     'required_level' => 'admin'],
+        ['method' => 'GET',    'path' => '/api/v1/service/groups',                'required_level' => 'read'],
+        ['method' => 'GET',    'path' => '/api/v1/service/members',               'required_level' => 'read'],
+        ['method' => 'POST',   'path' => '/api/v1/service/members',               'required_level' => 'admin'],
+        ['method' => 'DELETE', 'path' => '/api/v1/service/members/{userId}',      'required_level' => 'admin'],
+        ['method' => 'POST',   'path' => '/api/v1/service/members/invite',        'required_level' => 'admin'],
     ],
 
 ];
