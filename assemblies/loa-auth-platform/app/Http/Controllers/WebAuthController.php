@@ -42,7 +42,7 @@ class WebAuthController extends Controller
         ]);
     }
 
-    public function login(Request $request): RedirectResponse
+    public function login(Request $request): View|RedirectResponse
     {
         return $this->handleWebLogin($request, false);
     }
@@ -52,7 +52,7 @@ class WebAuthController extends Controller
      * (unified-auth-flow.md §3). SSO mode requires a validated redirect intent;
      * every authenticated user leaves with a portal session (§4).
      */
-    private function handleWebLogin(Request $request, bool $requireTenantIntent): RedirectResponse
+    private function handleWebLogin(Request $request, bool $requireTenantIntent): View|RedirectResponse
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
@@ -292,7 +292,7 @@ class WebAuthController extends Controller
         ]);
     }
 
-    public function ssoLogin(Request $request): RedirectResponse
+    public function ssoLogin(Request $request): View|RedirectResponse
     {
         return $this->handleWebLogin($request, true);
     }

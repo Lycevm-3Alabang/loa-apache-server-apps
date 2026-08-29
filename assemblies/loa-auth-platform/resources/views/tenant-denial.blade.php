@@ -2,8 +2,13 @@
 
 @section('title', 'Access Denied | LOA Platform')
 @section('eyebrow', 'Access Denied')
-@section('heading', 'You don''t have access')
-@section('intro', 'You don''t have access to this application. Contact your administrator.')
+@section('heading')
+    You don't have access
+@endsection
+
+@section('intro')
+    You don't have access to this application. Contact your administrator.
+@endsection
 
 @section('content')
     <div style="text-align:center;padding:1.5rem 0;">
