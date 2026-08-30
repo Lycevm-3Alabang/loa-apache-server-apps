@@ -134,6 +134,68 @@ Write-Host "Dist ready ($Target):"
 Write-Host "  Folder: $dst"
 Write-Host "  Zip:    $zip"
 
+# ── Regenerate cPanel SQL installer from Docker schema ───────────────────
+Write-Host "Regenerating cPanel SQL installer for '$Target'..."
+
+$dockerDb = @{ auth = 'loa_auth'; cert = 'loa_cert' }[$Target]
+$cpanelDb = @{ auth = 'lyceumalabang_auth_db'; cert = 'lyceumalabang_e_cert_db' }[$Target]
+$sqlOut   = Join-Path $appRoot "database\sql\cpanel-$Target-db-install.sql"
+
+# Tables to exclude entirely (runtime data, not needed on cPanel).
+$excludeTables = @(
+    'sessions', 'jobs', 'failed_jobs', 'password_reset_tokens',
+    'password_set_tokens', 'refresh_tokens', 'login_attempts',
+    'activations', 'users', 'audit_logs', 'user_tenants',
+    'user_user_group', 'user_permission', 'user_claim_overrides',
+    'tenant_endpoint_overrides', 'tenant_api_keys', 'cache', 'cache_locks'
+)
+
+# Build mysqldump exclude args
+$mysqlExcludeArgs = @()
+foreach ($t in $excludeTables) {
+    $mysqlExcludeArgs += "--ignore-table=$dockerDb.$t"
+}
+
+# Dump schema + seed data in one pass (exclude runtime tables)
+$rawDump = docker exec loa-platform-mysql-1 mysqldump `
+    -uroot -proot-secret `
+    --skip-extended-insert `
+    --complete-insert `
+    --routines `
+    --single-transaction `
+    $mysqlExcludeArgs `
+    $dockerDb 2>$null
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "mysqldump failed for $dockerDb - skipping SQL regeneration."
+} else {
+    # Process: replace DB name, add DROP TABLE IF EXISTS, remove USE statement
+    $processed = @()
+    foreach ($line in $rawDump) {
+        $out = $line
+
+        # Replace database name references
+        $out = $out -replace [regex]::Escape($dockerDb), $cpanelDb
+
+        # Add DROP TABLE IF EXISTS before each CREATE TABLE
+        if ($out -match '^\s*CREATE TABLE') {
+            $tbl = $out -replace '^\s*CREATE TABLE\s+`(\w+)`.*', '$1'
+            $processed += ""
+            $processed += "DROP TABLE IF EXISTS ``$tbl``;"
+        }
+
+        $processed += $out
+    }
+
+    # Remove USE statements (importer selects DB in phpMyAdmin)
+    $processed = $processed | Where-Object { $_ -notmatch '^USE\s' }
+
+    # Write the file
+    $fullSql = $processed -join "`n"
+    [System.IO.File]::WriteAllText($sqlOut, $fullSql, [System.Text.UTF8Encoding]::new($false))
+    Write-Host "  SQL regenerated: $sqlOut"
+}
+
 # ── Copy the SQL installer to the output directory ─────────────────────
 $sqlSrc = Join-Path $PSScriptRoot "assemblies\$app\database\sql\cpanel-$Target-db-install.sql"
 if (Test-Path $sqlSrc) {
