@@ -123,6 +123,58 @@
     {{-- Pending import banner --}}
     @include('admin.tenants._import-pending', ['tenant' => $tenant])
 
+    {{-- Invited (pending) --}}
+    @if ($pendingMembers->isNotEmpty())
+    <div class="detail-card" style="border-left:3px solid #f59e0b;">
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <h2 style="color:#b45309;">Invited — awaiting password setup ({{ $pendingMembers->count() }})</h2>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Group</th>
+                        <th>Invited</th>
+                        <th class="row-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($pendingMembers as $pending)
+                        <tr>
+                            <td class="cell-user">
+                                <strong>{{ $pending->name }}</strong>
+                                <span>{{ $pending->email }}</span>
+                            </td>
+                            <td class="muted">
+                                @php $pendingGroups = $pending->userGroups->where('tenant_id', $tenant->id); @endphp
+                                @if ($pendingGroups->isNotEmpty())
+                                    @foreach ($pendingGroups as $pGroup)
+                                        <span style="display:inline-flex;align-items:center;gap:0.25rem;margin:0 0.375rem 0.375rem 0;padding:0.125rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-xl,999px);background:var(--surface-secondary);">
+                                            <a href="{{ route('admin.tenants.group.show', [$tenant, $pGroup]) }}">{{ $pGroup->name }}</a>
+                                        </span>
+                                    @endforeach
+                                @else
+                                    <span class="muted">None</span>
+                                @endif
+                            </td>
+                            <td class="muted">{{ $pending->pivot->created_at?->format('M j, Y g:i A') ?? $pending->created_at?->format('M j, Y g:i A') ?? '—' }}</td>
+                            <td class="row-actions">
+                                <form method="post" action="{{ route('admin.tenants.members', $tenant) }}" style="display:inline;">
+                                    @csrf
+                                    <input type="hidden" name="action" value="remove">
+                                    <input type="hidden" name="user_id" value="{{ $pending->id }}">
+                                    <a class="button button-link button-danger" role="button" href="#" onclick="event.preventDefault(); if (confirm('Remove this invited user?')) this.closest('form').submit();">Remove</a>
+                                </form>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
     {{-- Members --}}
     <div class="detail-card">
         <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;">
@@ -148,6 +200,16 @@
                     <label for="cu-email" style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:0.25rem;">Email</label>
                     <input type="email" id="cu-email" name="email" required
                            style="width:100%;height:2.25rem;padding:0 0.5rem;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8125rem;">
+                </div>
+                <div style="flex:1 1 10rem;">
+                    <label for="cu-group" style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:0.25rem;">Group</label>
+                    <select id="cu-group" name="group_id" required
+                            style="width:100%;height:2.25rem;padding:0 0.5rem;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8125rem;background:var(--surface);">
+                        <option value="">Select group…</option>
+                        @foreach ($groups as $group)
+                            <option value="{{ $group->id }}">{{ $group->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <button class="button" type="submit" style="height:2.25rem;font-size:0.8125rem;">Create &amp; Invite</button>
                 <button class="button button-ghost" type="button" id="cancel-create-user"

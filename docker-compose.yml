@@ -34,6 +34,8 @@ services:
       DB_DATABASE: loa_auth
       DB_USERNAME: loa
       DB_PASSWORD: loa-secret
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
       SEQ_URL: "http://seq:5341"
     depends_on:
       mysql:
@@ -68,6 +70,30 @@ services:
       DB_DATABASE: loa_auth
       DB_USERNAME: loa
       DB_PASSWORD: loa-secret
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - loa
+
+  auth-queue:
+    image: loa-auth-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: ["php", "artisan", "queue:work", "--tries=3", "--timeout=30"]
+    volumes:
+      - ./assemblies/loa-auth-platform:/var/www/html
+    environment:
+      APP_ENV: local
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: loa_auth
+      DB_USERNAME: loa
+      DB_PASSWORD: loa-secret
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
     depends_on:
       mysql:
         condition: service_healthy

@@ -742,9 +742,19 @@ class WebAdminController extends Controller
             ->orderBy('email')
             ->paginate(25);
 
+        $pendingMembers = $tenant->users()
+            ->with('userGroups')
+            ->where('users.status', 'pending')
+            ->orderBy('users.created_at', 'desc')
+            ->get();
+
+        $groups = $tenant->userGroups()->orderBy('name')->get();
+
         return view('admin.tenants.show', [
             'tenant' => $tenant,
             'members' => $members,
+            'pendingMembers' => $pendingMembers,
+            'groups' => $groups,
         ]);
     }
 
@@ -849,10 +859,15 @@ class WebAdminController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
+            'group_id' => 'required|exists:user_groups,id',
         ]);
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
+        }
+
+        if (!$tenant->userGroups()->where('user_groups.id', $request->input('group_id'))->exists()) {
+            return back()->withErrors(['group_id' => 'Selected group does not belong to this tenant.'])->withInput();
         }
 
         try {
@@ -864,6 +879,8 @@ class WebAdminController extends Controller
             $user->update(['status' => 'pending']);
 
             $user->tenants()->syncWithoutDetaching([$tenant->id]);
+
+            $this->authorization->addToGroup($user->id, $request->input('group_id'));
 
             $rawToken = bin2hex(random_bytes(32));
             $hashedToken = hash('sha256', $rawToken);
