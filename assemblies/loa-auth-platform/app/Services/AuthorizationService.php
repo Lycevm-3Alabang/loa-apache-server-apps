@@ -121,7 +121,7 @@ class AuthorizationService
                 ->exists();
 
             if (!$hasPivot) {
-                throw new HttpException(422, 'User must belong to the tenant before being added to a tenant-scoped group.');
+                $user->tenants()->attach($group->tenant_id);
             }
         }
 
@@ -148,31 +148,7 @@ class AuthorizationService
 
     public function addToGroupTransactional(string $userId, string $groupId): void
     {
-        DB::transaction(function () use ($userId, $groupId) {
-            $group = UserGroup::find($groupId);
-
-            if (!$group) {
-                throw new \Exception('Group not found');
-            }
-
-            // If group is tenant-scoped and user lacks pivot, create it
-            if ($group->tenant_id !== null) {
-                $hasPivot = DB::table('user_tenants')
-                    ->where('user_id', $userId)
-                    ->where('tenant_id', $group->tenant_id)
-                    ->exists();
-
-                if (!$hasPivot) {
-                    $user = User::find($userId);
-                    if (!$user) {
-                        throw new \Exception('User not found');
-                    }
-                    $user->tenants()->attach($group->tenant_id);
-                }
-            }
-
-            $this->addToGroup($userId, $groupId);
-        });
+        DB::transaction(fn () => $this->addToGroup($userId, $groupId));
     }
 
     public function grantGroupPermission(string $groupId, string $permissionKey, ?string $tenantId = null): void

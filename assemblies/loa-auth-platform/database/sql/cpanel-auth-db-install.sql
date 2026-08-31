@@ -642,8 +642,7 @@ CREATE TABLE `tenants` (
 LOCK TABLES `tenants` WRITE;
 /*!40000 ALTER TABLE `tenants` DISABLE KEYS */;
 INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('0eed6f0b-45d8-4071-bb8c-10986b3e81cb','auth','LOA Auth Platform','active',NULL,NULL,'[]','[]','2026-08-30 21:50:25','2026-08-30 21:50:25');
-INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('6caa4779-f03e-4147-8118-2cc9e01dd6de','e-cert','E-Cert Platform','active','https://e-cert.vercel.app',NULL,'[\"https://e-cert.vercel.app\"]',NULL,'2026-08-30 21:50:09','2026-08-30 21:50:09');
-INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','loa-e-cert','Local Cert App','active','http://localhost:9001','http://localhost:9001','[\"http://localhost:3000\"]','[\"http://localhost:3000\"]','2026-08-30 21:50:25','2026-08-30 21:50:25');
+INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','loa-e-cert','E-Cert Platform','active','https://e-cert.vercel.app',NULL,'[\"https://e-cert.vercel.app\"]',NULL,'2026-08-30 21:50:09','2026-08-30 21:50:09');
 INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('fa974feb-c5dc-41e6-907c-69a403381ecf','aces-api','ACES Platform','active','https://aces-api.lyceumalabang.edu.ph',NULL,'[\"https://aces-api.lyceumalabang.edu.ph\"]',NULL,'2026-08-30 21:50:08','2026-08-30 21:50:08');
 /*!40000 ALTER TABLE `tenants` ENABLE KEYS */;
 UNLOCK TABLES;
