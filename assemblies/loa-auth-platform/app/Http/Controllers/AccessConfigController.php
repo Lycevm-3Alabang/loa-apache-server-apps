@@ -49,7 +49,7 @@ class AccessConfigController extends Controller
                     'name' => 'Faculty',
                     'description' => 'Teaching staff — full access to appointments and certificates',
                     'priority' => 5,
-                    '_comment' => 'priority: 1=highest, 100=lowest, default=10. Lower value = higher precedence.',
+                    '_comment' => 'priority: 1=highest, 10000=lowest, default=10. Lower value = higher precedence.',
                     'grants' => [
                         ['method' => 'GET', 'path' => '/api/v1/appointments', 'level' => 'read'],
                         ['method' => 'POST', 'path' => '/api/v1/appointments', 'level' => 'write'],
@@ -216,7 +216,7 @@ class AccessConfigController extends Controller
             'groups' => 'nullable|array',
             'groups.*.name' => 'required|string|max:255',
             'groups.*.description' => 'nullable|string|max:255',
-            'groups.*.priority' => 'nullable|integer|min:1|max:100',
+            'groups.*.priority' => 'nullable|integer|min:1|max:10000',
             'groups.*.grants' => 'nullable|array',
             'groups.*.grants.*.method' => 'required|string|in:GET,POST,PUT,PATCH,DELETE,*',
             'groups.*.grants.*.path' => 'required|string|max:512',

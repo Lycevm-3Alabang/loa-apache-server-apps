@@ -101,7 +101,7 @@ The access config payload has three top-level sections:
 | `groups` | No | Array of group objects. Empty array or absent = no groups to import. |
 | `groups[].name` | Yes | Group name. Used as the upsert key (unique per tenant). |
 | `groups[].description` | No | Defaults to `null`. |
-| `groups[].priority` | No | Integer 1–100, default 10. Lower = higher precedence. |
+| `groups[].priority` | No | Integer 1–10000, default 10. Lower = higher precedence. |
 | `groups[].tenant_id` | No | Export-only. Tenant ID or `null` for platform-wide groups. Ignored on import (target tenant from route). |
 | `groups[].grants` | No | Array of grant objects. Empty = no grants for this group. |
 | `groups[].grants[].method` | Yes | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, or `*` (matches any method) |
@@ -148,7 +148,7 @@ Returns the template JSON (§3) with sample placeholder data. The `groups` array
       "name": "Faculty",
       "description": "Teaching staff — full access to appointments and certificates",
       "priority": 5,
-      "_comment": "priority: 1=highest, 100=lowest, default=10. Lower value = higher precedence.",
+      "_comment": "priority: 1=highest, 10000=lowest, default=10. Lower value = higher precedence.",
       "grants": [
         { "method": "GET",  "path": "/api/v1/appointments",            "level": "read" },
         { "method": "POST", "path": "/api/v1/appointments",            "level": "write" },
@@ -440,7 +440,7 @@ $validator = Validator::make($data, [
     'groups' => 'nullable|array',
     'groups.*.name' => 'required|string|max:255',
     'groups.*.description' => 'nullable|string|max:255',
-    'groups.*.priority' => 'nullable|integer|min:1|max:100',
+    'groups.*.priority' => 'nullable|integer|min:1|max:10000',
     'groups.*.tenant_id' => 'nullable|string',  // export-only, ignored on import
     'groups.*.grants' => 'nullable|array',
     'groups.*.grants.*.method' => 'required|string|in:GET,POST,PUT,PATCH,DELETE,*',
@@ -468,7 +468,7 @@ After schema validation:
 2. **Endpoint existence:** Each grant/override `(method, path)` must exist in `tenant_app_endpoint` for the target tenant (or platform-wide).
 3. **User existence:** Each `user_overrides[].email` must exist in `users`.
 4. **Group name uniqueness:** Within the target tenant, group names must be unique. Duplicates in the same JSON payload → last-wins.
-5. **Priority range:** 1–100. Default 10 if omitted.
+5. **Priority range:** 1–10000. Default 10 if omitted.
 
 ---
 
