@@ -1,0 +1,175 @@
+{
+    "version": "1.0",
+    "exported_at": "2026-08-21T09:36:42+08:00",
+    "tenant_slug": "cert-app",
+    "endpoints": [
+        {
+            "method": "DELETE",
+            "path": "/events/{id}/attendees",
+            "label": null,
+            "description": null,
+            "required_level": "admin"
+        },
+        {
+            "method": "DELETE",
+            "path": "/templates/{id}/delete",
+            "label": null,
+            "description": null,
+            "required_level": "admin"
+        },
+        {
+            "method": "GET",
+            "path": "/access",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/audit",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/certificates",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/certificates/{id}",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/certificates/{id}/download",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/certificates/{id}/qr",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/dashboard",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/events",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/events/{id}",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/events/{id}/attendees",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/me",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/me/attendees",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/me/organizations",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/templates",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "GET",
+            "path": "/templates/{id}",
+            "label": null,
+            "description": null,
+            "required_level": "read"
+        },
+        {
+            "method": "PATCH",
+            "path": "/events/{id}/attendees",
+            "label": null,
+            "description": null,
+            "required_level": "write"
+        },
+        {
+            "method": "POST",
+            "path": "/auth/callback",
+            "label": null,
+            "description": null,
+            "required_level": "write"
+        },
+        {
+            "method": "POST",
+            "path": "/auth/logout",
+            "label": null,
+            "description": null,
+            "required_level": "write"
+        },
+        {
+            "method": "POST",
+            "path": "/auth/refresh",
+            "label": null,
+            "description": null,
+            "required_level": "write"
+        },
+        {
+            "method": "POST",
+            "path": "/certificates/{id}/email",
+            "label": null,
+            "description": null,
+            "required_level": "write"
+        },
+        {
+            "method": "POST",
+            "path": "/events/{id}/attendees",
+            "label": null,
+            "description": null,
+            "required_level": "write"
+        },
+        {
+            "method": "PUT",
+            "path": "/templates/{id}/edit",
+            "label": null,
+            "description": null,
+            "required_level": "write"
+        }
+    ]
+}
