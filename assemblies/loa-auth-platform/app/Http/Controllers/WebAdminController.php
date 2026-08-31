@@ -638,11 +638,7 @@ class WebAdminController extends Controller
             }
 
             try {
-                if ($tier === 'secondary') {
-                    $this->authorization->addToGroupTransactional($userId, $group->id);
-                } else {
-                    $this->authorization->addToGroup($userId, $group->id);
-                }
+                $this->authorization->addToGroup($userId, $group->id);
 
                 $this->auditGroupMembership('added', $group, $userId);
                 $added++;

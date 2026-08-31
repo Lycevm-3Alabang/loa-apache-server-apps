@@ -322,7 +322,7 @@ Content-Type: application/json
   },
   "tenant": {
     "id": "tenant_loa",
-    "slug": "loa"
+    "slug": "loa-e-cert"
   },
   "iat": 1754000000,
   "exp": 1754000900
@@ -346,7 +346,7 @@ Content-Type: application/json
     },
     "tenant": {
       "id": "tenant_loa",
-      "slug": "loa"
+    "slug": "loa-e-cert"
     }
   }
 }
@@ -766,7 +766,7 @@ JWT_SECRET=<shared_hmac_secret_with_auth_platform>
 AUTH_PLATFORM_BASE_URL=https://auth.lyceumalabang.edu.ph
 ENCRYPTION_KEY=<same_key_as_auth_platform>
 ENCRYPTION_KEY_PREVIOUS=
-CERT_TENANT_SLUG=loa
+CERT_TENANT_SLUG=loa-e-cert
 ```
 
 ```php
@@ -780,7 +780,7 @@ return [
 
 // config/cert-platform.php
 return [
-    'tenant_slug' => env('CERT_TENANT_SLUG', 'loa'),
+    'tenant_slug' => env('CERT_TENANT_SLUG', 'loa-e-cert'),
 ];
 ```
 

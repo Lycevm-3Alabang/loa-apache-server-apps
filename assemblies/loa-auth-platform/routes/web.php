@@ -152,7 +152,7 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::get('/tenants/{tenant}/groups/{group}/members/search', [WebAdminController::class, 'tenantGroupMemberSearch'])
         ->name('admin.tenants.group.members.search')
         ->middleware('throttle:120,1');
-    // §12: Add member to tenant group (primary-tier direct, secondary-tier via addToGroupTransactional)
+    // §12: Add member to tenant group
     Route::post('/tenants/{tenant}/groups/{group}/members', [WebAdminController::class, 'tenantGroupMembersStore'])
         ->name('admin.tenants.group.members.store');
     // §12: Remove member from tenant group (with cascade confirmation interstitial)

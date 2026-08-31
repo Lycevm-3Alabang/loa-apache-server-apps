@@ -30,7 +30,7 @@ class JwtMiddleware
             return response()->json(['message' => 'Invalid or expired token'], 401);
         }
 
-        $tenantSlug = config('cert-platform.tenant_slug', 'loa');
+        $tenantSlug = config('cert-platform.tenant_slug', 'loa-e-cert');
 
         if (($claims['tenant']['slug'] ?? '') !== $tenantSlug) {
             return response()->json([

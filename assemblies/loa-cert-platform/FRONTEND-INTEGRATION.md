@@ -23,7 +23,7 @@ This document is the handoff from the Cert Platform backend to the e-cert fronte
 
 ### Middleware
 
-- `jwt.auth` — validates JWT signature, type (`access`), expiry, and tenant claim (`tenant.slug = loa`)
+- `jwt.auth` — validates JWT signature, type (`access`), expiry, and tenant claim (`tenant.slug = loa-e-cert`)
 - `jwt.endpoint` — checks `permissions` claim against local endpoint catalog (level-based, closed-by-default)
 
 ### Configuration
@@ -33,7 +33,7 @@ This document is the handoff from the Cert Platform backend to the e-cert fronte
 | `config/jwt.php` | `secret` | `dev-only-secret-change-before-production` |
 | `config/jwt.php` | `access_ttl` | `15` (minutes; per `token-lifecycle.md` access tokens stay short-lived) |
 | `config/jwt.php` | `algo` | `HS256` |
-| `config/cert-platform.php` | `tenant_slug` | `loa` |
+| `config/cert-platform.php` | `tenant_slug` | `loa-e-cert` |
 | `config/cert-platform.php` | `refresh_cookie` | `loa_cert_refresh` |
 | `config/cert-platform.php` | `refresh_cookie_ttl` | `10080` (minutes = 7 days) |
 | `config/auth-platform.php` | `base_url` | `https://auth.lyceumalabang.edu.ph` |
@@ -75,7 +75,7 @@ Content-Type: application/json
     "token_type": "Bearer",
     "expires_in": 900,
     "user": { "id": "...", "email": "...", "name": "..." },
-    "tenant": { "id": "...", "slug": "loa" }
+    "tenant": { "id": "...", "slug": "loa-e-cert" }
   }
 }
 ```
@@ -153,7 +153,7 @@ const canCreateEvents = permissions.some(p => p === 'write:/api/v1/events');
 ```
 NEXT_PUBLIC_CERT_API_URL=https://cert-api.lyceumalabang.edu.ph
 NEXT_PUBLIC_AUTH_URL=https://auth.lyceumalabang.edu.ph
-NEXT_PUBLIC_CERT_TENANT_SLUG=loa
+NEXT_PUBLIC_CERT_TENANT_SLUG=loa-e-cert
 ```
 
 ---

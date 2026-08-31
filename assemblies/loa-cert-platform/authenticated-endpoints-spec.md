@@ -158,7 +158,7 @@ The access token JWT contains these claims:
   ],
   "tenant": {
     "id": "tenant-uuid",
-    "slug": "loa"
+    "slug": "loa-e-cert"
   }
 }
 ```
