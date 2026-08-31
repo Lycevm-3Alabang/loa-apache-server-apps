@@ -80,12 +80,14 @@ if ($SkipProvision) {
     exit 0
 }
 
-Write-Host '5) Migrating and seeding the auth app...'
+Write-Host '5) Installing dependencies + migrating and seeding the auth app...'
+docker compose exec auth-app composer install --no-interaction
 docker compose exec auth-app php artisan migrate --force
 docker compose exec auth-app php artisan db:seed --force
 docker compose exec auth-app php artisan l5-swagger:generate
 
-Write-Host '6) Migrating and seeding the cert app...'
+Write-Host '6) Installing dependencies + migrating and seeding the cert app...'
+docker compose exec cert-app composer install --no-interaction
 docker compose exec cert-app php artisan migrate --force
 docker compose exec cert-app php artisan db:seed --force
 docker compose exec cert-app php artisan l5-swagger:generate

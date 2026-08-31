@@ -134,6 +134,114 @@ Write-Host "Dist ready ($Target):"
 Write-Host "  Folder: $dst"
 Write-Host "  Zip:    $zip"
 
+# ── Regenerate cPanel SQL installer from Docker schema ───────────────────
+Write-Host "Regenerating cPanel SQL installer for '$Target'..."
+
+$dockerDb = @{ auth = 'loa_auth'; cert = 'loa_cert' }[$Target]
+$cpanelDb = @{ auth = 'lyceumalabang_auth_db'; cert = 'lyceumalabang_e_cert_db' }[$Target]
+$sqlOut   = Join-Path $appRoot "database\sql\cpanel-$Target-db-install.sql"
+
+# Tenants to REMOVE from the dump (only loa-e-cert and auth are kept).
+$removeTenantSlugs = @('aces-api', 'e-cert')
+$removeTenantUuids = @()
+
+# Full database dump (no --ignore-table — cPanel has no artisan migrate)
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+$rawDump = docker exec loa-platform-mysql-1 mysqldump `
+    -uroot -proot-secret `
+    --skip-extended-insert `
+    --complete-insert `
+    --routines `
+    --single-transaction `
+    $dockerDb 2>$null
+$dumpExit = $LASTEXITCODE
+$ErrorActionPreference = $prevEap
+
+if ($dumpExit -ne 0) {
+    Write-Warning "mysqldump failed for $dockerDb - skipping SQL regeneration."
+} else {
+    # ── Pass 1: discover UUIDs of tenants to remove ──────────────────────
+    foreach ($line in $rawDump) {
+        if ($line -match "INSERT INTO `tenants`.*VALUES\s*\('([^']+)','($($removeTenantSlugs -join '|'))'") {
+            $removeTenantUuids += $Matches[1]
+        }
+    }
+    if ($removeTenantUuids.Count -gt 0) {
+        Write-Host "  Removing tenants: $($removeTenantSlugs -join ', ') (UUIDs: $($removeTenantUuids -join ', '))"
+    }
+
+    # ── Pass 2: process dump — replace DB name, add DROP TABLE, filter ──
+    $processed = @()
+    $inInsertBlock = $false
+
+    foreach ($line in $rawDump) {
+        $out = $line
+
+        # Replace database name references
+        $out = $out -replace [regex]::Escape($dockerDb), $cpanelDb
+
+        # Add DROP TABLE IF EXISTS before each CREATE TABLE
+        if ($out -match '^\s*CREATE TABLE') {
+            $tbl = $out -replace '^\s*CREATE TABLE\s+`(\w+)`.*', '$1'
+            $processed += ""
+            $processed += "DROP TABLE IF EXISTS ``$tbl``;"
+        }
+
+        # Skip INSERT rows for tenants to remove
+        if ($removeTenantUuids.Count -gt 0) {
+            $skip = $false
+            foreach ($uuid in $removeTenantUuids) {
+                if ($out -match [regex]::Escape($uuid)) {
+                    $skip = $true
+                    break
+                }
+            }
+            if ($skip) { continue }
+        }
+
+        $processed += $out
+    }
+
+    # Remove USE statements (importer selects DB in phpMyAdmin)
+    $processed = $processed | Where-Object { $_ -notmatch '^USE\s' }
+
+    # ── Pass 3: inject cert-app endpoints from JSON (auth target only) ───
+    if ($Target -eq 'auth') {
+        $endpointJson = Join-Path $PSScriptRoot 'assemblies\loa-auth-platform\database\json\cert-endpoints-catalog.json'
+        if (Test-Path -LiteralPath $endpointJson) {
+            $catalog = Get-Content -LiteralPath $endpointJson -Raw | ConvertFrom-Json
+            $certTenantUuid = '91128f0a-df85-47a9-ae1d-5298904dacd5'
+
+            # Find the INSERT block for tenant_app_endpoints and inject after DISABLE KEYS
+            $newProcessed = @()
+            $inEndpoints = $false
+            foreach ($line in $processed) {
+                $newProcessed += $line
+                if ($line -match "LOCK TABLES `tenant_app_endpoints` WRITE") {
+                    $inEndpoints = $true
+                }
+                if ($inEndpoints -and $line -match 'ALTER TABLE `tenant_app_endpoints` DISABLE KEYS') {
+                    foreach ($ep in $catalog.endpoints) {
+                        $escapedPath = $ep.path -replace "'", "''"
+                        $newProcessed += "INSERT INTO `tenant_app_endpoints` (`tenant_id`,`method`,`path`,`label`,`description`,`required_level`,`created_at`,`updated_at`) VALUES ('$certTenantUuid','$($ep.method)','$escapedPath',$(if ($ep.label) { "'$($ep.label)'" } else { 'NULL' }),$(if ($ep.description) { "'$($ep.description)'" } else { 'NULL' }),'$($ep.required_level)',NOW(),NOW());"
+                    }
+                    $inEndpoints = $false
+                }
+            }
+            $processed = $newProcessed
+            Write-Host "  Injected $($catalog.endpoints.Count) cert-app endpoints from JSON"
+        } else {
+            Write-Warning "Endpoint catalog JSON not found: $endpointJson"
+        }
+    }
+
+    # Write the file
+    $fullSql = $processed -join "`n"
+    [System.IO.File]::WriteAllText($sqlOut, $fullSql, [System.Text.UTF8Encoding]::new($false))
+    Write-Host "  SQL regenerated: $sqlOut"
+}
+
 # ── Copy the SQL installer to the output directory ─────────────────────
 $sqlSrc = Join-Path $PSScriptRoot "assemblies\$app\database\sql\cpanel-$Target-db-install.sql"
 if (Test-Path $sqlSrc) {

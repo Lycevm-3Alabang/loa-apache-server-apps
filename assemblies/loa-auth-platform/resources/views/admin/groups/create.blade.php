@@ -28,7 +28,7 @@
             </div>
             <div class="form-row">
                 <label for="priority">Priority (1 = highest, default 10)</label>
-                <input type="number" id="priority" name="priority" value="{{ old('priority', 10) }}" min="1" max="100" required>
+                <input type="number" id="priority" name="priority" value="{{ old('priority', 10) }}" min="1" max="10000" required>
                 @error('priority') <span class="error-text">{{ $message }}</span> @enderror
             </div>
             <div>

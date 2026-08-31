@@ -763,7 +763,7 @@ class WebAdminController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:255',
-            'priority' => 'required|integer|min:1|max:100',
+            'priority' => 'required|integer|min:1|max:10000',
         ]);
 
         if ($validator->fails()) {
@@ -936,7 +936,7 @@ class WebAdminController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:255',
-            'priority' => 'required|integer|min:1|max:100',
+            'priority' => 'required|integer|min:1|max:10000',
         ]);
 
         if ($validator->fails()) {
