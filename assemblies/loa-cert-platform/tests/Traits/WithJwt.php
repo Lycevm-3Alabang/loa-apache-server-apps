@@ -21,7 +21,7 @@ trait WithJwt
             'name' => 'Admin User',
             'tenant' => [
                 'id' => '00000000-0000-0000-0000-000000000001',
-                'slug' => config('cert-platform.tenant_slug', 'loa'),
+                'slug' => config('cert-platform.tenant_slug', 'loa-e-cert'),
             ],
             'permissions' => [
                 'admin:/api/v1/events',

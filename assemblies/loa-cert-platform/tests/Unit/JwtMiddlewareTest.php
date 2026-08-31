@@ -32,7 +32,7 @@ class JwtMiddlewareTest extends TestCase
 
     private function middleware(): JwtMiddleware
     {
-        config(['cert-platform.tenant_slug' => 'loa']);
+        config(['cert-platform.tenant_slug' => 'loa-e-cert']);
         return new JwtMiddleware(new JWTService($this->secret));
     }
 

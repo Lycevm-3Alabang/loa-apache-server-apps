@@ -47,7 +47,7 @@ class AuthCallbackController extends Controller
             return response()->json(['message' => 'Invalid access token'], 401);
         }
 
-        $tenantSlug = config('cert-platform.tenant_slug', 'loa');
+        $tenantSlug = config('cert-platform.tenant_slug', 'loa-e-cert');
 
         if (($claims['tenant']['slug'] ?? '') !== $tenantSlug) {
             return response()->json([

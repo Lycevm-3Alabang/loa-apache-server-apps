@@ -260,7 +260,7 @@ function hasSSOPayload(): boolean {
 1. Read the in-memory access token → else unauthenticated.
 2. Base64url-decode the JWT payload (`atob(token.split(".")[1])`) — **no signature verification**.
 3. Require `payload.type === "access"` → else invalid.
-4. Require `payload.tenant.slug === "loa"` (matches `NEXT_PUBLIC_CERT_TENANT_SLUG`) → else tenant mismatch.
+4. Require `payload.tenant.slug === "loa-e-cert"` (matches `NEXT_PUBLIC_CERT_TENANT_SLUG`) → else tenant mismatch.
 5. Read claims: `sub`, `email`, `name`, `groups`, `permissions` (array of `<level>:<path>`).
 6. Derive the coarse UI role (§7.4) and expose a `SessionUser` (`id`, `email`, `name`, `role`) identical to today's `src/lib/permissions.ts` shape — so pages/components keep compiling.
 
@@ -278,7 +278,7 @@ function hasSSOPayload(): boolean {
     "write:/api/v1/certificates"
   ],
   "scopes": [],
-  "tenant": { "id": "<tenant-uuid>", "slug": "loa" },
+  "tenant": { "id": "<tenant-uuid>", "slug": "loa-e-cert" },
   "iat": 1754000000,
   "exp": 1754000900,
   "type": "access"
@@ -577,7 +577,7 @@ All client fetches carry `Authorization: Bearer <in-memory access>`; on `401` th
 |----------|--------|---------|
 | `NEXT_PUBLIC_BASE_URL` | keep | `https://e-cert.vercel.app` (Vercel deployment origin; canonical UI origin) |
 | `AUTH_BASE_URL` | add | `https://auth.lyceumalabang.edu.ph` (SSO login redirect) |
-| `NEXT_PUBLIC_CERT_TENANT_SLUG` | add | `loa` (validated against token `tenant.slug` in §6.4; also used by `e-cert/specs` env docs) |
+| `NEXT_PUBLIC_CERT_TENANT_SLUG` | add | `loa-e-cert` (validated against token `tenant.slug` in §6.4; also used by `e-cert/specs` env docs) |
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | remove | no DB access |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | remove | email owned by Cert |
 | Legacy `authConfig.jwtSecret` (local signing secret) | remove | tokens are parsed client-side, never verified/signed (§6.4) |
@@ -586,7 +586,7 @@ All client fetches carry `Authorization: Bearer <in-memory access>`; on `401` th
 
 ## 10.2 Auth Platform Configuration (prereq)
 
-> **Side-note — how Auth is provisioned:** the Auth-side work (creating the `loa` tenant, importing the Cert catalog, creating the Cert groups, applying the grants, setting allowlists) is **owned by Auth** and is an operator-run procedure — see the Auth runbook **`assemblies/loa-auth-platform/cert-readiness.md`** (§4–§7 production, §8 local Docker). It is **not** baked into Auth seeders (2026-08-06 decision). This spec only records what the Cert Platform **depends on**:
+> **Side-note — how Auth is provisioned:** the Auth-side work (creating the `loa-e-cert` tenant, importing the Cert catalog, creating the Cert groups, applying the grants, setting allowlists) is **owned by Auth** and is an operator-run procedure — see the Auth runbook **`assemblies/loa-auth-platform/cert-readiness.md`** (§4–§7 production, §8 local Docker). It is **not** baked into Auth seeders (2026-08-06 decision). This spec only records what the Cert Platform **depends on**:
 
 - The `loa` tenant exists (active) with `redirect_origins` = `https://e-cert.vercel.app` (SSO redirect target).
 - The Cert endpoint catalog (Appendix A of `api-endpoints.md`) is present on that tenant.
@@ -621,7 +621,7 @@ The concrete provisioning steps (tenant creation, catalog import, group creation
 | Shared | No shared secret with e-cert. Auth and Cert share `JWT_SECRET` (HS256) for issue + verify; e-cert never sees it (§6.4) |
 | Direction | e-cert is **parse-only** — decodes the base64url payload to read identity/role claims; never verifies, never signs, never issues tokens |
 | Algorithms | HS256 (Auth/Cert side only) |
-| Must-check claims | `type=access`, `tenant.slug=loa` (§6.4); `exp` used only for UI state |
+| Must-check claims | `type=access`, `tenant.slug=loa-e-cert` (§6.4); `exp` used only for UI state |
 | TTLs | access 15 min (`JWT_ACCESS_TTL=15`), refresh 7 days (`JWT_REFRESH_TTL=10080`) |
 | `permissions` claim | array mixing `cert.*` keys + `<level>:<path>` entries; only levels are used for gating (§7.4) |
 | `tenant` claim | `{ id, slug }`; slug must equal `NEXT_PUBLIC_CERT_TENANT_SLUG` |

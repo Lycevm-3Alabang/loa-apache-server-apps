@@ -151,8 +151,29 @@ php artisan l5-swagger:generate
 | `DB_DATABASE` | `lyceumalabang_e_cert` | Yes |
 | `DB_USERNAME` | `lyceumalabang_auth_admin` (all privileges on `lyceumalabang_e_cert`) — password provided at deploy time, never committed | Yes |
 | `DB_PASSWORD` | provided at deploy time — never committed | Yes |
-| `JWT_SECRET` | random 32+ chars | Yes |
+| `JWT_SECRET` | random 32+ chars — **must match Auth Platform** | Yes |
 | `CORS_ALLOWED_ORIGINS` | `https://auth.lyceumalabang.edu.ph,https://e-cert.vercel.app` | Yes |
+| `CERT_TENANT_SLUG` | `loa-e-cert` | Yes |
+| `CERT_ORGANIZATION_ID` | `00000000-0000-0000-0000-000000000001` | Yes |
+| `CERT_REFRESH_COOKIE` | `loa_cert_refresh` | Yes |
+| `CERT_REFRESH_COOKIE_SECURE` | `true` | Yes |
+| `CERT_REFRESH_COOKIE_TTL` | `10080` (7 days) | Yes |
+| `ENCRYPTION_KEY` | hex-encoded 32-byte key — **must match Auth Platform** | Yes |
+| `ENCRYPTION_KEY_PREVIOUS` | previous key during rotation | Optional |
+| `AUTH_BASE_URL` | `https://auth.lyceumalabang.edu.ph` | Yes |
+
+> **Critical:** `JWT_SECRET` and `ENCRYPTION_KEY` must be identical between Auth Platform and Cert Platform. A mismatch causes SSO callback 403 or token verification failures.
+
+### Slug consistency checklist
+
+The tenant slug must match in **all four** places (see `cert-readiness.md` §4.1):
+
+| # | Layer | Env / Config | Value |
+|---|-------|-------------|-------|
+| 1 | Auth DB `tenants.slug` | `cpanel-auth-db-install.sql` | `loa-e-cert` |
+| 2 | Cert Platform backend | `CERT_TENANT_SLUG` env | `loa-e-cert` |
+| 3 | Auth Platform middleware | `TENANT_SLUG` env | `loa-e-cert` |
+| 4 | e-cert SPA (frontend) | `NEXT_PUBLIC_CERT_TENANT_SLUG` env | `loa-e-cert` |
 
 ---
 
@@ -162,6 +183,7 @@ php artisan l5-swagger:generate
 2. Confirm the routes are available with `php artisan route:list --path=api`.
 3. Confirm the OpenAPI document can be generated with `php artisan l5-swagger:generate`.
 4. Confirm the base seed data or required records are present.
+5. **SSO callback test:** from a clean browser, hit `https://auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app` — must authenticate, redirect to e-cert origin with `#payload=...`, and `POST /api/v1/auth/callback` must return 200 with access token (proves `ENCRYPTION_KEY` and `CERT_TENANT_SLUG` match).
 
 ---
 

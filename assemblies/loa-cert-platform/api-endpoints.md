@@ -81,7 +81,7 @@ https://cert-api.lyceumalabang.edu.ph/api/v1
 
 ## 3.3 Tenant & Organization Scoping
 
-- LOA runs a **single organization**. The `organizations` table is kept and seeded with one row (`Lyceum of Alabang`), matching `CERT_TENANT_SLUG=loa`.
+- LOA runs a **single organization**. The `organizations` table is kept and seeded with one row (`Lyceum of Alabang`), matching `CERT_TENANT_SLUG=loa-e-cert`.
 - The current organization is **resolved server-side** from the authenticated JWT `tenant` claim via `config/cert-platform.php` (`tenant_slug` → organization). Clients never send `organization_id`.
 - Every query is implicitly filtered to the resolved organization. Cross-organization access is impossible by construction.
 - Tenant mismatch (token `tenant.slug` ≠ configured `loa`) → `403`.
@@ -1344,7 +1344,7 @@ Processes the encrypted SSO payload and establishes the Cert session.
   "token_type": "Bearer",
   "expires_in": 900,
   "user": { "id": "...", "email": "...", "name": "..." },
-  "tenant": { "id": "...", "slug": "loa" },
+  "tenant": { "id": "...", "slug": "loa-e-cert" },
   "iat": 1754000000,
   "exp": 1754000900
 }
@@ -1368,7 +1368,7 @@ Processes the encrypted SSO payload and establishes the Cert session.
     "token_type": "Bearer",
     "expires_in": 900,
     "user": { "id": "...", "email": "...", "name": "..." },
-    "tenant": { "id": "...", "slug": "loa" }
+    "tenant": { "id": "...", "slug": "loa-e-cert" }
   }
 }
 ```
@@ -1462,7 +1462,7 @@ JWT_SECRET=<shared with Auth Platform>
 ENCRYPTION_KEY=<shared AES-256 key, 64-char hex or base64:>
 ENCRYPTION_KEY_PREVIOUS=<old key, optional>
 AUTH_BASE_URL=https://auth.lyceumalabang.edu.ph
-CERT_TENANT_SLUG=loa
+CERT_TENANT_SLUG=loa-e-cert
 CERT_REFRESH_COOKIE=loa_cert_refresh
 CERT_REFRESH_COOKIE_TTL=10080
 ```
