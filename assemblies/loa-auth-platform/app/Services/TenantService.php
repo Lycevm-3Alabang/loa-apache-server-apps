@@ -78,6 +78,20 @@ class TenantService
         return $tenant;
     }
 
+    public function deleteTenant(string $tenantId): void
+    {
+        $tenant = $this->getTenant($tenantId);
+
+        if ($tenant->isPlatform()) {
+            throw new \RuntimeException('The auth tenant cannot be deleted.');
+        }
+
+        // Detach all users first (pivot rows don't cascade)
+        $tenant->users()->detach();
+
+        $tenant->delete();
+    }
+
     public function getTenantBySlug(string $slug): ?Tenant
     {
         return Tenant::where('slug', $slug)->first();

@@ -408,6 +408,31 @@ class WebAdminController extends Controller
         return back()->with('status', "Tenant {$targetStatus}.");
     }
 
+    public function tenantsDestroy(Tenant $tenant): RedirectResponse
+    {
+        if ($tenant->isPlatform()) {
+            abort(422, 'The auth tenant cannot be deleted.');
+        }
+
+        $name = $tenant->name;
+        $slug = $tenant->slug;
+
+        $this->audit->recordSafe(
+            'tenant.deleted',
+            'tenant',
+            $tenant->id,
+            ['slug' => $slug],
+        );
+
+        try {
+            $this->tenants->deleteTenant($tenant->id);
+        } catch (\Throwable) {
+            return back()->with('error', 'Unable to delete tenant.');
+        }
+
+        return redirect()->route('admin.tenants')->with('status', "Tenant \"{$name}\" deleted.");
+    }
+
     // ─── v2: Tenant groups + permissions ───────────────────────────
 
     public function tenantsGroups(Tenant $tenant): View

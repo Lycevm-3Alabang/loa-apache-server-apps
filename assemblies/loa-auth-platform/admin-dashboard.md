@@ -410,11 +410,78 @@ Requires `auth` (web guard) + `web.admin` + `users.manage` permission.
 
 ---
 
-# 15. Implementation Inventory
+# 15. Delete Tenant (v6)
+
+Permanently removes a tenant and **all** tenant-scoped records from the database. This is a hard delete, distinct from Suspend (which preserves the tenant for reactivation).
+
+## Route
+
+| Method | URI | Action | Route name |
+|--------|-----|--------|------------|
+| `DELETE` | `/admin/tenants/{tenant}` | hard-delete tenant and related data | `admin.tenants.destroy` |
+
+Requires `auth` (web guard) + `web.admin` + `users.manage` permission.
+
+## Behavior
+
+- **Preconditions checked before delete:**
+  1. Target tenant must exist (404 otherwise).
+  2. Admin must have `users.manage` permission (via `AuthorizationService`).
+  3. The **auth tenant** (`slug = 'auth'`) **cannot be deleted** — refuse with error flash.
+- **User handling:** detach all user–tenant pivot rows (`user_tenants`) before deleting the tenant. The `user_tenants` FK uses `ON DELETE CASCADE` as a safety net, but explicit detach is clearer and avoids ambiguity with MySQL FK ordering.
+- **Cascade cleanup** — the database FKs handle the remaining records automatically (`ON DELETE CASCADE`):
+  - `user_groups.tenant_id` — CASCADE (tenant groups deleted)
+  - `user_group_permission.tenant_id` — CASCADE (group grants deleted)
+  - `user_permission.tenant_id` — CASCADE (user overrides deleted)
+  - `tenant_app_endpoints.tenant_id` — CASCADE (endpoint catalog deleted)
+  - `tenant_endpoint_grants.tenant_id` — CASCADE (endpoint grants deleted)
+  - `tenant_endpoint_overrides.tenant_id` — CASCADE (endpoint overrides deleted)
+  - `tenant_api_keys.tenant_id` — CASCADE (API keys deleted)
+- **User records are NOT deleted.** Only the membership association (`user_tenants` pivot) is removed. Users remain in the `users` table and can be added to other tenants.
+- **Platform-global groups** (`tenant_id IS NULL`) are **not affected** — they belong to no tenant.
+- **Audit log entry:** `tenant.deleted` recorded with `actor_id`, `target_id`, `target_slug`.
+- **UI:** a `Delete tenant` button (`.button-danger`) on the tenant detail page, guarded by `confirm()` before submitting the `DELETE` form.
+
+## Confirmation Dialog
+
+The delete action uses a native browser `confirm()` dialog:
+
+```
+Delete tenant "{tenant.name}"? This removes all groups, endpoints, grants, and API keys for this tenant. This cannot be undone.
+```
+
+The tenant name is displayed in the dialog to prevent accidental deletion of the wrong tenant.
+
+## Controller
+
+| Method | Responsibility |
+|--------|----------------|
+| `tenantsDestroy(Tenant $tenant)` | Validate preconditions, audit-log, call `TenantService::deleteTenant()`, redirect to tenant list with flash |
+
+## Views
+
+| View | Change |
+|------|--------|
+| `resources/views/admin/tenants/show.blade.php` | Add delete button in the tenant detail actions area (after Suspend/Activate) |
+
+## Security Checklist
+
+- [x] Requires `web.admin` group gate
+- [x] Requires `users.manage` permission (defense in depth)
+- [x] CSRF on all forms (`@method('DELETE')` + `@csrf`)
+- [x] Auth tenant deletion forbidden
+- [x] User records preserved (only pivot detached)
+- [x] Hard delete cascades via DB FK (no orphan records)
+- [x] Platform-global groups unaffected
+- [x] Confirmation dialog prevents accidental deletion
+
+---
+
+# 16. Implementation Inventory
 
 | Item | Detail |
 |------|--------|
-| Controller | `WebAdminController` (`index`, `updateStatus`, `deleteUser`, `invalidateSessions`, `logout`, `tenantsIndex`, `tenantsCreate`, `tenantsStore`, `tenantsShow`, `tenantsStatus`, `tenantsGroups`, `tenantsGroupsStore`, `tenantsGroupsPermissions`, `tenantsMembersStore`, `create`, `store`) |
+| Controller | `WebAdminController` (`index`, `updateStatus`, `deleteUser`, `invalidateSessions`, `logout`, `tenantsIndex`, `tenantsCreate`, `tenantsStore`, `tenantsShow`, `tenantsStatus`, `tenantsDestroy`, `tenantsGroups`, `tenantsGroupsStore`, `tenantsGroupsPermissions`, `tenantsMembersStore`, `create`, `store`) |
 | Middleware | `web.admin` (new) — group check using `auth-web.admin_group` |
 | Routes | `routes/web.php` — admin group, `auth` + `web.admin` |
 | Views | `layouts/admin.blade.php`, `admin/partials/breadcrumbs.blade.php` (included by every admin page), plus all views under `resources/views/admin/{users,groups,tenants}/` |
@@ -423,7 +490,7 @@ Requires `auth` (web guard) + `web.admin` + `users.manage` permission.
 
 ---
 
-# 15. Dependency References
+# 17. Dependency References
 
 | Spec | Role |
 |------|------|
