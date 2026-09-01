@@ -46,7 +46,7 @@ After the Auth Platform is deployed (`DEPLOY.md`), a platform admin provisions t
 
 > **Local development?** Skip §3–§7 against production and follow §8 (Docker Compose) instead — same tenant/catalog/groups/grants, run locally.
 
-> **Shortcut (fresh-database deploys):** `database/sql/cpanel-auth-db-install.sql` pre-provisions the schema, the `loa-e-cert` tenant (production origins), the 56-endpoint catalog, all four groups, the 99-row grant matrix, and the JWT permission-key claims in one phpMyAdmin import. If you use it, steps §4–§7 are already done — skip to §9 verification. See `docs/cpanel-db-migration-runbook.md` for the full fresh-database path.
+> **Shortcut (fresh-database deploys):** `database/sql/cpanel-auth-db-install.sql` pre-provisions the schema, the `loa-e-cert` tenant (production origins), the 48-endpoint catalog, all four groups, the 94-row grant matrix (48 cert-admin + 39 cert-staff + 7 cert-user), and the JWT permission-key claims in one phpMyAdmin import. If you use it, steps §4–§7 are already done — skip to §9 verification. See `docs/cpanel-db-migration-runbook.md` for the full fresh-database path.
 
 ---
 
@@ -380,6 +380,7 @@ Repeat §9 against the local base URL:
 | 0.3 | 2026-08-07 | §8.3 now documents the **`LocalCertReadinessSeeder`** as the automatic local path (runs on local `db:seed` via `DatabaseSeeder`, non-prod guard only; creates `cert-app` tenant @ `localhost:9001` + groups). Decision note + §8.1 comment + "does/does not" table + closing paragraph updated. Production provisioning remains manual-only. |
 | 0.4 | 2026-08-07 | §8.3 local steps use the **`cert-app`** tenant slug consistently (admin UI steps 1–4 + tinker snippet now target `cert-app` @ `http://localhost:9001`, matching `LocalCertReadinessSeeder`). |
 | 0.5 | 2026-08-24 | **Tenant slug unified to `loa-e-cert`** (immutable; single slug for local + production, matches e-cert `NEXT_PUBLIC_CERT_TENANT_SLUG`). Tenant pinned to UUID `91128f0a-df85-47a9-ae1d-5298904dacd5` in seeder/installer/SQL. §8.3 rewritten: seeder no longer invents a separate local slug and never clobbers existing `redirect_origins`; added step 5 — JWT permission-key claims (`group_claims`) seeding; `cpanel-auth-db-install.sql` now seeds `group_claims`. Supersedes the 0.4 split-slug approach. |
+| 0.6 | 2026-09-01 | **SQL installer pre-provisions cert readiness.** `cpanel-auth-db-install.sql` now includes 48-endpoint catalog INSERTs + 94-row grant matrix (48 cert-admin + 39 cert-staff + 7 cert-user). Steps §4–§7 are no longer manual for fresh-database deploys. Also added `database/json/cert-endpoints-catalog.json` (bulk catalog import) and `database/json/cert-access-config.json` (full access config with groups + grants) as alternative JSON import paths. Removed stale `aces-api` tenant from SQL installer. |
 
 ### Open Questions
 - None.

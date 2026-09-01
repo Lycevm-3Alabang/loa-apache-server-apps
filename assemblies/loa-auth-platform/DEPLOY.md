@@ -242,7 +242,7 @@ Additional variables required by the web UI layer (see [web-ui.md](web-ui.md) §
 Two supported paths — see **`docs/cpanel-db-migration-runbook.md`** (root) for the full side-by-side runbook:
 
 - **Fresh database (drop → create → seed)** — cleanest when local data needn't survive. Seeding provisions schema + admin only; tenants/catalog/groups/grants must be re-provisioned afterwards (§6 of the runbook), and cert needs its organization row.
-  - **Shortcut:** `database/sql/cpanel-auth-db-install.sql` is a generated one-file installer for `lyceumalabang_auth_db` — full schema + prod tenant + 56-endpoint catalog + groups + 99-grant matrix + default admin (`Admin123!`, change after first login). Import via phpMyAdmin instead of migrate+seed, then run cert-side steps only.
+  - **Shortcut:** `database/sql/cpanel-auth-db-install.sql` is a generated one-file installer for `lyceumalabang_auth_db` — full schema + prod tenant + 48-endpoint catalog + groups + 94-grant matrix + default admin (`Admin123!`, change after first login). Import via phpMyAdmin instead of migrate+seed, then run cert-side steps only.
 - **Carry existing data** — export from Docker MySQL, import via phpMyAdmin/SSH (below).
 
 If you want to carry your locally provisioned users/tenants/groups to production instead of starting from seeds:
