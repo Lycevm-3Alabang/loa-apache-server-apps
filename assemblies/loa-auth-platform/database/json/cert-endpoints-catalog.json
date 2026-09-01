@@ -1,175 +1,53 @@
 {
     "version": "1.0",
-    "exported_at": "2026-08-21T09:36:42+08:00",
-    "tenant_slug": "cert-app",
     "endpoints": [
-        {
-            "method": "DELETE",
-            "path": "/events/{id}/attendees",
-            "label": null,
-            "description": null,
-            "required_level": "admin"
-        },
-        {
-            "method": "DELETE",
-            "path": "/templates/{id}/delete",
-            "label": null,
-            "description": null,
-            "required_level": "admin"
-        },
-        {
-            "method": "GET",
-            "path": "/access",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/audit",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/certificates",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/certificates/{id}",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/certificates/{id}/download",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/certificates/{id}/qr",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/dashboard",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/events",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/events/{id}",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/events/{id}/attendees",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/me",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/me/attendees",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/me/organizations",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/templates",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "GET",
-            "path": "/templates/{id}",
-            "label": null,
-            "description": null,
-            "required_level": "read"
-        },
-        {
-            "method": "PATCH",
-            "path": "/events/{id}/attendees",
-            "label": null,
-            "description": null,
-            "required_level": "write"
-        },
-        {
-            "method": "POST",
-            "path": "/auth/callback",
-            "label": null,
-            "description": null,
-            "required_level": "write"
-        },
-        {
-            "method": "POST",
-            "path": "/auth/logout",
-            "label": null,
-            "description": null,
-            "required_level": "write"
-        },
-        {
-            "method": "POST",
-            "path": "/auth/refresh",
-            "label": null,
-            "description": null,
-            "required_level": "write"
-        },
-        {
-            "method": "POST",
-            "path": "/certificates/{id}/email",
-            "label": null,
-            "description": null,
-            "required_level": "write"
-        },
-        {
-            "method": "POST",
-            "path": "/events/{id}/attendees",
-            "label": null,
-            "description": null,
-            "required_level": "write"
-        },
-        {
-            "method": "PUT",
-            "path": "/templates/{id}/edit",
-            "label": null,
-            "description": null,
-            "required_level": "write"
-        }
+        { "method": "GET",    "path": "/api/v1/events",                        "label": "List events",                        "required_level": "read" },
+        { "method": "POST",   "path": "/api/v1/events",                        "label": "Create event",                       "required_level": "write" },
+        { "method": "GET",    "path": "/api/v1/events/{id}",                   "label": "Get event",                          "required_level": "read" },
+        { "method": "PATCH",  "path": "/api/v1/events/{id}",                   "label": "Update event",                       "required_level": "write" },
+        { "method": "DELETE", "path": "/api/v1/events/{id}",                   "label": "Delete event",                       "required_level": "write" },
+        { "method": "GET",    "path": "/api/v1/events/{id}/stats",             "label": "Event statistics",                   "required_level": "read" },
+        { "method": "POST",   "path": "/api/v1/events/{id}/clone-template",    "label": "Clone certificate template",         "required_level": "write" },
+        { "method": "POST",   "path": "/api/v1/events/{id}/clone-email-template", "label": "Clone email template",           "required_level": "write" },
+        { "method": "POST",   "path": "/api/v1/events/{id}/bulk-issue",        "label": "Bulk issue certificates",            "required_level": "write" },
+        { "method": "POST",   "path": "/api/v1/events/{id}/reissue",           "label": "Reissue certificates for event",     "required_level": "admin" },
+        { "method": "GET",    "path": "/api/v1/events/{id}/revoke-expired",    "label": "Count expired certificates",         "required_level": "read" },
+        { "method": "POST",   "path": "/api/v1/events/{id}/revoke-expired",    "label": "Revoke expired certificates",        "required_level": "admin" },
+        { "method": "POST",   "path": "/api/v1/events/{id}/issue-completed",   "label": "Issue certificates for completed",   "required_level": "write" },
+        { "method": "GET",    "path": "/api/v1/events/{id}/attendees",         "label": "List event attendees",               "required_level": "read" },
+        { "method": "POST",   "path": "/api/v1/events/{id}/attendees",         "label": "Add attendee",                       "required_level": "write" },
+        { "method": "POST",   "path": "/api/v1/events/{id}/attendees/import",  "label": "Import attendees",                   "required_level": "write" },
+        { "method": "PATCH",  "path": "/api/v1/attendees/{id}",                "label": "Update attendee",                    "required_level": "write" },
+        { "method": "DELETE", "path": "/api/v1/attendees/{id}",                "label": "Delete attendee",                    "required_level": "write" },
+        { "method": "DELETE", "path": "/api/v1/attendees/{id}/with-cert",      "label": "Delete attendee with certificate",   "required_level": "admin" },
+        { "method": "GET",    "path": "/api/v1/attendees/{id}/delete-preview", "label": "Attendee delete preview",            "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/attendees/{id}/file-data",      "label": "Attendee certificate source file",   "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/templates",                     "label": "List templates",                     "required_level": "read" },
+        { "method": "POST",   "path": "/api/v1/templates",                     "label": "Create template",                    "required_level": "write" },
+        { "method": "GET",    "path": "/api/v1/templates/{id}",                "label": "Get template",                       "required_level": "read" },
+        { "method": "PATCH",  "path": "/api/v1/templates/{id}",                "label": "Update template",                    "required_level": "write" },
+        { "method": "DELETE", "path": "/api/v1/templates/{id}",                "label": "Delete template",                    "required_level": "write" },
+        { "method": "POST",   "path": "/api/v1/certificates",                  "label": "Issue certificate",                  "required_level": "write" },
+        { "method": "POST",   "path": "/api/v1/certificates/bulk",             "label": "Bulk issue certificates",            "required_level": "write" },
+        { "method": "POST",   "path": "/api/v1/certificates/upload",           "label": "Upload certificate file",            "required_level": "write" },
+        { "method": "GET",    "path": "/api/v1/certificates",                  "label": "List certificates",                  "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/certificates/{id}",             "label": "Get certificate",                    "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/certificates/{id}/pdf",         "label": "Certificate PDF (inline)",           "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/certificates/{id}/download",    "label": "Certificate PDF (download)",         "required_level": "read" },
+        { "method": "POST",   "path": "/api/v1/certificates/{id}/revoke",      "label": "Revoke certificate",                 "required_level": "admin" },
+        { "method": "DELETE", "path": "/api/v1/certificates/{id}",             "label": "Delete certificate",                 "required_level": "admin" },
+        { "method": "POST",   "path": "/api/v1/certificates/{id}/email",       "label": "Send certificate email",             "required_level": "write" },
+        { "method": "GET",    "path": "/api/v1/certificates/{id}/email-logs",  "label": "Certificate email logs",             "required_level": "read" },
+        { "method": "POST",   "path": "/api/v1/certificates/{id}/reissue",     "label": "Reissue certificate",                "required_level": "admin" },
+        { "method": "POST",   "path": "/api/v1/certificates/expire",           "label": "Expire certificates",                "required_level": "admin" },
+        { "method": "GET",    "path": "/api/v1/certificates/qr",               "label": "Certificate QR code",                "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/me/certificates",               "label": "My certificates",                    "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/me/certificates/{id}",          "label": "My certificate",                     "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/me/events",                     "label": "My authored events",                 "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/me/templates",                  "label": "My authored templates",              "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/dashboard/stats",               "label": "Dashboard statistics",               "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/dashboard/activity",            "label": "Dashboard activity feed",            "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/admin/audit-logs",              "label": "Query audit logs",                   "required_level": "admin" },
+        { "method": "GET",    "path": "/api/v1/admin/audit-logs/export",       "label": "Export audit logs",                  "required_level": "admin" }
     ]
 }

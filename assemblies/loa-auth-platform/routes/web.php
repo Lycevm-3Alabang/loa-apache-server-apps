@@ -125,6 +125,7 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     Route::get('/tenants/{tenant}/edit', [WebAdminController::class, 'tenantsEdit'])->name('admin.tenants.edit');
     Route::put('/tenants/{tenant}', [WebAdminController::class, 'tenantsUpdate'])->name('admin.tenants.update');
     Route::post('/tenants/{tenant}/status', [WebAdminController::class, 'tenantsStatus'])->name('admin.tenants.status');
+    Route::delete('/tenants/{tenant}', [WebAdminController::class, 'tenantsDestroy'])->name('admin.tenants.destroy');
     Route::get('/tenants/{tenant}/groups', [WebAdminController::class, 'tenantsGroups'])->name('admin.tenants.groups');
     Route::post('/tenants/{tenant}/groups', [WebAdminController::class, 'tenantsGroupsStore'])->name('admin.tenants.groups.store');
     

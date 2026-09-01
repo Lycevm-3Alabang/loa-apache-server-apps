@@ -105,7 +105,7 @@
         </div>
 
         @if (!$tenant->isPlatform())
-        <div style="margin-top:1.25rem;">
+        <div style="margin-top:1.25rem;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
             <form method="post" action="{{ route('admin.tenants.status', $tenant) }}" style="display:flex;gap:0.5rem;align-items:center;">
                 @csrf
                 @if ($tenant->status === 'active')
@@ -115,6 +115,12 @@
                     <input type="hidden" name="status" value="active">
                     <button class="button button-soft-success" type="submit">Activate tenant</button>
                 @endif
+            </form>
+            <form method="post" action="{{ route('admin.tenants.destroy', $tenant) }}" style="display:inline;">
+                @csrf
+                @method('DELETE')
+                <button class="button button-danger" type="submit"
+                        onclick="return confirm('Delete tenant &ldquo;{{ addslashes($tenant->name) }}&rdquo;? This removes all groups, endpoints, grants, and API keys for this tenant. This cannot be undone.');">Delete tenant</button>
             </form>
         </div>
         @endif
