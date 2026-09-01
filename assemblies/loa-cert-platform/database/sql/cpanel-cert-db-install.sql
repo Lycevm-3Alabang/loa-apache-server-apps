@@ -350,6 +350,7 @@ CREATE TABLE `organizations` (
 
 LOCK TABLES `organizations` WRITE;
 /*!40000 ALTER TABLE `organizations` DISABLE KEYS */;
+INSERT INTO `organizations` (`id`, `name`, `slug`, `created_at`, `updated_at`) VALUES ('00000000-0000-0000-0000-000000000001','LOA E-Cert Platform','loa-e-cert',NOW(),NOW());
 /*!40000 ALTER TABLE `organizations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -366,4 +367,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-08-31  1:58:35
+-- Dump completed on 2026-09-01  4:03:15
