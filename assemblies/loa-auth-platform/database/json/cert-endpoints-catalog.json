@@ -1,5 +1,5 @@
 {
-    "replace": true,
+    "version": "1.0",
     "endpoints": [
         { "method": "GET",    "path": "/api/v1/events",                        "label": "List events",                        "required_level": "read" },
         { "method": "POST",   "path": "/api/v1/events",                        "label": "Create event",                       "required_level": "write" },
