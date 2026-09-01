@@ -16,7 +16,6 @@ class LocalCertReadinessSeederTest extends TestCase
     public function test_it_creates_the_local_cert_tenant_and_groups(): void
     {
         putenv('APP_ENV=local');
-        putenv('CERT_APP_URL=http://localhost:9001');
 
         $seeder = new LocalCertReadinessSeeder();
         $seeder->run();
@@ -25,7 +24,10 @@ class LocalCertReadinessSeederTest extends TestCase
 
         $this->assertNotNull($tenant);
         $this->assertSame('91128f0a-df85-47a9-ae1d-5298904dacd5', $tenant->id);
-        $this->assertSame(['http://localhost:3000'], $tenant->redirect_origins);
+        $this->assertSame('Vericert', $tenant->name);
+        $this->assertSame('https://staging-loa-vericert.vercel.app', $tenant->app_url);
+        $this->assertSame(['https://staging-loa-vericert.vercel.app'], $tenant->redirect_origins);
+        $this->assertSame(['http://localhost:3000'], $tenant->dev_redirect_origins);
 
         $groupNames = UserGroup::where('tenant_id', $tenant->id)->pluck('name')->all();
         $this->assertEqualsCanonicalizing(['cert-admin', 'cert-staff', 'cert-user'], $groupNames);
