@@ -55,13 +55,21 @@ class TenantGroupMembershipTest extends TestCase
 
     // ─── I1 invariant ──────────────────────────────────────────────
 
-    public function testI1AddToGroupThrowsWhenUserLacksTenantPivot(): void
+    public function testI1AddToGroupAutoCreatesTenantPivotWhenMissing(): void
     {
         $user = User::factory()->create();
         $service = app(\App\Services\AuthorizationService::class);
 
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
         $service->addToGroup($user->id, $this->tenantGroup->id);
+
+        $this->assertDatabaseHas('user_tenants', [
+            'user_id' => $user->id,
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $this->assertDatabaseHas('user_user_group', [
+            'user_id' => $user->id,
+            'user_group_id' => $this->tenantGroup->id,
+        ]);
     }
 
     public function testI1AddToGroupSucceedsWhenUserHasTenantPivot(): void
