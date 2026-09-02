@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Http;
 
 class AuthRefreshController extends Controller
@@ -27,15 +26,15 @@ class AuthRefreshController extends Controller
                     'refresh_token' => $refreshToken,
                 ]);
         } catch (\Exception $e) {
-            $this->clearRefreshCookie();
-
-            return response()->json(['message' => 'Auth service unavailable'], 502);
+            return $this->clearRefreshCookie(
+                response()->json(['message' => 'Auth service unavailable'], 502)
+            );
         }
 
         if ($response->failed()) {
-            $this->clearRefreshCookie();
-
-            return response()->json(['message' => 'Invalid refresh token'], 401);
+            return $this->clearRefreshCookie(
+                response()->json(['message' => 'Invalid refresh token'], 401)
+            );
         }
 
         $data = $response->json();
@@ -43,7 +42,16 @@ class AuthRefreshController extends Controller
         $accessToken = $data['access_token'] ?? null;
         $expiresIn = $data['expires_in'] ?? 900;
 
-        Cookie::queue(
+        $json = response()->json([
+            'status' => 'success',
+            'data' => [
+                'access_token' => $accessToken,
+                'token_type' => 'Bearer',
+                'expires_in' => $expiresIn,
+            ],
+        ]);
+
+        return $json->withCookie(cookie(
             $cookieName,
             $newRefreshToken,
             (int) config('cert-platform.refresh_cookie_ttl', 10080),
@@ -53,21 +61,12 @@ class AuthRefreshController extends Controller
             true,
             false,
             'lax'
-        );
-
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'access_token' => $accessToken,
-                'token_type' => 'Bearer',
-                'expires_in' => $expiresIn,
-            ],
-        ]);
+        ));
     }
 
-    private function clearRefreshCookie(): void
+    private function clearRefreshCookie(JsonResponse $response): JsonResponse
     {
-        Cookie::queue(
+        return $response->withCookie(cookie(
             config('cert-platform.refresh_cookie', 'loa_cert_refresh'),
             '',
             -1,
@@ -77,6 +76,6 @@ class AuthRefreshController extends Controller
             true,
             false,
             'lax'
-        );
+        ));
     }
 }

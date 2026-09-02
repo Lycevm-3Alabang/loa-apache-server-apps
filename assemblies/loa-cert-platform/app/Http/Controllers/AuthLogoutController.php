@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Http;
 
 class AuthLogoutController extends Controller
@@ -28,7 +27,7 @@ class AuthLogoutController extends Controller
             }
         }
 
-        Cookie::queue(
+        return response()->json(null, 204)->withCookie(cookie(
             $cookieName,
             '',
             -1,
@@ -38,8 +37,6 @@ class AuthLogoutController extends Controller
             true,
             false,
             'lax'
-        );
-
-        return response()->json(null, 204);
+        ));
     }
 }

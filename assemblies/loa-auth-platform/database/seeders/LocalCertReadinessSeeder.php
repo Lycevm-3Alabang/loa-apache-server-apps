@@ -10,11 +10,14 @@ use Illuminate\Database\Seeder;
 class LocalCertReadinessSeeder extends Seeder
 {
     /**
-     * Canonical local tenant. The slug is immutable after issuance and must
+     * Canonical cert tenant. The slug is immutable after issuance and must
      * match e-cert's NEXT_PUBLIC_CERT_TENANT_SLUG.
      */
     private const TENANT_ID = '91128f0a-df85-47a9-ae1d-5298904dacd5';
     private const TENANT_SLUG = 'loa-e-cert';
+    private const TENANT_NAME = 'Vericert';
+    private const PROD_URL = 'https://staging-loa-vericert.vercel.app';
+    private const DEV_URL = 'http://localhost:3000';
 
     public function run(): void
     {
@@ -22,29 +25,27 @@ class LocalCertReadinessSeeder extends Seeder
             return;
         }
 
-        $defaultAppUrl = 'http://localhost:9001';
-
         $tenant = Tenant::find(self::TENANT_ID);
 
         if (!$tenant) {
             $tenant = Tenant::create([
                 'id' => self::TENANT_ID,
                 'slug' => self::TENANT_SLUG,
-                'name' => 'Local Cert App',
+                'name' => self::TENANT_NAME,
                 'status' => 'active',
-                'app_url' => $defaultAppUrl,
-                'dev_app_url' => $defaultAppUrl,
-                'redirect_origins' => ['http://localhost:3000'],
-                'dev_redirect_origins' => ['http://localhost:3000'],
+                'app_url' => self::PROD_URL,
+                'dev_app_url' => self::DEV_URL,
+                'redirect_origins' => [self::PROD_URL],
+                'dev_redirect_origins' => [self::DEV_URL],
             ]);
         } else {
             // Never clobber redirect origins: they carry the e-cert dev
             // origin used for SSO tenant resolution.
             $tenant->update([
-                'name' => 'Local Cert App',
+                'name' => self::TENANT_NAME,
                 'status' => 'active',
-                'app_url' => $tenant->app_url ?? $defaultAppUrl,
-                'dev_app_url' => $tenant->dev_app_url ?? $defaultAppUrl,
+                'app_url' => self::PROD_URL,
+                'dev_app_url' => self::DEV_URL,
             ]);
         }
 

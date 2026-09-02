@@ -142,8 +142,8 @@ CREATE TABLE `group_claims` (
 
 LOCK TABLES `group_claims` WRITE;
 /*!40000 ALTER TABLE `group_claims` DISABLE KEYS */;
-INSERT INTO `group_claims` (`id`, `group_id`, `claim_key`, `scope_type`, `scope_id`, `created_at`, `updated_at`) VALUES (1,2,'users.view','none',NULL,'2026-09-01 10:25:57','2026-09-01 10:25:57');
-INSERT INTO `group_claims` (`id`, `group_id`, `claim_key`, `scope_type`, `scope_id`, `created_at`, `updated_at`) VALUES (2,2,'users.manage','none',NULL,'2026-09-01 10:25:57','2026-09-01 10:25:57');
+INSERT INTO `group_claims` (`id`, `group_id`, `claim_key`, `scope_type`, `scope_id`, `created_at`, `updated_at`) VALUES (1,2,'users.view','none',NULL,'2026-09-01 15:49:26','2026-09-01 15:49:26');
+INSERT INTO `group_claims` (`id`, `group_id`, `claim_key`, `scope_type`, `scope_id`, `created_at`, `updated_at`) VALUES (2,2,'users.manage','none',NULL,'2026-09-01 15:49:26','2026-09-01 15:49:26');
 /*!40000 ALTER TABLE `group_claims` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -360,13 +360,13 @@ CREATE TABLE `permissions` (
 
 LOCK TABLES `permissions` WRITE;
 /*!40000 ALTER TABLE `permissions` DISABLE KEYS */;
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (1,'users.view','View user list and details',NULL,'2026-09-01 10:25:55','2026-09-01 10:25:55');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (2,'users.manage','Enable/disable users, manage status',NULL,'2026-09-01 10:25:55','2026-09-01 10:25:55');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (3,'groups.view','View groups',NULL,'2026-09-01 10:25:56','2026-09-01 10:25:56');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (4,'groups.manage','Create, edit, delete groups',NULL,'2026-09-01 10:25:56','2026-09-01 10:25:56');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (5,'permissions.view','View permissions',NULL,'2026-09-01 10:25:56','2026-09-01 10:25:56');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (6,'permissions.manage','Assign permissions to groups',NULL,'2026-09-01 10:25:56','2026-09-01 10:25:56');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (7,'auth.verify','Validate tokens (internal)',NULL,'2026-09-01 10:25:56','2026-09-01 10:25:56');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (1,'users.view','View user list and details',NULL,'2026-09-01 15:49:24','2026-09-01 15:49:24');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (2,'users.manage','Enable/disable users, manage status',NULL,'2026-09-01 15:49:24','2026-09-01 15:49:24');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (3,'groups.view','View groups',NULL,'2026-09-01 15:49:24','2026-09-01 15:49:24');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (4,'groups.manage','Create, edit, delete groups',NULL,'2026-09-01 15:49:24','2026-09-01 15:49:24');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (5,'permissions.view','View permissions',NULL,'2026-09-01 15:49:24','2026-09-01 15:49:24');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (6,'permissions.manage','Assign permissions to groups',NULL,'2026-09-01 15:49:24','2026-09-01 15:49:24');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (7,'auth.verify','Validate tokens (internal)',NULL,'2026-09-01 15:49:24','2026-09-01 15:49:24');
 /*!40000 ALTER TABLE `permissions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -538,54 +538,6 @@ CREATE TABLE `tenant_app_endpoints` (
 
 LOCK TABLES `tenant_app_endpoints` WRITE;
 /*!40000 ALTER TABLE `tenant_app_endpoints` DISABLE KEYS */;
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events','List events','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events','Create event','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}','Get event','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','PATCH','/api/v1/events/{id}','Update event','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/events/{id}','Delete event','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}/stats','Event statistics','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/clone-template','Clone certificate template','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/clone-email-template','Clone email template','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/bulk-issue','Bulk issue certificates','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/reissue','Reissue certificates for event','admin',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}/revoke-expired','Count expired certificates','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/revoke-expired','Revoke expired certificates','admin',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/issue-completed','Issue certificates for completed','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}/attendees','List event attendees','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/attendees','Add attendee','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/attendees/import','Import attendees','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','PATCH','/api/v1/attendees/{id}','Update attendee','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/attendees/{id}','Delete attendee','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/attendees/{id}/with-cert','Delete attendee with certificate','admin',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/attendees/{id}/delete-preview','Attendee delete preview','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/attendees/{id}/file-data','Attendee certificate source file','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/templates','List templates','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/templates','Create template','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/templates/{id}','Get template','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','PATCH','/api/v1/templates/{id}','Update template','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/templates/{id}','Delete template','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates','Issue certificate','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/bulk','Bulk issue certificates','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/upload','Upload certificate file','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates','List certificates','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}','Get certificate','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}/pdf','Certificate PDF (inline)','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}/download','Certificate PDF (download)','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/{id}/revoke','Revoke certificate','admin',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/certificates/{id}','Delete certificate','admin',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/{id}/email','Send certificate email','write',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}/email-logs','Certificate email logs','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/{id}/reissue','Reissue certificate','admin',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/expire','Expire certificates','admin',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/qr','Certificate QR code','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/certificates','My certificates','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/certificates/{id}','My certificate','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/events','My authored events','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/templates','My authored templates','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/dashboard/stats','Dashboard statistics','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/dashboard/activity','Dashboard activity feed','read',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/admin/audit-logs','Query audit logs','admin',NOW(),NOW());
-INSERT INTO `tenant_app_endpoints` (`tenant_id`, `method`, `path`, `label`, `required_level`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/admin/audit-logs/export','Export audit logs','admin',NOW(),NOW());
 /*!40000 ALTER TABLE `tenant_app_endpoints` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -620,100 +572,6 @@ CREATE TABLE `tenant_endpoint_grants` (
 
 LOCK TABLES `tenant_endpoint_grants` WRITE;
 /*!40000 ALTER TABLE `tenant_endpoint_grants` DISABLE KEYS */;
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','PATCH','/api/v1/events/{id}','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/events/{id}','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}/stats','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/clone-template','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/clone-email-template','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/bulk-issue','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/reissue','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}/revoke-expired','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/revoke-expired','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/issue-completed','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}/attendees','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/attendees','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/attendees/import','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','PATCH','/api/v1/attendees/{id}','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/attendees/{id}','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/attendees/{id}/with-cert','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/attendees/{id}/delete-preview','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/attendees/{id}/file-data','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/templates','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/templates','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/templates/{id}','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','PATCH','/api/v1/templates/{id}','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/templates/{id}','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/bulk','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/upload','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}/pdf','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}/download','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/{id}/revoke','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/certificates/{id}','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/{id}/email','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}/email-logs','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/{id}/reissue','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/expire','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/qr','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/certificates','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/certificates/{id}','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/events','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/templates','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/dashboard/stats','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/dashboard/activity','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/admin/audit-logs','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (2,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/admin/audit-logs/export','admin',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','PATCH','/api/v1/events/{id}','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/events/{id}','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}/stats','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/clone-template','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/clone-email-template','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/bulk-issue','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}/revoke-expired','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/issue-completed','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}/attendees','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/attendees','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/events/{id}/attendees/import','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','PATCH','/api/v1/attendees/{id}','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/attendees/{id}','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/attendees/{id}/delete-preview','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/attendees/{id}/file-data','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/templates','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/templates','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/templates/{id}','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','PATCH','/api/v1/templates/{id}','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','DELETE','/api/v1/templates/{id}','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/bulk','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/upload','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}/pdf','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}/download','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','POST','/api/v1/certificates/{id}/email','write',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}/email-logs','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/qr','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/certificates','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/certificates/{id}','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/events','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/templates','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/dashboard/stats','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (3,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/dashboard/activity','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (4,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/certificates','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (4,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/me/certificates/{id}','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (4,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (4,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}/pdf','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (4,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/{id}/download','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (4,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/events/{id}','read',NOW(),NOW());
-INSERT INTO `tenant_endpoint_grants` (`group_id`, `tenant_id`, `method`, `path`, `level`, `created_at`, `updated_at`) VALUES (4,'91128f0a-df85-47a9-ae1d-5298904dacd5','GET','/api/v1/certificates/qr','read',NOW(),NOW());
 /*!40000 ALTER TABLE `tenant_endpoint_grants` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -783,8 +641,10 @@ CREATE TABLE `tenants` (
 
 LOCK TABLES `tenants` WRITE;
 /*!40000 ALTER TABLE `tenants` DISABLE KEYS */;
-INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','loa-e-cert','LOA E-Cert Platform','active','https://loa-vericert.vercel.app','http://localhost:3000','[\"https://loa-vericert.vercel.app\"]','[\"http://localhost:3000\"]','2026-09-01 10:25:57','2026-09-01 10:25:57');
-INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('95654103-52a6-4556-91db-e7bb04516844','auth','LOA Auth Platform','active',NULL,NULL,'[]','[]','2026-09-01 10:25:57','2026-09-01 10:25:57');
+INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','loa-e-cert','Vericert','active','https://staging-loa-vericert.vercel.app','http://localhost:3000','[\"https://staging-loa-vericert.vercel.app\"]','[\"http://localhost:3000\"]','2026-09-01 15:49:26','2026-09-01 15:49:26');
+INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('91fb3312-c04c-4a50-96d9-81dd609dd72c','aces-api','ACES Platform','active','https://aces-api.lyceumalabang.edu.ph',NULL,'[\"https://aces-api.lyceumalabang.edu.ph\"]',NULL,'2026-09-01 15:49:11','2026-09-01 15:49:11');
+INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('954411a0-6287-49c2-a104-6557b6e208e8','auth','LOA Auth Platform','active',NULL,NULL,'[]','[]','2026-09-01 15:49:26','2026-09-01 15:49:26');
+INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('c8559c67-82f3-4e08-abeb-6dfc9d2c8cde','e-cert','E-Cert Platform','active','https://e-cert.vercel.app',NULL,'[\"https://e-cert.vercel.app\"]',NULL,'2026-09-01 15:49:11','2026-09-01 15:49:11');
 /*!40000 ALTER TABLE `tenants` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -888,10 +748,10 @@ CREATE TABLE `user_groups` (
 
 LOCK TABLES `user_groups` WRITE;
 /*!40000 ALTER TABLE `user_groups` DISABLE KEYS */;
-INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (1,'loa-auth-admin','Platform administrator',10,NULL,'2026-09-01 10:25:55','2026-09-01 10:25:55');
-INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (2,'cert-admin','Local certificate administrator',2,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-01 10:25:57','2026-09-01 10:25:57');
-INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (3,'cert-staff','Local certificate staff',3,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-01 10:25:57','2026-09-01 10:25:57');
-INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (4,'cert-user','Local certificate user',4,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-01 10:25:57','2026-09-01 10:25:57');
+INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (1,'loa-auth-admin','Platform administrator',10,NULL,'2026-09-01 15:49:24','2026-09-01 15:49:24');
+INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (2,'cert-admin','Local certificate administrator',2,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-01 15:49:26','2026-09-01 15:49:26');
+INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (3,'cert-staff','Local certificate staff',3,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-01 15:49:26','2026-09-01 15:49:26');
+INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (4,'cert-user','Local certificate user',4,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-01 15:49:26','2026-09-01 15:49:26');
 /*!40000 ALTER TABLE `user_groups` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -985,7 +845,7 @@ CREATE TABLE `user_user_group` (
 
 LOCK TABLES `user_user_group` WRITE;
 /*!40000 ALTER TABLE `user_user_group` DISABLE KEYS */;
-INSERT INTO `user_user_group` (`user_id`, `user_group_id`, `created_at`, `updated_at`) VALUES ('f051fd05-44c2-4572-bc63-d4ca51657331',1,NULL,NULL);
+INSERT INTO `user_user_group` (`user_id`, `user_group_id`, `created_at`, `updated_at`) VALUES ('a0b19aab-e8b0-42bb-8cf8-4f26a5d60ccf',1,NULL,NULL);
 /*!40000 ALTER TABLE `user_user_group` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1020,7 +880,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` (`id`, `email`, `password`, `name`, `status`, `failed_attempts`, `locked_until`, `created_at`, `updated_at`) VALUES ('f051fd05-44c2-4572-bc63-d4ca51657331','admin@lyceumalabang.edu.ph','$2y$12$PY.cS2jW1DsmAr7zzlAAg.XGoC0ft9k0h2Pvo8KJXPMRIvBlopa.a','Super Admin','active',0,NULL,'2026-09-01 10:25:57','2026-09-01 10:25:57');
+INSERT INTO `users` (`id`, `email`, `password`, `name`, `status`, `failed_attempts`, `locked_until`, `created_at`, `updated_at`) VALUES ('a0b19aab-e8b0-42bb-8cf8-4f26a5d60ccf','admin@lyceumalabang.edu.ph','$2y$12$3tsTsFox1Oumfz571ZRDJuqBjnSbb34BivanHbypmR1P8vxkrTCuK','Super Admin','active',0,NULL,'2026-09-01 15:49:26','2026-09-01 15:49:26');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1037,4 +897,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-01  3:46:39
+-- Dump completed on 2026-09-01  8:28:18
