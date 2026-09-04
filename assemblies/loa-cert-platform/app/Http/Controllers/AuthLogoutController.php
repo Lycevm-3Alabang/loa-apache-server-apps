@@ -11,7 +11,8 @@ class AuthLogoutController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $cookieName = config('cert-platform.refresh_cookie', 'loa_cert_refresh');
-        $refreshToken = $request->cookies->get($cookieName);
+        $refreshToken = $request->input('refresh_token')
+            ?? $request->cookies->get($cookieName);
 
         if ($refreshToken) {
             $authBaseUrl = config('auth-platform.base_url', 'https://auth.lyceumalabang.edu.ph');

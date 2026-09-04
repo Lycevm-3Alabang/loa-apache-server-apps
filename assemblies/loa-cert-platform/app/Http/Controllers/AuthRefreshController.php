@@ -11,7 +11,8 @@ class AuthRefreshController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $cookieName = config('cert-platform.refresh_cookie', 'loa_cert_refresh');
-        $refreshToken = $request->cookies->get($cookieName);
+        $refreshToken = $request->input('refresh_token')
+            ?? $request->cookies->get($cookieName);
 
         if (!$refreshToken) {
             return response()->json(['message' => 'Missing refresh token'], 401);
@@ -38,14 +39,21 @@ class AuthRefreshController extends Controller
         }
 
         $data = $response->json();
-        $newRefreshToken = $data['refresh_token'] ?? $refreshToken;
+        $newRefreshToken = $data['refresh_token'] ?? null;
         $accessToken = $data['access_token'] ?? null;
         $expiresIn = $data['expires_in'] ?? 900;
+
+        if (!$accessToken || !$newRefreshToken) {
+            return $this->clearRefreshCookie(
+                response()->json(['message' => 'Incomplete auth response'], 502)
+            );
+        }
 
         $json = response()->json([
             'status' => 'success',
             'data' => [
                 'access_token' => $accessToken,
+                'refresh_token' => $newRefreshToken,
                 'token_type' => 'Bearer',
                 'expires_in' => $expiresIn,
             ],
