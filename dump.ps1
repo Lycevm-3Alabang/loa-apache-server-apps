@@ -206,7 +206,28 @@ if ($dumpExit -ne 0) {
     # Remove USE statements (importer selects DB in phpMyAdmin)
     $processed = $processed | Where-Object { $_ -notmatch '^USE\s' }
 
-    # ── Pass 3: inject cert-app endpoints from JSON (auth target only) ───
+    # ── Pass 3: inject organizations seed row (cert target only) ─────────
+    if ($Target -eq 'cert') {
+        $orgUuid = '00000000-0000-0000-0000-000000000001'
+        $orgInsert = "INSERT INTO ``organizations`` (``id``,``name``,``slug``,``created_at``,``updated_at``) VALUES ('$orgUuid','LOA e-Cert','loa-e-cert',NOW(),NOW());"
+
+        $newProcessed = @()
+        $inOrgs = $false
+        foreach ($line in $processed) {
+            $newProcessed += $line
+            if ($line -match "LOCK TABLES ``organizations`` WRITE") {
+                $inOrgs = $true
+            }
+            if ($inOrgs -and $line -match 'ALTER TABLE ``organizations`` DISABLE KEYS') {
+                $newProcessed += $orgInsert
+                $inOrgs = $false
+            }
+        }
+        $processed = $newProcessed
+        Write-Host "  Injected organizations seed row"
+    }
+
+    # ── Pass 4: inject cert-app endpoints from JSON (auth target only) ───
     if ($Target -eq 'auth') {
         $endpointJson = Join-Path $PSScriptRoot 'assemblies\loa-auth-platform\database\json\cert-endpoints-catalog.json'
         if (Test-Path -LiteralPath $endpointJson) {
