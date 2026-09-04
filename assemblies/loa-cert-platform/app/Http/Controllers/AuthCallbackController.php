@@ -71,6 +71,7 @@ class AuthCallbackController extends Controller
             'status' => 'success',
             'data' => [
                 'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
                 'token_type' => 'Bearer',
                 'expires_in' => $claims['exp'] - time(),
                 'user' => [
