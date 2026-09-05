@@ -1,69 +1,59 @@
 <?php
 
-use Monolog\Handler\HandlerInterface;
-use Monolog\Handler\SyslogUdpHandler;
-
 return [
 
-    'defaults' => [
-        'stack' => env('APP_LOG_CHANNEL', 'stack'),
+    'default' => env('LOG_CHANNEL', 'stack'),
+
+    'deprecations' => [
+        'channel' => env('LOG_DEPRECATIONS_CHANNEL', 'null'),
+        'trace' => false,
     ],
 
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => array_filter([
-                env('SEQ_URL') ? 'seq' : null,
-                'single',
-            ]),
-        ],
-
-        'seq' => [
-            'driver' => 'monolog',
-            'handler' => SyslogUdpHandler::class,
-            'handler_with' => [
-                'host' => env('SEQ_HOST', 'seq'),
-                'port' => env('SEQ_SYSLOG_PORT', 5341),
-                'facility' => env('LOG_SYSLOG_FACILITY', LOG_USER),
-            ],
-            'formatter' => \Monolog\Formatter\LineFormatter::class,
-            'formatter_with' => [
-                'format' => '%channel%.%level_name% %message% %context% %extra%',
-            ],
-            'level' => env('LOG_LEVEL', 'debug'),
-            'bubble' => true,
+            'channels' => explode(',', env('LOG_STACK', 'single')),
         ],
 
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
+        'daily' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/laravel.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
         ],
 
         'stderr' => [
             'driver' => 'monolog',
-            'level' => 'debug',
+            'level' => env('LOG_LEVEL', 'debug'),
             'handler' => \Monolog\Handler\StreamHandler::class,
-            'handler_with' => [
+            'formatter' => env('LOG_STDERR_FORMATTER'),
+            'with' => [
                 'stream' => 'php://stderr',
             ],
+            'processors' => [\Monolog\Processor\PsrLogMessageProcessor::class],
         ],
 
         'stdout' => [
             'driver' => 'monolog',
-            'level' => 'debug',
+            'level' => env('LOG_LEVEL', 'debug'),
             'handler' => \Monolog\Handler\StreamHandler::class,
-            'handler_with' => [
+            'formatter' => env('LOG_STDOUT_FORMATTER'),
+            'with' => [
                 'stream' => 'php://stdout',
             ],
+            'processors' => [\Monolog\Processor\PsrLogMessageProcessor::class],
         ],
 
         'emergency' => [
-            'driver' => 'monolog',
-            'handler' => \Monolog\Handler\StreamHandler::class,
-            'handler_with' => [
-                'stream' => 'php://stdout',
-            ],
+            'path' => storage_path('logs/laravel.log'),
         ],
     ],
 

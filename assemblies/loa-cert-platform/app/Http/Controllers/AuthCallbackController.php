@@ -114,7 +114,9 @@ class AuthCallbackController extends Controller
                 $claims['email'] ?? null,
             );
         } catch (\Throwable $e) {
-            \Log::warning('Audit log failed: ' . $e->getMessage());
+            \Log::warning('Audit log failed: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
         }
 
         return $response;
