@@ -15,8 +15,8 @@
 
     {{-- Inline create form --}}
     <div id="create-api-key-form" style="display:none;margin-bottom:1.25rem;padding:1rem;border:1.5px solid var(--border);border-radius:var(--radius-lg);background:var(--surface-secondary);">
-        <form method="post" action="{{ route('admin.tenants.api-keys.store', $tenant) }}" style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
-            @csrf
+        <div id="api-key-error" style="display:none;margin-bottom:0.75rem;padding:0.5rem 0.75rem;border:1.5px solid #dc2626;border-radius:var(--radius-sm);background:#fef2f2;color:#991b1b;font-size:0.8125rem;"></div>
+        <form id="api-key-create-form" style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
             <div style="flex:1 1 12rem;">
                 <label for="ak-name" style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:0.25rem;">Key Name</label>
                 <input type="text" id="ak-name" name="name" required placeholder="e.g. Production App"
@@ -27,7 +27,7 @@
                 <input type="date" id="ak-expires" name="expires_at"
                        style="width:100%;height:2.25rem;padding:0 0.5rem;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:0.8125rem;">
             </div>
-            <button class="button" type="submit" style="height:2.25rem;font-size:0.8125rem;">Generate</button>
+            <button class="button" type="submit" id="api-key-submit" style="height:2.25rem;font-size:0.8125rem;">Generate</button>
             <button class="button button-ghost" type="button" id="cancel-create-api-key"
                     style="height:2.25rem;font-size:0.8125rem;border-color:var(--border);color:var(--text-secondary);">Cancel</button>
         </form>
@@ -83,7 +83,7 @@
                     @foreach ($apiKeys as $key)
                         <tr>
                             <td><strong>{{ $key->name }}</strong></td>
-                            <td><code style="font-size:0.8125rem;">{{ substr($key->key_hash, 0, 8) }}****</code></td>
+                            <td><code style="font-size:0.8125rem;">tk_****</code></td>
                             <td class="muted">{{ $key->created_at?->format('M j, Y g:i A') ?? '—' }}</td>
                             <td class="muted">{{ $key->last_used_at?->diffForHumans() ?? 'Never' }}</td>
                             <td class="muted">{{ $key->expires_at?->format('M j, Y') ?? 'Never' }}</td>
@@ -121,12 +121,16 @@
         var toggleBtn = document.getElementById('toggle-create-api-key');
         var cancelBtn = document.getElementById('cancel-create-api-key');
         var createForm = document.getElementById('create-api-key-form');
+        var apiForm = document.getElementById('api-key-create-form');
+        var submitBtn = document.getElementById('api-key-submit');
+        var errorBox = document.getElementById('api-key-error');
         var secretDisplay = document.getElementById('api-key-secret-display');
         var closeSecretBtn = document.getElementById('close-secret-display');
 
         if (toggleBtn && createForm) {
             toggleBtn.addEventListener('click', function () {
                 createForm.style.display = createForm.style.display === 'none' ? 'block' : 'none';
+                errorBox.style.display = 'none';
                 if (createForm.style.display === 'block') {
                     document.getElementById('ak-name').focus();
                 }
@@ -135,11 +139,72 @@
         if (cancelBtn && createForm) {
             cancelBtn.addEventListener('click', function () {
                 createForm.style.display = 'none';
+                errorBox.style.display = 'none';
             });
         }
         if (closeSecretBtn && secretDisplay) {
             closeSecretBtn.addEventListener('click', function () {
                 secretDisplay.style.display = 'none';
+            });
+        }
+
+        if (apiForm) {
+            apiForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                errorBox.style.display = 'none';
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Generating...';
+
+                var name = document.getElementById('ak-name').value.trim();
+                var expires = document.getElementById('ak-expires').value;
+
+                var body = { name: name };
+                if (expires) body.expires_at = expires;
+
+                fetch('{{ route("admin.tenants.api-keys.store", $tenant) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(body)
+                })
+                .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; }); })
+                .then(function (result) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Generate';
+
+                    if (!result.ok) {
+                        var msg = result.data.message || 'Validation failed.';
+                        if (result.data.errors) {
+                            var parts = [];
+                            for (var field in result.data.errors) {
+                                parts.push(result.data.errors[field].join(' '));
+                            }
+                            msg = parts.join(' ');
+                        }
+                        errorBox.textContent = msg;
+                        errorBox.style.display = 'block';
+                        return;
+                    }
+
+                    document.getElementById('secret-key-value').textContent = result.data.key;
+                    document.getElementById('secret-secret-value').textContent = result.data.secret;
+                    document.getElementById('secret-header-example').textContent = 'X-Api-Key: ' + result.data.key + ':' + result.data.secret;
+
+                    apiForm.reset();
+                    createForm.style.display = 'none';
+                    secretDisplay.style.display = 'block';
+                    secretDisplay.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                })
+                .catch(function () {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Generate';
+                    errorBox.textContent = 'Network error. Please try again.';
+                    errorBox.style.display = 'block';
+                });
             });
         }
 
