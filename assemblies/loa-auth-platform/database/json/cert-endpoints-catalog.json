@@ -48,6 +48,13 @@
         { "method": "GET",    "path": "/api/v1/dashboard/stats",               "label": "Dashboard statistics",               "required_level": "read" },
         { "method": "GET",    "path": "/api/v1/dashboard/activity",            "label": "Dashboard activity feed",            "required_level": "read" },
         { "method": "GET",    "path": "/api/v1/admin/audit-logs",              "label": "Query audit logs",                   "required_level": "admin" },
-        { "method": "GET",    "path": "/api/v1/admin/audit-logs/export",       "label": "Export audit logs",                  "required_level": "admin" }
+        { "method": "GET",    "path": "/api/v1/admin/audit-logs/export",       "label": "Export audit logs",                  "required_level": "admin" },
+        { "method": "GET",    "path": "/api/v1/service/users",                 "label": "List users (auth proxy)",            "required_level": "read" },
+        { "method": "PATCH",  "path": "/api/v1/service/users/{id}/status",     "label": "Update user status (auth proxy)",    "required_level": "admin" },
+        { "method": "GET",    "path": "/api/v1/service/groups",                "label": "List groups (auth proxy)",           "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/service/members",               "label": "List tenant members (auth proxy)",   "required_level": "read" },
+        { "method": "POST",   "path": "/api/v1/service/members",               "label": "Add tenant member (auth proxy)",     "required_level": "admin" },
+        { "method": "DELETE", "path": "/api/v1/service/members/{userId}",      "label": "Remove tenant member (auth proxy)",  "required_level": "admin" },
+        { "method": "POST",   "path": "/api/v1/service/members/invite",        "label": "Invite tenant member (auth proxy)",  "required_level": "admin" }
     ]
 }
