@@ -924,6 +924,73 @@ exit($status);
 
 Laravel 11+ auto-registers service providers via `Application::configure()`. If `config/app.php` contains a `providers` array, it overrides auto-registration and breaks artisan commands (`migrate`, `db:seed`, etc.).
 
+## Apache strips `Authorization` header on cPanel
+
+**Symptom:** Frontend sends `Authorization: Bearer <token>` but backend returns `401 {"message":"Missing bearer token"}`.
+
+**Cause:** Apache on cPanel does NOT pass the `Authorization` header to PHP-FPM/CGI by default. The header is silently dropped before reaching Laravel's `JwtMiddleware`.
+
+**Verification:**
+```bash
+curl -H "Authorization: Bearer test-token" https://cert-api.lyceumalabang.edu.ph/api/v1/events
+# Returns 401 "Missing bearer token" — confirms Apache is stripping the header.
+```
+
+**Fix:** Every Laravel assembly deployed on Apache cPanel MUST include this in `public/.htaccess`, placed BEFORE the front-controller RewriteRule:
+
+```apache
+RewriteEngine On
+
+# Pass Authorization header to PHP-FPM/CGI (Apache strips it by default)
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Handle Front Controller...
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [L]
+```
+
+**Without this rule:**
+- All JWT-protected endpoints return 401 on the deployed server
+- Works locally (Docker uses nginx, not Apache) — issue only appears in production
+- The `JwtMiddleware` at `app/Http/Middleware/JwtMiddleware.php` never sees the header
+
+**With this rule:**
+- Apache rewrites `Authorization` into the `HTTP_AUTHORIZATION` environment variable
+- PHP-FPM/CGI reads `$_SERVER['HTTP_AUTHORIZATION']`
+- Laravel's `$request->header('Authorization')` resolves correctly
+
+**Checklist for new assemblies:**
+- [ ] `public/.htaccess` exists with the Authorization RewriteRule
+- [ ] Deployed `.htaccess` matches the committed version (cPanel File Manager extract may overwrite)
+- [ ] After deploy, test with: `curl -H "Authorization: Bearer test-token" https://<domain>/api/v1/<protected-endpoint>`
+
+## `.env.cpanel` placeholders never replaced
+
+**Symptom:** After fixing the Apache header issue, token validation fails with `401 {"message":"Invalid or expired token"}`.
+
+**Cause:** `.env.cpanel` files contain `JWT_SECRET=ENTER_JWT_SECRET_HERE` as a placeholder. If deployed without replacing it, the cert-platform uses a different secret than the auth-platform. HMAC signature comparison fails.
+
+**Required alignment:** Every platform that signs or validates JWTs must use byte-identical values for:
+
+| Variable | Where | Requirement |
+|----------|-------|-------------|
+| `JWT_SECRET` | auth-platform `.env` and cert-platform `.env` | Must be identical — the auth-platform signs tokens, the cert-platform validates them |
+| `ENCRYPTION_KEY` | auth-platform `.env` and cert-platform `.env` | Must be identical — used for SSO callback payload encryption/decryption |
+| `CERT_TENANT_SLUG` | cert-platform `.env` and auth-platform DB `tenants.slug` | Must match — the cert-platform validates the tenant claim in the JWT |
+
+**Verification after deploy:**
+```bash
+# On the cert-platform server, check the actual JWT_SECRET:
+php artisan tinker --execute="echo config('jwt.secret');"
+# Output must NOT be "ENTER_JWT_SECRET_HERE"
+
+# Compare with auth-platform:
+php artisan tinker --execute="echo config('jwt.secret');"
+# Both must output the same value
+```
+
 ---
 
 # Guiding Principle
