@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccessConfigController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\EndpointGrantController;
+use App\Http\Controllers\LogViewerController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\SetPasswordController;
 use App\Http\Controllers\WebAdminController;
@@ -167,6 +168,10 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     // Audit log browser (admin-audit-log.md §6) — read-only evidence
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs');
     Route::get('/audit-logs/export', [AuditLogController::class, 'export'])->name('admin.audit-logs.export');
+
+    // Application log viewer
+    Route::get('/logs', [LogViewerController::class, 'index'])->name('admin.logs');
+    Route::get('/logs/download', [LogViewerController::class, 'download'])->name('admin.logs.download');
 Route::get('/tenants/{tenant}/members/search', [WebAdminController::class, 'searchMembers'])
     ->name('admin.tenants.members.search')
     ->middleware('throttle:120,1');

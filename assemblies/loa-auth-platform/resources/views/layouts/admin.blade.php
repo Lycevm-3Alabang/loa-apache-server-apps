@@ -751,6 +751,7 @@
                 <a href="{{ route('admin.users') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Users</a>
                 <a href="{{ route('admin.tenants') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Tenants</a>
                 <a href="{{ route('admin.audit-logs') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Audit log</a>
+                <a href="{{ route('admin.logs') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Logs</a>
             @endif
             <details class="user-menu">
                 <summary class="user-menu-trigger">
