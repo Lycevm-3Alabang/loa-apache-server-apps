@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\CertificateEmail;
 use App\Models\Certificate;
+use App\Models\CertificateEmail as CertificateEmailModel;
 use App\Models\CertificateTemplate;
 use App\Models\Event;
 use App\Models\EventAttendee;
@@ -11,6 +13,9 @@ use App\Services\CertificateNumberService;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use OpenApi\Attributes as OA;
 
 #[OA\Tag(name: "Events", description: "Event management")]
@@ -99,19 +104,23 @@ use OpenApi\Attributes as OA;
 ])]
 #[OA\Schema(schema: "EventReissueRequest", required: ["attendee_ids"], properties: [
     new OA\Property(property: "attendee_ids", type: "array", items: new OA\Items(type: "string", format: "uuid")),
+    new OA\Property(property: "send_email", type: "boolean", default: false),
 ])]
 #[OA\Schema(schema: "EventIssueCompletedRequest", properties: [
     new OA\Property(property: "attendee_ids", type: "array", items: new OA\Items(type: "string", format: "uuid")),
     new OA\Property(property: "send_email", type: "boolean", default: false),
 ])]
 #[OA\Schema(schema: "EventIssueResponse", properties: [
-    new OA\Property(property: "success", type: "integer"),
-    new OA\Property(property: "failed", type: "integer"),
-    new OA\Property(property: "errors", type: "array", items: new OA\Items(properties: [
-        new OA\Property(property: "attendee_id", type: "string", format: "uuid"),
-        new OA\Property(property: "reason", type: "string"),
+    new OA\Property(property: "issued", type: "integer"),
+    new OA\Property(property: "emailed", type: "integer"),
+    new OA\Property(property: "results", type: "array", items: new OA\Items(properties: [
+        new OA\Property(property: "name", type: "string"),
+        new OA\Property(property: "email", type: "string"),
+        new OA\Property(property: "success", type: "boolean"),
+        new OA\Property(property: "emailed", type: "boolean"),
+        new OA\Property(property: "certNumber", type: "string"),
+        new OA\Property(property: "error", type: "string", nullable: true),
     ])),
-    new OA\Property(property: "certificates", type: "array", items: new OA\Items(type: "string", format: "uuid")),
 ])]
 #[OA\Schema(schema: "EventRevokeExpiredCountResponse", properties: [
     new OA\Property(property: "event_id", type: "string", format: "uuid"),
@@ -573,7 +582,8 @@ class EventController extends Controller
             ->whereIn('id', $request->input('attendee_ids'))
             ->get();
 
-        $result = $this->issueCertificates($event, $attendees);
+        $sendEmail = (bool) $request->input('send_email', false);
+        $result = $this->issueCertificates($event, $attendees, $sendEmail);
 
         return response()->json([
             'data' => $result,
@@ -628,21 +638,26 @@ class EventController extends Controller
             $query->whereIn('id', $request->input('attendee_ids'));
         }
 
-        $result = $this->issueCertificates($event, $query->get());
+        $sendEmail = (bool) $request->input('send_email', false);
+        $result = $this->issueCertificates($event, $query->get(), $sendEmail);
 
         return response()->json([
             'data' => $result,
         ]);
     }
 
-    private function issueCertificates(Event $event, $attendees): array
+    private function issueCertificates(Event $event, $attendees, bool $sendEmail = false): array
     {
-        $success = 0;
-        $failed = 0;
-        $errors = [];
-        $certificateIds = [];
+        $issued = 0;
+        $emailed = 0;
+        $results = [];
 
         foreach ($attendees as $attendee) {
+            $success = false;
+            $certificateNumber = null;
+            $error = null;
+            $emailSent = false;
+
             try {
                 $existing = Certificate::where('event_id', $event->id)
                     ->where('recipient_email', $attendee->email)
@@ -650,63 +665,116 @@ class EventController extends Controller
                     ->exists();
 
                 if ($existing) {
-                    $failed++;
-                    $errors[] = [
-                        'attendee_id' => $attendee->id,
-                        'reason' => 'Active certificate already exists',
-                    ];
-                    continue;
+                    $error = 'Active certificate already exists';
+                } else {
+                    $certificateNumber = $this->certificateNumberService->generate(
+                        $event->organization_id,
+                        $event->certificate_number_pattern
+                    );
+
+                    $certificate = Certificate::create([
+                        'organization_id' => $event->organization_id,
+                        'event_id' => $event->id,
+                        'template_id' => $event->template_id,
+                        'recipient_name' => $attendee->name,
+                        'recipient_email' => $attendee->email,
+                        'certificate_number' => $certificateNumber,
+                        'expires_at' => $event->valid_until,
+                    ]);
+
+                    $attendee->update([
+                        'certificate_id' => $certificate->id,
+                        'certificate_number' => $certificateNumber,
+                    ]);
+
+                    $this->auditLogger->record('certificate.issued', 'api', 'certificate', $certificate->id, [
+                        'certificate_number' => $certificateNumber,
+                        'event_id' => $event->id,
+                        'recipient_email' => $attendee->email,
+                        'channel' => 'bulk',
+                    ]);
+
+                    try {
+                        $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+                    } catch (\Exception $e) {
+                        // PDF generation failure is non-fatal; certificate is still created
+                    }
+
+                    $success = true;
+                    $issued++;
                 }
 
-                $certificateNumber = $this->certificateNumberService->generate(
-                    $event->organization_id,
-                    $event->certificate_number_pattern
-                );
+                if ($success && $sendEmail) {
+                    try {
+                        $certificate = Certificate::where('event_id', $event->id)
+                            ->where('recipient_email', $attendee->email)
+                            ->whereNull('revoked_at')
+                            ->first();
 
-                $certificate = Certificate::create([
-                    'organization_id' => $event->organization_id,
-                    'event_id' => $event->id,
-                    'template_id' => $event->template_id,
-                    'recipient_name' => $attendee->name,
-                    'recipient_email' => $attendee->email,
-                    'certificate_number' => $certificateNumber,
-                    'expires_at' => $event->valid_until,
-                ]);
+                        if ($certificate) {
+                            $certificate->load(['event', 'template', 'organization']);
+                            $pdfPath = $certificate->file_path;
 
-                $attendee->update([
-                    'certificate_id' => $certificate->id,
-                    'certificate_number' => $certificateNumber,
-                ]);
+                            $appUrl = config('app.url');
+                            $downloadUrl = $appUrl ? $appUrl . '/api/v1/certificates/' . $certificate->id . '/download' : null;
+                            $verifyUrl = $appUrl ? $appUrl . '/api/v1/verify/' . $certificate->certificate_number : null;
 
-                $this->auditLogger->record('certificate.issued', 'api', 'certificate', $certificate->id, [
-                    'certificate_number' => $certificateNumber,
-                    'event_id' => $event->id,
-                    'recipient_email' => $attendee->email,
-                    'channel' => 'bulk',
-                ]);
+                            Mail::to($attendee->email)->queue(new CertificateEmail(
+                                recipientName: $attendee->name,
+                                recipientEmail: $attendee->email,
+                                certificateNumber: $certificate->certificate_number,
+                                eventName: $certificate->event?->name,
+                                issuedDate: $certificate->issued_at?->format('F d, Y') ?? now()->format('F d, Y'),
+                                pdfPath: $pdfPath,
+                                downloadUrl: $downloadUrl,
+                                verifyUrl: $verifyUrl,
+                            ));
 
-                try {
-                    $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
-                } catch (\Exception $e) {
-                    // PDF generation failure is non-fatal; certificate is still created
+                            CertificateEmailModel::create([
+                                'certificate_id' => $certificate->id,
+                                'sent_to' => $attendee->email,
+                                'subject' => 'Your Certificate: ' . $certificate->certificate_number,
+                                'sent_at' => now(),
+                                'sent_by' => auth()->id(),
+                                'status' => 'sent',
+                            ]);
+
+                            $emailSent = true;
+                            $emailed++;
+                        }
+                    } catch (\Exception $e) {
+                        // Email failure is non-fatal
+                        if (isset($certificate)) {
+                            CertificateEmailModel::create([
+                                'certificate_id' => $certificate->id,
+                                'sent_to' => $attendee->email,
+                                'subject' => 'Your Certificate: ' . ($certificateNumber ?? ''),
+                                'sent_at' => now(),
+                                'sent_by' => auth()->id(),
+                                'status' => 'failed',
+                                'error_message' => $e->getMessage(),
+                            ]);
+                        }
+                    }
                 }
-
-                $success++;
-                $certificateIds[] = $certificate->id;
             } catch (\Exception $e) {
-                $failed++;
-                $errors[] = [
-                    'attendee_id' => $attendee->id,
-                    'reason' => $e->getMessage(),
-                ];
+                $error = $e->getMessage();
             }
+
+            $results[] = [
+                'name' => $attendee->name,
+                'email' => $attendee->email,
+                'success' => $success,
+                'emailed' => $emailSent,
+                'certNumber' => $certificateNumber,
+                'error' => $error,
+            ];
         }
 
         return [
-            'success' => $success,
-            'failed' => $failed,
-            'errors' => $errors,
-            'certificates' => $certificateIds,
+            'issued' => $issued,
+            'emailed' => $emailed,
+            'results' => $results,
         ];
     }
 
@@ -735,6 +803,7 @@ class EventController extends Controller
         $request->validate([
             'attendee_ids' => 'required|array|min:1',
             'attendee_ids.*' => 'uuid',
+            'send_email' => 'nullable|boolean',
         ]);
 
         if (!$event->certificate_number_pattern) {
@@ -755,12 +824,17 @@ class EventController extends Controller
             ->whereIn('id', $request->input('attendee_ids'))
             ->get();
 
-        $success = 0;
-        $failed = 0;
-        $errors = [];
-        $certificateIds = [];
+        $sendEmail = (bool) $request->input('send_email', false);
+        $issued = 0;
+        $emailed = 0;
+        $results = [];
 
         foreach ($attendees as $attendee) {
+            $success = false;
+            $certificateNumber = null;
+            $error = null;
+            $emailSent = false;
+
             try {
                 $existing = Certificate::where('event_id', $id)
                     ->where('recipient_email', $attendee->email)
@@ -812,23 +886,71 @@ class EventController extends Controller
                     // PDF generation failure is non-fatal; certificate is still created
                 }
 
-                $success++;
-                $certificateIds[] = $certificate->id;
+                $success = true;
+                $issued++;
+
+                if ($sendEmail) {
+                    try {
+                        $certificate->load(['event', 'template', 'organization']);
+                        $pdfPath = $certificate->file_path;
+
+                        $appUrl = config('app.url');
+                        $downloadUrl = $appUrl ? $appUrl . '/api/v1/certificates/' . $certificate->id . '/download' : null;
+                        $verifyUrl = $appUrl ? $appUrl . '/api/v1/verify/' . $certificate->certificate_number : null;
+
+                        Mail::to($attendee->email)->queue(new CertificateEmail(
+                            recipientName: $attendee->name,
+                            recipientEmail: $attendee->email,
+                            certificateNumber: $certificate->certificate_number,
+                            eventName: $certificate->event?->name,
+                            issuedDate: $certificate->issued_at?->format('F d, Y') ?? now()->format('F d, Y'),
+                            pdfPath: $pdfPath,
+                            downloadUrl: $downloadUrl,
+                            verifyUrl: $verifyUrl,
+                        ));
+
+                        CertificateEmailModel::create([
+                            'certificate_id' => $certificate->id,
+                            'sent_to' => $attendee->email,
+                            'subject' => 'Your Certificate: ' . $certificate->certificate_number,
+                            'sent_at' => now(),
+                            'sent_by' => auth()->id(),
+                            'status' => 'sent',
+                        ]);
+
+                        $emailSent = true;
+                        $emailed++;
+                    } catch (\Exception $e) {
+                        CertificateEmailModel::create([
+                            'certificate_id' => $certificate->id,
+                            'sent_to' => $attendee->email,
+                            'subject' => 'Your Certificate: ' . $certificateNumber,
+                            'sent_at' => now(),
+                            'sent_by' => auth()->id(),
+                            'status' => 'failed',
+                            'error_message' => $e->getMessage(),
+                        ]);
+                    }
+                }
             } catch (\Exception $e) {
-                $failed++;
-                $errors[] = [
-                    'attendee_id' => $attendee->id,
-                    'reason' => $e->getMessage(),
-                ];
+                $error = $e->getMessage();
             }
+
+            $results[] = [
+                'name' => $attendee->name,
+                'email' => $attendee->email,
+                'success' => $success,
+                'emailed' => $emailSent,
+                'certNumber' => $certificateNumber,
+                'error' => $error,
+            ];
         }
 
         return response()->json([
             'data' => [
-                'success' => $success,
-                'failed' => $failed,
-                'errors' => $errors,
-                'certificates' => $certificateIds,
+                'issued' => $issued,
+                'emailed' => $emailed,
+                'results' => $results,
             ],
         ]);
     }

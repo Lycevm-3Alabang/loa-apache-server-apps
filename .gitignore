@@ -23,3 +23,6 @@ assemblies/loa-auth-platform/storage/framework/cache/
 .env.local
 loa_auth_dump.sql
 .dist-stage/
+assemblies/loa-auth-platform/database/sql/cpanel-auth-db-install.sql
+assemblies/loa-cert-platform/database/sql/cpanel-cert-db-install.sql
+.vscode/sessions.json

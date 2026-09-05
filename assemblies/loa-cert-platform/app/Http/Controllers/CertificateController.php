@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\CertificateEmail;
 use App\Models\Certificate;
-use App\Models\CertificateEmail;
+use App\Models\CertificateEmail as CertificateEmailModel;
 use App\Models\CertificateSequence;
 use App\Models\Event;
 use App\Models\EventAttendee;
@@ -12,6 +13,7 @@ use App\Services\PdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
@@ -61,14 +63,16 @@ use OpenApi\Attributes as OA;
     new OA\Property(property: "send_email", type: "boolean", default: false),
 ])]
 #[OA\Schema(schema: "BulkResult", properties: [
-    new OA\Property(property: "success", type: "integer"),
-    new OA\Property(property: "failed", type: "integer"),
-    new OA\Property(property: "errors", type: "array", items: new OA\Items(properties: [
-        new OA\Property(property: "index", type: "integer"),
+    new OA\Property(property: "issued", type: "integer"),
+    new OA\Property(property: "emailed", type: "integer"),
+    new OA\Property(property: "results", type: "array", items: new OA\Items(properties: [
+        new OA\Property(property: "name", type: "string"),
         new OA\Property(property: "email", type: "string"),
-        new OA\Property(property: "reason", type: "string"),
+        new OA\Property(property: "success", type: "boolean"),
+        new OA\Property(property: "emailed", type: "boolean"),
+        new OA\Property(property: "certNumber", type: "string"),
+        new OA\Property(property: "error", type: "string", nullable: true),
     ])),
-    new OA\Property(property: "certificates", type: "array", items: new OA\Items(type: "string", format: "uuid")),
 ])]
 #[OA\Schema(schema: "RevokeRequest", required: ["reason"], properties: [
     new OA\Property(property: "reason", type: "string"),
@@ -286,8 +290,55 @@ class CertificateController extends Controller
             'channel' => 'single',
         ]);
 
+        $emailSent = false;
+        if ($request->boolean('send_email')) {
+            try {
+                $certificate->load(['event', 'template', 'organization']);
+                $pdfPath = $certificate->file_path;
+
+                $appUrl = config('app.url');
+                $downloadUrl = $appUrl ? $appUrl . '/api/v1/certificates/' . $certificate->id . '/download' : null;
+                $verifyUrl = $appUrl ? $appUrl . '/api/v1/verify/' . $certificate->certificate_number : null;
+
+                Mail::to($certificate->recipient_email)->queue(new CertificateEmail(
+                    recipientName: $certificate->recipient_name,
+                    recipientEmail: $certificate->recipient_email,
+                    certificateNumber: $certificate->certificate_number,
+                    eventName: $certificate->event?->name,
+                    issuedDate: $certificate->issued_at?->format('F d, Y') ?? now()->format('F d, Y'),
+                    pdfPath: $pdfPath,
+                    downloadUrl: $downloadUrl,
+                    verifyUrl: $verifyUrl,
+                ));
+
+                CertificateEmailModel::create([
+                    'certificate_id' => $certificate->id,
+                    'sent_to' => $certificate->recipient_email,
+                    'subject' => 'Your Certificate: ' . $certificate->certificate_number,
+                    'sent_at' => now(),
+                    'sent_by' => auth()->id(),
+                    'status' => 'sent',
+                ]);
+
+                $emailSent = true;
+            } catch (\Exception $e) {
+                CertificateEmailModel::create([
+                    'certificate_id' => $certificate->id,
+                    'sent_to' => $certificate->recipient_email,
+                    'subject' => 'Your Certificate: ' . $certificateNumber,
+                    'sent_at' => now(),
+                    'sent_by' => auth()->id(),
+                    'status' => 'failed',
+                    'error_message' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $formatted = $this->formatCertificate($certificate->fresh(['event', 'template']));
+        $formatted['email_sent'] = $emailSent;
+
         return response()->json([
-            'data' => $this->formatCertificate($certificate->fresh(['event', 'template'])),
+            'data' => $formatted,
         ], 201);
     }
 
@@ -301,7 +352,18 @@ class CertificateController extends Controller
         ),
         responses: [
             new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(properties: [
-                new OA\Property(property: "data", ref: "#/components/schemas/BulkResult"),
+                new OA\Property(property: "data", type: "object", properties: [
+                    new OA\Property(property: "issued", type: "integer"),
+                    new OA\Property(property: "emailed", type: "integer"),
+                    new OA\Property(property: "results", type: "array", items: new OA\Items(properties: [
+                        new OA\Property(property: "name", type: "string"),
+                        new OA\Property(property: "email", type: "string"),
+                        new OA\Property(property: "success", type: "boolean"),
+                        new OA\Property(property: "emailed", type: "boolean"),
+                        new OA\Property(property: "certNumber", type: "string"),
+                        new OA\Property(property: "error", type: "string", nullable: true),
+                    ])),
+                ]),
             ])),
             new OA\Response(response: 401, description: "Unauthorized"),
             new OA\Response(response: 422, description: "Validation error"),
@@ -322,12 +384,17 @@ class CertificateController extends Controller
         }
 
         $event = Event::find($request->input('event_id'));
-        $success = 0;
-        $failed = 0;
-        $errors = [];
-        $certificateIds = [];
+        $sendEmail = (bool) $request->input('send_email', false);
+        $issued = 0;
+        $emailed = 0;
+        $results = [];
 
         foreach ($request->input('recipients') as $index => $recipient) {
+            $success = false;
+            $certificateNumber = null;
+            $error = null;
+            $emailSent = false;
+
             try {
                 $existing = Certificate::where('event_id', $event->id)
                     ->where('recipient_email', $recipient['email'])
@@ -335,61 +402,117 @@ class CertificateController extends Controller
                     ->exists();
 
                 if ($existing) {
-                    $failed++;
-                    $errors[] = [
-                        'index' => $index,
-                        'email' => $recipient['email'],
-                        'reason' => 'Active certificate already exists',
-                    ];
-                    continue;
+                    $error = 'Active certificate already exists';
+                } else {
+                    $certificateNumber = $this->generateCertificateNumber(
+                        $event->organization_id,
+                        $event->certificate_number_pattern
+                    );
+
+                    $certificate = Certificate::create([
+                        'organization_id' => $event->organization_id,
+                        'event_id' => $event->id,
+                        'template_id' => $event->template_id,
+                        'recipient_name' => $recipient['name'],
+                        'recipient_email' => $recipient['email'],
+                        'certificate_number' => $certificateNumber,
+                        'expires_at' => $event->valid_until,
+                    ]);
+
+                    $attendee = EventAttendee::firstOrCreate(
+                        ['event_id' => $event->id, 'email' => $recipient['email']],
+                        ['name' => $recipient['name']]
+                    );
+                    $attendee->update(['certificate_id' => $certificate->id, 'certificate_number' => $certificateNumber]);
+
+                    $this->auditLogger->record('certificate.issued', 'api', 'certificate', $certificate->id, [
+                        'certificate_number' => $certificateNumber,
+                        'event_id' => $event->id,
+                        'recipient_email' => $recipient['email'],
+                        'channel' => 'bulk',
+                    ]);
+
+                    try {
+                        $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+                    } catch (\Exception $e) {
+                        // PDF generation failure is non-fatal; certificate is still created
+                    }
+
+                    $success = true;
+                    $issued++;
                 }
 
-                $certificateNumber = $this->generateCertificateNumber(
-                    $event->organization_id,
-                    $event->certificate_number_pattern
-                );
+                if ($success && $sendEmail) {
+                    try {
+                        $certificate = Certificate::where('event_id', $event->id)
+                            ->where('recipient_email', $recipient['email'])
+                            ->whereNull('revoked_at')
+                            ->first();
 
-                $certificate = Certificate::create([
-                    'organization_id' => $event->organization_id,
-                    'event_id' => $event->id,
-                    'template_id' => $event->template_id,
-                    'recipient_name' => $recipient['name'],
-                    'recipient_email' => $recipient['email'],
-                    'certificate_number' => $certificateNumber,
-                    'expires_at' => $event->valid_until,
-                ]);
+                        if ($certificate) {
+                            $certificate->load(['event', 'template', 'organization']);
+                            $pdfPath = $certificate->file_path;
 
-                $attendee = EventAttendee::firstOrCreate(
-                    ['event_id' => $event->id, 'email' => $recipient['email']],
-                    ['name' => $recipient['name']]
-                );
-                $attendee->update(['certificate_id' => $certificate->id, 'certificate_number' => $certificateNumber]);
+                            $appUrl = config('app.url');
+                            $downloadUrl = $appUrl ? $appUrl . '/api/v1/certificates/' . $certificate->id . '/download' : null;
+                            $verifyUrl = $appUrl ? $appUrl . '/api/v1/verify/' . $certificate->certificate_number : null;
 
-                $this->auditLogger->record('certificate.issued', 'api', 'certificate', $certificate->id, [
-                    'certificate_number' => $certificateNumber,
-                    'event_id' => $event->id,
-                    'recipient_email' => $recipient['email'],
-                    'channel' => 'bulk',
-                ]);
+                            Mail::to($recipient['email'])->queue(new CertificateEmail(
+                                recipientName: $recipient['name'],
+                                recipientEmail: $recipient['email'],
+                                certificateNumber: $certificate->certificate_number,
+                                eventName: $certificate->event?->name,
+                                issuedDate: $certificate->issued_at?->format('F d, Y') ?? now()->format('F d, Y'),
+                                pdfPath: $pdfPath,
+                                downloadUrl: $downloadUrl,
+                                verifyUrl: $verifyUrl,
+                            ));
 
-                $success++;
-                $certificateIds[] = $certificate->id;
+                            CertificateEmailModel::create([
+                                'certificate_id' => $certificate->id,
+                                'sent_to' => $recipient['email'],
+                                'subject' => 'Your Certificate: ' . $certificate->certificate_number,
+                                'sent_at' => now(),
+                                'sent_by' => auth()->id(),
+                                'status' => 'sent',
+                            ]);
+
+                            $emailSent = true;
+                            $emailed++;
+                        }
+                    } catch (\Exception $e) {
+                        if (isset($certificate)) {
+                            CertificateEmailModel::create([
+                                'certificate_id' => $certificate->id,
+                                'sent_to' => $recipient['email'],
+                                'subject' => 'Your Certificate: ' . ($certificateNumber ?? ''),
+                                'sent_at' => now(),
+                                'sent_by' => auth()->id(),
+                                'status' => 'failed',
+                                'error_message' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+                }
             } catch (\Exception $e) {
-                $failed++;
-                $errors[] = [
-                    'index' => $index,
-                    'email' => $recipient['email'],
-                    'reason' => $e->getMessage(),
-                ];
+                $error = $e->getMessage();
             }
+
+            $results[] = [
+                'name' => $recipient['name'],
+                'email' => $recipient['email'],
+                'success' => $success,
+                'emailed' => $emailSent,
+                'certNumber' => $certificateNumber,
+                'error' => $error,
+            ];
         }
 
         return response()->json([
             'data' => [
-                'success' => $success,
-                'failed' => $failed,
-                'errors' => $errors,
-                'certificates' => $certificateIds,
+                'issued' => $issued,
+                'emailed' => $emailed,
+                'results' => $results,
             ],
         ]);
     }
@@ -772,7 +895,7 @@ class CertificateController extends Controller
         $limit = min((int) request()->query('limit', 25), 100);
         $offset = (int) request()->query('offset', 0);
 
-        $query = CertificateEmail::where('certificate_id', $id);
+        $query = CertificateEmailModel::where('certificate_id', $id);
         $total = $query->count();
         $emails = $query->orderBy('sent_at', 'desc')
             ->offset($offset)
@@ -796,6 +919,92 @@ class CertificateController extends Controller
                 'has_more' => ($offset + $limit) < $total,
             ],
         ]);
+    }
+
+    #[OA\Post(
+        path: "/api/v1/certificates/{id}/email",
+        summary: "Send certificate email to recipient",
+        tags: ["Certificates"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(properties: [
+                new OA\Property(property: "data", type: "object", properties: [
+                    new OA\Property(property: "sent", type: "boolean"),
+                ]),
+            ])),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 404, description: "Certificate not found"),
+            new OA\Response(response: 500, description: "Failed to send email"),
+        ]
+    )]
+    public function email(Request $request, string $id): JsonResponse
+    {
+        $certificate = Certificate::with(['event', 'template', 'organization'])->find($id);
+
+        if (!$certificate) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Certificate not found.',
+            ], 404);
+        }
+
+        if ($certificate->revoked_at) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cannot send email for revoked certificate.',
+            ], 422);
+        }
+
+        try {
+            $pdfPath = $certificate->file_path;
+
+            $appUrl = config('app.url');
+            $downloadUrl = $appUrl ? $appUrl . '/api/v1/certificates/' . $certificate->id . '/download' : null;
+            $verifyUrl = $appUrl ? $appUrl . '/api/v1/verify/' . $certificate->certificate_number : null;
+
+            Mail::to($certificate->recipient_email)->queue(new CertificateEmail(
+                recipientName: $certificate->recipient_name,
+                recipientEmail: $certificate->recipient_email,
+                certificateNumber: $certificate->certificate_number,
+                eventName: $certificate->event?->name,
+                issuedDate: $certificate->issued_at?->format('F d, Y') ?? now()->format('F d, Y'),
+                pdfPath: $pdfPath,
+                downloadUrl: $downloadUrl,
+                verifyUrl: $verifyUrl,
+            ));
+
+            CertificateEmailModel::create([
+                'certificate_id' => $certificate->id,
+                'sent_to' => $certificate->recipient_email,
+                'subject' => 'Your Certificate: ' . $certificate->certificate_number,
+                'sent_at' => now(),
+                'sent_by' => auth()->id(),
+                'status' => 'sent',
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'sent' => true,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            CertificateEmailModel::create([
+                'certificate_id' => $certificate->id,
+                'sent_to' => $certificate->recipient_email,
+                'subject' => 'Your Certificate: ' . $certificate->certificate_number,
+                'sent_at' => now(),
+                'sent_by' => auth()->id(),
+                'status' => 'failed',
+                'error_message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send email: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     #[OA\Post(
