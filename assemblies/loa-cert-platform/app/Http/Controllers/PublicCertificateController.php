@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Certificate;
+use App\Services\QrCodeService;
 use App\Models\Organization;
 use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +29,7 @@ class PublicCertificateController extends Controller
 {
     public function __construct(
         private readonly AuditLogger $auditLogger,
+        private readonly QrCodeService $qrCodeService,
     ) {
     }
 
@@ -150,7 +152,7 @@ class PublicCertificateController extends Controller
                     'event_date' => $certificate->event->event_date?->toDateString(),
                     'location' => $certificate->event->location,
                 ] : null,
-                'qr_data_url' => 'data:image/png;base64,QR_CODE_NOT_IMPLEMENTED',
+                'qr_data_url' => $this->qrCodeService->toDataUri(config('app.url') . '/certificates/' . $certificate->certificate_number),
                 'organization' => [
                     'name' => $this->resolveOrganizationName(),
                 ],

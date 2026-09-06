@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\CertificateEmail;
 use App\Models\Certificate;
+use App\Services\QrCodeService;
 use App\Models\CertificateEmail as CertificateEmailModel;
 use App\Models\CertificateSequence;
 use App\Models\Event;
@@ -90,6 +91,7 @@ class CertificateController extends Controller
     public function __construct(
         private readonly PdfService $pdfService,
         private readonly AuditLogger $auditLogger,
+        private readonly QrCodeService $qrCodeService,
     ) {
     }
 
@@ -1061,30 +1063,20 @@ class CertificateController extends Controller
     }
 
     #[OA\Get(
-        path: "/api/v1/certificates/qr",
+        path: "/api/v1/certificates/{certificateNumber}/qr",
         summary: "Generate QR code for a certificate",
         tags: ["Certificates"],
         parameters: [
-            new OA\Parameter(name: "certificate_number", in: "query", required: true, schema: new OA\Schema(type: "string")),
+            new OA\Parameter(name: "certificateNumber", in: "path", required: true, schema: new OA\Schema(type: "string")),
         ],
         responses: [
             new OA\Response(response: 200, description: "Success"),
             new OA\Response(response: 401, description: "Unauthorized"),
             new OA\Response(response: 404, description: "Not found"),
-            new OA\Response(response: 422, description: "Missing certificate number"),
         ]
     )]
-    public function qr(Request $request): JsonResponse
+    public function qr(string $certificateNumber): JsonResponse
     {
-        $certificateNumber = $request->query('certificate_number');
-
-        if (!$certificateNumber) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Certificate number is required.',
-            ], 422);
-        }
-
         $certificate = Certificate::where('certificate_number', $certificateNumber)->first();
 
         if (!$certificate) {
@@ -1094,10 +1086,14 @@ class CertificateController extends Controller
             ], 404);
         }
 
+        // Generate QR code that encodes the certificate preview URL
+        $url = config('app.url') . '/certificates/' . $certificateNumber;
+        $dataUrl = $this->qrCodeService->toDataUri($url);
+
         return response()->json([
             'data' => [
                 'certificate_number' => $certificate->certificate_number,
-                'qr_data_url' => 'data:image/png;base64,QR_CODE_NOT_IMPLEMENTED',
+                'data_url' => $dataUrl,
             ],
         ]);
     }

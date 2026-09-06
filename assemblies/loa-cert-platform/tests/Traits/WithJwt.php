@@ -52,7 +52,7 @@ trait WithJwt
                 'admin:/api/v1/certificates/{id}/email-logs',
                 'admin:/api/v1/certificates/{id}/reissue',
                 'admin:/api/v1/certificates/expire',
-                'admin:/api/v1/certificates/qr',
+                'admin:/api/v1/certificates/{certificateNumber}/qr',
                 'admin:/api/v1/me/certificates',
                 'admin:/api/v1/me/certificates/{id}',
                 'admin:/api/v1/me/events',

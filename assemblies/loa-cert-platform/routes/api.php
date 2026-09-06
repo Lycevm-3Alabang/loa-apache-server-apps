@@ -61,7 +61,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/', [CertificateController::class, 'store']);
             Route::post('/bulk', [CertificateController::class, 'bulk']);
             Route::post('/upload', [CertificateController::class, 'upload']);
-            Route::get('/qr', [CertificateController::class, 'qr']);
+            Route::get('/{certificateNumber}/qr', [CertificateController::class, 'qr']);
             Route::post('/expire', [CertificateController::class, 'expire']);
             Route::get('/{id}', [CertificateController::class, 'show']);
             Route::get('/{id}/pdf', [CertificateController::class, 'pdf']);

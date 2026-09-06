@@ -51,7 +51,7 @@ return [
         ['method' => 'GET',    'path' => '/api/v1/certificates/{id}/email-logs',  'required_level' => 'read'],
         ['method' => 'POST',   'path' => '/api/v1/certificates/{id}/reissue',     'required_level' => 'admin'],
         ['method' => 'POST',   'path' => '/api/v1/certificates/expire',           'required_level' => 'admin'],
-        ['method' => 'GET',    'path' => '/api/v1/certificates/qr',               'required_level' => 'read'],
+        ['method' => 'GET',    'path' => '/api/v1/certificates/{certificateNumber}/qr', 'required_level' => 'read'],
         ['method' => 'GET',    'path' => '/api/v1/me/certificates',               'required_level' => 'read'],
         ['method' => 'GET',    'path' => '/api/v1/me/certificates/{id}',          'required_level' => 'read'],
         ['method' => 'GET',    'path' => '/api/v1/me/events',                     'required_level' => 'read'],
