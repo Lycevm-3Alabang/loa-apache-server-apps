@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
@@ -241,6 +242,16 @@ class CertificateController extends Controller
                     'status' => 'error',
                     'message' => 'Template not found.',
                 ], 404);
+            }
+
+            if ($request->input('template_id') && $this->isTemplateLocked($template)) {
+                $isEventDefault = $eventId && isset($event) && $event->template_id === $templateId;
+                if (!$isEventDefault) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Template is locked and cannot be used for new certificates.',
+                    ], 409);
+                }
             }
         }
 
@@ -554,7 +565,7 @@ class CertificateController extends Controller
         $certificate = Certificate::where('certificate_number', $request->input('certificate_number'))->first();
         $file = $request->file('file');
         $filePath = 'certificates/' . $certificate->certificate_number . '.pdf';
-        $file->storeAs('public', $filePath);
+        $file->storeAs('local', $filePath);
 
         $certificate->update(['file_path' => $filePath]);
 
@@ -580,10 +591,11 @@ class CertificateController extends Controller
         responses: [
             new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(ref: "#/components/schemas/CertificateSingleResponse")),
             new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 403, description: "Forbidden - not recipient or admin"),
             new OA\Response(response: 404, description: "Not found"),
         ]
     )]
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $certificate = Certificate::with(['event', 'template', 'emails'])->find($id);
 
@@ -592,6 +604,13 @@ class CertificateController extends Controller
                 'status' => 'error',
                 'message' => 'Certificate not found.',
             ], 404);
+        }
+
+        if (!$this->isAdmin($request) && $certificate->recipient_email !== $this->callerEmail($request)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You do not have access to this certificate.',
+            ], 403);
         }
 
         return response()->json([
@@ -609,11 +628,12 @@ class CertificateController extends Controller
         responses: [
             new OA\Response(response: 200, description: "PDF binary stream"),
             new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 403, description: "Forbidden - not recipient or admin"),
             new OA\Response(response: 404, description: "Not found"),
             new OA\Response(response: 410, description: "Certificate revoked or expired"),
         ]
     )]
-    public function pdf(string $id)
+    public function pdf(Request $request, string $id)
     {
         $certificate = Certificate::with(['event', 'template', 'organization'])->find($id);
 
@@ -622,6 +642,13 @@ class CertificateController extends Controller
                 'status' => 'error',
                 'message' => 'Certificate not found.',
             ], 404);
+        }
+
+        if (!$this->isAdmin($request) && $certificate->recipient_email !== $this->callerEmail($request)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You do not have access to this certificate.',
+            ], 403);
         }
 
         if (in_array($certificate->status, ['revoked', 'expired'])) {
@@ -651,11 +678,12 @@ class CertificateController extends Controller
         responses: [
             new OA\Response(response: 200, description: "PDF file download"),
             new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 403, description: "Forbidden - not recipient or admin"),
             new OA\Response(response: 404, description: "Not found"),
             new OA\Response(response: 410, description: "Certificate revoked or expired"),
         ]
     )]
-    public function download(string $id)
+    public function download(Request $request, string $id)
     {
         $certificate = Certificate::with(['event', 'template', 'organization'])->find($id);
 
@@ -664,6 +692,13 @@ class CertificateController extends Controller
                 'status' => 'error',
                 'message' => 'Certificate not found.',
             ], 404);
+        }
+
+        if (!$this->isAdmin($request) && $certificate->recipient_email !== $this->callerEmail($request)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You do not have access to this certificate.',
+            ], 403);
         }
 
         if (in_array($certificate->status, ['revoked', 'expired'])) {
@@ -770,6 +805,10 @@ class CertificateController extends Controller
         $this->auditLogger->record('certificate.deleted', 'api', 'certificate', $certificate->id, [
             'certificate_number' => $certificate->certificate_number,
         ]);
+
+        if ($certificate->file_path && Storage::disk('local')->exists($certificate->file_path)) {
+            Storage::disk('local')->delete($certificate->file_path);
+        }
 
         $certificate->delete();
 
@@ -1140,6 +1179,13 @@ class CertificateController extends Controller
             'file_path' => $certificate->file_path,
             'created_at' => $certificate->created_at?->toIso8601String(),
         ];
+    }
+
+    private function isTemplateLocked(\App\Models\CertificateTemplate $template): bool
+    {
+        return Event::where('template_id', $template->id)
+            ->orWhere('email_template_id', $template->id)
+            ->exists();
     }
 
     private function resolveOrganizationId(): string

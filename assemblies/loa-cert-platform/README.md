@@ -148,7 +148,7 @@ Storage Service (PDF file persistence)
 
 # 10. API Surface
 
-The LOA Cert Platform exposes 48 endpoints across 10 groups. Full details in `api-endpoints.md` (v1.5, Final).
+The LOA Cert Platform exposes 57 endpoints across 11 groups. Full details in `api-endpoints.md` (v1.7, Final).
 
 ```
 # Auth (SSO) — Public

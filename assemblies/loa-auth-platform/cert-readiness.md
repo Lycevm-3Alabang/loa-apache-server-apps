@@ -2,7 +2,7 @@
 
 ## Product Assembly Component Specification
 
-**Version:** 0.5
+**Version:** 0.7
 **Status:** Final
 **Layer:** Product Assembly (`loa-auth-platform`) — operational provisioning runbook
 **Audience:** Architects, Engineers, AI Development Agents, Platform Admins
@@ -27,7 +27,7 @@ After the Auth Platform is deployed (`DEPLOY.md`), a platform admin provisions t
 
 ### Owns
 - The `loa-e-cert` tenant record (`slug`, `app_url`, `redirect_origins`).
-- The Cert endpoint catalog import (48 endpoints, Appendix A of `api-endpoints.md`).
+- The Cert endpoint catalog import (57 endpoints, Appendix A of `api-endpoints.md`).
 - The `cert-admin` / `cert-staff` / `cert-user` groups and their endpoint grants.
 
 ### Does Not Own
@@ -46,7 +46,7 @@ After the Auth Platform is deployed (`DEPLOY.md`), a platform admin provisions t
 
 > **Local development?** Skip §3–§7 against production and follow §8 (Docker Compose) instead — same tenant/catalog/groups/grants, run locally.
 
-> **Shortcut (fresh-database deploys):** `database/sql/cpanel-auth-db-install.sql` pre-provisions the schema, the `loa-e-cert` tenant (production origins), the 48-endpoint catalog, all four groups, the 94-row grant matrix (48 cert-admin + 39 cert-staff + 7 cert-user), and the JWT permission-key claims in one phpMyAdmin import. If you use it, steps §4–§7 are already done — skip to §9 verification. See `docs/cpanel-db-migration-runbook.md` for the full fresh-database path.
+> **Shortcut (fresh-database deploys):** `database/sql/cpanel-auth-db-install.sql` pre-provisions the schema, the `loa-e-cert` tenant (production origins), the 57-endpoint catalog, all four groups, the 105-row grant matrix (57 cert-admin + 39 cert-staff + 9 cert-user), and the JWT permission-key claims in one phpMyAdmin import. If you use it, steps §4–§7 are already done — skip to §9 verification. See `docs/cpanel-db-migration-runbook.md` for the full fresh-database path.
 
 ---
 
@@ -84,7 +84,7 @@ The tenant slug is validated **independently at every layer** — a mismatch at 
 
 ## 5. Step 2 — Import the Cert endpoint catalog
 
-Import the 48 guarded Cert endpoints (the full payload below) for the `loa-e-cert` tenant. This populates `tenant_app_endpoints`.
+Import the 57 guarded Cert endpoints (the full payload below) for the `loa-e-cert` tenant. This populates `tenant_app_endpoints`.
 
 ### 5.1 Admin UI
 `Admin Dashboard → Tenants → loa-e-cert → Endpoints → Import` (`/admin/tenants/{tenant}/endpoints/import`): paste the JSON below with **Replace** checked.
@@ -145,7 +145,16 @@ Import the 48 guarded Cert endpoints (the full payload below) for the `loa-e-cer
     { "method": "GET",    "path": "/api/v1/dashboard/stats",              "label": "Dashboard statistics",              "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/dashboard/activity",           "label": "Dashboard activity feed",           "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/admin/audit-logs",             "label": "Query audit logs",                  "required_level": "admin" },
-    { "method": "GET",    "path": "/api/v1/admin/audit-logs/export",      "label": "Export audit logs",                 "required_level": "admin" }
+    { "method": "GET",    "path": "/api/v1/admin/audit-logs/export",      "label": "Export audit logs",                 "required_level": "admin" },
+    { "method": "GET",    "path": "/api/v1/templates/{id}/certificate-count", "label": "Template certificate count",  "required_level": "read" },
+    { "method": "GET",    "path": "/api/v1/attendees/lookup",             "label": "Lookup attendee",                   "required_level": "read" },
+    { "method": "GET",    "path": "/api/v1/service/users",                "label": "List auth users",                   "required_level": "read" },
+    { "method": "PATCH",  "path": "/api/v1/service/users/{id}/status",    "label": "Update user status",               "required_level": "admin" },
+    { "method": "GET",    "path": "/api/v1/service/groups",               "label": "List auth groups",                  "required_level": "read" },
+    { "method": "GET",    "path": "/api/v1/service/members",              "label": "List tenant members",              "required_level": "read" },
+    { "method": "POST",   "path": "/api/v1/service/members",              "label": "Add tenant member",                "required_level": "admin" },
+    { "method": "DELETE", "path": "/api/v1/service/members/{userId}",     "label": "Remove tenant member",             "required_level": "admin" },
+    { "method": "POST",   "path": "/api/v1/service/members/invite",       "label": "Invite tenant member",             "required_level": "admin" }
   ]
 }
 ```
@@ -186,11 +195,11 @@ Grant each group its level on the cataloged endpoints (populates `tenant_endpoin
 
 - **cert-admin** — `admin` on **every** cataloged path (bypasses the Cert owner rule, `api-endpoints.md` §9.6).
 - **cert-staff** — each endpoint at its **`required_level`** (`read` → `read`, `write` → `write`); **no grants** on `admin`-level paths.
-- **cert-user** — `read` on the **7 participant paths only**, all **GET**:
-  `/api/v1/me/certificates`, `/api/v1/me/certificates/{id}`, `/api/v1/certificates/{id}`, `/api/v1/certificates/{id}/pdf`, `/api/v1/certificates/{id}/download`, `/api/v1/events/{id}`, `/api/v1/certificates/qr`.
+- **cert-user** — `read` on the **9 participant paths only**, all **GET**:
+  `/api/v1/me/certificates`, `/api/v1/me/certificates/{id}`, `/api/v1/certificates/{id}`, `/api/v1/certificates/{id}/pdf`, `/api/v1/certificates/{id}/download`, `/api/v1/events/{id}`, `/api/v1/certificates/qr`, `/api/v1/attendees/lookup`.
   **Explicitly excluded:** `/api/v1/dashboard/stats` and `/api/v1/dashboard/activity` (org-wide, unscoped — ownership note, `api-endpoints.md` §5.7).
 
-### 7.4 Grant matrix (48 rows)
+### 7.4 Grant matrix (57 rows)
 
 | Method | Path | Required level | cert-admin | cert-staff | cert-user |
 |--------|------|----------------|------------|------------|-----------|
@@ -242,8 +251,17 @@ Grant each group its level on the cataloged endpoints (populates `tenant_endpoin
 | GET | /api/v1/dashboard/activity | read | admin | read | — |
 | GET | /api/v1/admin/audit-logs | admin | admin | — | — |
 | GET | /api/v1/admin/audit-logs/export | admin | admin | — | — |
+| GET | /api/v1/templates/{id}/certificate-count | read | admin | read | — |
+| GET | /api/v1/attendees/lookup | read | admin | read | read |
+| GET | /api/v1/service/users | read | admin | — | — |
+| PATCH | /api/v1/service/users/{id}/status | admin | admin | — | — |
+| GET | /api/v1/service/groups | read | admin | — | — |
+| GET | /api/v1/service/members | read | admin | — | — |
+| POST | /api/v1/service/members | admin | admin | — | — |
+| DELETE | /api/v1/service/members/{userId} | admin | admin | — | — |
+| POST | /api/v1/service/members/invite | admin | admin | — | — |
 
-**Totals:** cert-admin **48**, cert-staff **39**, cert-user **7**.
+**Totals:** cert-admin **57**, cert-staff **40**, cert-user **9**.
 
 > `—` = no grant row for that group on that endpoint (access denied via the closed-by-default catalog matching in `ClaimPolicyMiddleware`).
 
@@ -297,7 +315,7 @@ docker compose exec auth-app php artisan config:cache
 The production steps §4–§7 apply unchanged, run against the **local** admin UI at `http://localhost:8080/admin` (sign in with the seeded admin: `ADMIN_EMAIL` / `ADMIN_PASSWORD` from `.env`):
 
 1. **Tenant** (§4): `Tenants → Create Tenant`; `slug = loa-e-cert`, `name` = `Local Cert App`, `app_url` = `http://localhost:9001`, `redirect_origins` = `http://localhost:3000` (the e-cert dev origin). Skip this step if you ran `db:seed` — `LocalCertReadinessSeeder` already created it.
-2. **Catalog** (§5): `Tenants → loa-e-cert → Endpoints → Import` and paste the 48-endpoint Appendix A JSON (same payload as §5.3).
+2. **Catalog** (§5): `Tenants → loa-e-cert → Endpoints → Import` and paste the 57-endpoint Appendix A JSON (same payload as §5.3).
 3. **Groups** (§6): `Tenants → loa-e-cert → Groups`; create `cert-admin` (priority 2), `cert-staff` (3), `cert-user` (4). Skip this step if you ran `db:seed` — the seeder already created them.
 4. **Grants** (§7): `Tenants → loa-e-cert → Groups → {group} → Endpoints`; apply §7.4.
 5. **JWT claims**: ensure `group_claims` rows exist for `cert-admin` (`users.view`, `users.manage`) — without them tokens never carry permission keys and `jwt.permission:*` always returns 403. Skip if you ran `db:seed` or imported `cpanel-auth-db-install.sql`; both seed them.
@@ -328,7 +346,7 @@ foreach (['users.view', 'users.manage'] as $k) {
 | Creates the `loa-e-cert` tenant | ✅ | ✅ | ✅ |
 | Creates `cert-admin` / `cert-staff` / `cert-user` (empty groups) | ✅ | ✅ | ✅ |
 | Seeds `cert-admin` JWT claims (`users.*`) | ✅ | ✅ | ❌ — still step 5 |
-| Imports the 48-endpoint catalog (§5.3 payload) | ❌ — still step 2 | ❌ — still step 2 | ✅ step 2 |
+| Imports the 57-endpoint catalog (§5.3 payload) | ❌ — still step 2 | ❌ — still step 2 | ✅ step 2 |
 | Applies the grant matrix (§7.4) | ❌ — still step 4 | ❌ — still step 4 | ✅ step 4 |
 | Runs automatically? | ❌ — operator pastes once, interactively | ✅ — on every local `db:seed` (non-prod only) | ❌ — operator clicks once |
 
@@ -339,7 +357,7 @@ The tinker snippet is a **manual, one-time operator action** that merely types t
 Repeat §9 against the local base URL:
 
 1. **Catalog validate:** `http://localhost:8080/admin/tenants/{tenant}/endpoints/validate` → `valid: true`, no "no group grants" warnings.
-2. **Access config export** must list the 48 endpoints and the three groups.
+2. **Access config export** must list the 57 endpoints and the three groups.
 3. **Per-user check:** `GET http://localhost:8080/api/v1/auth/access` (JWT) per group.
 4. **SSO redirect test:** `http://localhost:8080/sso/login?redirect=<e-cert origin>` must authenticate and redirect to the origin (not reject). Cert-side callback consumption is out of scope here (Cert app, Phase C).
 
@@ -347,8 +365,8 @@ Repeat §9 against the local base URL:
 
 ## 9. Step 5 — Verify
 
-1. **Catalog validate:** `Admin Dashboard → Tenants → loa-e-cert → Endpoints → Validate` (`/admin/tenants/{tenant}/endpoints/validate`). Expect `valid: true`; **no** "no group grants" warnings (all 48 endpoints have at least the `cert-admin` grant).
-2. **Access config export:** `Admin Dashboard → Tenants → loa-e-cert → Access Config → Export` should list the 48 cataloged endpoints and the three groups with their grants (idempotent check against §5.3 + §7.4).
+1. **Catalog validate:** `Admin Dashboard → Tenants → loa-e-cert → Endpoints → Validate` (`/admin/tenants/{tenant}/endpoints/validate`). Expect `valid: true`; **no** "no group grants" warnings (all 57 endpoints have at least the `cert-admin` grant).
+2. **Access config export:** `Admin Dashboard → Tenants → loa-e-cert → Access Config → Export` should list the 57 cataloged endpoints and the three groups with their grants (idempotent check against §5.3 + §7.4).
 3. **Per-user check:** for a sample user in each group, call `GET /api/v1/auth/access` (JWT) and confirm the `permissions` claim matches the §7.4 row set for that group.
 4. **SSO redirect test:** from a clean browser hit `https://auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app` — must authenticate and redirect to the e-cert origin (not reject for unknown origin). The Cert-side callback (`POST /api/v1/auth/callback`) and JWT claim (`tenant.slug = loa-e-cert`) must validate (see §4.1 slug checklist; `assemblies/loa-cert-platform/api-endpoints.md` §9).
 
@@ -374,13 +392,14 @@ Repeat §9 against the local base URL:
 | Version | Date | Change |
 |---------|------|--------|
 | 0.1 | 2026-08-06 | Initial runbook (Draft). Decision: no baked-in seeder; manual deploy-time provisioning. Grant matrix derived from `api-endpoints.md` §4.4 + Appendix A. |
-| 0.1 | 2026-08-06 | **Promoted to Final** (payload + grant matrix parity-checked against `api-endpoints.md` Appendix A: 48/48). |
+| 0.1 | 2026-08-06 | **Promoted to Final** (payload + grant matrix parity-checked against `api-endpoints.md` Appendix A: 57/57). |
 | 0.2 | 2026-08-06 | Added §8 **Local Development** (Docker Compose provisioning via the local admin UI at `localhost:8080` + optional tinker fast path; local origin/CORS/redirect table; local verification). References + Doc Control renumbered to §9–§11. |
 | 0.2 | 2026-08-06 | §8.3 tinker fast path clarified: explicit "what it does / does not do" table (tenant+groups only; catalog+grants still via admin UI; operator-pasted one-liner, no seeder file, not in `DatabaseSeeder`/`database.sql`). |
 | 0.3 | 2026-08-07 | §8.3 now documents the **`LocalCertReadinessSeeder`** as the automatic local path (runs on local `db:seed` via `DatabaseSeeder`, non-prod guard only; creates `cert-app` tenant @ `localhost:9001` + groups). Decision note + §8.1 comment + "does/does not" table + closing paragraph updated. Production provisioning remains manual-only. |
 | 0.4 | 2026-08-07 | §8.3 local steps use the **`cert-app`** tenant slug consistently (admin UI steps 1–4 + tinker snippet now target `cert-app` @ `http://localhost:9001`, matching `LocalCertReadinessSeeder`). |
 | 0.5 | 2026-08-24 | **Tenant slug unified to `loa-e-cert`** (immutable; single slug for local + production, matches e-cert `NEXT_PUBLIC_CERT_TENANT_SLUG`). Tenant pinned to UUID `91128f0a-df85-47a9-ae1d-5298904dacd5` in seeder/installer/SQL. §8.3 rewritten: seeder no longer invents a separate local slug and never clobbers existing `redirect_origins`; added step 5 — JWT permission-key claims (`group_claims`) seeding; `cpanel-auth-db-install.sql` now seeds `group_claims`. Supersedes the 0.4 split-slug approach. |
-| 0.6 | 2026-09-01 | **SQL installer pre-provisions cert readiness.** `cpanel-auth-db-install.sql` now includes 48-endpoint catalog INSERTs + 94-row grant matrix (48 cert-admin + 39 cert-staff + 7 cert-user). Steps §4–§7 are no longer manual for fresh-database deploys. Also added `database/json/cert-endpoints-catalog.json` (bulk catalog import) and `database/json/cert-access-config.json` (full access config with groups + grants) as alternative JSON import paths. Removed stale `aces-api` tenant from SQL installer. |
+| 0.6 | 2026-09-01 | **SQL installer pre-provisions cert readiness.** `cpanel-auth-db-install.sql` now includes 57-endpoint catalog INSERTs + 105-row grant matrix (57 cert-admin + 39 cert-staff + 9 cert-user). Steps §4–§7 are no longer manual for fresh-database deploys. Also added `database/json/cert-endpoints-catalog.json` (bulk catalog import) and `database/json/cert-access-config.json` (full access config with groups + grants) as alternative JSON import paths. Removed stale `aces-api` tenant from SQL installer. |
+| 0.7 | 2026-09-07 | **Endpoint catalog expanded to 57.** Added 9 missing endpoints: `GET /templates/{id}/certificate-count`, `GET /attendees/lookup`, 7 `service/*` routes (auth-proxy). Grant matrix expanded from 48→57 rows (cert-admin 48→57, cert-staff 39→40, cert-user 7→9). All text references updated. |
 
 ### Open Questions
 - None.

@@ -1178,7 +1178,7 @@ All domain routes under `/api/v1`. `required_level` refers to the endpoint catal
 | GET | `/admin/audit-logs` | `admin` |
 | GET | `/admin/audit-logs/export` | `admin` |
 
-Total: **50 domain endpoints** (48 JWT-gated + 2 public).
+Total: **59 domain endpoints** (57 JWT-gated + 2 public).
 
 Auth group (public, §9):
 
@@ -1610,15 +1610,24 @@ The import payload for Auth `POST /api/v1/admin/tenants/{tenant}/endpoints/bulk`
     { "method": "GET",    "path": "/api/v1/dashboard/stats",              "label": "Dashboard statistics",              "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/dashboard/activity",           "label": "Dashboard activity feed",           "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/admin/audit-logs",             "label": "Query audit logs",                  "required_level": "admin" },
-    { "method": "GET",    "path": "/api/v1/admin/audit-logs/export",      "label": "Export audit logs",                 "required_level": "admin" }
+    { "method": "GET",    "path": "/api/v1/admin/audit-logs/export",      "label": "Export audit logs",                 "required_level": "admin" },
+    { "method": "GET",    "path": "/api/v1/templates/{id}/certificate-count", "label": "Template certificate count",  "required_level": "read" },
+    { "method": "GET",    "path": "/api/v1/attendees/lookup",             "label": "Lookup attendee",                   "required_level": "read" },
+    { "method": "GET",    "path": "/api/v1/service/users",                "label": "List auth users",                   "required_level": "read" },
+    { "method": "PATCH",  "path": "/api/v1/service/users/{id}/status",    "label": "Update user status",               "required_level": "write" },
+    { "method": "GET",    "path": "/api/v1/service/groups",               "label": "List auth groups",                  "required_level": "read" },
+    { "method": "GET",    "path": "/api/v1/service/members",              "label": "List tenant members",              "required_level": "read" },
+    { "method": "POST",   "path": "/api/v1/service/members",              "label": "Add tenant member",                "required_level": "write" },
+    { "method": "DELETE", "path": "/api/v1/service/members/{userId}",     "label": "Remove tenant member",             "required_level": "admin" },
+    { "method": "POST",   "path": "/api/v1/service/members/invite",       "label": "Invite tenant member",             "required_level": "write" }
   ]
 }
 ```
 
-> `verify/{certificate_number}` and `view/{id}` are **public** — no catalog entry, no JWT. The `auth/*` routes are public but not cataloged (cookie/payload flow, §9).
+> `verify/{certificate_number}` and `view/{id}` are **public** — no catalog entry, no JWT. The `auth/*` routes are public but not cataloged (cookie/payload flow, §9). The `service/*` routes are JWT-gated and require `jwt.auth` + `jwt.endpoint` middleware.
 
 ---
 
 ## Document Control
 
-- **Status:** Final v1.6 — 2026-08-24: **Template visibility** (governing spec: e-cert repo `specs/components/template-visibility.md` Final v1.1). Templates gain `visibility` (`public`|`private`, default private on API create) + `updated_by`; list/show masked to owners/cert-admin (404 masking); PATCH `visibility` gated owner-or-admin (403); clone endpoints return 404 for non-visible sources and attribute clones to the cloner; event template references validated (422). Implementation commit `9904746`. v1.5 (2026-08-11): **C-Auth implemented** (§13 items marked done). Auth endpoints (callback/refresh/logout) live; `jwt.auth` + `jwt.endpoint` middleware enforced on all non-public routes; 126 tests green. v1.4 (2026-08-06): decision #20 — auth deferred. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`.
+- **Status:** Final v1.7 — 2026-09-07: **Certificate rules spec** (`certificate-rules-spec.md` Final v1.0): template lock check on issuance (Gap 1), upload disk unification (Gap 5), file cleanup on delete (Gap 7). Endpoint catalog expanded from 48 to 57 entries (added `templates/{id}/certificate-count`, `attendees/lookup`, 7 `service/*` routes). v1.6 (2026-08-24): **Template visibility** (governing spec: e-cert repo `specs/components/template-visibility.md` Final v1.1). Templates gain `visibility` (`public`|`private`, default private on API create) + `updated_by`; list/show masked to owners/cert-admin (404 masking); PATCH `visibility` gated owner-or-admin (403); clone endpoints return 404 for non-visible sources and attribute clones to the cloner; event template references validated (422). Implementation commit `9904746`. v1.5 (2026-08-11): **C-Auth implemented** (§13 items marked done). Auth endpoints (callback/refresh/logout) live; `jwt.auth` + `jwt.endpoint` middleware enforced on all non-public routes; 126 tests green. v1.4 (2026-08-06): decision #20 — auth deferred. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`.

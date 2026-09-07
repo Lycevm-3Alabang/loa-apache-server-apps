@@ -434,4 +434,58 @@ class CertificateTest extends TestCase
         $this->assertEquals('expired', $expired->status);
         $this->assertEquals('revoked', $revoked->status);
     }
+
+    public function test_get_certificate_allows_recipient(): void
+    {
+        $certificate = Certificate::create([
+            'organization_id' => $this->organization->id,
+            'event_id' => $this->event->id,
+            'template_id' => $this->template->id,
+            'recipient_name' => 'Maria Santos',
+            'recipient_email' => 'maria@example.com',
+            'certificate_number' => 'CERT-0001',
+        ]);
+
+        $response = $this->actingAsJwt(['email' => 'maria@example.com'])
+            ->getJson("/api/v1/certificates/{$certificate->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.id', $certificate->id);
+    }
+
+    public function test_get_certificate_blocks_non_recipient(): void
+    {
+        $certificate = Certificate::create([
+            'organization_id' => $this->organization->id,
+            'event_id' => $this->event->id,
+            'template_id' => $this->template->id,
+            'recipient_name' => 'Maria Santos',
+            'recipient_email' => 'maria@example.com',
+            'certificate_number' => 'CERT-0001',
+        ]);
+
+        $response = $this->actingAsJwt(['email' => 'other@example.com'])
+            ->getJson("/api/v1/certificates/{$certificate->id}");
+
+        $response->assertStatus(403)
+            ->assertJsonPath('message', 'You do not have access to this certificate.');
+    }
+
+    public function test_get_certificate_allows_admin(): void
+    {
+        $certificate = Certificate::create([
+            'organization_id' => $this->organization->id,
+            'event_id' => $this->event->id,
+            'template_id' => $this->template->id,
+            'recipient_name' => 'Maria Santos',
+            'recipient_email' => 'maria@example.com',
+            'certificate_number' => 'CERT-0001',
+        ]);
+
+        $response = $this->actingAsJwt(['email' => 'admin@lyceumalabang.edu.ph', 'groups' => ['cert-admin']])
+            ->getJson("/api/v1/certificates/{$certificate->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.id', $certificate->id);
+    }
 }

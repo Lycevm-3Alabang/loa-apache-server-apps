@@ -25,4 +25,22 @@ abstract class Controller
 
         return $certUser['groups'] ?? [];
     }
+
+    /**
+     * JWT email of the authenticated caller (set by JwtMiddleware).
+     */
+    protected function callerEmail(Request $request): ?string
+    {
+        $claims = $request->attributes->get('jwt_claims');
+
+        return $claims['email'] ?? null;
+    }
+
+    /**
+     * Whether the caller holds the cert-admin group.
+     */
+    protected function isAdmin(Request $request): bool
+    {
+        return in_array('cert-admin', $this->callerGroups($request), true);
+    }
 }

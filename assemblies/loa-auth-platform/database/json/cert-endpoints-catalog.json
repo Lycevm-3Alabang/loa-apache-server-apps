@@ -48,6 +48,15 @@
         { "method": "GET",    "path": "/api/v1/dashboard/stats",               "label": "Dashboard statistics",               "required_level": "read" },
         { "method": "GET",    "path": "/api/v1/dashboard/activity",            "label": "Dashboard activity feed",            "required_level": "read" },
         { "method": "GET",    "path": "/api/v1/admin/audit-logs",              "label": "Query audit logs",                   "required_level": "admin" },
-        { "method": "GET",    "path": "/api/v1/admin/audit-logs/export",       "label": "Export audit logs",                  "required_level": "admin" }
+        { "method": "GET",    "path": "/api/v1/admin/audit-logs/export",       "label": "Export audit logs",                  "required_level": "admin" },
+        { "method": "GET",    "path": "/api/v1/templates/{id}/certificate-count", "label": "Template certificate count",      "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/attendees/lookup",              "label": "Lookup attendee",                    "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/service/users",                 "label": "List auth users",                    "required_level": "read" },
+        { "method": "PATCH",  "path": "/api/v1/service/users/{id}/status",     "label": "Update user status",                "required_level": "write" },
+        { "method": "GET",    "path": "/api/v1/service/groups",                "label": "List auth groups",                   "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/service/members",               "label": "List tenant members",               "required_level": "read" },
+        { "method": "POST",   "path": "/api/v1/service/members",               "label": "Add tenant member",                 "required_level": "write" },
+        { "method": "DELETE", "path": "/api/v1/service/members/{userId}",      "label": "Remove tenant member",              "required_level": "admin" },
+        { "method": "POST",   "path": "/api/v1/service/members/invite",        "label": "Invite tenant member",              "required_level": "write" }
     ]
 }
