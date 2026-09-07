@@ -310,6 +310,56 @@ class CertificateTemplateController extends Controller
         ]);
     }
 
+    #[OA\Get(
+        path: "/api/v1/templates/{id}/certificate-count",
+        summary: "Get certificate count for a template",
+        tags: ["Templates"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Success", content: new OA\JsonContent(properties: [
+                new OA\Property(property: "data", type: "object", properties: [
+                    new OA\Property(property: "template_id", type: "string", format: "uuid"),
+                    new OA\Property(property: "certificate_count", type: "integer"),
+                    new OA\Property(property: "active_certificate_count", type: "integer"),
+                    new OA\Property(property: "revoked_certificate_count", type: "integer"),
+                ]),
+            ])),
+            new OA\Response(response: 401, description: "Unauthorized"),
+            new OA\Response(response: 404, description: "Not found"),
+        ]
+    )]
+    public function certificateCount(Request $request, string $id): JsonResponse
+    {
+        $template = CertificateTemplate::find($id);
+
+        if (!$template || !$template->isVisibleTo(
+            (string) $this->callerSub($request),
+            $this->callerGroups($request),
+        )) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Template not found.',
+            ], 404);
+        }
+
+        $counts = Certificate::where('template_id', $id)
+            ->selectRaw('COUNT(*) as certificate_count')
+            ->selectRaw('SUM(CASE WHEN revoked_at IS NULL THEN 1 ELSE 0 END) as active_certificate_count')
+            ->selectRaw('SUM(CASE WHEN revoked_at IS NOT NULL THEN 1 ELSE 0 END) as revoked_certificate_count')
+            ->first();
+
+        return response()->json([
+            'data' => [
+                'template_id' => $id,
+                'certificate_count' => (int) $counts->certificate_count,
+                'active_certificate_count' => (int) $counts->active_certificate_count,
+                'revoked_certificate_count' => (int) $counts->revoked_certificate_count,
+            ],
+        ]);
+    }
+
     #[OA\Delete(
         path: "/api/v1/templates/{id}",
         summary: "Delete a template",

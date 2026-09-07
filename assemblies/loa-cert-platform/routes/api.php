@@ -51,6 +51,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('templates')->group(function () {
             Route::get('/', [CertificateTemplateController::class, 'index']);
             Route::post('/', [CertificateTemplateController::class, 'store']);
+            Route::get('/{id}/certificate-count', [CertificateTemplateController::class, 'certificateCount']);
             Route::get('/{id}', [CertificateTemplateController::class, 'show']);
             Route::patch('/{id}', [CertificateTemplateController::class, 'update']);
             Route::delete('/{id}', [CertificateTemplateController::class, 'destroy']);

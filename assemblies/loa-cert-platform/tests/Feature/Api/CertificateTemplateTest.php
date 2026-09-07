@@ -359,4 +359,75 @@ class CertificateTemplateTest extends TestCase
             ->assertJsonPath('data.is_locked', true)
             ->assertJsonPath('data.locked_reason', 'Referenced by event Test Event');
     }
+
+    public function test_certificate_count_returns_zero_when_no_certificates(): void
+    {
+        $template = CertificateTemplate::create([
+            'organization_id' => $this->organization->id,
+            'name' => 'Empty Template',
+            'type' => 'certificate',
+            'html_content' => '<div>test</div>',
+        ]);
+
+        $response = $this->actingAsJwt()->getJson("/api/v1/templates/{$template->id}/certificate-count");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.template_id', $template->id)
+            ->assertJsonPath('data.certificate_count', 0)
+            ->assertJsonPath('data.active_certificate_count', 0)
+            ->assertJsonPath('data.revoked_certificate_count', 0);
+    }
+
+    public function test_certificate_count_returns_correct_counts(): void
+    {
+        $template = CertificateTemplate::create([
+            'organization_id' => $this->organization->id,
+            'name' => 'Counted Template',
+            'type' => 'certificate',
+            'html_content' => '<div>test</div>',
+        ]);
+
+        // Create 2 active certificates
+        Certificate::create([
+            'organization_id' => $this->organization->id,
+            'template_id' => $template->id,
+            'recipient_name' => 'Active User 1',
+            'recipient_email' => 'active1@example.com',
+            'certificate_number' => 'CERT-0001',
+        ]);
+
+        Certificate::create([
+            'organization_id' => $this->organization->id,
+            'template_id' => $template->id,
+            'recipient_name' => 'Active User 2',
+            'recipient_email' => 'active2@example.com',
+            'certificate_number' => 'CERT-0002',
+        ]);
+
+        // Create 1 revoked certificate
+        Certificate::create([
+            'organization_id' => $this->organization->id,
+            'template_id' => $template->id,
+            'recipient_name' => 'Revoked User',
+            'recipient_email' => 'revoked@example.com',
+            'certificate_number' => 'CERT-0003',
+            'revoked_at' => now(),
+        ]);
+
+        $response = $this->actingAsJwt()->getJson("/api/v1/templates/{$template->id}/certificate-count");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.template_id', $template->id)
+            ->assertJsonPath('data.certificate_count', 3)
+            ->assertJsonPath('data.active_certificate_count', 2)
+            ->assertJsonPath('data.revoked_certificate_count', 1);
+    }
+
+    public function test_certificate_count_not_found(): void
+    {
+        $response = $this->actingAsJwt()->getJson('/api/v1/templates/nonexistent-id/certificate-count');
+
+        $response->assertStatus(404)
+            ->assertJsonPath('message', 'Template not found.');
+    }
 }

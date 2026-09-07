@@ -35,6 +35,7 @@ return [
         ['method' => 'GET',    'path' => '/api/v1/attendees/{id}/file-data',      'required_level' => 'read'],
         ['method' => 'GET',    'path' => '/api/v1/templates',                     'required_level' => 'read'],
         ['method' => 'POST',   'path' => '/api/v1/templates',                     'required_level' => 'write'],
+        ['method' => 'GET',    'path' => '/api/v1/templates/{id}/certificate-count', 'required_level' => 'read'],
         ['method' => 'GET',    'path' => '/api/v1/templates/{id}',                'required_level' => 'read'],
         ['method' => 'PATCH',  'path' => '/api/v1/templates/{id}',                'required_level' => 'write'],
         ['method' => 'DELETE', 'path' => '/api/v1/templates/{id}',                'required_level' => 'write'],
