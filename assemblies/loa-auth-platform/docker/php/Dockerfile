@@ -1,4 +1,8 @@
+FROM composer:2 AS composer
+
 FROM php:8.3-fpm
+
+COPY --from=composer /usr/bin/composer /usr/bin/composer
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -7,6 +11,4 @@ RUN apt-get update \
         curl \
         libzip-dev \
     && docker-php-ext-install pdo_mysql bcmath zip \
-    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-    && rm -rf /var/lib/apt/lists/* \
-    && composer --version
+    && rm -rf /var/lib/apt/lists/*

@@ -545,7 +545,12 @@ class AttendeeController extends Controller
             ], 410);
         }
 
-        return Storage::disk('public')->download($path, $metadata['file_name'] ?? basename($path));
+        $mimeType = Storage::disk('public')->mimeType($path) ?? $metadata['file_type'] ?? 'application/octet-stream';
+
+        return Storage::disk('public')->response($path, $metadata['file_name'] ?? basename($path), [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline',
+        ]);
     }
 
     /**
