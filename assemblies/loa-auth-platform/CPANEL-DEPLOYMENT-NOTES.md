@@ -183,3 +183,4 @@ then UPDATE users + TRUNCATE login_attempts via phpMyAdmin SQL tab.
       backfill INSERT can be generated if artisan ever becomes available
 - [ ] Confirm CORS_ALLOWED_ORIGINS matches the real cert-app origin
 - [ ] storage/ and bootstrap/cache/ at 775
+- [ ] **413 Content Too Large fix** - increased nginx `client_max_body_size` to 50m and PHP `post_max_size`/`upload_max_filesize` to 50M for cert template HTML content (applies to all Laravel apps)

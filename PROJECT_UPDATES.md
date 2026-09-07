@@ -68,6 +68,7 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 ### LOA Auth Platform — `assemblies/loa-auth-platform/`
 
 - **Scoped session prompt:** `assemblies/loa-auth-platform/SESSION-PROMPT.md`
+- **2026-08-27:** Fixed 413 Content Too Large error — increased nginx `client_max_body_size` from 10m to 50m and PHP `post_max_size`/`upload_max_filesize` from 10M to 50M (both in `assemblies/loa-cert-platform/`). Required for template HTML content up to 2.4MB.
 - **Status:** Scaffolded + largely implemented (Phase 1). **Not yet deployed** to `auth.lyceumalabang.edu.ph`. SSO entry point is live (`/sso/login`, `/sso/register`, `/redirect`).
 - **Kernel:** Identity v3.0 (tenancy) implemented in code; many kernel specs still Draft.
 - **Final specs (implemented):** `web-ui.md` v1.2 (destination resolution), `admin-dashboard.md` (v1 + v2), `tenant-endpoint-catalog.md` v3.2, `tenant-group-endpoint-grants.md` v1.1 (group priority), `access-config-import-export.md` v1.0, data-driven permission policy v1.0, RefreshToken, `admin-dashboard-home.md` v1.0 (platform-admin zone on `/`), `group-permission-management.md` v3.0 (§12 tenant group membership restructure), `auth-tenant.md` v1.0 (auth tenant, search-first Add Member, CSV import, Create User + set-password, Platform Groups shortcut).

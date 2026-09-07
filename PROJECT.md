@@ -204,7 +204,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Public verification endpoint | ⬜ Not started | No auth required |
 | Revoke/delete endpoints | ⬜ Not started | |
 | Audit trail | ⬜ Not started | |
-| Deploy to cert-api.lyceumalabang.edu.ph | ⬜ Not started | |
+ | Deploy to cert-api.lyceumalabang.edu.ph | ⬜ Not started | |
 
 ## Phase 4: Integration
 
