@@ -164,6 +164,37 @@ php artisan l5-swagger:generate
 
 > **Critical:** `JWT_SECRET` and `ENCRYPTION_KEY` must be identical between Auth Platform and Cert Platform. A mismatch causes SSO callback 403 or token verification failures.
 
+### Body size limit configuration (template editor)
+
+The template editor allows base64-encoded images in HTML/CSS content. Large templates can exceed default body size limits at multiple layers. See `body-size-limits.md` for the full spec.
+
+**Layers already committed (included in dist zip):**
+
+| Layer | Config | Status |
+|-------|--------|--------|
+| Apache `LimitRequestBody` | `public/.htaccess` (10 MB) | ✅ Committed |
+| PHP `post_max_size` | `public/.user.ini` (10M) | ✅ Committed |
+| PHP `upload_max_filesize` | `public/.user.ini` (10M) | ✅ Committed |
+| Laravel 413 handler | `bootstrap/app.php` | ✅ Committed |
+
+**Note:** `.user.ini` works with PHP-FPM (standard on cPanel). If your host uses mod_php, add `php_value post_max_size 10M` and `php_value upload_max_filesize 10M` to `public/.htaccess` instead.
+
+**Vercel frontend (e-cert.vercel.app):**
+
+The frontend proxies API requests via `next.config.ts` rewrites. Vercel serverless functions default to ~4.5 MB body size. To allow 10 MB payloads:
+
+1. Add `vercel.json` to the **frontend repo** root:
+   ```json
+   {
+     "functions": {
+       "app/api/**/*.js": {
+         "bodySize": "10mb"
+       }
+     }
+   }
+   ```
+2. Redeploy the Vercel frontend.
+
 ### Slug consistency checklist
 
 The tenant slug must match in **all four** places (see `cert-readiness.md` §4.1):
@@ -184,6 +215,7 @@ The tenant slug must match in **all four** places (see `cert-readiness.md` §4.1
 3. Confirm the OpenAPI document can be generated with `php artisan l5-swagger:generate`.
 4. Confirm the base seed data or required records are present.
 5. **SSO callback test:** from a clean browser, hit `https://auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app` — must authenticate, redirect to e-cert origin with `#payload=...`, and `POST /api/v1/auth/callback` must return 200 with access token (proves `ENCRYPTION_KEY` and `CERT_TENANT_SLUG` match).
+6. **Body size limit test:** verify `php -i | grep post_max_size` shows `10M`. Test editing a template with a large embedded image (base64 data URL) — should save without 413 error. See `body-size-limits.md` for details.
 
 ---
 

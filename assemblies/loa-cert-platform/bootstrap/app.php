@@ -18,5 +18,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->renderable(function (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            if ($e->getStatusCode() === 413) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Request body exceeds size limit of 10MB. Please compress images or reduce template content size.',
+                ], 413);
+            }
+        });
     })->create();

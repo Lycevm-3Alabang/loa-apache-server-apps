@@ -24,3 +24,7 @@ RUN mkdir -p /var/www/html/storage/framework/{cache,sessions,views} \
     && mkdir -p /var/www/html/storage/logs \
     && mkdir -p /var/www/html/bootstrap/cache \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Increase PHP body/upload limits for template editor (base64 images in HTML/CSS)
+RUN echo "post_max_size = 10M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "upload_max_filesize = 10M" >> /usr/local/etc/php/conf.d/uploads.ini
