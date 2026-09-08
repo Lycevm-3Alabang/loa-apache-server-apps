@@ -30,15 +30,6 @@
         @endif
     </div>
 
-    @if(!$is_admin)
-    <script>
-        // Non-admins auto-redirect — no manual click needed.
-        setTimeout(function () {
-            window.location.href = @json($full_url);
-        }, 300);
-    </script>
-    @endif
-
     <style>
         @keyframes pulse {
             0%, 100% { opacity: 1; }
