@@ -125,6 +125,9 @@ class AttendeeController extends Controller
 
         $query = EventAttendee::where('event_id', $eventId);
 
+        // Preserve filter params for links
+        $params = $request->only(['search', 'attended', 'completed', 'status']);
+
         // Apply search filter
         if ($request->has('search')) {
             $search = $request->input('search');
@@ -136,22 +139,55 @@ class AttendeeController extends Controller
 
         // Apply attendance filters
         if ($request->has('attended')) {
-            $query->where('attended', $request->input('attended'));
+            $query->where('attended', $request->boolean('attended'));
         }
 
         if ($request->has('completed')) {
-            $query->where('completed', $request->input('completed'));
+            $query->where('completed', $request->boolean('completed'));
+        }
+
+        // Apply status filter (requires LEFT JOIN with certificates)
+        $status = $request->input('status');
+        if ($status && in_array($status, ['not_issued', 'issued', 'revoked', 'expired'])) {
+            $query->leftJoin('certificates', 'event_attendees.certificate_id', '=', 'certificates.id');
+
+            switch ($status) {
+                case 'not_issued':
+                    $query->whereNull('event_attendees.certificate_id');
+                    break;
+                case 'issued':
+                    $query->whereNotNull('event_attendees.certificate_id')
+                          ->whereNull('certificates.revoked_at')
+                          ->where(function($q) {
+                              $q->whereNull('certificates.expires_at')
+                                ->orWhere('certificates.expires_at', '>=', now());
+                          });
+                    break;
+                case 'revoked':
+                    $query->whereNotNull('event_attendees.certificate_id')
+                          ->whereNotNull('certificates.revoked_at');
+                    break;
+                case 'expired':
+                    $query->whereNotNull('event_attendees.certificate_id')
+                          ->whereNotNull('certificates.expires_at')
+                          ->where('certificates.expires_at', '<', now());
+                    break;
+            }
         }
 
         // Apply pagination
         $limit = min($request->input('limit', 25), 100);
         $offset = $request->input('offset', 0);
-        
+
         $attendees = $query->skip($offset)
                           ->take($limit)
                           ->get();
 
         $total = $query->count();
+
+        // Build links with absolute URLs preserving query state
+        $baseUrl = $request->url();
+        $links = $this->buildLinks($baseUrl, $params, $limit, $offset, $total);
 
         return response()->json([
             'data' => $attendees,
@@ -159,9 +195,27 @@ class AttendeeController extends Controller
                 'limit' => $limit,
                 'offset' => $offset,
                 'total' => $total,
-                'has_more' => $total > ($offset + $limit)
-            ]
+                'has_more' => $total > ($offset + $limit),
+            ],
+            'links' => $links,
         ]);
+    }
+
+    private function buildLinks(string $baseUrl, array $params, int $limit, int $offset, int $total): array
+    {
+        $buildUrl = function (int $newOffset) use ($baseUrl, $params, $limit) {
+            $query = array_merge($params, ['limit' => $limit, 'offset' => $newOffset]);
+            return $baseUrl . '?' . http_build_query($query);
+        };
+
+        $hasMore = $total > ($offset + $limit);
+        $hasPrev = $offset > 0;
+
+        return [
+            'self' => $buildUrl($offset),
+            'next' => $hasMore ? $buildUrl($offset + $limit) : null,
+            'prev' => $hasPrev ? $buildUrl(max(0, $offset - $limit)) : null,
+        ];
     }
 
     /**
