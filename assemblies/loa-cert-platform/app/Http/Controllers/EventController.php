@@ -556,13 +556,22 @@ class EventController extends Controller
     )]
     public function bulkIssue(Request $request, string $id): JsonResponse
     {
+        set_time_limit(0);
+
         $event = Event::findOrFail($id);
 
         $request->validate([
-            'attendee_ids' => 'required|array|min:1',
+            'attendee_ids' => 'required|array|min:1|max:200',
             'attendee_ids.*' => 'uuid',
             'send_email' => 'nullable|boolean',
         ]);
+
+        if (is_array($request->input('attendee_ids')) && count($request->input('attendee_ids')) > 200) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Batch too large — max 200 per request. Split into smaller batches.',
+            ], 422);
+        }
 
         if (!$event->certificate_number_pattern) {
             return response()->json([
@@ -610,13 +619,22 @@ class EventController extends Controller
     )]
     public function issueCompleted(Request $request, string $id): JsonResponse
     {
+        set_time_limit(0);
+
         $event = Event::findOrFail($id);
 
         $request->validate([
             'send_email' => 'nullable|boolean',
-            'attendee_ids' => 'nullable|array',
+            'attendee_ids' => 'nullable|array|max:200',
             'attendee_ids.*' => 'uuid',
         ]);
+
+        if ($request->filled('attendee_ids') && is_array($request->input('attendee_ids')) && count($request->input('attendee_ids')) > 200) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Batch too large — max 200 per request. Split into smaller batches.',
+            ], 422);
+        }
 
         if (!$event->certificate_number_pattern) {
             return response()->json([
@@ -648,8 +666,11 @@ class EventController extends Controller
 
     private function issueCertificates(Event $event, $attendees, bool $sendEmail = false): array
     {
+        set_time_limit(0);
+
         $issued = 0;
         $emailed = 0;
+        $skipped = 0;
         $results = [];
 
         foreach ($attendees as $attendee) {
@@ -657,15 +678,81 @@ class EventController extends Controller
             $certificateNumber = null;
             $error = null;
             $emailSent = false;
+            $skippedFlag = false;
+            $certificate = null;
 
             try {
-                $existing = Certificate::where('event_id', $event->id)
+                $existingCert = Certificate::where('event_id', $event->id)
                     ->where('recipient_email', $attendee->email)
                     ->whereNull('revoked_at')
-                    ->exists();
+                    ->first();
 
-                if ($existing) {
-                    $error = 'Active certificate already exists';
+                if ($existingCert) {
+                    $hasSent = $existingCert->emails()->where('status', 'sent')->exists();
+                    if ($hasSent) {
+                        $skippedFlag = true;
+                        $skipped++;
+                        $certificateNumber = $existingCert->certificate_number;
+                        $error = 'Already issued — skipped';
+                    } elseif ($sendEmail) {
+                        // retry: existing cert without successful email — reuse cert, attempt email only
+                        $certificate = $existingCert;
+                        $certificateNumber = $certificate->certificate_number;
+                        try {
+                            $certificate->load(['event', 'template', 'organization']);
+                            $pdfPath = $certificate->file_path;
+                            $appUrl = config('app.url');
+                            $downloadUrl = $appUrl ? $appUrl . '/api/v1/certificates/' . $certificate->id . '/download' : null;
+                            $verifyUrl = $appUrl ? $appUrl . '/api/v1/verify/' . $certificate->certificate_number : null;
+
+                            Mail::to($attendee->email)->queue(new CertificateEmail(
+                                recipientName: $attendee->name,
+                                recipientEmail: $attendee->email,
+                                certificateNumber: $certificate->certificate_number,
+                                eventName: $certificate->event?->name,
+                                issuedDate: $certificate->issued_at?->format('F d, Y') ?? now()->format('F d, Y'),
+                                pdfPath: $pdfPath,
+                                downloadUrl: $downloadUrl,
+                                verifyUrl: $verifyUrl,
+                            ));
+
+                            CertificateEmailModel::create([
+                                'certificate_id' => $certificate->id,
+                                'sent_to' => $attendee->email,
+                                'subject' => 'Your Certificate: ' . $certificate->certificate_number,
+                                'sent_at' => now(),
+                                'sent_by' => auth()->id(),
+                                'status' => 'sent',
+                            ]);
+
+                            $attendee->update([
+                                'certificate_id' => $certificate->id,
+                                'certificate_number' => $certificateNumber,
+                            ]);
+
+                            $emailSent = true;
+                            $success = true;
+                            $emailed++;
+                            $issued++;
+                        } catch (\Exception $e) {
+                            CertificateEmailModel::create([
+                                'certificate_id' => $certificate->id,
+                                'sent_to' => $attendee->email,
+                                'subject' => 'Your Certificate: ' . ($certificateNumber ?? ''),
+                                'sent_at' => now(),
+                                'sent_by' => auth()->id(),
+                                'status' => 'failed',
+                                'error_message' => $e->getMessage(),
+                            ]);
+                            $error = $e->getMessage();
+                        }
+                    } else {
+                        // send_email=false but existing unsent cert exists — treat as skipped (already exists)
+                        $skippedFlag = true;
+                        $skipped++;
+                        $certificateNumber = $existingCert->certificate_number;
+                        $error = 'Already issued — skipped';
+                    }
                 } else {
                     $certificateNumber = $this->certificateNumberService->generate(
                         $event->organization_id,
@@ -682,11 +769,6 @@ class EventController extends Controller
                         'expires_at' => $event->valid_until,
                     ]);
 
-                    $attendee->update([
-                        'certificate_id' => $certificate->id,
-                        'certificate_number' => $certificateNumber,
-                    ]);
-
                     $this->auditLogger->record('certificate.issued', 'api', 'certificate', $certificate->id, [
                         'certificate_number' => $certificateNumber,
                         'event_id' => $event->id,
@@ -700,18 +782,8 @@ class EventController extends Controller
                         // PDF generation failure is non-fatal; certificate is still created
                     }
 
-                    $success = true;
-                    $issued++;
-                }
-
-                if ($success && $sendEmail) {
-                    try {
-                        $certificate = Certificate::where('event_id', $event->id)
-                            ->where('recipient_email', $attendee->email)
-                            ->whereNull('revoked_at')
-                            ->first();
-
-                        if ($certificate) {
+                    if ($sendEmail) {
+                        try {
                             $certificate->load(['event', 'template', 'organization']);
                             $pdfPath = $certificate->file_path;
 
@@ -739,12 +811,16 @@ class EventController extends Controller
                                 'status' => 'sent',
                             ]);
 
+                            $attendee->update([
+                                'certificate_id' => $certificate->id,
+                                'certificate_number' => $certificateNumber,
+                            ]);
+
                             $emailSent = true;
+                            $success = true;
                             $emailed++;
-                        }
-                    } catch (\Exception $e) {
-                        // Email failure is non-fatal
-                        if (isset($certificate)) {
+                            $issued++;
+                        } catch (\Exception $e) {
                             CertificateEmailModel::create([
                                 'certificate_id' => $certificate->id,
                                 'sent_to' => $attendee->email,
@@ -754,7 +830,17 @@ class EventController extends Controller
                                 'status' => 'failed',
                                 'error_message' => $e->getMessage(),
                             ]);
+                            $error = $e->getMessage();
+                            // attendee NOT linked — retryable
                         }
+                    } else {
+                        // send_email=false: link immediately, count as issued without email
+                        $attendee->update([
+                            'certificate_id' => $certificate->id,
+                            'certificate_number' => $certificateNumber,
+                        ]);
+                        $success = true;
+                        $issued++;
                     }
                 }
             } catch (\Exception $e) {
@@ -766,6 +852,7 @@ class EventController extends Controller
                 'email' => $attendee->email,
                 'success' => $success,
                 'emailed' => $emailSent,
+                'skipped' => $skippedFlag,
                 'certNumber' => $certificateNumber,
                 'error' => $error,
             ];
@@ -774,6 +861,7 @@ class EventController extends Controller
         return [
             'issued' => $issued,
             'emailed' => $emailed,
+            'skipped' => $skipped,
             'results' => $results,
         ];
     }

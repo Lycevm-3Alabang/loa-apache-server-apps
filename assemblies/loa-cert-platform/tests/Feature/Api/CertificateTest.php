@@ -144,13 +144,20 @@ class CertificateTest extends TestCase
 
     public function test_issue_certificate_prevents_duplicate_active(): void
     {
-        Certificate::create([
+        $cert = Certificate::create([
             'organization_id' => $this->organization->id,
             'event_id' => $this->event->id,
             'template_id' => $this->template->id,
             'recipient_name' => 'Test User',
             'recipient_email' => 'test@example.com',
             'certificate_number' => 'CERT-0001',
+        ]);
+
+        \App\Models\CertificateEmail::create([
+            'certificate_id' => $cert->id,
+            'sent_to' => 'test@example.com',
+            'subject' => 'Your Certificate: CERT-0001',
+            'status' => 'sent',
         ]);
 
         $payload = [
@@ -163,7 +170,7 @@ class CertificateTest extends TestCase
         $response = $this->actingAsJwt()->postJson('/api/v1/certificates', $payload);
 
         $response->assertStatus(409)
-            ->assertJsonPath('message', 'An active certificate already exists for this event and email.');
+            ->assertJsonPath('message', 'Already issued — skipped.');
     }
 
     public function test_issue_certificate_generates_number(): void

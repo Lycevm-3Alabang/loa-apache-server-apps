@@ -307,7 +307,7 @@ class EventTest extends TestCase
             'email' => 'maria@example.com',
         ]);
 
-        Certificate::create([
+        $cert = Certificate::create([
             'organization_id' => $this->organization->id,
             'event_id' => $this->event->id,
             'template_id' => $this->template->id,
@@ -316,13 +316,21 @@ class EventTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
+        \App\Models\CertificateEmail::create([
+            'certificate_id' => $cert->id,
+            'sent_to' => 'maria@example.com',
+            'subject' => 'Your Certificate: CERT-0001',
+            'status' => 'sent',
+        ]);
+
         $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/bulk-issue", [
             'attendee_ids' => [$attendee->id],
         ])
             ->assertStatus(200)
             ->assertJsonPath('data.issued', 0)
             ->assertJsonPath('data.emailed', 0)
-            ->assertJsonPath('data.results.0.error', 'Active certificate already exists');
+            ->assertJsonPath('data.results.0.skipped', true)
+            ->assertJsonPath('data.results.0.error', 'Already issued — skipped');
     }
 
     public function test_bulk_issue_validates_attendee_ids(): void
