@@ -19,7 +19,7 @@ class PlaceholderResolverTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->resolver = new PlaceholderResolver();
+        $this->resolver = app(PlaceholderResolver::class);
     }
 
     public function test_resolves_recipient_name(): void

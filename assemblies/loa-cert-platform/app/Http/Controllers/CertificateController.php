@@ -942,7 +942,7 @@ class CertificateController extends Controller
             ->offset($offset)
             ->limit($limit)
             ->get()
-            ->map(fn (CertificateEmail $email) => [
+            ->map(fn (CertificateEmailModel $email) => [
                 'id' => $email->id,
                 'sent_to' => $email->sent_to,
                 'subject' => $email->subject,

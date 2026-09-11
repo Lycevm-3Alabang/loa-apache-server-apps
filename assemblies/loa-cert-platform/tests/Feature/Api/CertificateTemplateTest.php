@@ -387,7 +387,7 @@ class CertificateTemplateTest extends TestCase
             'html_content' => '<div>test</div>',
         ]);
 
-        // Create 2 active certificates
+        // Create 1 revoked certificate
         Certificate::create([
             'organization_id' => $this->organization->id,
             'template_id' => $template->id,

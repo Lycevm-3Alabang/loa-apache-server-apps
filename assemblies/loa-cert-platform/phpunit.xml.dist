@@ -24,5 +24,6 @@
         <env name="DB_DATABASE" value="loa_cert_test" force="true"/>
         <env name="DB_USERNAME" value="loa" force="true"/>
         <env name="DB_PASSWORD" value="loa-secret" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
     </php>
 </phpunit>

@@ -290,6 +290,37 @@ LOCK TABLES `events` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `jobs`
+--
+
+DROP TABLE IF EXISTS `jobs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+
+DROP TABLE IF EXISTS `jobs`;
+CREATE TABLE `jobs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `queue` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attempts` tinyint unsigned NOT NULL,
+  `reserved_at` int unsigned DEFAULT NULL,
+  `available_at` int unsigned NOT NULL,
+  `created_at` int unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `jobs_queue_index` (`queue`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `jobs`
+--
+
+LOCK TABLES `jobs` WRITE;
+/*!40000 ALTER TABLE `jobs` DISABLE KEYS */;
+/*!40000 ALTER TABLE `jobs` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `migrations`
 --
 
@@ -303,7 +334,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -321,6 +352,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (6,'2026_08_07_0000
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (7,'2026_08_07_000006_create_certificate_emails_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (8,'2026_08_11_000001_create_audit_logs_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (9,'2026_08_24_000001_add_visibility_and_updated_by_to_certificate_templates_table',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (10,'2026_09_10_000001_create_jobs_table',1);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -350,7 +382,6 @@ CREATE TABLE `organizations` (
 
 LOCK TABLES `organizations` WRITE;
 /*!40000 ALTER TABLE `organizations` DISABLE KEYS */;
-INSERT INTO `organizations` (`id`, `name`, `slug`, `created_at`, `updated_at`) VALUES ('00000000-0000-0000-0000-000000000001','LOA E-Cert Platform','loa-e-cert','2026-09-07 15:34:38','2026-09-07 15:34:38');
 /*!40000 ALTER TABLE `organizations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -367,4 +398,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-07  8:33:39
+-- Dump completed on 2026-09-10 23:19:31

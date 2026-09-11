@@ -192,7 +192,7 @@ class CertificateTest extends TestCase
             'certificate_number' => 'CERT-0001',
         ]);
 
-        $response = $this->actingAsJwt()->getJson("/api/v1/certificates/{$certificate->id}");
+        $response = $this->actingAsJwt(['groups' => ['cert-admin']])->getJson("/api/v1/certificates/{$certificate->id}");
 
         $response->assertStatus(200)
             ->assertJsonPath('data.id', $certificate->id)
@@ -467,7 +467,7 @@ class CertificateTest extends TestCase
         $response = $this->actingAsJwt(['email' => 'other@example.com'])
             ->getJson("/api/v1/certificates/{$certificate->id}");
 
-        $response->assertStatus(403)
+$response->assertStatus(403)
             ->assertJsonPath('message', 'You do not have access to this certificate.');
     }
 

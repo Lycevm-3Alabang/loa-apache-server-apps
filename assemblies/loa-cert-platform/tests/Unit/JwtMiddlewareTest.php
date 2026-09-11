@@ -32,13 +32,14 @@ class JwtMiddlewareTest extends TestCase
 
     private function middleware(): JwtMiddleware
     {
-        config(['cert-platform.tenant_slug' => 'loa-e-cert']);
+        config(['cert-platform.tenant_slug' => 'loa']);
         return new JwtMiddleware(new JWTService($this->secret));
     }
 
     public function test_sets_attributes_on_valid_token(): void
     {
         $token = $this->createToken();
+        config(['cert-platform.tenant_slug' => 'loa']);
         $request = Request::create('/api/v1/events', 'GET');
         $request->headers->set('Authorization', "Bearer $token");
 
@@ -56,6 +57,7 @@ class JwtMiddlewareTest extends TestCase
     public function test_sets_cert_user_attribute(): void
     {
         $token = $this->createToken();
+        config(['cert-platform.tenant_slug' => 'loa']);
         $request = Request::create('/api/v1/events', 'GET');
         $request->headers->set('Authorization', "Bearer $token");
 
@@ -104,7 +106,7 @@ class JwtMiddlewareTest extends TestCase
 
     public function test_rejects_tenant_mismatch(): void
     {
-        $token = $this->createToken(['tenant' => ['id' => 't-2', 'slug' => 'other']]);
+        $token = $this->createToken(['tenant' => ['id' => 't-2', 'slug' => 'wrong']]);
         $request = Request::create('/api/v1/events', 'GET');
         $request->headers->set('Authorization', "Bearer $token");
 
@@ -127,6 +129,7 @@ class JwtMiddlewareTest extends TestCase
     public function test_sets_jwt_token_attribute(): void
     {
         $token = $this->createToken();
+        config(['cert-platform.tenant_slug' => 'loa']);
         $request = Request::create('/api/v1/events', 'GET');
         $request->headers->set('Authorization', "Bearer $token");
 

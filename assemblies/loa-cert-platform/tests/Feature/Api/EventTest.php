@@ -283,20 +283,18 @@ class EventTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.success', 1)
-            ->assertJsonPath('data.failed', 0);
-
-        $certificateId = $response->json('data.certificates.0');
+            ->assertJsonPath('data.issued', 1)
+            ->assertJsonPath('data.emailed', 0);
 
         $this->assertDatabaseHas('certificates', [
-            'id' => $certificateId,
-            'recipient_email' => 'maria@example.com',
             'certificate_number' => 'CERT-0001',
+            'recipient_email' => 'maria@example.com',
         ]);
 
+        $certificate = Certificate::where('certificate_number', 'CERT-0001')->first();
         $this->assertDatabaseHas('event_attendees', [
             'id' => $attendee->id,
-            'certificate_id' => $certificateId,
+            'certificate_id' => $certificate->id,
         ]);
     }
 
@@ -322,9 +320,9 @@ class EventTest extends TestCase
             'attendee_ids' => [$attendee->id],
         ])
             ->assertStatus(200)
-            ->assertJsonPath('data.success', 0)
-            ->assertJsonPath('data.failed', 1)
-            ->assertJsonPath('data.errors.0.reason', 'Active certificate already exists');
+            ->assertJsonPath('data.issued', 0)
+            ->assertJsonPath('data.emailed', 0)
+            ->assertJsonPath('data.results.0.error', 'Active certificate already exists');
     }
 
     public function test_bulk_issue_validates_attendee_ids(): void
@@ -357,10 +355,11 @@ class EventTest extends TestCase
         $response = $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/issue-completed");
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.success', 1)
-            ->assertJsonPath('data.failed', 0);
+            ->assertJsonPath('data.issued', 1)
+            ->assertJsonPath('data.emailed', 0);
 
-        $certificateId = $response->json('data.certificates.0');
+        $certificateId = Certificate::where('recipient_email', 'completed@example.com')
+            ->value('id');
 
         $this->assertDatabaseHas('event_attendees', [
             'id' => $completed->id,
@@ -406,7 +405,7 @@ class EventTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.success', 1);
+            ->assertJsonPath('data.issued', 1);
 
         $this->assertDatabaseHas('certificates', [
             'id' => $oldCertificate->id,

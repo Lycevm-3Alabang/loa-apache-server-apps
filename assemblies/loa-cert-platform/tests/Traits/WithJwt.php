@@ -41,6 +41,7 @@ trait WithJwt
                 'admin:/api/v1/attendees/{id}/file-data',
                 'admin:/api/v1/templates',
                 'admin:/api/v1/templates/{id}',
+                'admin:/api/v1/templates/{id}/certificate-count',
                 'admin:/api/v1/certificates',
                 'admin:/api/v1/certificates/bulk',
                 'admin:/api/v1/certificates/upload',
@@ -78,9 +79,9 @@ trait WithJwt
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
-    private function actingAsJwt(): self
+    private function actingAsJwt(array $overrides = []): self
     {
-        $token = $this->createJwtToken();
+        $token = $this->createJwtToken($overrides);
         $this->withHeader('Authorization', "Bearer $token");
 
         return $this;
