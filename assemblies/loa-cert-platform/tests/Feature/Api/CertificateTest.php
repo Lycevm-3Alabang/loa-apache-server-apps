@@ -170,7 +170,7 @@ class CertificateTest extends TestCase
         $response = $this->actingAsJwt()->postJson('/api/v1/certificates', $payload);
 
         $response->assertStatus(409)
-            ->assertJsonPath('message', 'Already issued — skipped.');
+            ->assertJsonPath('message', 'This recipient already has a certificate for this event.');
     }
 
     public function test_issue_certificate_generates_number(): void
