@@ -266,7 +266,7 @@ class CertificateController extends Controller
             if ($existing) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Already issued — skipped.',
+                    'message' => 'This recipient already has a certificate for this event.',
                 ], 409);
             }
         }
