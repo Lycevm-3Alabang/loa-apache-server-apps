@@ -388,3 +388,121 @@ For gaps requiring implementation:
 2. **Gap 8 (no duplicate active cert per event+email)** — **Resolved without migration.** MySQL 8.0 InnoDB cannot create a unique index on a generated column referencing a FK column. Constraint already enforced at the application layer in all 4 issuance paths: `store()` (line 258), `bulk()` (line 412), `issueCertificates()` (line 662), and `reissue()` (revokes old before creating new, transactional). No code change needed.
 3. **Gap 5 (disk unification)** — Config change + update `CertificateController::upload()` to use `local` disk. No migration.
 4. **Gap 1 (lock check on issuance)** — Add `isTemplateLocked()` call in `CertificateController::store()` when `template_id` is explicitly provided. No migration.
+
+---
+
+# 7. Organization Website & Email URL Generation
+
+## 7.1 Rule
+
+> Certificate issuance emails contain two links: a **download link** (PDF) and a **verify link** (frontend verification page). Both URLs must resolve dynamically from the `organizations.website` column, not from environment variables.
+
+Rationale: the frontend URL is a property of the organization, not the server deployment. Multiple organizations (tenants) may share one backend but have different frontend URLs.
+
+## 7.2 Current Implementation
+
+| URL type | Current source | Fallback |
+|----------|---------------|----------|
+| Download | `config('app.url') . '/api/v1/certificates/{id}/download'` | — |
+| Verify | `config('app.url') . '/api/v1/verify/{number}'` | — |
+
+Both point to the **backend API**. The verify URL returns JSON, not an HTML page. The download URL requires JWT auth — recipients clicking from email get `401 Missing bearer token`.
+
+## 7.3 Required Behavior (Spec)
+
+### Email URLs
+
+| URL type | Pattern | Source | Auth required |
+|----------|---------|--------|---------------|
+| Download | `{organizations.website}/api/v1/public/certificates/{id}/download` | `certificate->organization->website` | **No** (public endpoint) |
+| Verify | `{organizations.website}/verify/{certificate_number}` | `certificate->organization->website` | **No** (frontend page) |
+
+### Fallback chain
+
+```
+certificate->organization->website
+  ↓ (if null)
+config('app.url')
+  ↓ (if null)
+null → link omitted from email
+```
+
+### Database change
+
+`organizations` table gains a nullable `website` column:
+
+```sql
+ALTER TABLE organizations ADD COLUMN website VARCHAR(255) NULL AFTER slug;
+```
+
+## 7.4 API Contract
+
+### Email payload (internal — `CertificateEmail` mailable)
+
+| Variable | Resolved from | Example |
+|----------|--------------|---------|
+| `$downloadUrl` | `$certificate->organization->website . '/api/v1/public/certificates/' . $id . '/download'` | `https://staging-loa-vericert.vercel.app/api/v1/public/certificates/uuid/download` |
+| `$verifyUrl` | `$certificate->organization->website . '/verify/' . $certificateNumber` | `https://staging-loa-vericert.vercel.app/verify/CERT-0001` |
+
+### `GET /api/v1/public/certificates/{id}/download` — Public Download
+
+**Auth:** None (public endpoint, org-scoped).
+
+**Success 200:** `Content-Type: application/pdf`, `Content-Disposition: attachment`.
+
+**Error 404:** certificate not found.
+
+**Error 410:** certificate revoked or expired.
+
+## 7.5 Identified Gaps
+
+| Gap | Impact | Recommendation |
+|-----|--------|----------------|
+| **No `website` column on organizations** | Cannot store frontend URL per tenant | Add migration + model update |
+| **Download endpoint requires auth** | Email recipients cannot download | Add public download endpoint to `PublicCertificateController` |
+| **Verify URL points to API (JSON)** | Email recipients see raw JSON, not verification page | Point to frontend `/verify/{number}` route |
+
+---
+
+# 8. Public Certificate Download Endpoint
+
+## 8.1 Rule
+
+> A certificate PDF may be downloaded **without authentication** by anyone who possesses the certificate UUID. The endpoint is scoped to the organization via the URL prefix (`/api/v1/public/`) and validates the certificate belongs to the configured organization.
+
+Rationale: email recipients do not have JWT tokens. The download link must work from any email client.
+
+## 8.2 Current Implementation
+
+`CertificateController::download()` requires `jwt.auth` middleware. No public equivalent exists.
+
+## 8.3 Required Behavior (Spec)
+
+### `GET /api/v1/public/certificates/{id}/download`
+
+**Auth:** None.
+
+**Flow:**
+1. Resolve organization from `config('cert-platform.organization_id')`.
+2. Load certificate with `event`, `template`, `organization` relations.
+3. Filter by `organization_id` — 404 if not found.
+4. Check `status` — 410 if `revoked` or `expired`.
+5. Log audit event: `certificate.downloaded`, channel: `email`.
+6. Return PDF via `PdfService::downloadCertificatePdf()`.
+
+**Error responses:**
+
+| Status | Condition |
+|--------|-----------|
+| 404 | Certificate not found or wrong organization |
+| 410 | Certificate revoked or expired |
+| 500 | PDF generation failed |
+
+## 8.4 Migration Path
+
+1. **Add `website` column** — migration `2026_09_13_000001_add_website_to_organizations_table.php`.
+2. **Update `Organization` model** — add `website` to `$fillable`.
+3. **Update `DatabaseSeeder`** — set `website` in seed data.
+4. **Add public download route** — `GET /api/v1/public/certificates/{id}/download` in `PublicCertificateController`.
+5. **Update email URL generation** — 4 sites in `CertificateController` and `EventController` to use `$certificate->organization->website`.
+6. **Remove `NEXT_PUBLIC_BASE_URL` config** — no longer needed; URL sourced from database.

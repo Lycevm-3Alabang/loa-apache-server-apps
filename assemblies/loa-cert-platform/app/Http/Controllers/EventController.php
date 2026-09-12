@@ -785,10 +785,9 @@ class EventController extends Controller
 
                 try {
                     $pdfPath = $certificate->file_path;
-                    $appUrl = config('app.url');
-                    $frontendUrl = config('cert-platform.frontend_url');
-                    $downloadUrl = $appUrl ? $appUrl . '/api/v1/public/certificates/' . $certificate->id . '/download' : null;
-                    $verifyUrl = $frontendUrl ? $frontendUrl . '/verify?number=' . $certificate->certificate_number : null;
+                    $website = $certificate->organization?->website ?? config('app.url');
+                    $downloadUrl = $website ? $website . '/api/v1/public/certificates/' . $certificate->id . '/download' : null;
+                    $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
                     Mail::to($attendee->email)->send(new CertificateEmail(
                         recipientName: $attendee->name,
@@ -974,10 +973,9 @@ class EventController extends Controller
                         $certificate->load(['event', 'template', 'organization']);
                         $pdfPath = $certificate->file_path;
 
-                        $appUrl = config('app.url');
-                        $frontendUrl = config('cert-platform.frontend_url');
-                        $downloadUrl = $appUrl ? $appUrl . '/api/v1/public/certificates/' . $certificate->id . '/download' : null;
-                        $verifyUrl = $frontendUrl ? $frontendUrl . '/verify?number=' . $certificate->certificate_number : null;
+                        $website = $certificate->organization?->website ?? config('app.url');
+                        $downloadUrl = $website ? $website . '/api/v1/public/certificates/' . $certificate->id . '/download' : null;
+                        $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
                         Mail::to($attendee->email)->send(new CertificateEmail(
                             recipientName: $attendee->name,

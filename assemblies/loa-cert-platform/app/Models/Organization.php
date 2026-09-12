@@ -16,6 +16,7 @@ class Organization extends Model
     protected $fillable = [
         'name',
         'slug',
+        'website',
     ];
 
     protected $casts = [
