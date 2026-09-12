@@ -27,6 +27,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/verify/{certificate_number}', [PublicCertificateController::class, 'verify'])
         ->where('certificate_number', '[A-Za-z0-9\-]+');
     Route::get('/view/{id}', [PublicCertificateController::class, 'view']);
+    Route::get('/public/certificates/{id}/download', [PublicCertificateController::class, 'publicDownload']);
 
     Route::middleware(['jwt.auth', 'jwt.endpoint'])->group(function () {
 

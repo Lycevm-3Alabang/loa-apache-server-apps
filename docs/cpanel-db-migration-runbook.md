@@ -104,7 +104,7 @@ Until a row exists matching the backend's configured organization, every event/t
 
 ```sql
 INSERT INTO organizations (id, name, slug, created_at, updated_at)
-VALUES ('00000000-0000-0000-0000-000000000001', 'Lyceum of Alabang', 'loa', NOW(), NOW());
+VALUES ('00000000-0000-0000-0000-000000000001', 'Lyceum of Alabang', 'loa-e-cert', NOW(), NOW());
 ```
 
 Adjust the UUID if `CERT_ORGANIZATION_ID` / `config('cert-platform.organization_id')` differs from the default. Long-term fix candidate: promote this insert into a production-safe seeder (tracked in `whats-next.md`).

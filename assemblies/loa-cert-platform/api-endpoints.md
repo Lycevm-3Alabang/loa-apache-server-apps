@@ -1384,7 +1384,7 @@ Cert mirror of Auth's `JwtMiddleware`, **minus the DB user lookup** (Cert has no
 
 1. Extract `Authorization: Bearer <token>` → else `401`.
 2. Validate HS256 signature and `exp` via a local `JWTService` (copy of Auth's, reading `config('jwt.secret')`) and require `type === 'access'` → else `401`.
-3. Require `claims['tenant']['slug'] === config('cert-platform.tenant_slug')` (`loa`) → else `403` (`reason: tenant_mismatch`).
+3. Require `claims['tenant']['slug'] === config('cert-platform.tenant_slug')` (`loa-e-cert`) → else `403` (`reason: tenant_mismatch`).
 4. Set request attributes: `jwt_claims`, `jwt_token`, and a lightweight `cert_user` value object (`sub`, `email`, `name`, `tenant`, `groups`, `permissions`).
 
 **Revocation caveat:** JWT claims are valid for the token lifetime; group/grant changes take effect at next issuance. Optional real-time re-validation via `GET /api/v1/auth/access` is a per-app decision and is **not** used here (see `tenant-group-endpoint-grants.md` §14).

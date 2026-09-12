@@ -9,6 +9,7 @@ use App\Models\Organization;
 use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use OpenApi\Attributes as OA;
 
 #[OA\Tag(name: "Public", description: "Public certificate verification and viewing (no auth)")]
@@ -158,6 +159,59 @@ class PublicCertificateController extends Controller
                 ],
             ],
         ]);
+    }
+
+    #[OA\Get(
+        path: "/api/v1/public/certificates/{id}/download",
+        summary: "Public certificate PDF download (no auth)",
+        tags: ["Public"],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "PDF file download"),
+            new OA\Response(response: 404, description: "Not found"),
+            new OA\Response(response: 410, description: "Revoked or expired"),
+        ]
+    )]
+    public function publicDownload(string $id): Response|JsonResponse
+    {
+        $organizationId = $this->resolveOrganizationId();
+
+        $certificate = Certificate::with(['event', 'template', 'organization'])
+            ->where('organization_id', $organizationId)
+            ->find($id);
+
+        if (!$certificate) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Certificate not found.',
+            ], 404);
+        }
+
+        if (in_array($certificate->status, ['revoked', 'expired'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Certificate is ' . $certificate->status . '.',
+            ], 410);
+        }
+
+        $this->auditLogger->record(
+            'certificate.downloaded',
+            'public',
+            'certificate',
+            $certificate->id,
+            ['certificate_number' => $certificate->certificate_number, 'channel' => 'email'],
+        );
+
+        try {
+            return app(\App\Services\PdfService::class)->downloadCertificatePdf($certificate);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate PDF: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     private function resolveOrganizationId(): string
