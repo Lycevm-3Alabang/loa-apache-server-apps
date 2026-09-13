@@ -123,7 +123,7 @@ class AttendeeController extends Controller
             ], 404);
         }
 
-        $query = EventAttendee::where('event_id', $eventId);
+        $query = EventAttendee::where('event_attendees.event_id', $eventId);
 
         // Preserve filter params for links
         $params = $request->only(['search', 'attended', 'completed', 'status']);
@@ -179,11 +179,11 @@ class AttendeeController extends Controller
         $limit = min($request->input('limit', 25), 100);
         $offset = $request->input('offset', 0);
 
+        $total = $query->count();
+
         $attendees = $query->skip($offset)
                           ->take($limit)
                           ->get();
-
-        $total = $query->count();
 
         // Build links with absolute URLs preserving query state
         $baseUrl = $request->url();
