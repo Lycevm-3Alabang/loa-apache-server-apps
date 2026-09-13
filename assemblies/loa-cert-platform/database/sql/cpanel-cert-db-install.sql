@@ -334,7 +334,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -353,6 +353,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (7,'2026_08_07_0000
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (8,'2026_08_11_000001_create_audit_logs_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (9,'2026_08_24_000001_add_visibility_and_updated_by_to_certificate_templates_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (10,'2026_09_10_000001_create_jobs_table',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (11,'2026_09_13_000001_add_website_to_organizations_table',1);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -369,6 +370,7 @@ CREATE TABLE `organizations` (
   `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -398,4 +400,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-12 14:04:23
+-- Dump completed on 2026-09-13  9:36:18

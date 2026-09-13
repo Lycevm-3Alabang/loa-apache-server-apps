@@ -26,8 +26,7 @@ class CertificateEmail extends Mailable
         public readonly ?string $verifyUrl,
     ) {
         $qrService = app(QrCodeService::class);
-        $url = config('app.url') . '/verify/' . $this->certificateNumber;
-        $this->qrDataUri = $qrService->toDataUri($url);
+        $this->qrDataUri = $qrService->toDataUri($this->verifyUrl);
     }
 
     public function envelope(): Envelope

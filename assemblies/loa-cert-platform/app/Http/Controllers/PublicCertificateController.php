@@ -105,7 +105,7 @@ class PublicCertificateController extends Controller
     {
         $organizationId = $this->resolveOrganizationId();
 
-        $certificate = Certificate::with(['event', 'template'])
+        $certificate = Certificate::with(['event', 'template', 'organization'])
             ->where('organization_id', $organizationId)
             ->find($id);
 
@@ -153,7 +153,7 @@ class PublicCertificateController extends Controller
                     'event_date' => $certificate->event->event_date?->toDateString(),
                     'location' => $certificate->event->location,
                 ] : null,
-                'qr_data_url' => $this->qrCodeService->toDataUri(config('app.url') . '/certificates/' . $certificate->certificate_number),
+                'qr_data_url' => $this->qrCodeService->toDataUri(($certificate->organization?->website ?? config('app.url')) . '/verify/' . $certificate->certificate_number),
                 'organization' => [
                     'name' => $this->resolveOrganizationName(),
                 ],

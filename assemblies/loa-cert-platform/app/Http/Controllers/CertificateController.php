@@ -1085,8 +1085,9 @@ class CertificateController extends Controller
             $pdfPath = $certificate->file_path;
 
             $appUrl = config('app.url');
-            $downloadUrl = $appUrl ? $appUrl . '/api/v1/certificates/' . $certificate->id . '/download' : null;
-            $verifyUrl = $appUrl ? $appUrl . '/api/v1/verify/' . $certificate->certificate_number : null;
+            $website = $certificate->organization?->website ?? $appUrl;
+            $downloadUrl = $website ? $website . '/api/v1/public/certificates/' . $certificate->id . '/download' : null;
+            $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
             Mail::to($certificate->recipient_email)->send(new CertificateEmail(
                 recipientName: $certificate->recipient_name,
@@ -1199,7 +1200,7 @@ class CertificateController extends Controller
     )]
     public function qr(string $certificateNumber): JsonResponse
     {
-        $certificate = Certificate::where('certificate_number', $certificateNumber)->first();
+        $certificate = Certificate::with(['organization'])->where('certificate_number', $certificateNumber)->first();
 
         if (!$certificate) {
             return response()->json([
@@ -1208,8 +1209,8 @@ class CertificateController extends Controller
             ], 404);
         }
 
-        // Generate QR code that encodes the certificate preview URL
-        $url = config('app.url') . '/certificates/' . $certificateNumber;
+        $website = $certificate->organization?->website ?? config('app.url');
+        $url = $website . '/verify/' . $certificate->certificate_number;
         $dataUrl = $this->qrCodeService->toDataUri($url);
 
         return response()->json([
