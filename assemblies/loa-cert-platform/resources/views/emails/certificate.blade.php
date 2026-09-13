@@ -41,7 +41,14 @@
             </a>
             @endif
         </div>
-        
+
+        @if($qrDataUri)
+        <div style="text-align: center; margin: 24px 0;">
+            <p style="font-size: 14px; color: #6b7280; margin: 0 0 12px;">Scan to verify this certificate</p>
+            <img src="{{ $qrDataUri }}" alt="QR Code for {{ $certificateNumber }}" style="width: 120px; height: 120px; border-radius: 8px;" />
+        </div>
+        @endif
+
         @if($verifyUrl)
         <p style="font-size: 14px; color: #6b7280; text-align: center; margin: 24px 0 0;">
             Verify this certificate: <a href="{{ $verifyUrl }}" style="color: #1e3a8a;">{{ $verifyUrl }}</a>

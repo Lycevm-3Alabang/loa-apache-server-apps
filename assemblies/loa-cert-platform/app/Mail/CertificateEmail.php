@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Services\QrCodeService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -11,6 +12,8 @@ use Illuminate\Queue\SerializesModels;
 class CertificateEmail extends Mailable
 {
     use Queueable, SerializesModels;
+
+    public readonly string $qrDataUri;
 
     public function __construct(
         public readonly string $recipientName,
@@ -22,6 +25,9 @@ class CertificateEmail extends Mailable
         public readonly ?string $downloadUrl,
         public readonly ?string $verifyUrl,
     ) {
+        $qrService = app(QrCodeService::class);
+        $url = config('app.url') . '/verify/' . $this->certificateNumber;
+        $this->qrDataUri = $qrService->toDataUri($url);
     }
 
     public function envelope(): Envelope
@@ -42,6 +48,7 @@ class CertificateEmail extends Mailable
                 'issuedDate' => $this->issuedDate,
                 'downloadUrl' => $this->downloadUrl,
                 'verifyUrl' => $this->verifyUrl,
+                'qrDataUri' => $this->qrDataUri,
             ],
         );
     }
