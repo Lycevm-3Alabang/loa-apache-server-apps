@@ -445,7 +445,7 @@ List attendees for an event.
 
 **Auth:** `read`
 
-**Query:** `search` (name/email), `attended` (bool), `completed` (bool), `has_certificate` (bool), `limit`, `offset`.
+**Query:** `search` (name/email), `attended` (bool), `completed` (bool), `status` (`not_issued`|`issued`|`revoked`|`expired`), `limit`, `offset`.
 
 **Response 200:**
 
