@@ -74,6 +74,7 @@ class PublicCertificateController extends Controller
 
         return response()->json([
             'data' => [
+                'id' => $certificate->id,
                 'valid' => $valid,
                 'certificate_number' => $certificate->certificate_number,
                 'issued_date' => $certificate->issued_at?->toDateString(),

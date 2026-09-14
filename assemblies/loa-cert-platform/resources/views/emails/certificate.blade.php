@@ -37,7 +37,7 @@
         <div style="text-align: center; margin: 32px 0;">
             @if($downloadUrl)
             <a href="{{ $downloadUrl }}" style="display: inline-block; background: #1e3a8a; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-                Download Certificate
+                View Certificate
             </a>
             @endif
         </div>

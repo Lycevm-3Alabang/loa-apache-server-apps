@@ -142,8 +142,8 @@ CREATE TABLE `group_claims` (
 
 LOCK TABLES `group_claims` WRITE;
 /*!40000 ALTER TABLE `group_claims` DISABLE KEYS */;
-INSERT INTO `group_claims` (`id`, `group_id`, `claim_key`, `scope_type`, `scope_id`, `created_at`, `updated_at`) VALUES (1,2,'users.view','none',NULL,'2026-09-14 06:55:27','2026-09-14 06:55:27');
-INSERT INTO `group_claims` (`id`, `group_id`, `claim_key`, `scope_type`, `scope_id`, `created_at`, `updated_at`) VALUES (2,2,'users.manage','none',NULL,'2026-09-14 06:55:27','2026-09-14 06:55:27');
+INSERT INTO `group_claims` (`id`, `group_id`, `claim_key`, `scope_type`, `scope_id`, `created_at`, `updated_at`) VALUES (1,2,'users.view','none',NULL,'2026-09-14 11:34:04','2026-09-14 11:34:04');
+INSERT INTO `group_claims` (`id`, `group_id`, `claim_key`, `scope_type`, `scope_id`, `created_at`, `updated_at`) VALUES (2,2,'users.manage','none',NULL,'2026-09-14 11:34:04','2026-09-14 11:34:04');
 /*!40000 ALTER TABLE `group_claims` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -360,13 +360,13 @@ CREATE TABLE `permissions` (
 
 LOCK TABLES `permissions` WRITE;
 /*!40000 ALTER TABLE `permissions` DISABLE KEYS */;
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (1,'users.view','View user list and details',NULL,'2026-09-14 06:55:26','2026-09-14 06:55:26');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (2,'users.manage','Enable/disable users, manage status',NULL,'2026-09-14 06:55:26','2026-09-14 06:55:26');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (3,'groups.view','View groups',NULL,'2026-09-14 06:55:26','2026-09-14 06:55:26');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (4,'groups.manage','Create, edit, delete groups',NULL,'2026-09-14 06:55:26','2026-09-14 06:55:26');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (5,'permissions.view','View permissions',NULL,'2026-09-14 06:55:26','2026-09-14 06:55:26');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (6,'permissions.manage','Assign permissions to groups',NULL,'2026-09-14 06:55:26','2026-09-14 06:55:26');
-INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (7,'auth.verify','Validate tokens (internal)',NULL,'2026-09-14 06:55:26','2026-09-14 06:55:26');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (1,'users.view','View user list and details',NULL,'2026-09-14 11:34:03','2026-09-14 11:34:03');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (2,'users.manage','Enable/disable users, manage status',NULL,'2026-09-14 11:34:03','2026-09-14 11:34:03');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (3,'groups.view','View groups',NULL,'2026-09-14 11:34:03','2026-09-14 11:34:03');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (4,'groups.manage','Create, edit, delete groups',NULL,'2026-09-14 11:34:03','2026-09-14 11:34:03');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (5,'permissions.view','View permissions',NULL,'2026-09-14 11:34:03','2026-09-14 11:34:03');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (6,'permissions.manage','Assign permissions to groups',NULL,'2026-09-14 11:34:03','2026-09-14 11:34:03');
+INSERT INTO `permissions` (`id`, `key`, `description`, `endpoint_pattern`, `created_at`, `updated_at`) VALUES (7,'auth.verify','Validate tokens (internal)',NULL,'2026-09-14 11:34:03','2026-09-14 11:34:03');
 /*!40000 ALTER TABLE `permissions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -641,8 +641,8 @@ CREATE TABLE `tenants` (
 
 LOCK TABLES `tenants` WRITE;
 /*!40000 ALTER TABLE `tenants` DISABLE KEYS */;
-INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('14e98cd4-fec6-447f-a32f-1ab968c365a2','auth','LOA Auth Platform','active',NULL,NULL,'[]','[]','2026-09-14 06:55:27','2026-09-14 06:55:27');
-INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','loa-e-cert','Vericert','active','https://staging-loa-vericert.vercel.app','http://localhost:3000','[\"https://staging-loa-vericert.vercel.app\"]','[\"http://localhost:3000\"]','2026-09-14 06:55:26','2026-09-14 06:55:26');
+INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('733f9a79-0af3-46c0-8119-5e6f088d0dda','auth','LOA Auth Platform','active',NULL,NULL,'[]','[]','2026-09-14 11:34:04','2026-09-14 11:34:04');
+INSERT INTO `tenants` (`id`, `slug`, `name`, `status`, `app_url`, `dev_app_url`, `redirect_origins`, `dev_redirect_origins`, `created_at`, `updated_at`) VALUES ('91128f0a-df85-47a9-ae1d-5298904dacd5','loa-e-cert','Vericert','active','https://staging-loa-vericert.vercel.app','http://localhost:3000','[\"https://staging-loa-vericert.vercel.app\"]','[\"http://localhost:3000\"]','2026-09-14 11:34:04','2026-09-14 11:34:04');
 /*!40000 ALTER TABLE `tenants` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -746,10 +746,10 @@ CREATE TABLE `user_groups` (
 
 LOCK TABLES `user_groups` WRITE;
 /*!40000 ALTER TABLE `user_groups` DISABLE KEYS */;
-INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (1,'loa-auth-admin','Platform administrator',10,NULL,'2026-09-14 06:55:26','2026-09-14 06:55:26');
-INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (2,'cert-admin','Local certificate administrator',2,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-14 06:55:26','2026-09-14 06:55:26');
-INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (3,'cert-staff','Local certificate staff',3,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-14 06:55:26','2026-09-14 06:55:26');
-INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (4,'cert-user','Local certificate user',4,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-14 06:55:27','2026-09-14 06:55:27');
+INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (1,'loa-auth-admin','Platform administrator',10,NULL,'2026-09-14 11:34:03','2026-09-14 11:34:03');
+INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (2,'cert-admin','Local certificate administrator',2,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-14 11:34:04','2026-09-14 11:34:04');
+INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (3,'cert-staff','Local certificate staff',3,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-14 11:34:04','2026-09-14 11:34:04');
+INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`, `created_at`, `updated_at`) VALUES (4,'cert-user','Local certificate user',4,'91128f0a-df85-47a9-ae1d-5298904dacd5','2026-09-14 11:34:04','2026-09-14 11:34:04');
 /*!40000 ALTER TABLE `user_groups` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -843,7 +843,7 @@ CREATE TABLE `user_user_group` (
 
 LOCK TABLES `user_user_group` WRITE;
 /*!40000 ALTER TABLE `user_user_group` DISABLE KEYS */;
-INSERT INTO `user_user_group` (`user_id`, `user_group_id`, `created_at`, `updated_at`) VALUES ('c2ba3c21-9bca-4cf0-9d1f-50cb3d7cf15b',1,NULL,NULL);
+INSERT INTO `user_user_group` (`user_id`, `user_group_id`, `created_at`, `updated_at`) VALUES ('52e7885a-80e9-4b00-901a-1dd7d46ae1a7',1,NULL,NULL);
 /*!40000 ALTER TABLE `user_user_group` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -878,7 +878,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` (`id`, `email`, `password`, `name`, `status`, `failed_attempts`, `locked_until`, `created_at`, `updated_at`) VALUES ('c2ba3c21-9bca-4cf0-9d1f-50cb3d7cf15b','admin@lyceumalabang.edu.ph','$2y$12$qqxOiFC4DJMzGeuktlPhQ.rD7mnC0JqqV0/rmQfUrtgFOdOaGaql2','Super Admin','active',0,NULL,'2026-09-14 06:55:26','2026-09-14 06:55:26');
+INSERT INTO `users` (`id`, `email`, `password`, `name`, `status`, `failed_attempts`, `locked_until`, `created_at`, `updated_at`) VALUES ('52e7885a-80e9-4b00-901a-1dd7d46ae1a7','admin@lyceumalabang.edu.ph','$2y$12$mdsRieU6gEob0L3xKfRzz.9EUrJNTanGIDgEPg0A3libebOcf4kOy','Super Admin','active',0,NULL,'2026-09-14 11:34:04','2026-09-14 11:34:04');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -895,4 +895,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-13 23:13:02
+-- Dump completed on 2026-09-14  3:51:11

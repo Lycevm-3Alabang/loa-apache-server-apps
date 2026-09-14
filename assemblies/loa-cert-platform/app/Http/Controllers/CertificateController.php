@@ -305,7 +305,7 @@ class CertificateController extends Controller
 
                 $appUrl = config('app.url');
                 $website = $certificate->organization?->website ?? $appUrl;
-                $downloadUrl = $website ? $website . '/api/v1/public/certificates/' . $certificate->id . '/download' : null;
+                $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                 $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
                 Mail::to($certificate->recipient_email)->send(new CertificateEmail(
@@ -539,7 +539,7 @@ class CertificateController extends Controller
                 try {
                     $pdfPath = $certificate->file_path;
                     $website = $certificate->organization?->website ?? config('app.url');
-                    $downloadUrl = $website ? $website . '/api/v1/public/certificates/' . $certificate->id . '/download' : null;
+                    $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                     $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
                     Mail::to($recipient['email'])->send(new CertificateEmail(
@@ -1086,7 +1086,7 @@ class CertificateController extends Controller
 
             $appUrl = config('app.url');
             $website = $certificate->organization?->website ?? $appUrl;
-            $downloadUrl = $website ? $website . '/api/v1/public/certificates/' . $certificate->id . '/download' : null;
+            $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
             $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
             Mail::to($certificate->recipient_email)->send(new CertificateEmail(

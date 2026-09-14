@@ -101,7 +101,8 @@ if ($robocopyExit -ge 8) {
 Remove-Item -LiteralPath $stageRoot -Recurse -Force -ErrorAction SilentlyContinue
 
 # ── Zip (sanitized, no password) ────────────────────────────────────────
-$zip = Join-Path $Path "$app-dist.zip"
+$zipTs = Get-Date -Format 'yyyyMMdd-HHmmss'
+$zip = Join-Path $Path "$app-dist-$zipTs.zip"
 if (Test-Path -LiteralPath $zip) {
     Remove-Item -LiteralPath $zip -Force
 }
