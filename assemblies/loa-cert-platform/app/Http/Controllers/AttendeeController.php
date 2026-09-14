@@ -150,6 +150,11 @@ class AttendeeController extends Controller
         // Apply status filter (requires LEFT JOIN with certificates)
         $status = $request->input('status');
         if ($status && in_array($status, ['not_issued', 'issued', 'revoked', 'expired'])) {
+            // Explicitly select only event_attendees columns to prevent column
+            // name collisions (id, event_id, organization_id, etc.) from the
+            // certificates table overwriting real values with NULLs via PDO's
+            // last-column-wins behavior on SELECT *.
+            $query->select('event_attendees.*');
             $query->leftJoin('certificates', 'event_attendees.certificate_id', '=', 'certificates.id');
 
             switch ($status) {
