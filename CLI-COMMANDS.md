@@ -118,6 +118,17 @@ docker compose exec cert-app php artisan l5-swagger:generate
 
 ---
 
+## Mega Pipeline (all-in-one)
+
+```powershell
+.\mega.ps1                         # Reset → Test → Dump Auth → Dump Cert → Open builds
+.\mega.ps1 -SkipReset              # Skip reset, run tests + dumps
+.\mega.ps1 -SkipTests              # Skip tests, run reset + dumps
+.\mega.ps1 -DumpPath E:\custom     # Custom output directory
+```
+
+---
+
 ## Auth Platform Custom Commands
 
 ```powershell

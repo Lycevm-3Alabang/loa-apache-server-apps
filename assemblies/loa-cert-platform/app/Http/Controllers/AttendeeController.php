@@ -103,6 +103,7 @@ class AttendeeController extends Controller
             new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
             new OA\Parameter(name: "attended", in: "query", schema: new OA\Schema(type: "boolean")),
             new OA\Parameter(name: "completed", in: "query", schema: new OA\Schema(type: "boolean")),
+            new OA\Parameter(name: "status", in: "query", schema: new OA\Schema(type: "string", enum: ["not_issued", "issued", "revoked", "expired"])),
             new OA\Parameter(name: "limit", in: "query", schema: new OA\Schema(type: "integer", default: 25)),
             new OA\Parameter(name: "offset", in: "query", schema: new OA\Schema(type: "integer", default: 0)),
         ],
@@ -179,7 +180,8 @@ class AttendeeController extends Controller
         $limit = min($request->input('limit', 25), 100);
         $offset = $request->input('offset', 0);
 
-        $total = $query->count();
+        // Clone for count so LEFT JOIN/where conditions are preserved independently
+        $total = (clone $query)->count();
 
         $attendees = $query->skip($offset)
                           ->take($limit)
