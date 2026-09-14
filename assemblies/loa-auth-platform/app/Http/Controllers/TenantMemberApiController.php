@@ -41,6 +41,11 @@ class TenantMemberApiController extends Controller
         $query = User::whereHas('tenants', fn ($q) => $q->where('tenant_id', $tenantId))
             ->orderBy('name');
 
+        $email = $request->query('email');
+        if ($email) {
+            $query->where('email', $email);
+        }
+
         $status = $request->query('status');
         if ($status && in_array($status, ['pending', 'active', 'disabled'])) {
             $query->where('status', $status);

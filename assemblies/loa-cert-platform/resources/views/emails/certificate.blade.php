@@ -40,6 +40,15 @@
                 View Certificate
             </a>
             @endif
+
+            @if(!($isRegistered ?? true) && ($activateUrl ?? null))
+            <div style="margin-top: 16px;">
+                <a href="{{ $activateUrl }}" style="display: inline-block; background: #059669; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                    Activate Account
+                </a>
+            </div>
+            <p style="font-size: 13px; color: #6b7280; margin: 12px 0 0;">Create your account to manage and download your certificates.</p>
+            @endif
         </div>
 
         @if($qrDataUri)

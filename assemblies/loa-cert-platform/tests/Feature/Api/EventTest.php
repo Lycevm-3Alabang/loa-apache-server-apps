@@ -83,6 +83,7 @@ class EventTest extends TestCase
     {
         $response = $this->actingAsJwt()->postJson('/api/v1/events', [
             'name' => 'Graduation 2026',
+            'organizer' => 'SAO',
             'certificate_number_pattern' => 'GRAD-####',
             'event_date' => '2026-05-30',
             'location' => 'Alabang',
@@ -102,7 +103,7 @@ class EventTest extends TestCase
     {
         $this->actingAsJwt()->postJson('/api/v1/events', [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['name', 'certificate_number_pattern']);
+            ->assertJsonValidationErrors(['name', 'organizer', 'certificate_number_pattern']);
     }
 
     public function test_get_event(): void

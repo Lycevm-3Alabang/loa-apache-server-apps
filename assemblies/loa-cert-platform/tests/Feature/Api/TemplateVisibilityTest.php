@@ -354,6 +354,7 @@ class TemplateVisibilityTest extends TestCase
 
         $response = $this->actAsOther()->postJson('/api/v1/events', [
             'name' => 'Ref Event Public',
+            'organizer' => 'SAO',
             'certificate_number_pattern' => 'REFP-####',
             'template_id' => $public->id,
         ]);

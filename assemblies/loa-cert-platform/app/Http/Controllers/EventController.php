@@ -10,6 +10,7 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Services\AuditLogger;
 use App\Services\CertificateNumberService;
+use App\Services\CertUserChecker;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -28,7 +29,7 @@ use OpenApi\Attributes as OA;
     new OA\Property(property: "description", type: "string", nullable: true),
     new OA\Property(property: "event_date", type: "string", format: "date", nullable: true),
     new OA\Property(property: "location", type: "string", nullable: true),
-    new OA\Property(property: "organizer", type: "string", nullable: true),
+    new OA\Property(property: "organizer", type: "string"),
     new OA\Property(property: "certificate_title", type: "string", nullable: true),
     new OA\Property(property: "certificate_number_pattern", type: "string"),
     new OA\Property(property: "valid_until", type: "string", format: "date", nullable: true),
@@ -136,6 +137,7 @@ class EventController extends Controller
         private readonly CertificateNumberService $certificateNumberService,
         private readonly PdfService $pdfService,
         private readonly AuditLogger $auditLogger,
+        private readonly CertUserChecker $userChecker,
     ) {
     }
 
@@ -222,7 +224,7 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'event_date' => 'nullable|date',
             'location' => 'nullable|string',
-            'organizer' => 'nullable|string',
+            'organizer' => 'required|string|min:1',
             'certificate_title' => 'nullable|string',
             'certificate_number_pattern' => 'required|string',
             'valid_until' => 'nullable|date',
@@ -315,7 +317,7 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'event_date' => 'nullable|date',
             'location' => 'nullable|string',
-            'organizer' => 'nullable|string',
+            'organizer' => 'sometimes|required|string|min:1',
             'certificate_title' => 'nullable|string',
             'certificate_number_pattern' => 'nullable|string',
             'valid_until' => 'nullable|date',
@@ -789,6 +791,12 @@ class EventController extends Controller
                     $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                     $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
+                    $isRegistered = $this->userChecker->isRegistered($attendee->email);
+                    $activateUrl = $isRegistered ? null : $this->userChecker->getActivateUrl(
+                        $certificate->certificate_number,
+                        $attendee->email,
+                    );
+
                     Mail::to($attendee->email)->send(new CertificateEmail(
                         recipientName: $attendee->name,
                         recipientEmail: $attendee->email,
@@ -798,6 +806,8 @@ class EventController extends Controller
                         pdfPath: $pdfPath,
                         downloadUrl: $downloadUrl,
                         verifyUrl: $verifyUrl,
+                        isRegistered: $isRegistered,
+                        activateUrl: $activateUrl,
                     ));
 
                     CertificateEmailModel::create([
@@ -977,6 +987,12 @@ class EventController extends Controller
                         $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                         $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
+                        $isRegistered = $this->userChecker->isRegistered($attendee->email);
+                        $activateUrl = $isRegistered ? null : $this->userChecker->getActivateUrl(
+                            $certificate->certificate_number,
+                            $attendee->email,
+                        );
+
                         Mail::to($attendee->email)->send(new CertificateEmail(
                             recipientName: $attendee->name,
                             recipientEmail: $attendee->email,
@@ -986,6 +1002,8 @@ class EventController extends Controller
                             pdfPath: $pdfPath,
                             downloadUrl: $downloadUrl,
                             verifyUrl: $verifyUrl,
+                            isRegistered: $isRegistered,
+                            activateUrl: $activateUrl,
                         ));
 
                         CertificateEmailModel::create([

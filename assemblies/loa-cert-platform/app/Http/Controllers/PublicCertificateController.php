@@ -81,6 +81,7 @@ class PublicCertificateController extends Controller
                 'valid_until' => $certificate->expires_at?->toDateString(),
                 'status' => $certificate->status,
                 'recipient_name' => $certificate->recipient_name,
+                'recipient_email' => $certificate->recipient_email,
                 'event_name' => $certificate->event?->name,
                 'organization' => [
                     'name' => $this->resolveOrganizationName(),

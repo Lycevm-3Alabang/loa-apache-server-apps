@@ -24,6 +24,8 @@ class CertificateEmail extends Mailable
         public readonly ?string $pdfPath,
         public readonly ?string $downloadUrl,
         public readonly ?string $verifyUrl,
+        public readonly bool $isRegistered = true,
+        public readonly ?string $activateUrl = null,
     ) {
         $qrService = app(QrCodeService::class);
         $this->qrDataUri = $qrService->toDataUri($this->verifyUrl);
@@ -48,6 +50,8 @@ class CertificateEmail extends Mailable
                 'downloadUrl' => $this->downloadUrl,
                 'verifyUrl' => $this->verifyUrl,
                 'qrDataUri' => $this->qrDataUri,
+                'isRegistered' => $this->isRegistered,
+                'activateUrl' => $this->activateUrl,
             ],
         );
     }

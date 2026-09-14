@@ -125,6 +125,7 @@ class PlaceholderResolverTest extends TestCase
             'organization_id' => $organization->id,
             'template_id' => $template->id,
             'name' => 'Test Event',
+            'organizer' => 'SAO',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'active',
         ]);
@@ -139,7 +140,100 @@ class PlaceholderResolverTest extends TestCase
 
         $result = $this->resolver->resolve('{{organization_name}}', $certificate);
 
-        $this->assertEquals('Lyceum of Alabang', $result);
+        $this->assertEquals('SAO', $result);
+    }
+
+    public function test_resolves_event_organizer(): void
+    {
+        $organization = Organization::create(['name' => 'Lyceum of Alabang', 'slug' => 'loa']);
+        $template = CertificateTemplate::create([
+            'organization_id' => $organization->id,
+            'name' => 'Test',
+            'type' => 'certificate',
+            'html_content' => '<div>{{event_organizer}}</div>',
+        ]);
+        $event = Event::create([
+            'organization_id' => $organization->id,
+            'template_id' => $template->id,
+            'name' => 'Test Event',
+            'organizer' => 'CCS',
+            'certificate_number_pattern' => 'CERT-####',
+            'status' => 'active',
+        ]);
+        $certificate = Certificate::create([
+            'organization_id' => $organization->id,
+            'event_id' => $event->id,
+            'template_id' => $template->id,
+            'recipient_name' => 'Maria Santos',
+            'recipient_email' => 'maria@example.com',
+            'certificate_number' => 'CERT-0001',
+        ]);
+
+        $result = $this->resolver->resolve('{{event_organizer}}', $certificate);
+
+        $this->assertEquals('CCS', $result);
+    }
+
+    public function test_resolves_certificate_title(): void
+    {
+        $organization = Organization::create(['name' => 'Lyceum of Alabang', 'slug' => 'loa']);
+        $template = CertificateTemplate::create([
+            'organization_id' => $organization->id,
+            'name' => 'Test',
+            'type' => 'certificate',
+            'html_content' => '<div>{{certificate_title}}</div>',
+        ]);
+        $event = Event::create([
+            'organization_id' => $organization->id,
+            'template_id' => $template->id,
+            'name' => 'Test Event',
+            'certificate_title' => 'Certificate of Completion',
+            'certificate_number_pattern' => 'CERT-####',
+            'status' => 'active',
+        ]);
+        $certificate = Certificate::create([
+            'organization_id' => $organization->id,
+            'event_id' => $event->id,
+            'template_id' => $template->id,
+            'recipient_name' => 'Maria Santos',
+            'recipient_email' => 'maria@example.com',
+            'certificate_number' => 'CERT-0001',
+        ]);
+
+        $result = $this->resolver->resolve('{{certificate_title}}', $certificate);
+
+        $this->assertEquals('Certificate of Completion', $result);
+    }
+
+    public function test_resolves_expiry_date(): void
+    {
+        $organization = Organization::create(['name' => 'Lyceum of Alabang', 'slug' => 'loa']);
+        $template = CertificateTemplate::create([
+            'organization_id' => $organization->id,
+            'name' => 'Test',
+            'type' => 'certificate',
+            'html_content' => '<div>{{expiry_date}}</div>',
+        ]);
+        $event = Event::create([
+            'organization_id' => $organization->id,
+            'template_id' => $template->id,
+            'name' => 'Test Event',
+            'certificate_number_pattern' => 'CERT-####',
+            'status' => 'active',
+        ]);
+        $certificate = Certificate::create([
+            'organization_id' => $organization->id,
+            'event_id' => $event->id,
+            'template_id' => $template->id,
+            'recipient_name' => 'Maria Santos',
+            'recipient_email' => 'maria@example.com',
+            'certificate_number' => 'CERT-0001',
+            'expires_at' => '2026-12-31',
+        ]);
+
+        $result = $this->resolver->resolve('{{expiry_date}}', $certificate);
+
+        $this->assertEquals('December 31, 2026', $result);
     }
 
     public function test_resolves_multiple_placeholders(): void

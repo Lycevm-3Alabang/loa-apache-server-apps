@@ -10,6 +10,7 @@ use App\Models\CertificateSequence;
 use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Services\AuditLogger;
+use App\Services\CertUserChecker;
 use App\Services\PdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -93,6 +94,7 @@ class CertificateController extends Controller
         private readonly PdfService $pdfService,
         private readonly AuditLogger $auditLogger,
         private readonly QrCodeService $qrCodeService,
+        private readonly CertUserChecker $userChecker,
     ) {
     }
 
@@ -308,6 +310,12 @@ class CertificateController extends Controller
                 $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                 $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
+                $isRegistered = $this->userChecker->isRegistered($certificate->recipient_email);
+                $activateUrl = $isRegistered ? null : $this->userChecker->getActivateUrl(
+                    $certificate->certificate_number,
+                    $certificate->recipient_email,
+                );
+
                 Mail::to($certificate->recipient_email)->send(new CertificateEmail(
                     recipientName: $certificate->recipient_name,
                     recipientEmail: $certificate->recipient_email,
@@ -317,6 +325,8 @@ class CertificateController extends Controller
                     pdfPath: $pdfPath,
                     downloadUrl: $downloadUrl,
                     verifyUrl: $verifyUrl,
+                    isRegistered: $isRegistered,
+                    activateUrl: $activateUrl,
                 ));
 
                 CertificateEmailModel::create([
@@ -542,6 +552,12 @@ class CertificateController extends Controller
                     $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                     $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
+                    $isRegistered = $this->userChecker->isRegistered($recipient['email']);
+                    $activateUrl = $isRegistered ? null : $this->userChecker->getActivateUrl(
+                        $certificate->certificate_number,
+                        $recipient['email'],
+                    );
+
                     Mail::to($recipient['email'])->send(new CertificateEmail(
                         recipientName: $recipient['name'],
                         recipientEmail: $recipient['email'],
@@ -551,6 +567,8 @@ class CertificateController extends Controller
                         pdfPath: $pdfPath,
                         downloadUrl: $downloadUrl,
                         verifyUrl: $verifyUrl,
+                        isRegistered: $isRegistered,
+                        activateUrl: $activateUrl,
                     ));
 
                     CertificateEmailModel::create([
@@ -1089,6 +1107,12 @@ class CertificateController extends Controller
             $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
             $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
+            $isRegistered = $this->userChecker->isRegistered($certificate->recipient_email);
+            $activateUrl = $isRegistered ? null : $this->userChecker->getActivateUrl(
+                $certificate->certificate_number,
+                $certificate->recipient_email,
+            );
+
             Mail::to($certificate->recipient_email)->send(new CertificateEmail(
                 recipientName: $certificate->recipient_name,
                 recipientEmail: $certificate->recipient_email,
@@ -1098,6 +1122,8 @@ class CertificateController extends Controller
                 pdfPath: $pdfPath,
                 downloadUrl: $downloadUrl,
                 verifyUrl: $verifyUrl,
+                isRegistered: $isRegistered,
+                activateUrl: $activateUrl,
             ));
 
             CertificateEmailModel::create([

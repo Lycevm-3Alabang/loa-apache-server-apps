@@ -29,7 +29,10 @@ class PlaceholderResolver
             '{{event_name}}' => $event?->name ?? '',
             '{{event_date}}' => $event?->event_date?->format('F j, Y') ?? '',
             '{{event_location}}' => $event?->location ?? '',
-            '{{organization_name}}' => $organization?->name ?? '',
+            '{{event_organizer}}' => $event?->organizer ?? '',
+            '{{organization_name}}' => $event?->organizer ?? $organization?->name ?? '',
+            '{{certificate_title}}' => $event?->certificate_title ?? '',
+            '{{expiry_date}}' => $certificate->expires_at?->format('F j, Y') ?? '',
             '{{qr_code}}' => $qrImageTag,
         ];
 

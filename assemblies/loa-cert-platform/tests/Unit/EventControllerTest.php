@@ -37,6 +37,7 @@ class EventControllerTest extends TestCase
     {
         $eventData = [
             'name' => 'Test Event',
+            'organizer' => 'SAO',
             'certificate_number_pattern' => 'CERT-####',
         ];
 
@@ -93,6 +94,127 @@ class EventControllerTest extends TestCase
         $response->assertStatus(204);
         $this->assertDatabaseMissing('events', [
             'id' => $event->id
+        ]);
+    }
+
+    public function test_event_store_requires_organizer()
+    {
+        $response = $this->actingAsJwt()->postJson('/api/v1/events', [
+            'name' => 'Test Event',
+            'certificate_number_pattern' => 'CERT-####',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['organizer']);
+    }
+
+    public function test_event_store_rejects_empty_organizer()
+    {
+        $response = $this->actingAsJwt()->postJson('/api/v1/events', [
+            'name' => 'Test Event',
+            'organizer' => '',
+            'certificate_number_pattern' => 'CERT-####',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['organizer']);
+    }
+
+    public function test_event_store_rejects_whitespace_organizer()
+    {
+        $response = $this->actingAsJwt()->postJson('/api/v1/events', [
+            'name' => 'Test Event',
+            'organizer' => '   ',
+            'certificate_number_pattern' => 'CERT-####',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['organizer']);
+    }
+
+    public function test_event_store_accepts_valid_organizer()
+    {
+        $response = $this->actingAsJwt()->postJson('/api/v1/events', [
+            'name' => 'Test Event',
+            'organizer' => 'SAO',
+            'certificate_number_pattern' => 'CERT-####',
+        ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('events', [
+            'name' => 'Test Event',
+            'organizer' => 'SAO',
+        ]);
+    }
+
+    public function test_event_update_allows_partial_without_organizer()
+    {
+        $event = Event::factory()->create([
+            'name' => 'Test Event',
+            'organizer' => 'SAO',
+            'certificate_number_pattern' => 'CERT-####',
+        ]);
+
+        $response = $this->actingAsJwt()->patchJson("/api/v1/events/{$event->id}", [
+            'name' => 'Updated Event',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('events', [
+            'id' => $event->id,
+            'name' => 'Updated Event',
+            'organizer' => 'SAO',
+        ]);
+    }
+
+    public function test_event_update_rejects_empty_organizer()
+    {
+        $event = Event::factory()->create([
+            'name' => 'Test Event',
+            'organizer' => 'SAO',
+            'certificate_number_pattern' => 'CERT-####',
+        ]);
+
+        $response = $this->actingAsJwt()->patchJson("/api/v1/events/{$event->id}", [
+            'organizer' => '',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['organizer']);
+    }
+
+    public function test_event_update_rejects_whitespace_organizer()
+    {
+        $event = Event::factory()->create([
+            'name' => 'Test Event',
+            'organizer' => 'SAO',
+            'certificate_number_pattern' => 'CERT-####',
+        ]);
+
+        $response = $this->actingAsJwt()->patchJson("/api/v1/events/{$event->id}", [
+            'organizer' => '   ',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['organizer']);
+    }
+
+    public function test_event_update_accepts_valid_organizer()
+    {
+        $event = Event::factory()->create([
+            'name' => 'Test Event',
+            'organizer' => 'SAO',
+            'certificate_number_pattern' => 'CERT-####',
+        ]);
+
+        $response = $this->actingAsJwt()->patchJson("/api/v1/events/{$event->id}", [
+            'organizer' => 'CCS',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('events', [
+            'id' => $event->id,
+            'organizer' => 'CCS',
         ]);
     }
 }

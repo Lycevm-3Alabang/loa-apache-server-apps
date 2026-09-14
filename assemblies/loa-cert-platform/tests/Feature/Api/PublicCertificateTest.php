@@ -65,9 +65,9 @@ class PublicCertificateTest extends TestCase
             ->assertJsonPath('data.valid', true)
             ->assertJsonPath('data.status', 'active')
             ->assertJsonPath('data.recipient_name', 'Maria Santos')
+            ->assertJsonPath('data.recipient_email', 'maria@example.com')
             ->assertJsonPath('data.event_name', 'SPARK Bootcamp 2026')
-            ->assertJsonPath('data.organization.name', 'Lyceum of Alabang')
-            ->assertJsonMissing(['recipient_email' => 'maria@example.com']);
+            ->assertJsonPath('data.organization.name', 'Lyceum of Alabang');
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'certificate.viewed',
@@ -120,8 +120,7 @@ class PublicCertificateTest extends TestCase
             ->assertJsonPath('data.template.name', 'Test Certificate')
             ->assertJsonPath('data.event.name', 'SPARK Bootcamp 2026')
             ->assertJsonPath('data.organization.name', 'Lyceum of Alabang')
-            ->assertJsonStructure(['data' => ['certificate', 'template', 'event', 'qr_data_url', 'organization']])
-            ->assertJsonMissing(['recipient_email' => 'maria@example.com']);
+            ->assertJsonStructure(['data' => ['certificate', 'template', 'event', 'qr_data_url', 'organization']]);
 
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'certificate.viewed',
