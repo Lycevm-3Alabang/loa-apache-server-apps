@@ -113,6 +113,21 @@ https://cert-api.lyceumalabang.edu.ph/api/v1
 
 ---
 
+## Participant — /me
+
+Own-resources endpoints scoped to the authenticated user. All paths require `read` level **plus** the owner rule (§9.6 in `api-endpoints.md`): certificates are matched by `jwt.email === recipient_email`; events/templates by `jwt.sub === created_by`.
+
+| Method | Path | Required Level | Scope | Description |
+|--------|------|----------------|-------|-------------|
+| `GET` | `/me/certificates` | `read` | recipient | List certificates issued to the caller |
+| `GET` | `/me/certificates/{id}` | `read` | recipient | Get one certificate |
+| `GET` | `/me/events` | `read` | author | List events created by the caller |
+| `GET` | `/me/templates` | `read` | author | List templates created by the caller |
+
+> **Required grant for participants (`cert-user` group):** `read:/api/v1/me/certificates` and `read:/api/v1/me/certificates/{id}`. Without these grants the middleware returns `403`, which the frontend treats as an empty certificate list.
+
+---
+
 ## Authentication Requirements
 
 All endpoints except those listed as "Public" require:

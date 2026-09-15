@@ -187,6 +187,24 @@ The e-cert admin/staff/participant vocabulary maps to **groups granted levels in
 | `staff` (author-scoped) | `read`/`write` on **item paths only** (`/api/v1/events/{id}`, `/api/v1/templates/{id}`) + `read` on `/api/v1/me/events` and `/api/v1/me/templates`. **Not** granted the unscoped collection reads (`/api/v1/events`, `/api/v1/templates`). Author scope enforced in controllers (§9.6). |
 | `participant` | `read` on participant paths only: `/api/v1/me/certificates`, `/api/v1/me/certificates/{id}`, `/api/v1/certificates/{id}`, `/api/v1/certificates/{id}/pdf`, `/api/v1/certificates/{id}/download`, `/api/v1/events/{id}`, `/api/v1/certificates/qr`. Subject to the owner rule (§9.6). |
 
+### 4.4.1 Minimum Required Grants per Group
+
+The table below lists the **exact `<level>:<path>` grants** each seed group must receive in the Auth Platform (`tenant_endpoint_grant`) for the participant experience to function. A missing grant on any path causes the middleware to return `403`, which the frontend silently treats as an empty result.
+
+| Seed group | Required grants |
+|------------|-----------------|
+| `cert-user` | `read:/api/v1/me/certificates` |
+| | `read:/api/v1/me/certificates/{id}` |
+| | `read:/api/v1/certificates/{id}` |
+| | `read:/api/v1/certificates/{id}/pdf` |
+| | `read:/api/v1/certificates/{id}/download` |
+| | `read:/api/v1/events/{id}` |
+| | `read:/api/v1/certificates/qr` |
+| `cert-staff` | `read`/`write` on management paths (events, attendees, templates, certificates) **excluding** admin paths (revoke, delete, reissue, expire, audit, with-cert). Plus `read` on `/api/v1/me/events` and `/api/v1/me/templates` for author-scoped staff. |
+| `cert-admin` | `admin` on every cataloged path (Appendix A). |
+
+> **Common misconfiguration:** granting `cert-user` group membership without the `read:/api/v1/me/certificates` grant. The user can log in (SSO works) and sees the `participant` role in the UI, but the `/my/certificates` page returns empty because the middleware rejects the request.
+
 ## 4.5 `cert.*` Keys Are Not Enforced
 
 The v1.0 draft gated endpoints with `cert.*` claim keys (`cert.events.manage`, `cert.certificates.issue`, ...). Per the level-based decision, those keys are **not consulted** by the Cert runtime. They remain defined in `group-permission-management.md` (Final v2.0) but play no part in endpoint enforcement; access is granted with **endpoint grants (levels)** in the Auth Platform.

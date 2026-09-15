@@ -403,3 +403,32 @@ Repeat §9 against the local base URL:
 
 ### Open Questions
 - None.
+
+## 2026-09-14 Cert Activation Flow Finalized
+
+The certificate activation flow has been fully transitioned to the invite-gated model:
+
+- `cert-activation-invite.md` v1.0 Final — delta spec for invite-based activation
+- `cert-activation.md` v2.0 Final — amended flow: no Auth→Cert HTTP at activation time
+- All 5 call sites (CertificateController×3, EventController×2) updated to use `CertUserChecker::resolveActivation()`
+- `TenantMemberApiController::invite` D1: `200 already_registered` for existing emails (idempotent)
+- `TenantMemberApiController::invite` D2: `notify` flag — `notify=false` skips mail, returns raw token
+- Auth kill list: `showByCert`, `storeByCert`, `validateCertificate`, `GET|POST /set-password/cert` deleted
+- `CertUserChecker` D3: `resolveActivation(name, email)` replaces `isRegistered`/`getActivateUrl`
+- `CertUserChecker` D4: All 5 call sites swapped to new resolution
+- `CertUserChecker` D5: `isRegistered`/`getActivateUrl` deleted; test rewritten (6/6)
+- Attendee deletion frontend D1-D5 implemented in `e-cert/` (`attendees.ts`, `attendees-manager.tsx`)
+- `cert-user` group must exist on cert tenant before rollout; `invite` silently skips unknown groups
+- Production env: `AUTH_API_KEY` + `AUTH_BASE_URL` must be set on cert-api host (currently placeholder)
+- User directive: no CERT_PLATFORM_URL on production auth; old `/set-password/cert?cert=&email=` links abandoned
+- User directive: no duplicated UX for password pages; forgot/reset/change stay on auth
+
+**Authentication full suite:** 25 passed, 64 assertions (user confirmed green).
+**Cert full suite:** 213 passed, 664 assertions (verified).
+**Auth filtered (TenantMemberApiTest):** 25 passed, 64 assertions (verified).
+**Attendee deletion typecheck:** clean on changed files (pre-existing test errors unrelated).
+
+**Deployment blockers:**
+- `AUTH_API_KEY` not set on cert-api production host (`.env.cpanel:60` has placeholder `ENTER_AUTH_API_KEY_HERE`)
+- `cert-user` group must exist on cert tenant in auth-platform DB
+- Re-issue certificates for recipients who received old-format activation links (e.g., CERT-0015)
