@@ -72,6 +72,9 @@ class LocalCertReadinessSeeder extends Seeder
         }
 
         // JWT permission-key claims consumed by jwt.permission:* middleware.
+        // cert-admin: full user management. cert-staff: revoke-only on
+        // Vericert User accounts — the cert-api proxy enforces the target
+        // scoping server-side (AuthProxyController::updateUserStatus).
         $adminGroup = UserGroup::where('tenant_id', $tenant->id)
             ->where('name', 'cert-admin')
             ->first();
@@ -80,6 +83,19 @@ class LocalCertReadinessSeeder extends Seeder
             foreach (['users.view', 'users.manage'] as $claimKey) {
                 GroupClaim::updateOrCreate(
                     ['group_id' => $adminGroup->id, 'claim_key' => $claimKey],
+                    ['scope_type' => 'none', 'scope_id' => null],
+                );
+            }
+        }
+
+        $staffGroup = UserGroup::where('tenant_id', $tenant->id)
+            ->where('name', 'cert-staff')
+            ->first();
+
+        if ($staffGroup) {
+            foreach (['users.view', 'users.manage'] as $claimKey) {
+                GroupClaim::updateOrCreate(
+                    ['group_id' => $staffGroup->id, 'claim_key' => $claimKey],
                     ['scope_type' => 'none', 'scope_id' => null],
                 );
             }

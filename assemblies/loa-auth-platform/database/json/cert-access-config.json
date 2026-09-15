@@ -57,6 +57,7 @@
                 { "method": "GET",    "path": "/api/v1/templates/{id}/certificate-count", "level": "admin" },
                 { "method": "GET",    "path": "/api/v1/attendees/lookup",              "level": "admin" },
                 { "method": "GET",    "path": "/api/v1/service/users",                 "level": "admin" },
+                { "method": "GET",    "path": "/api/v1/service/users/{id}",             "level": "admin" },
                 { "method": "PATCH",  "path": "/api/v1/service/users/{id}/status",     "level": "admin" },
                 { "method": "GET",    "path": "/api/v1/service/users/{id}/groups",     "level": "admin" },
                 { "method": "POST",   "path": "/api/v1/service/users/{id}/groups",     "level": "admin" },
@@ -113,7 +114,11 @@
                 { "method": "GET",    "path": "/api/v1/dashboard/stats",               "level": "read" },
                 { "method": "GET",    "path": "/api/v1/dashboard/activity",            "level": "read" },
                 { "method": "GET",    "path": "/api/v1/templates/{id}/certificate-count", "level": "read" },
-                { "method": "GET",    "path": "/api/v1/attendees/lookup",              "level": "read" }
+                { "method": "GET",    "path": "/api/v1/attendees/lookup",              "level": "read" },
+                { "method": "GET",    "path": "/api/v1/service/users",                 "level": "read" },
+                { "method": "GET",    "path": "/api/v1/service/users/{id}",            "level": "read" },
+                { "method": "GET",    "path": "/api/v1/service/groups",                "level": "read" },
+                { "method": "PATCH",  "path": "/api/v1/service/users/{id}/status",     "level": "admin" }
             ]
         },
         {

@@ -254,9 +254,13 @@ INSERT INTO `user_groups` (`id`, `name`, `description`, `priority`, `tenant_id`,
 
 INSERT INTO `user_group_permission` (`user_group_id`, `permission_id`, `tenant_id`, `granted`) VALUES
 (2, 1, NULL, 1),
-(2, 2, NULL, 1);
+(2, 2, NULL, 1),
+(3, 1, NULL, 1),
+(3, 2, NULL, 1);
 
 -- JWT permission-key claims (source of truth for jwt.permission:* middleware)
+-- cert-staff holds users.view/manage so the cert-api proxy can reach Auth;
+-- target scoping (revoke Vericert Users only) is enforced in the proxy.
 INSERT INTO `group_claims` (`group_id`, `claim_key`, `scope_type`, `scope_id`, `created_at`, `updated_at`) VALUES
 (1, 'users.view', 'none', NULL, NOW(), NOW()),
 (1, 'users.manage', 'none', NULL, NOW(), NOW()),
@@ -266,6 +270,8 @@ INSERT INTO `group_claims` (`group_id`, `claim_key`, `scope_type`, `scope_id`, `
 (1, 'permissions.manage', 'none', NULL, NOW(), NOW()),
 (1, 'auth.verify', 'none', NULL, NOW(), NOW()),
 (2, 'users.view', 'none', NULL, NOW(), NOW()),
-(2, 'users.manage', 'none', NULL, NOW(), NOW());
+(2, 'users.manage', 'none', NULL, NOW(), NOW()),
+(3, 'users.view', 'none', NULL, NOW(), NOW()),
+(3, 'users.manage', 'none', NULL, NOW(), NOW());
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;

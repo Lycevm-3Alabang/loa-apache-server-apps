@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -11,6 +12,14 @@ use Illuminate\Support\Facades\Http;
  * frontend to the Auth Platform server-side.  The caller's JWT is
  * forwarded for /users and /groups; the configured API key is used
  * for /tenant/members endpoints.
+ *
+ * Privilege boundaries enforced here (in addition to catalog levels):
+ * - Role changes (add/remove group) are cert-admin only.
+ * - Status changes are cert-admin, or cert-staff limited to revoking
+ *   (disabling) accounts whose only cert role is cert-user.
+ * Staff hold the users.manage claim so the proxy can reach Auth; the
+ * scoping above is what keeps that claim least-privilege in practice.
+ * All mutations are audit-logged (actor resolved from JWT claims).
  */
 class AuthProxyController extends Controller
 {
@@ -18,7 +27,7 @@ class AuthProxyController extends Controller
     private int $timeout;
     private string $apiKey;
 
-    public function __construct()
+    public function __construct(private readonly AuditLogger $auditLogger)
     {
         $this->authBaseUrl = config('auth-platform.base_url', 'https://auth.lyceumalabang.edu.ph');
         $this->timeout = config('auth-platform.http_timeout', 5);
@@ -32,9 +41,44 @@ class AuthProxyController extends Controller
         return $this->proxyWithJwt('GET', '/api/v1/users', $request);
     }
 
+    public function showUser(Request $request, string $id): JsonResponse
+    {
+        return $this->proxyWithJwt('GET', "/api/v1/users/{$id}", $request);
+    }
+
     public function updateUserStatus(Request $request, string $id): JsonResponse
     {
-        return $this->proxyWithJwt('PATCH', "/api/v1/users/{$id}/status", $request);
+        $status = $request->input('status');
+
+        if (!$this->isAdmin($request)) {
+            // cert-staff: revoke-only (disable), Vericert User targets only.
+            if (!in_array('cert-staff', $this->callerGroups($request), true)) {
+                return response()->json(['message' => 'Only Vericert Admins may manage user status.'], 403);
+            }
+            if ($id === $this->callerSub($request)) {
+                return response()->json(['message' => 'You cannot change your own status.'], 403);
+            }
+            if ($status !== 'disabled') {
+                return response()->json(['message' => 'Staff may only revoke Vericert User accounts.'], 403);
+            }
+            $targetGroups = $this->fetchAuthUserGroups($id, $request);
+            if ($targetGroups === null) {
+                return response()->json(['message' => 'Unable to verify target account role.'], 403);
+            }
+            if (array_values($targetGroups) !== ['cert-user']) {
+                return response()->json(['message' => 'Staff may only revoke Vericert User accounts.'], 403);
+            }
+        }
+
+        $result = $this->proxyWithJwt('PATCH', "/api/v1/users/{$id}/status", $request);
+
+        if ($result->getStatusCode() < 400) {
+            $this->auditLogger->record('user.status_updated', 'api', 'user', $id, [
+                'status' => $status,
+            ]);
+        }
+
+        return $result;
     }
 
     // ── /users/{id}/groups (role membership) ────────────────────────────
@@ -46,12 +90,36 @@ class AuthProxyController extends Controller
 
     public function addUserGroup(Request $request, string $id): JsonResponse
     {
-        return $this->proxyWithJwt('POST', "/api/v1/users/{$id}/groups", $request);
+        if (!$this->isAdmin($request)) {
+            return response()->json(['message' => 'Only Vericert Admins may change roles.'], 403);
+        }
+
+        $result = $this->proxyWithJwt('POST', "/api/v1/users/{$id}/groups", $request);
+
+        if ($result->getStatusCode() < 400) {
+            $this->auditLogger->record('user.role_added', 'api', 'user', $id, [
+                'group_id' => $request->input('group_id'),
+            ]);
+        }
+
+        return $result;
     }
 
     public function removeUserGroup(Request $request, string $id, string $groupId): JsonResponse
     {
-        return $this->proxyWithJwt('DELETE', "/api/v1/users/{$id}/groups/{$groupId}", $request);
+        if (!$this->isAdmin($request)) {
+            return response()->json(['message' => 'Only Vericert Admins may change roles.'], 403);
+        }
+
+        $result = $this->proxyWithJwt('DELETE', "/api/v1/users/{$id}/groups/{$groupId}", $request);
+
+        if ($result->getStatusCode() < 400) {
+            $this->auditLogger->record('user.role_removed', 'api', 'user', $id, [
+                'group_id' => $groupId,
+            ]);
+        }
+
+        return $result;
     }
 
     // ── /groups ──────────────────────────────────────────────────────────
@@ -84,6 +152,38 @@ class AuthProxyController extends Controller
     }
 
     // ── Internal helpers ─────────────────────────────────────────────────
+
+    /**
+     * Group names of an Auth user, fetched server-side with the caller's JWT.
+     * Returns null when the target cannot be verified (fail-closed: callers
+     * treat null as deny). Upstream show requires users.view.
+     *
+     * @return string[]|null
+     */
+    private function fetchAuthUserGroups(string $id, Request $request): ?array
+    {
+        $http = Http::timeout($this->timeout)
+            ->withHeaders(['Accept' => 'application/json']);
+
+        $authHeader = $request->header('Authorization');
+        if ($authHeader) {
+            $http = $http->withHeaders(['Authorization' => $authHeader]);
+        }
+
+        try {
+            $response = $http->get("{$this->authBaseUrl}/api/v1/users/{$id}");
+        } catch (\Exception $e) {
+            return null;
+        }
+
+        if ($response->failed()) {
+            return null;
+        }
+
+        $groups = $response->json('groups');
+
+        return is_array($groups) ? array_values($groups) : null;
+    }
 
     /**
      * Proxy with the caller's JWT forwarded (for /users, /groups).

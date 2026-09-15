@@ -52,6 +52,7 @@
         { "method": "GET",    "path": "/api/v1/templates/{id}/certificate-count", "label": "Template certificate count",      "required_level": "read" },
         { "method": "GET",    "path": "/api/v1/attendees/lookup",              "label": "Lookup attendee",                    "required_level": "read" },
         { "method": "GET",    "path": "/api/v1/service/users",                 "label": "List auth users",                    "required_level": "read" },
+        { "method": "GET",    "path": "/api/v1/service/users/{id}",             "label": "Get auth user",                      "required_level": "read" },
         { "method": "PATCH",  "path": "/api/v1/service/users/{id}/status",     "label": "Update user status",                "required_level": "admin" },
         { "method": "GET",    "path": "/api/v1/service/users/{id}/groups",     "label": "List user groups",                  "required_level": "read" },
         { "method": "POST",   "path": "/api/v1/service/users/{id}/groups",     "label": "Add user to group",                 "required_level": "admin" },

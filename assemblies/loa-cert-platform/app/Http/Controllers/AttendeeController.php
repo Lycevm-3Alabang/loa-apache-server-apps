@@ -648,6 +648,14 @@ class AttendeeController extends Controller
                 ->whereNotNull('revoked_at')
                 ->pluck('id');
 
+        // Inactive but not revoked: expired and never re-issued.
+        $expiredCertificateIds = $certificateIds->isEmpty()
+            ? collect()
+            : Certificate::whereIn('id', $certificateIds)
+                ->whereNull('revoked_at')
+                ->where('expires_at', '<', now())
+                ->pluck('id');
+
         $events = $attendees->map(fn (EventAttendee $attendee) => [
             'id' => $attendee->event_id,
             'name' => $attendee->event?->name,
@@ -658,6 +666,8 @@ class AttendeeController extends Controller
             'has_certificate' => $attendee->certificate_id !== null,
             'certificate_revoked' => $attendee->certificate_id !== null
                 && $revokedCertificateIds->contains($attendee->certificate_id),
+            'certificate_expired' => $attendee->certificate_id !== null
+                && $expiredCertificateIds->contains($attendee->certificate_id),
         ]);
 
         $standaloneCertificates = Certificate::whereRaw('LOWER(recipient_email) = ?', [$email]);
@@ -678,6 +688,10 @@ class AttendeeController extends Controller
                         ->count(),
                     'certificates_revoked' => (clone $standaloneCertificates)
                         ->whereNotNull('revoked_at')
+                        ->count(),
+                    'certificates_expired' => (clone $standaloneCertificates)
+                        ->whereNull('revoked_at')
+                        ->where('expires_at', '<', now())
                         ->count(),
                 ],
             ],
