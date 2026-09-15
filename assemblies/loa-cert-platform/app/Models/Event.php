@@ -27,6 +27,7 @@ class Event extends Model
         'certificate_number_pattern',
         'valid_until',
         'status',
+        'is_public',
         'created_by',
     ];
 
@@ -34,6 +35,7 @@ class Event extends Model
         'id' => 'string',
         'event_date' => 'date',
         'valid_until' => 'date',
+        'is_public' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

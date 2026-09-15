@@ -267,6 +267,7 @@ CREATE TABLE `events` (
   `certificate_number_pattern` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `valid_until` date DEFAULT NULL,
   `status` enum('draft','active','archive') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `is_public` tinyint(1) NOT NULL DEFAULT 0,
   `created_by` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -354,6 +355,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (8,'2026_08_11_0000
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (9,'2026_08_24_000001_add_visibility_and_updated_by_to_certificate_templates_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (10,'2026_09_10_000001_create_jobs_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (11,'2026_09_13_000001_add_website_to_organizations_table',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (12,'2026_09_15_000001_add_is_public_to_events_table',1);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -400,4 +402,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-14 15:07:48
+-- Dump completed on 2026-09-15  6:15:17

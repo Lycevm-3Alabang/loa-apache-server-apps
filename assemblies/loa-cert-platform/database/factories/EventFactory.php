@@ -23,6 +23,7 @@ class EventFactory extends Factory
             'certificate_number_pattern' => 'CERT-####',
             'valid_until' => null,
             'status' => 'draft',
+            'is_public' => false,
         ];
     }
 }
