@@ -38,6 +38,7 @@ class MeDashboardAuditTest extends TestCase
             'type' => 'certificate',
             'html_content' => '<div>{{recipient_name}}</div>',
             'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $this->emailTemplate = CertificateTemplate::create([
@@ -46,6 +47,7 @@ class MeDashboardAuditTest extends TestCase
             'type' => 'email',
             'html_content' => '<p>Hello</p>',
             'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $this->event = Event::create([
@@ -57,6 +59,7 @@ class MeDashboardAuditTest extends TestCase
             'valid_until' => now()->addMonth(),
             'status' => 'active',
             'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
     }
 
@@ -134,6 +137,7 @@ class MeDashboardAuditTest extends TestCase
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'active',
             'created_by' => '00000000-0000-0000-0000-000000000099',
+            'updated_by' => '00000000-0000-0000-0000-000000000099',
         ]);
 
         $response = $this->actingAsJwt()->getJson('/api/v1/me/events');
@@ -151,6 +155,7 @@ class MeDashboardAuditTest extends TestCase
             'type' => 'certificate',
             'html_content' => '<div>hi</div>',
             'created_by' => '00000000-0000-0000-0000-000000000099',
+            'updated_by' => '00000000-0000-0000-0000-000000000099',
         ]);
 
         $response = $this->actingAsJwt()->getJson('/api/v1/me/templates?type=certificate');

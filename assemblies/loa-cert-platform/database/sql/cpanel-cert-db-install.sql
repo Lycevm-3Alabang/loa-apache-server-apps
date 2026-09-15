@@ -137,7 +137,7 @@ CREATE TABLE `certificate_templates` (
   `css_content` text COLLATE utf8mb4_unicode_ci,
   `visibility` enum('public','private') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'public',
   `created_by` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `updated_by` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `updated_by` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -268,9 +268,10 @@ CREATE TABLE `events` (
   `valid_until` date DEFAULT NULL,
   `status` enum('draft','active','archive') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
   `is_public` tinyint(1) NOT NULL DEFAULT 0,
-  `created_by` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
+  `created_by` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `updated_by` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NOT NULL,
+  `updated_at` timestamp NOT NULL,
   PRIMARY KEY (`id`),
   KEY `events_organization_id_foreign` (`organization_id`),
   KEY `events_template_id_foreign` (`template_id`),
@@ -356,6 +357,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (9,'2026_08_24_0000
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (10,'2026_09_10_000001_create_jobs_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (11,'2026_09_13_000001_add_website_to_organizations_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (12,'2026_09_15_000001_add_is_public_to_events_table',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (13,'2026_09_15_000002_add_updated_by_to_events_table',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (14,'2026_09_15_000003_enforce_event_authorship_constraints',1);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 

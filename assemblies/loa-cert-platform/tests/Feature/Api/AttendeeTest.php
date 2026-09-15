@@ -35,6 +35,8 @@ class AttendeeTest extends TestCase
             'name' => 'Test Certificate',
             'type' => 'certificate',
             'html_content' => '<div>{{recipient_name}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $this->event = Event::create([
@@ -44,6 +46,8 @@ class AttendeeTest extends TestCase
             'certificate_number_pattern' => 'CERT-####',
             'valid_until' => now()->addMonth(),
             'status' => 'active',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
     }
 

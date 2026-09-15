@@ -119,10 +119,17 @@ class CertificateController extends Controller
     )]
     public function index(Request $request): JsonResponse
     {
+        // Note: event visibility (is_public) applies to events only, not
+        // certificates. Certificate access stays level-gated (read) with no
+        // per-event scoping here.
         $query = Certificate::with(['event', 'template']);
 
         if ($eventId = $request->query('event_id')) {
-            $query->where('event_id', $eventId);
+            if ($eventId === 'none') {
+                $query->whereNull('event_id');
+            } else {
+                $query->where('event_id', $eventId);
+            }
         }
 
         if ($email = $request->query('recipient_email')) {
@@ -149,6 +156,7 @@ class CertificateController extends Controller
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('recipient_name', 'like', "%{$search}%")
+                  ->orWhere('recipient_email', 'like', "%{$search}%")
                   ->orWhere('certificate_number', 'like', "%{$search}%");
             });
         }
@@ -907,6 +915,13 @@ class CertificateController extends Controller
             Storage::disk('local')->delete($certificate->file_path);
         }
 
+        // Cert-only delete: the attendee roster row is preserved, only its
+        // link to this certificate is cleared.
+        EventAttendee::where('certificate_id', $certificate->id)->update([
+            'certificate_id' => null,
+            'certificate_number' => null,
+        ]);
+
         $certificate->delete();
 
         return response()->json(null, 204);
@@ -1279,6 +1294,12 @@ class CertificateController extends Controller
             'revoke_reason' => $certificate->revoke_reason,
             'status' => $certificate->status,
             'event_id' => $certificate->event_id,
+            'event' => $certificate->relationLoaded('event') && $certificate->event ? [
+                'id' => $certificate->event->id,
+                'name' => $certificate->event->name,
+                'status' => $certificate->event->status,
+                'is_public' => (bool) $certificate->event->is_public,
+            ] : null,
             'template_id' => $certificate->template_id,
             'file_path' => $certificate->file_path,
             'created_at' => $certificate->created_at?->toIso8601String(),

@@ -6,6 +6,7 @@ use App\Models\CertificateTemplate;
 use App\Models\Event;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 use Tests\Traits\WithJwt;
 
@@ -31,11 +32,20 @@ class TemplateVisibilityTest extends TestCase
 
         config(['cert-platform.organization_id' => $this->organization->id]);
 
+        // Event writes verify the author against Auth (spec event-visibility
+        // §2 guard rail) — fake an active author for these tests.
+        Http::fake([
+            '*/api/v1/users/*' => Http::response(['status' => 'active'], 200),
+        ]);
+
         $this->event = Event::create([
             'organization_id' => $this->organization->id,
             'name' => 'Visibility Event',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'active',
+            'is_public' => true,
+            'created_by' => self::OWNER_SUB,
+            'updated_by' => self::OWNER_SUB,
         ]);
     }
 
@@ -387,6 +397,8 @@ class TemplateVisibilityTest extends TestCase
             'name' => 'Grandfathered',
             'certificate_number_pattern' => 'GRAND-####',
             'status' => 'active',
+            'created_by' => self::OWNER_SUB,
+            'updated_by' => self::OWNER_SUB,
         ]);
 
         // Author privatizes the template after the event referenced it.

@@ -6,6 +6,7 @@ use Tests\TestCase;
 use App\Models\Event;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\Traits\WithJwt;
 
 class EventControllerTest extends TestCase
@@ -20,6 +21,12 @@ class EventControllerTest extends TestCase
             'name' => 'Lyceum of Alabang',
             'slug' => 'loa',
         ])->id]);
+
+        // Event writes verify the author against Auth (spec event-visibility
+        // §2 guard rail) — fake an active author for these unit tests.
+        Http::fake([
+            '*/api/v1/users/*' => Http::response(['status' => 'active'], 200),
+        ]);
     }
 
     public function test_event_index_returns_collection()
@@ -56,6 +63,7 @@ class EventControllerTest extends TestCase
         $event = Event::factory()->create([
             'name' => 'Test Event',
             'certificate_number_pattern' => 'CERT-####',
+            'is_public' => true,
         ]);
 
         $response = $this->actingAsJwt()->get("/api/v1/events/{$event->id}");
@@ -70,6 +78,7 @@ class EventControllerTest extends TestCase
         $event = Event::factory()->create([
             'name' => 'Original Name',
             'certificate_number_pattern' => 'CERT-####',
+            'is_public' => true,
         ]);
 
         $updateData = [
@@ -87,6 +96,7 @@ class EventControllerTest extends TestCase
         $event = Event::factory()->create([
             'name' => 'Test Event',
             'certificate_number_pattern' => 'CERT-####',
+            'is_public' => true,
         ]);
 
         $response = $this->actingAsJwt()->delete("/api/v1/events/{$event->id}");
@@ -153,6 +163,7 @@ class EventControllerTest extends TestCase
             'name' => 'Test Event',
             'organizer' => 'SAO',
             'certificate_number_pattern' => 'CERT-####',
+            'is_public' => true,
         ]);
 
         $response = $this->actingAsJwt()->patchJson("/api/v1/events/{$event->id}", [
@@ -173,6 +184,7 @@ class EventControllerTest extends TestCase
             'name' => 'Test Event',
             'organizer' => 'SAO',
             'certificate_number_pattern' => 'CERT-####',
+            'is_public' => true,
         ]);
 
         $response = $this->actingAsJwt()->patchJson("/api/v1/events/{$event->id}", [
@@ -189,6 +201,7 @@ class EventControllerTest extends TestCase
             'name' => 'Test Event',
             'organizer' => 'SAO',
             'certificate_number_pattern' => 'CERT-####',
+            'is_public' => true,
         ]);
 
         $response = $this->actingAsJwt()->patchJson("/api/v1/events/{$event->id}", [
@@ -205,6 +218,7 @@ class EventControllerTest extends TestCase
             'name' => 'Test Event',
             'organizer' => 'SAO',
             'certificate_number_pattern' => 'CERT-####',
+            'is_public' => true,
         ]);
 
         $response = $this->actingAsJwt()->patchJson("/api/v1/events/{$event->id}", [

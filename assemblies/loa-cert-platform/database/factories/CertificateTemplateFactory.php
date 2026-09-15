@@ -12,6 +12,8 @@ class CertificateTemplateFactory extends Factory
 
     public function definition(): array
     {
+        $author = $this->faker->uuid();
+
         return [
             'organization_id' => Organization::factory(),
             'name' => $this->faker->words(3, true),
@@ -20,6 +22,8 @@ class CertificateTemplateFactory extends Factory
             'html_content' => '<div>{{recipient_name}}</div>',
             'css_content' => null,
             'visibility' => CertificateTemplate::VISIBILITY_PUBLIC,
+            'created_by' => $author,
+            'updated_by' => $author,
         ];
     }
 

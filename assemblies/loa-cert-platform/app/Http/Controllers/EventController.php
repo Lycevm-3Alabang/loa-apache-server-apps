@@ -161,7 +161,8 @@ class EventController extends Controller
     )]
     public function index(Request $request): JsonResponse
     {
-        $query = Event::withCount(['attendees', 'certificates']);
+        $query = Event::withCount(['attendees', 'certificates'])
+            ->visibleTo($this->callerSub($request), $this->callerGroups($request));
 
         // Apply search filter
         if ($request->has('search')) {
@@ -246,11 +247,22 @@ class EventController extends Controller
                     }
                 },
             ],
-            'status' => 'nullable|in:draft,active,archive'
+            'status' => 'nullable|in:draft,active,archive',
+            'is_public' => 'nullable|boolean',
         ]);
 
-        $event = Event::create(array_merge($request->all(), [
+        if ($denied = $this->denyInactiveAuthor($request, $this->callerSub($request), 'Event')) {
+            return $denied;
+        }
+
+        $event = Event::create(array_merge($request->except(['created_by', 'updated_by']), [
             'organization_id' => config('cert-platform.organization_id'),
+            // Authorship is server-stamped (spec §2): private events are
+            // visible to the author (plus cert-admin), so the client must not
+            // set either field. updated_by starts identical to created_by.
+            'created_by' => $this->callerSub($request),
+            'updated_by' => $this->callerSub($request),
+            'is_public' => $request->boolean('is_public'),
         ]));
 
         $this->auditLogger->record('event.created', 'api', 'event', $event->id, [
@@ -278,10 +290,17 @@ class EventController extends Controller
             new OA\Response(response: 404, description: "Not found"),
         ]
     )]
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $event = Event::withCount(['attendees', 'certificates'])->findOrFail($id);
-        
+        $event = Event::withCount(['attendees', 'certificates'])->find($id);
+
+        if (!$event || !$event->isVisibleTo($this->callerSub($request), $this->callerGroups($request))) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event not found.',
+            ], 404);
+        }
+
         return response()->json([
             'data' => $this->formatEvent($event)
         ]);
@@ -310,7 +329,14 @@ class EventController extends Controller
     )]
     public function update(Request $request, string $id): JsonResponse
     {
-        $event = Event::findOrFail($id);
+        $event = Event::find($id);
+
+        if (!$event || !$event->isVisibleTo($this->callerSub($request), $this->callerGroups($request))) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event not found.',
+            ], 404);
+        }
 
         $request->validate([
             'name' => 'nullable|string',
@@ -339,10 +365,36 @@ class EventController extends Controller
                     }
                 },
             ],
-            'status' => 'nullable|in:draft,active,archive'
+            'status' => 'nullable|in:draft,active,archive',
+            'is_public' => 'nullable|boolean',
         ]);
 
-        $event->update($request->all());
+        // Flipping visibility is owner/admin-only (mirrors template rule).
+        if (
+            $request->input('is_public') !== null
+            && (bool) $request->input('is_public') !== (bool) $event->is_public
+            && !$this->isAdmin($request)
+            && $event->created_by !== $this->callerSub($request)
+        ) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only the event author or a Vericert Admin may change visibility.',
+            ], 403);
+        }
+
+        if ($denied = $this->denyInactiveAuthor($request, $this->callerSub($request), 'Event')) {
+            return $denied;
+        }
+
+        // created_by is server-stamped at create and never client-writable;
+        // updated_by re-stamps to the caller on every successful update.
+        // An explicit null is_public keeps the current value.
+        $data = $request->except(['created_by', 'updated_by']);
+        if (!isset($data['is_public'])) {
+            unset($data['is_public']);
+        }
+        $data['updated_by'] = $this->callerSub($request);
+        $event->update($data);
 
         $this->auditLogger->record('event.updated', 'api', 'event', $event->id, [
             'name' => $event->name,
@@ -369,9 +421,16 @@ class EventController extends Controller
             new OA\Response(response: 404, description: "Not found"),
         ]
     )]
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $event = Event::findOrFail($id);
+        $event = Event::find($id);
+
+        if (!$event || !$event->isVisibleTo($this->callerSub($request), $this->callerGroups($request))) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Event not found.',
+            ], 404);
+        }
 
         $this->auditLogger->record('event.deleted', 'api', 'event', $event->id, [
             'name' => $event->name,
@@ -1214,6 +1273,8 @@ class EventController extends Controller
             'certificate_number_pattern' => $event->certificate_number_pattern,
             'valid_until' => $event->valid_until?->toDateString(),
             'status' => $event->status,
+            'is_public' => (bool) $event->is_public,
+            'created_by' => $event->created_by,
             'template_id' => $event->template_id,
             'email_template_id' => $event->email_template_id,
             'attendees_count' => $event->attendees_count ?? 0,

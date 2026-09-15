@@ -12,6 +12,8 @@ class EventFactory extends Factory
 
     public function definition(): array
     {
+        $author = $this->faker->uuid();
+
         return [
             'organization_id' => Organization::factory(),
             'name' => $this->faker->sentence(3),
@@ -24,6 +26,8 @@ class EventFactory extends Factory
             'valid_until' => null,
             'status' => 'draft',
             'is_public' => false,
+            'created_by' => $author,
+            'updated_by' => $author,
         ];
     }
 }

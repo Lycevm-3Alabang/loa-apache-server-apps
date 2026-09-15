@@ -9,12 +9,15 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 use Tests\Traits\WithJwt;
 
 class EventTest extends TestCase
 {
     use RefreshDatabase, WithJwt;
+
+    private const AUTHOR_SUB = '00000000-0000-0000-0000-000000000001';
 
     private Organization $organization;
     private CertificateTemplate $template;
@@ -31,11 +34,19 @@ class EventTest extends TestCase
 
         config(['cert-platform.organization_id' => $this->organization->id]);
 
+        // Event writes verify the author against Auth (spec event-visibility
+        // §2 guard rail) — fake an active author for these tests.
+        Http::fake([
+            '*/api/v1/users/*' => Http::response(['status' => 'active'], 200),
+        ]);
+
         $this->template = CertificateTemplate::create([
             'organization_id' => $this->organization->id,
             'name' => 'Test Certificate',
             'type' => 'certificate',
             'html_content' => '<div>{{recipient_name}}</div>',
+            'created_by' => self::AUTHOR_SUB,
+            'updated_by' => self::AUTHOR_SUB,
         ]);
 
         $this->event = Event::create([
@@ -45,6 +56,9 @@ class EventTest extends TestCase
             'certificate_number_pattern' => 'CERT-####',
             'valid_until' => now()->addMonth(),
             'status' => 'active',
+            'is_public' => true,
+            'created_by' => self::AUTHOR_SUB,
+            'updated_by' => self::AUTHOR_SUB,
         ]);
     }
 
@@ -54,6 +68,9 @@ class EventTest extends TestCase
             'organization_id' => $this->organization->id,
             'name' => 'Second Event',
             'certificate_number_pattern' => 'CERT-####',
+            'is_public' => true,
+            'created_by' => self::AUTHOR_SUB,
+            'updated_by' => self::AUTHOR_SUB,
         ]);
 
         $response = $this->actingAsJwt()->getJson('/api/v1/events');
@@ -203,6 +220,8 @@ class EventTest extends TestCase
             'type' => 'certificate',
             'html_content' => '<div>Source</div>',
             'css_content' => 'body {}',
+            'created_by' => self::AUTHOR_SUB,
+            'updated_by' => self::AUTHOR_SUB,
         ]);
 
         $response = $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/clone-template", [
@@ -233,6 +252,8 @@ class EventTest extends TestCase
             'name' => 'Some Email',
             'type' => 'email',
             'html_content' => '<div>Email</div>',
+            'created_by' => self::AUTHOR_SUB,
+            'updated_by' => self::AUTHOR_SUB,
         ]);
 
         $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/clone-template", [
@@ -249,6 +270,8 @@ class EventTest extends TestCase
             'name' => 'Source Email',
             'type' => 'email',
             'html_content' => '<div>Hello {{recipient_name}}</div>',
+            'created_by' => self::AUTHOR_SUB,
+            'updated_by' => self::AUTHOR_SUB,
         ]);
 
         $response = $this->actingAsJwt()->postJson("/api/v1/events/{$this->event->id}/clone-email-template", [

@@ -30,6 +30,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test',
             'type' => 'certificate',
             'html_content' => '<div>{{recipient_name}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $event = Event::create([
             'organization_id' => $organization->id,
@@ -37,6 +39,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test Event',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'active',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $certificate = Certificate::create([
             'organization_id' => $organization->id,
@@ -60,6 +64,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test',
             'type' => 'certificate',
             'html_content' => '<div>{{certificate_number}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $event = Event::create([
             'organization_id' => $organization->id,
@@ -67,6 +73,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test Event',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'active',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $certificate = Certificate::create([
             'organization_id' => $organization->id,
@@ -90,6 +98,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test',
             'type' => 'certificate',
             'html_content' => '<div>{{event_name}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $event = Event::create([
             'organization_id' => $organization->id,
@@ -120,6 +130,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test',
             'type' => 'certificate',
             'html_content' => '<div>{{organization_name}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $event = Event::create([
             'organization_id' => $organization->id,
@@ -151,6 +163,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test',
             'type' => 'certificate',
             'html_content' => '<div>{{event_organizer}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $event = Event::create([
             'organization_id' => $organization->id,
@@ -182,6 +196,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test',
             'type' => 'certificate',
             'html_content' => '<div>{{certificate_title}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $event = Event::create([
             'organization_id' => $organization->id,
@@ -213,6 +229,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test',
             'type' => 'certificate',
             'html_content' => '<div>{{expiry_date}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $event = Event::create([
             'organization_id' => $organization->id,
@@ -220,6 +238,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test Event',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'active',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $certificate = Certificate::create([
             'organization_id' => $organization->id,
@@ -244,6 +264,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test',
             'type' => 'certificate',
             'html_content' => '<div>{{recipient_name}} - {{certificate_number}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $event = Event::create([
             'organization_id' => $organization->id,
@@ -251,6 +273,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'Test Event',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'active',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $certificate = Certificate::create([
             'organization_id' => $organization->id,

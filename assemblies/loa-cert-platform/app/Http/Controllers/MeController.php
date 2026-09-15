@@ -281,6 +281,7 @@ class MeController extends Controller
             'certificate_number_pattern' => $event->certificate_number_pattern,
             'valid_until' => $event->valid_until?->toDateString(),
             'status' => $event->status,
+            'is_public' => (bool) $event->is_public,
             'template_id' => $event->template_id,
             'email_template_id' => $event->email_template_id,
             'attendees_count' => $event->attendees_count ?? 0,

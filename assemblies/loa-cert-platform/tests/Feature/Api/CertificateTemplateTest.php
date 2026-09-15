@@ -35,6 +35,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Test Certificate',
             'type' => 'certificate',
             'html_content' => '<div>{{recipient_name}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         CertificateTemplate::create([
@@ -42,6 +44,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Test Email',
             'type' => 'email',
             'html_content' => '<div>Hello {{recipient_name}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $response = $this->actingAsJwt()->getJson('/api/v1/templates');
@@ -63,6 +67,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Test Certificate',
             'type' => 'certificate',
             'html_content' => '<div>{{recipient_name}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         CertificateTemplate::create([
@@ -70,6 +76,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Test Email',
             'type' => 'email',
             'html_content' => '<div>Hello {{recipient_name}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $response = $this->actingAsJwt()->getJson('/api/v1/templates?type=certificate');
@@ -85,6 +93,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'SPARK Certificate',
             'type' => 'certificate',
             'html_content' => '<div>{{recipient_name}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         CertificateTemplate::create([
@@ -92,6 +102,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'General Certificate',
             'type' => 'certificate',
             'html_content' => '<div>{{recipient_name}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $response = $this->actingAsJwt()->getJson('/api/v1/templates?search=SPARK');
@@ -149,6 +161,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Existing Template',
             'type' => 'certificate',
             'html_content' => '<div>test</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $payload = [
@@ -170,6 +184,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Test Certificate',
             'type' => 'certificate',
             'html_content' => '<div>{{recipient_name}}</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $response = $this->actingAsJwt()->getJson("/api/v1/templates/{$template->id}");
@@ -194,6 +210,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Original Name',
             'type' => 'certificate',
             'html_content' => '<div>original</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $payload = [
@@ -225,6 +243,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Template A',
             'type' => 'certificate',
             'html_content' => '<div>test</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $templateB = CertificateTemplate::create([
@@ -232,6 +252,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Template B',
             'type' => 'certificate',
             'html_content' => '<div>test</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $response = $this->actingAsJwt()->patchJson("/api/v1/templates/{$templateB->id}", [
@@ -249,6 +271,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Locked Template',
             'type' => 'certificate',
             'html_content' => '<div>test</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         Event::create([
@@ -257,6 +281,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Test Event',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'draft',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $response = $this->actingAsJwt()->patchJson("/api/v1/templates/{$template->id}", [
@@ -274,6 +300,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Deletable Template',
             'type' => 'certificate',
             'html_content' => '<div>test</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $response = $this->actingAsJwt()->deleteJson("/api/v1/templates/{$template->id}");
@@ -297,6 +325,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Event Template',
             'type' => 'certificate',
             'html_content' => '<div>test</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         Event::create([
@@ -305,6 +335,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Test Event',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'draft',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $response = $this->actingAsJwt()->deleteJson("/api/v1/templates/{$template->id}");
@@ -320,6 +352,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Certificate Template',
             'type' => 'certificate',
             'html_content' => '<div>test</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         Certificate::create([
@@ -343,6 +377,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Locked Template',
             'type' => 'certificate',
             'html_content' => '<div>test</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         Event::create([
@@ -351,6 +387,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Test Event',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'draft',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $response = $this->actingAsJwt()->getJson("/api/v1/templates/{$template->id}");
@@ -367,6 +405,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Empty Template',
             'type' => 'certificate',
             'html_content' => '<div>test</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         $response = $this->actingAsJwt()->getJson("/api/v1/templates/{$template->id}/certificate-count");
@@ -385,6 +425,8 @@ class CertificateTemplateTest extends TestCase
             'name' => 'Counted Template',
             'type' => 'certificate',
             'html_content' => '<div>test</div>',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
 
         // Create 1 revoked certificate

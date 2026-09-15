@@ -152,6 +152,10 @@ class CertificateTemplateController extends Controller
         $organizationId = $this->resolveOrganizationId();
         $sub = $this->callerSub($request);
 
+        if (!$sub) {
+            return response()->json(['message' => 'Unauthenticated author.'], 401);
+        }
+
         $existing = CertificateTemplate::where('organization_id', $organizationId)
             ->where('name', $request->input('name'))
             ->exists();
@@ -299,9 +303,12 @@ class CertificateTemplateController extends Controller
             'visibility',
         ]);
 
-        if ($sub !== null) {
-            $data['updated_by'] = $sub;
+        // updated_by is server-stamped on every successful update (spec
+        // event-visibility §2) — never client-settable, never left stale.
+        if ($sub === null) {
+            return response()->json(['message' => 'Unauthenticated author.'], 401);
         }
+        $data['updated_by'] = $sub;
 
         $template->update($data);
 
