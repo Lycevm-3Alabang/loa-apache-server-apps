@@ -37,6 +37,23 @@ class AuthProxyController extends Controller
         return $this->proxyWithJwt('PATCH', "/api/v1/users/{$id}/status", $request);
     }
 
+    // ── /users/{id}/groups (role membership) ────────────────────────────
+
+    public function listUserGroups(Request $request, string $id): JsonResponse
+    {
+        return $this->proxyWithJwt('GET', "/api/v1/users/{$id}/groups", $request);
+    }
+
+    public function addUserGroup(Request $request, string $id): JsonResponse
+    {
+        return $this->proxyWithJwt('POST', "/api/v1/users/{$id}/groups", $request);
+    }
+
+    public function removeUserGroup(Request $request, string $id, string $groupId): JsonResponse
+    {
+        return $this->proxyWithJwt('DELETE', "/api/v1/users/{$id}/groups/{$groupId}", $request);
+    }
+
     // ── /groups ──────────────────────────────────────────────────────────
 
     public function listGroups(Request $request): JsonResponse

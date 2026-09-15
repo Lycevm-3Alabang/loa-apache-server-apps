@@ -110,6 +110,9 @@ Route::prefix('v1')->group(function () {
         Route::prefix('service')->group(function () {
             Route::get('/users', [AuthProxyController::class, 'listUsers']);
             Route::patch('/users/{id}/status', [AuthProxyController::class, 'updateUserStatus']);
+            Route::get('/users/{id}/groups', [AuthProxyController::class, 'listUserGroups']);
+            Route::post('/users/{id}/groups', [AuthProxyController::class, 'addUserGroup']);
+            Route::delete('/users/{id}/groups/{groupId}', [AuthProxyController::class, 'removeUserGroup']);
             Route::get('/groups', [AuthProxyController::class, 'listGroups']);
             Route::get('/members', [AuthProxyController::class, 'listMembers']);
             Route::post('/members', [AuthProxyController::class, 'storeMember']);
