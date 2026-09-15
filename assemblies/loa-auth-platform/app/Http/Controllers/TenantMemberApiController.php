@@ -155,13 +155,30 @@ class TenantMemberApiController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email',
+            'email' => 'required|email|max:255',
             'groups' => 'nullable|array',
             'groups.*' => 'string|max:255',
+            'notify' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // D1 (cert-activation-invite): existing email is not an error.
+        // No state change — the caller treats this as "already registered".
+        $existing = User::where('email', $request->input('email'))->first();
+
+        if ($existing) {
+            return response()->json([
+                'status' => 'already_registered',
+                'user' => [
+                    'id' => $existing->id,
+                    'name' => $existing->name,
+                    'email' => $existing->email,
+                    'status' => $existing->status,
+                ],
+            ]);
         }
 
         $user = $this->identity->register(
@@ -189,16 +206,24 @@ class TenantMemberApiController extends Controller
 
         $rawToken = bin2hex(random_bytes(32));
         $hashedToken = hash('sha256', $rawToken);
+        $expiresAt = now()->addHours(48);
 
         PasswordSetToken::where('user_id', $user->id)->delete();
 
         PasswordSetToken::create([
             'user_id' => $user->id,
             'token' => $hashedToken,
-            'expires_at' => now()->addHours(48),
+            'expires_at' => $expiresAt,
         ]);
 
-        Mail::to($user->email)->queue(new SetPasswordMail($user, $rawToken));
+        // D2 (cert-activation-invite): notify=false skips auth's mail and
+        // returns the raw token show-once so the caller can embed it in its
+        // own single email. Raw token is transient: never logged or persisted.
+        $notify = $request->boolean('notify', true);
+
+        if ($notify) {
+            Mail::to($user->email)->queue(new SetPasswordMail($user, $rawToken));
+        }
 
         $this->audit->recordSafe(
             'user.created',
@@ -215,6 +240,7 @@ class TenantMemberApiController extends Controller
         );
 
         return response()->json([
+            'status' => 'invited',
             'message' => 'Invitation sent',
             'user' => [
                 'id' => $user->id,
@@ -223,6 +249,11 @@ class TenantMemberApiController extends Controller
                 'status' => 'pending',
                 'joined_at' => $user->created_at,
             ],
+            // Show-once: present only when notify=false (see D2 above).
+            ...($notify ? [] : [
+                'token' => $rawToken,
+                'expires_at' => $expiresAt->toIso8601String(),
+            ]),
         ], 201);
     }
 }

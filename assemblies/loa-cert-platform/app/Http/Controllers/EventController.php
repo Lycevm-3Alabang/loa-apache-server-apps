@@ -791,11 +791,9 @@ class EventController extends Controller
                     $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                     $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
-                    $isRegistered = $this->userChecker->isRegistered($attendee->email);
-                    $activateUrl = $isRegistered ? null : $this->userChecker->getActivateUrl(
-                        $certificate->certificate_number,
-                        $attendee->email,
-                    );
+                    $activation = $this->userChecker->resolveActivation($attendee->name, $attendee->email);
+                    $isRegistered = $activation['isRegistered'];
+                    $activateUrl = $activation['activateUrl'];
 
                     Mail::to($attendee->email)->send(new CertificateEmail(
                         recipientName: $attendee->name,
@@ -987,11 +985,9 @@ class EventController extends Controller
                         $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                         $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
-                        $isRegistered = $this->userChecker->isRegistered($attendee->email);
-                        $activateUrl = $isRegistered ? null : $this->userChecker->getActivateUrl(
-                            $certificate->certificate_number,
-                            $attendee->email,
-                        );
+                        $activation = $this->userChecker->resolveActivation($attendee->name, $attendee->email);
+                        $isRegistered = $activation['isRegistered'];
+                        $activateUrl = $activation['activateUrl'];
 
                         Mail::to($attendee->email)->send(new CertificateEmail(
                             recipientName: $attendee->name,

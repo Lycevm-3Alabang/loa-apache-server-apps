@@ -19,17 +19,19 @@ class CertUserChecker
     }
 
     /**
-     * Check if an email belongs to an existing member of the cert tenant.
+     * Resolve the activation state for a recipient via the Auth invite endpoint.
      *
-     * Fail-closed: returns true (assume registered) when the check cannot be performed.
-     * This prevents showing the activate button to all recipients when the Auth Platform
-     * is unreachable or the API key is not configured.
+     * Returns ['isRegistered' => bool, 'activateUrl' => ?string].
+     * Fail-closed: any failure (no key, transport error, unexpected shape)
+     * yields isRegistered=true with no URL, so the mail stays View-only.
      */
-    public function isRegistered(string $email): bool
+    public function resolveActivation(string $name, string $email): array
     {
+        $registered = ['isRegistered' => true, 'activateUrl' => null];
+
         if ($this->apiKey === '') {
             Log::warning('CertUserChecker: API key not configured, assuming registered');
-            return true;
+            return $registered;
         }
 
         try {
@@ -38,40 +40,44 @@ class CertUserChecker
                     'X-Api-Key' => $this->apiKey,
                     'Accept' => 'application/json',
                 ])
-                ->get("{$this->authBaseUrl}/api/v1/tenant/members", [
+                ->post("{$this->authBaseUrl}/api/v1/tenant/members/invite", [
+                    'name' => $name,
                     'email' => $email,
-                    'limit' => 1,
+                    'groups' => ['cert-user'],
+                    'notify' => false,
                 ]);
 
             if ($response->failed()) {
-                Log::warning('CertUserChecker: failed to check member, assuming registered', [
+                Log::warning('CertUserChecker: invite failed, assuming registered', [
                     'email' => $email,
                     'status' => $response->status(),
                 ]);
-                return true;
+                return $registered;
             }
 
-            $data = $response->json('data', []);
-            return count($data) > 0;
+            if ($response->json('status') === 'already_registered') {
+                return $registered;
+            }
+
+            $token = $response->json('token');
+
+            if (!is_string($token) || $token === '') {
+                Log::warning('CertUserChecker: invite returned no token, assuming registered', [
+                    'email' => $email,
+                ]);
+                return $registered;
+            }
+
+            return [
+                'isRegistered' => false,
+                'activateUrl' => $this->authBaseUrl . '/set-password?token=' . $token,
+            ];
         } catch (\Exception $e) {
-            Log::warning('CertUserChecker: exception checking member, assuming registered', [
+            Log::warning('CertUserChecker: exception inviting member, assuming registered', [
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);
-            return true;
+            return $registered;
         }
-    }
-
-    /**
-     * Build the activation URL for a recipient who is not yet registered.
-     */
-    public function getActivateUrl(string $certificateNumber, string $email): string
-    {
-        $authUrl = config('auth-platform.base_url', 'https://auth.lyceumalabang.edu.ph');
-
-        return $authUrl . '/set-password/cert?' . http_build_query([
-            'cert' => $certificateNumber,
-            'email' => $email,
-        ]);
     }
 }

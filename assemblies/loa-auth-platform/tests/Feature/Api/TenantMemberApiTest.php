@@ -6,7 +6,9 @@ use App\Models\Tenant;
 use App\Models\TenantApiKey;
 use App\Models\User;
 use App\Models\UserGroup;
+use App\Mail\SetPasswordMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 use Tests\Traits\WithJwt;
 
@@ -271,17 +273,75 @@ class TenantMemberApiTest extends TestCase
         $this->assertTrue($user->userGroups->contains($group->id));
     }
 
-    public function testInviteExistingEmail(): void
+    public function testInviteExistingEmailReturnsAlreadyRegistered(): void
     {
-        User::factory()->create(['email' => 'existing@example.com']);
+        $user = User::factory()->create(['email' => 'existing@example.com']);
 
         $response = $this->postJson('/api/v1/tenant/members/invite', [
             'name' => 'Dupe',
             'email' => 'existing@example.com',
         ], $this->apiKeyHeaders());
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors('email');
+        $response->assertOk()
+            ->assertJson([
+                'status' => 'already_registered',
+                'user' => [
+                    'id' => $user->id,
+                    'email' => 'existing@example.com',
+                ],
+            ]);
+
+        // No state change: no membership, no token.
+        $this->assertDatabaseMissing('user_tenants', [
+            'user_id' => $user->id,
+            'tenant_id' => $this->tenant->id,
+        ]);
+        $this->assertDatabaseMissing('password_set_tokens', [
+            'user_id' => $user->id,
+        ]);
+    }
+
+    public function testInviteNotifyFalseReturnsTokenAndSkipsMail(): void
+    {
+        Mail::fake();
+
+        $response = $this->postJson('/api/v1/tenant/members/invite', [
+            'name' => 'Quiet User',
+            'email' => 'quiet@example.com',
+            'notify' => false,
+        ], $this->apiKeyHeaders());
+
+        $response->assertStatus(201)
+            ->assertJsonPath('status', 'invited')
+            ->assertJsonStructure(['token', 'expires_at']);
+
+        $token = $response->json('token');
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $token);
+
+        Mail::assertNothingQueued();
+
+        $user = User::where('email', 'quiet@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertDatabaseHas('password_set_tokens', [
+            'user_id' => $user->id,
+            'token' => hash('sha256', $token),
+        ]);
+    }
+
+    public function testInviteNotifyDefaultSendsMailWithoutToken(): void
+    {
+        Mail::fake();
+
+        $response = $this->postJson('/api/v1/tenant/members/invite', [
+            'name' => 'Loud User',
+            'email' => 'loud@example.com',
+        ], $this->apiKeyHeaders());
+
+        $response->assertStatus(201)
+            ->assertJsonPath('status', 'invited')
+            ->assertJsonMissingPath('token');
+
+        Mail::assertQueued(SetPasswordMail::class);
     }
 
     public function testInviteMissingName(): void

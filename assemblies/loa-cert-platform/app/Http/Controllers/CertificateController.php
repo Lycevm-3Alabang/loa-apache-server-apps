@@ -310,11 +310,9 @@ class CertificateController extends Controller
                 $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                 $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
-                $isRegistered = $this->userChecker->isRegistered($certificate->recipient_email);
-                $activateUrl = $isRegistered ? null : $this->userChecker->getActivateUrl(
-                    $certificate->certificate_number,
-                    $certificate->recipient_email,
-                );
+                $activation = $this->userChecker->resolveActivation($certificate->recipient_name, $certificate->recipient_email);
+                $isRegistered = $activation['isRegistered'];
+                $activateUrl = $activation['activateUrl'];
 
                 Mail::to($certificate->recipient_email)->send(new CertificateEmail(
                     recipientName: $certificate->recipient_name,
@@ -552,11 +550,9 @@ class CertificateController extends Controller
                     $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                     $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
-                    $isRegistered = $this->userChecker->isRegistered($recipient['email']);
-                    $activateUrl = $isRegistered ? null : $this->userChecker->getActivateUrl(
-                        $certificate->certificate_number,
-                        $recipient['email'],
-                    );
+                    $activation = $this->userChecker->resolveActivation($recipient['name'], $recipient['email']);
+                    $isRegistered = $activation['isRegistered'];
+                    $activateUrl = $activation['activateUrl'];
 
                     Mail::to($recipient['email'])->send(new CertificateEmail(
                         recipientName: $recipient['name'],
@@ -1107,11 +1103,9 @@ class CertificateController extends Controller
             $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
             $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
-            $isRegistered = $this->userChecker->isRegistered($certificate->recipient_email);
-            $activateUrl = $isRegistered ? null : $this->userChecker->getActivateUrl(
-                $certificate->certificate_number,
-                $certificate->recipient_email,
-            );
+            $activation = $this->userChecker->resolveActivation($certificate->recipient_name, $certificate->recipient_email);
+            $isRegistered = $activation['isRegistered'];
+            $activateUrl = $activation['activateUrl'];
 
             Mail::to($certificate->recipient_email)->send(new CertificateEmail(
                 recipientName: $certificate->recipient_name,

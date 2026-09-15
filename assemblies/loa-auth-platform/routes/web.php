@@ -51,14 +51,12 @@ Route::get('/reset-password', [WebResetController::class, 'showResetForm'])
     ->name('password.reset');
 Route::post('/reset-password', [WebResetController::class, 'reset']);
 
-Route::get('/set-password', [SetPasswordController::class, 'show'])->name('set-password');
-Route::post('/set-password', [SetPasswordController::class, 'set'])->name('set-password.process');
-Route::get('/set-password/cert', [SetPasswordController::class, 'showByCert'])
+Route::get('/set-password', [SetPasswordController::class, 'show'])
     ->middleware('throttle:10,60')
-    ->name('set-password.cert');
-Route::post('/set-password/cert', [SetPasswordController::class, 'storeByCert'])
+    ->name('set-password');
+Route::post('/set-password', [SetPasswordController::class, 'set'])
     ->middleware('throttle:10,60')
-    ->name('set-password.cert.process');
+    ->name('set-password.process');
 
 Route::get('/redirect', [WebAuthController::class, 'showRedirect'])
     ->name('auth.redirect');

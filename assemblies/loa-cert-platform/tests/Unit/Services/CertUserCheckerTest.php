@@ -22,84 +22,99 @@ class CertUserCheckerTest extends TestCase
         ]);
     }
 
-    public function test_is_registered_returns_true_when_member_exists(): void
+    public function test_resolve_activation_returns_token_url_when_invited(): void
     {
         Http::fake([
-            "{$this->authBaseUrl}/api/v1/tenant/members*" => Http::response([
-                'data' => [
-                    ['id' => '1', 'email' => 'user@example.com'],
-                ],
+            "{$this->authBaseUrl}/api/v1/tenant/members/invite" => Http::response([
+                'status' => 'invited',
+                'token' => str_repeat('a', 64),
+            ], 201),
+        ]);
+
+        $checker = new CertUserChecker();
+        $result = $checker->resolveActivation('New User', 'new@example.com');
+
+        $this->assertFalse($result['isRegistered']);
+        $this->assertEquals(
+            "{$this->authBaseUrl}/set-password?token=" . str_repeat('a', 64),
+            $result['activateUrl']
+        );
+
+        Http::assertSent(function ($request) {
+            return $request->method() === 'POST'
+                && $request['email'] === 'new@example.com'
+                && $request['name'] === 'New User'
+                && $request['groups'] === ['cert-user']
+                && $request['notify'] === false;
+        });
+    }
+
+    public function test_resolve_activation_returns_registered_when_already_registered(): void
+    {
+        Http::fake([
+            "{$this->authBaseUrl}/api/v1/tenant/members/invite" => Http::response([
+                'status' => 'already_registered',
             ], 200),
         ]);
 
         $checker = new CertUserChecker();
-        $result = $checker->isRegistered('user@example.com');
+        $result = $checker->resolveActivation('Old User', 'old@example.com');
 
-        $this->assertTrue($result);
+        $this->assertTrue($result['isRegistered']);
+        $this->assertNull($result['activateUrl']);
     }
 
-    public function test_is_registered_returns_false_when_email_not_found(): void
-    {
-        Http::fake([
-            "{$this->authBaseUrl}/api/v1/tenant/members*" => Http::response([
-                'data' => [],
-            ], 200),
-        ]);
-
-        $checker = new CertUserChecker();
-        $result = $checker->isRegistered('unknown@example.com');
-
-        $this->assertFalse($result);
-    }
-
-    public function test_is_registered_returns_true_when_api_key_missing(): void
+    public function test_resolve_activation_returns_registered_when_api_key_missing(): void
     {
         config(['auth-platform.api_key' => '']);
 
         $checker = new CertUserChecker();
-        $result = $checker->isRegistered('user@example.com');
+        $result = $checker->resolveActivation('New User', 'new@example.com');
 
-        $this->assertTrue($result);
+        $this->assertTrue($result['isRegistered']);
+        $this->assertNull($result['activateUrl']);
     }
 
-    public function test_is_registered_returns_true_when_api_fails(): void
+    public function test_resolve_activation_returns_registered_when_api_fails(): void
     {
         Http::fake([
-            "{$this->authBaseUrl}/api/v1/tenant/members*" => Http::response([], 500),
+            "{$this->authBaseUrl}/api/v1/tenant/members/invite" => Http::response([], 500),
         ]);
 
         $checker = new CertUserChecker();
-        $result = $checker->isRegistered('user@example.com');
+        $result = $checker->resolveActivation('New User', 'new@example.com');
 
-        $this->assertTrue($result);
+        $this->assertTrue($result['isRegistered']);
+        $this->assertNull($result['activateUrl']);
     }
 
-    public function test_is_registered_returns_true_when_api_timeout(): void
+    public function test_resolve_activation_returns_registered_when_token_missing(): void
     {
         Http::fake([
-            "{$this->authBaseUrl}/api/v1/tenant/members*" => function () {
+            "{$this->authBaseUrl}/api/v1/tenant/members/invite" => Http::response([
+                'status' => 'invited',
+            ], 201),
+        ]);
+
+        $checker = new CertUserChecker();
+        $result = $checker->resolveActivation('New User', 'new@example.com');
+
+        $this->assertTrue($result['isRegistered']);
+        $this->assertNull($result['activateUrl']);
+    }
+
+    public function test_resolve_activation_returns_registered_when_api_timeout(): void
+    {
+        Http::fake([
+            "{$this->authBaseUrl}/api/v1/tenant/members/invite" => function () {
                 throw new \Illuminate\Http\Client\ConnectionException('Connection timed out');
             },
         ]);
 
         $checker = new CertUserChecker();
-        $result = $checker->isRegistered('user@example.com');
+        $result = $checker->resolveActivation('New User', 'new@example.com');
 
-        $this->assertTrue($result);
-    }
-
-    public function test_get_activate_url_builds_correct_url(): void
-    {
-        config(['auth-platform.base_url' => $this->authBaseUrl]);
-
-        $checker = new CertUserChecker();
-        $url = $checker->getActivateUrl('CERT-001', 'user@example.com');
-
-        $expected = "{$this->authBaseUrl}/set-password/cert?" . http_build_query([
-            'cert' => 'CERT-001',
-            'email' => 'user@example.com',
-        ]);
-
-        $this->assertEquals($expected, $url);
+        $this->assertTrue($result['isRegistered']);
+        $this->assertNull($result['activateUrl']);
     }
 }

@@ -282,7 +282,8 @@ Removes user from tenant and all tenant-scoped groups. Does NOT delete the user.
 `POST /api/v1/tenant/members/invite`
 
 Creates a new user (status: `pending`), adds to tenant, optionally assigns groups,
-sends set-password email. Same as admin "Create User" flow.
+sends set-password email. If the email already exists, returns `200 already_registered`
+with no state change.
 
 **Request:**
 
@@ -290,20 +291,23 @@ sends set-password email. Same as admin "Create User" flow.
 {
   "name": "New User",
   "email": "new@example.com",
-  "groups": ["cert-admin", "cert-staff"]
+  "groups": ["cert-admin", "cert-staff"],
+  "notify": false
 }
 ```
 
 | Field | Required | Notes |
 |-------|----------|-------|
 | `name` | Yes | Display name |
-| `email` | Yes | Must be unique in system |
+| `email` | Yes | If already exists, returns `200 already_registered` (no error, no duplicate) |
 | `groups` | No | Array of group names within this tenant; ignored if group doesn't exist |
+| `notify` | No | Default `true`. `false`: skip `SetPasswordMail`, return raw token show-once in 201 body |
 
-**Response: `201`**
+**Response: `201` (new user)**
 
 ```json
 {
+  "status": "invited",
   "message": "Invitation sent",
   "user": {
     "id": "uuid",
@@ -311,27 +315,47 @@ sends set-password email. Same as admin "Create User" flow.
     "email": "new@example.com",
     "status": "pending",
     "joined_at": "2026-08-27T12:00:00Z"
+  },
+  "token": "raw-token-show-once",
+  "expires_at": "2026-08-29T12:00:00Z"
+}
+```
+
+`token` and `expires_at` present only when `notify=false`.
+
+**Response: `200` (existing user)**
+
+```json
+{
+  "status": "already_registered",
+  "user": {
+    "id": "uuid",
+    "name": "Existing User",
+    "email": "existing@example.com",
+    "status": "active"
   }
 }
 ```
 
-**Processing:**
+No state change: no user, membership, token, or mail created.
 
-1. Validate input (name required, email required + unique).
-2. Create user via `IdentityService::register(email, '', name)`.
-3. Override status to `pending`.
-4. Attach to tenant via `TenantService::addUserToTenant()`.
-5. If `groups` provided: resolve each group by name within tenant, assign via `AuthorizationService::addToGroup()`.
-6. Generate set-password token (signed, expires 48h).
-7. Send set-password email.
-8. Audit log: `user.created` + `tenant.member_added` + `tenant.member_invited`.
+**Processing (new user):**
+
+1. Validate input (name required, email required).
+2. Check if email already exists → return `200 already_registered` if so.
+3. Create user via `IdentityService::register(email, '', name)`.
+4. Override status to `pending`.
+5. Attach to tenant via `TenantService::addUserToTenant()`.
+6. If `groups` provided: resolve each group by name within tenant, assign via `AuthorizationService::addToGroup()`.
+7. Generate set-password token (signed, expires 48h).
+8. If `notify` is not `false`: send set-password email.
+9. Audit log: `user.created` + `tenant.member_added` + `tenant.member_invited`.
 
 **Errors:**
 
 | Code | Body | Cause |
 |------|------|-------|
-| `409` | `{ "message": "A user with this email already exists" }` | Email taken |
-| `422` | `{ "message": "Validation failed", "errors": {...} }` | Invalid input |
+| `422` | `{ "message": "Validation failed", "errors": {...} }` | Invalid input (missing `name`, invalid `email`) |
 
 ---
 
