@@ -19,6 +19,8 @@ class EventVisibilityTest extends TestCase
     private const DISABLED_SUB = '00000000-0000-0000-0000-000000000dd4';
 
     private Organization $organization;
+    private array $authorResponse = ['status' => 'active'];
+    private int $authorResponseStatus = 200;
 
     protected function setUp(): void
     {
@@ -38,9 +40,13 @@ class EventVisibilityTest extends TestCase
 
     private function fakeActiveAuthor(): void
     {
-        Http::fake([
-            '*/api/v1/users/*' => Http::response(['status' => 'active'], 200),
-        ]);
+        Http::fake(fn () => Http::response($this->authorResponse, $this->authorResponseStatus));
+    }
+
+    private function fakeAuthorResponse(array $body, int $status): void
+    {
+        $this->authorResponse = $body;
+        $this->authorResponseStatus = $status;
     }
 
     private function makeEvent(array $attributes = []): Event
@@ -186,9 +192,7 @@ class EventVisibilityTest extends TestCase
 
     public function test_store_rejected_for_disabled_author(): void
     {
-        Http::fake([
-            '*/api/v1/users/*' => Http::response(['status' => 'disabled'], 200),
-        ]);
+        $this->fakeAuthorResponse(['status' => 'disabled'], 200);
 
         $this->actAs(self::DISABLED_SUB)->postJson('/api/v1/events', $this->validPayload())
             ->assertForbidden();
@@ -198,9 +202,7 @@ class EventVisibilityTest extends TestCase
 
     public function test_store_rejected_for_unknown_author(): void
     {
-        Http::fake([
-            '*/api/v1/users/*' => Http::response(['message' => 'User not found'], 404),
-        ]);
+        $this->fakeAuthorResponse(['message' => 'User not found'], 404);
 
         $this->actAs(self::DISABLED_SUB)->postJson('/api/v1/events', $this->validPayload())
             ->assertForbidden();
@@ -208,9 +210,7 @@ class EventVisibilityTest extends TestCase
 
     public function test_store_returns_502_when_auth_unreachable(): void
     {
-        Http::fake([
-            '*/api/v1/users/*' => Http::failedConnection(),
-        ]);
+        Http::fake(fn () => Http::failedConnection());
 
         $this->actAs(self::OWNER_SUB)->postJson('/api/v1/events', $this->validPayload())
             ->assertStatus(502);
@@ -222,13 +222,20 @@ class EventVisibilityTest extends TestCase
     {
         $event = $this->makeEvent(['is_public' => true]);
 
-        Http::fake([
-            '*/api/v1/users/*' => Http::response(['status' => 'disabled'], 200),
-        ]);
+        $this->fakeAuthorResponse(['status' => 'disabled'], 200);
 
         // Owner's own public event: visibility passes, guard denies.
-        $this->actAs(self::OWNER_SUB)->patchJson("/api/v1/events/{$event->id}", [
+        $response = $this->actAs(self::OWNER_SUB)->patchJson("/api/v1/events/{$event->id}", [
             'name' => 'Blocked Rename',
-        ])->assertForbidden();
+        ]);
+
+        // The guard runs before visibility, so it should return 403.
+        $response->assertForbidden();
+
+        // The event should NOT be updated because the request was rejected.
+        $this->assertDatabaseHas('events', [
+            'id' => $event->id,
+            'name' => $event->name,
+        ]);
     }
 }

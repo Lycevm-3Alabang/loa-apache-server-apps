@@ -107,6 +107,8 @@ class PlaceholderResolverTest extends TestCase
             'name' => 'SPARK Bootcamp 2026',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'active',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $certificate = Certificate::create([
             'organization_id' => $organization->id,
@@ -140,6 +142,8 @@ class PlaceholderResolverTest extends TestCase
             'organizer' => 'SAO',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'active',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $certificate = Certificate::create([
             'organization_id' => $organization->id,
@@ -173,6 +177,8 @@ class PlaceholderResolverTest extends TestCase
             'organizer' => 'CCS',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'active',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $certificate = Certificate::create([
             'organization_id' => $organization->id,
@@ -206,6 +212,8 @@ class PlaceholderResolverTest extends TestCase
             'certificate_title' => 'Certificate of Completion',
             'certificate_number_pattern' => 'CERT-####',
             'status' => 'active',
+            'created_by' => '00000000-0000-0000-0000-000000000001',
+            'updated_by' => '00000000-0000-0000-0000-000000000001',
         ]);
         $certificate = Certificate::create([
             'organization_id' => $organization->id,
