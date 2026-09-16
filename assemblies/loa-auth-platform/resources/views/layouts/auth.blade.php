@@ -39,10 +39,9 @@
         }
 
         * { box-sizing: border-box; }
-        html, body { min-height: 100%; }
+        html, body { min-height: 100%; margin: 0; }
 
         body {
-            margin: 0;
             background: var(--surface-muted);
             color: var(--text);
             font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -53,147 +52,38 @@
         a:hover { color: var(--brand-700); text-decoration: underline; }
 
         .auth-shell {
-            display: grid;
-            grid-template-columns: minmax(320px, 0.86fr) minmax(480px, 1.14fr);
-            min-height: 100svh;
+            min-height: 100vh;
+            background: var(--surface-muted);
         }
 
         .brand-panel {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            overflow: hidden;
-            padding: clamp(2rem, 5vw, 5rem);
-            background: var(--slate-950);
-            color: #f8fafc;
-        }
-
-        .brand-panel::before,
-        .brand-panel::after {
-            position: absolute;
-            content: "";
-            pointer-events: none;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transform: rotate(28deg);
-        }
-
-        .brand-panel::before {
-            right: -16%;
-            bottom: 12%;
-            width: 62%;
-            aspect-ratio: 1;
-            border-radius: 42% 58% 60% 40%;
-        }
-
-        .brand-panel::after {
-            right: -9%;
-            bottom: 20%;
-            width: 42%;
-            aspect-ratio: 1;
-            border-radius: 50%;
-        }
-
-        .brand-lockup,
-        .brand-copy,
-        .brand-footer { position: relative; z-index: 1; }
-
-        .brand-lockup {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.8rem;
-            width: fit-content;
-            color: #fff;
-            font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
-            font-size: 0.82rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        .brand-mark {
-            display: grid;
-            width: 2.65rem;
-            height: 2.65rem;
-            place-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: var(--radius-xl);
-            background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.2);
-            font-size: 0.84rem;
-            letter-spacing: 0.03em;
-        }
-
-        .brand-copy { max-width: 31rem; margin: auto 0; padding: 4rem 0; }
-
-        .brand-kicker {
-            margin: 0 0 1.25rem;
-            color: var(--brand-500);
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
-
-        .brand-copy h2 {
-            max-width: 26rem;
-            margin: 0;
-            font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
-            font-size: clamp(2.4rem, 4.4vw, 4.8rem);
-            line-height: 0.98;
-            letter-spacing: -0.04em;
-            font-weight: 700;
-        }
-
-        .brand-copy p {
-            max-width: 25rem;
-            margin: 1.6rem 0 0;
-            color: var(--slate-400);
-            font-size: 1rem;
-            line-height: 1.7;
-        }
-
-        .brand-footer {
-            display: flex;
-            align-items: center;
-            gap: 0.7rem;
-            color: var(--slate-400);
-            font-size: 0.75rem;
-        }
-
-        .brand-footer::before {
-            width: 0.45rem;
-            height: 0.45rem;
-            border-radius: 50%;
-            background: #22c55e;
-            box-shadow: 0 0 0 0.3rem rgba(34, 197, 94, 0.15);
-            content: "";
+            display: none;
         }
 
         .content-panel {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: clamp(1.5rem, 5vw, 5rem);
+            padding: 1.5rem;
+            max-width: 100%;
         }
 
         .auth-card {
-            width: min(100%, 24rem);
+            width: 100%;
+            max-width: 360px;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius-2xl);
-            padding: 2rem;
+            padding: 1.5rem;
+            margin: 1.5rem auto 0;
             box-shadow: var(--shadow-md);
         }
 
         .mobile-lockup { display: none; }
 
-        .card-header { margin-bottom: 1.75rem; }
+        .card-header { margin-bottom: 1.25rem; }
 
         .eyebrow {
-            margin: 0 0 0.75rem;
+            margin: 0 0 0.5rem;
             color: var(--brand-600);
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -203,27 +93,27 @@
             margin: 0;
             color: var(--text);
             font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
-            font-size: clamp(1.75rem, 3.5vw, 2.25rem);
-            line-height: 1.1;
+            font-size: 1.6rem;
+            line-height: 1.2;
             letter-spacing: -0.03em;
             font-weight: 700;
         }
 
         .card-intro {
-            max-width: 26rem;
-            margin: 0.75rem 0 0;
+            max-width: 100%;
+            margin: 0.5rem 0 0;
             color: var(--text-muted);
-            font-size: 0.9375rem;
-            line-height: 1.6;
+            font-size: 0.875rem;
+            line-height: 1.5;
         }
 
         .alert {
-            margin: 0 0 1.25rem;
-            padding: 0.75rem 1rem;
+            margin: 0 0 0.75rem;
+            padding: 0.5rem 0.75rem;
             border: 1px solid;
             border-radius: var(--radius-lg);
-            font-size: 0.875rem;
-            line-height: 1.5;
+            font-size: 0.8125rem;
+            line-height: 1.4;
         }
 
         .alert-success {
@@ -238,30 +128,30 @@
             color: var(--danger);
         }
 
-        .alert-error ul { margin: 0; padding-left: 1.15rem; }
+        .alert-error ul { margin: 0; padding-left: 0.9rem; }
 
-        .auth-form { display: grid; gap: 1rem; }
+        .auth-form { display: grid; gap: 0.75rem; }
 
-        .field { display: grid; gap: 0.375rem; }
+        .field { display: grid; gap: 0.25rem; }
 
         .field label {
             color: var(--text-secondary);
-            font-size: 0.875rem;
+            font-size: 0.75rem;
             font-weight: 500;
         }
 
         .field input {
             width: 100%;
-            height: 2.75rem;
-            padding: 0.625rem 0.875rem;
-            border: 1.5px solid var(--border);
+            height: 2.5rem;
+            padding: 0.5rem 0.65rem;
+            border: 1px solid var(--border);
             border-radius: var(--radius-xl);
             outline: none;
             background: var(--surface-secondary);
             color: var(--text);
             font-family: inherit;
-            font-size: 0.9375rem;
-            transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+            font-size: 0.875rem;
+            transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
         }
 
         .field input::placeholder { color: var(--text-muted); }
@@ -269,7 +159,7 @@
         .field input:focus {
             border-color: var(--brand-500);
             background: var(--surface);
-            box-shadow: 0 0 0 4px rgba(252, 202, 19, 0.15);
+            box-shadow: 0 0 0 3px rgba(252, 202, 19, 0.15);
         }
         .field input[readonly] { background: var(--surface-muted); color: var(--text-muted); cursor: default; }
 
@@ -277,104 +167,105 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 1rem;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
 
-        .field-hint,
-        .password-hint {
-            color: var(--text-muted);
-            font-size: 0.8125rem;
-            line-height: 1.5;
-        }
-
-        .form-link { font-size: 0.8125rem; font-weight: 600; }
-        .password-hint { display: block; margin-top: 0.1rem; }
+        .form-link { font-size: 0.75rem; font-weight: 600; }
 
         .button {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
             width: 100%;
-            height: 2.75rem;
-            padding: 0 1.25rem;
+            height: 2.5rem;
+            padding: 0 1rem;
             border: 1px solid var(--brand-700);
             border-radius: var(--radius-xl);
             background: var(--brand-600);
             color: #fff;
             cursor: pointer;
             font-family: inherit;
-            font-size: 0.875rem;
+            font-size: 0.8125rem;
             font-weight: 600;
             box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-            transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+            transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
         }
 
         .button:hover { background: var(--brand-700); box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
-        .button:active { transform: scale(0.97); }
+        .button:active { transform: scale(0.96); }
         .button:focus-visible { outline: 3px solid rgba(252, 202, 19, 0.3); outline-offset: 2px; }
 
-        .button-arrow {
-            display: none;
-        }
+        .button-arrow { display: none; }
 
-        .back-link { display: inline-block; margin-top: 1.25rem; font-size: 0.8125rem; font-weight: 600; }
+        .back-link { display: inline-block; margin-top: 0.75rem; font-size: 0.75rem; font-weight: 600; }
 
         .card-footer {
-            margin-top: 1.5rem;
+            margin-top: 1rem;
             color: var(--text-muted);
-            font-size: 0.75rem;
-            line-height: 1.5;
+            font-size: 0.65rem;
+            line-height: 1.4;
             text-align: center;
         }
 
-        @media (max-width: 820px) {
+        @media (min-width: 641px) {
+            .auth-shell {
+                display: grid;
+                grid-template-columns: minmax(280px, 0.8fr) minmax(400px, 1.2fr);
+                min-height: 100vh;
+            }
+
+            .brand-panel {
+                display: block;
+                position: relative;
+                order: 1;
+            }
+
+            .content-panel {
+                order: 2;
+                padding: clamp(1.5rem, 4vw, 4rem);
+                align-items: center;
+                justify-content: center;
+            }
+
+            .auth-card {
+                width: min(100%, 24rem);
+                margin: 0;
+                box-shadow: var(--shadow-lg);
+                padding: 2rem;
+            }
+
+            .mobile-lockup { display: none; }
+        }
+
+        @media (max-width: 640px) {
             .auth-shell { grid-template-columns: 1fr; }
+
             .brand-panel { display: none; }
-            .content-panel { align-items: flex-start; padding: 2rem 1.25rem 2.5rem; }
-            .auth-card { width: min(100%, 30rem); margin: 0 auto; box-shadow: none; border: none; padding: 0; }
-            .mobile-lockup { display: inline-flex; align-items: center; gap: 0.65rem; margin-bottom: 2rem; color: var(--text); font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-            .mobile-lockup .brand-mark { border-color: var(--border); background: var(--surface-muted); color: var(--text); box-shadow: none; }
-        }
 
-        @media (max-width: 820px) {
-            .auth-shell { grid-template-columns: 1fr; }
-            .brand-panel { display: none; }
-            .auth-card { width: min(100% - 1rem, 30rem); margin: 0 auto; box-shadow: none; border: none; padding: 0; }
-            .mobile-lockup { display: inline-flex; align-items: center; gap: 0.65rem; margin-bottom: 2rem; color: var(--text); font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-            .mobile-lockup .brand-mark { border-color: var(--border); background: var(--surface-muted); color: var(--text); box-shadow: none; }
-        }
+            .content-panel {
+                padding: 1.5rem;
+                align-items: flex-start;
+            }
 
-        @media (max-width: 820px) {
-            body { background: var(--slate-950); }
-            .content-panel { display: flex; flex-direction: column; padding: 2rem 1.25rem 2.5rem; }
-            .auth-card { width: 30rem; margin: 0 auto; }
-            .card-header { margin-bottom: 1.5rem; }
-            .card-intro { max-width: 25rem; }
-            .card-footer { margin-top: 1rem; }
-        }
+            .auth-card { width: 100%; max-width: none; margin: 0; }
 
-        @media (max-width: 480px) {
-            .content-panel { padding: 1.5rem 1rem 2rem; }
-            .auth-card { width: 100% !important; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 1.5rem; }
-            .card-header { margin-bottom: 1.25rem; }
-            .card-header h1 { font-size: 1.5rem; }
-            .card-intro { max-width: 100%; font-size: 0.95rem; }
-            .form-row { align-items: flex-start; flex-direction: column; gap: 0.35rem; }
-            .button { height: 2.5rem; font-size: 0.875rem; }
-            .mobile-lockup { font-size: 0.65rem; }
-            .button:active { transform: scale(0.96); }
-        }
+            .form-row { flex-direction: column; align-items: flex-start; gap: 0.35rem; }
 
-        @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+            .button { height: 2.5rem; }
+
+            .back-link { margin-top: 0.5rem; }
         }
     </style>
 </head>
 <body>
     <div class="auth-shell">
         <aside class="brand-panel" aria-label="LOA Platform">
-     
+            <a class="brand-lockup" href="{{ route('login') }}">
+                <span class="brand-mark" aria-hidden="true">LOA</span>
+                <span>LOA Platform</span>
+            </a>
 
             <div class="brand-copy">
                 <p class="brand-kicker">One identity. Every platform.</p>

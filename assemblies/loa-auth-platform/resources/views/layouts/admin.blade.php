@@ -773,15 +773,28 @@
         }
         .nav-dropdown-panel a:hover { background: var(--surface-secondary); color: var(--text); }
 
-        @media (max-width: 720px) {
-            .admin-container { width: 100%; margin-top: 1rem; }
-            .page-header { align-items: flex-start; flex-direction: column; }
-            .panel-toolbar { flex-direction: column; align-items: stretch; }
+@media (max-width: 720px) {
+            .admin-container { width: 100%; margin: 1rem 0; }
+            .page-header { align-items: flex-start; flex-direction: column; gap: 1rem; }
+            .page-header h1 { font-size: 1.4rem; }
+            .panel-toolbar { flex-direction: column; align-items: stretch; gap: 1rem; }
             .filters form { flex-direction: column; align-items: stretch; }
-            .filters form .field { flex: 1; }
+            .filters form .field { flex: 1; width: 100%; }
             .filters form .field input,
             .filters form .field select { width: 100%; }
             .user-menu-name { display: none; }
+            .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        }
+
+        @media (max-width: 480px) {
+            .admin-container { padding: 0 0.75rem; }
+            .page-header { gap: 0.75rem; }
+            .page-header p { font-size: 0.75rem; }
+            .panel-toolbar { gap: 0.75rem; padding: 0.75rem; }
+            .filters form .field input,
+            .filters form .field select { height: 2.2rem; font-size: 0.8125rem; }
+            .badge { padding: 0.15rem 0.4rem; font-size: 0.65rem; }
+            .empty-state { padding: 2rem 1rem; font-size: 0.8125rem; }
         }
     </style>
 </head>
