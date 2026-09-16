@@ -149,12 +149,12 @@ class CertificateTemplateController extends Controller
             throw ValidationException::withMessages($validator->errors()->toArray());
         }
 
+        if ($denied = $this->denyInactiveAuthor($request, $this->callerSub($request), 'Template')) {
+            return $denied;
+        }
+
         $organizationId = $this->resolveOrganizationId();
         $sub = $this->callerSub($request);
-
-        if (!$sub) {
-            return response()->json(['message' => 'Unauthenticated author.'], 401);
-        }
 
         $existing = CertificateTemplate::where('organization_id', $organizationId)
             ->where('name', $request->input('name'))
@@ -251,6 +251,10 @@ class CertificateTemplateController extends Controller
                 'status' => 'error',
                 'message' => 'Template is locked and cannot be updated.',
             ], 409);
+        }
+
+        if ($denied = $this->denyInactiveAuthor($request, $this->callerSub($request), 'Template')) {
+            return $denied;
         }
 
         $validator = Validator::make($request->all(), [

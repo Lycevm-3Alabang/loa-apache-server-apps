@@ -50,11 +50,12 @@ abstract class Controller
      * §2 guard rail). JWTs validate locally, so a disabled or tenant-removed
      * user could otherwise keep writing until token expiry.
      *
-     * Returns 'active' | 'inactive' | 'unreachable':
-     * - 'inactive' covers resolved non-active status, unknown users, and
-     *   upstream client errors (fail-closed deny).
-     * - 'unreachable' covers transport failures and upstream 5xx (callers
-     *   map this to 502). No caching — writes are infrequent, freshness wins.
+     * Returns 'active' | 'inactive' | 'not_found' | 'forbidden' | 'unreachable':
+     * - 'active'     — user exists and status is active.
+     * - 'inactive'   — user exists but status is disabled/locked/pending.
+     * - 'not_found'  — Auth has no record of this user (404).
+     * - 'forbidden'  — caller lacks users.view permission (403).
+     * - 'unreachable'— transport failure or upstream 5xx (callers map to 502).
      */
     protected function resolveAuthorStatus(Request $request, string $sub): string
     {
@@ -76,6 +77,14 @@ abstract class Controller
 
         if ($response->serverError()) {
             return 'unreachable';
+        }
+
+        if ($response->status() === 404) {
+            return 'not_found';
+        }
+
+        if ($response->status() === 403) {
+            return 'forbidden';
         }
 
         if ($response->failed()) {
@@ -103,14 +112,12 @@ abstract class Controller
 
         $status = $this->resolveAuthorStatus($request, $sub);
 
-        if ($status === 'unreachable') {
-            return response()->json(['message' => "Auth service unavailable. {$action} was not saved."], 502);
-        }
-
-        if ($status !== 'active') {
-            return response()->json(['message' => "Your account is not active. {$action} was not saved."], 403);
-        }
-
-        return null;
+        return match ($status) {
+            'active'    => null,
+            'unreachable' => response()->json(['message' => "Auth service unavailable. {$action} was not saved."], 502),
+            'not_found' => response()->json(['message' => "Your account was not found. Contact your administrator. {$action} was not saved."], 403),
+            'forbidden' => response()->json(['message' => "Unable to verify account status. {$action} was not saved."], 403),
+            default     => response()->json(['message' => "Your account is not active. {$action} was not saved."], 403),
+        };
     }
 }

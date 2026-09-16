@@ -30,8 +30,11 @@ class UserController extends Controller
 
     private function userInTenant(User $user, string $tenantId): bool
     {
+        // Platform admins are tenant-agnostic (priority 1 per cert-readiness.md §6).
+        // Returning false here blocked Cert's author-liveness GET /api/v1/users/{sub}
+        // for admin users, causing a false "inactive" 403 on event/template writes.
         if ($user->inGroup((string) config('auth-web.admin_group'))) {
-            return false;
+            return true;
         }
 
         return $user->tenants()

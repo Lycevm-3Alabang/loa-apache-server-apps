@@ -267,7 +267,7 @@ CREATE TABLE `events` (
   `certificate_number_pattern` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `valid_until` date DEFAULT NULL,
   `status` enum('draft','active','archive') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
-  `is_public` tinyint(1) NOT NULL DEFAULT 0,
+  `is_public` tinyint(1) NOT NULL DEFAULT '0',
   `created_by` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `updated_by` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NOT NULL,
@@ -336,7 +336,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -405,4 +405,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-15  6:15:17
+-- Dump completed on 2026-09-16  4:47:28

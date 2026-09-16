@@ -461,6 +461,10 @@ class EventController extends Controller
     )]
     public function cloneTemplate(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->denyInactiveAuthor($request, $this->callerSub($request), 'Template clone')) {
+            return $denied;
+        }
+
         $event = Event::findOrFail($id);
 
         $request->validate([
@@ -539,6 +543,10 @@ class EventController extends Controller
     )]
     public function cloneEmailTemplate(Request $request, string $id): JsonResponse
     {
+        if ($denied = $this->denyInactiveAuthor($request, $this->callerSub($request), 'Email template clone')) {
+            return $denied;
+        }
+
         $event = Event::findOrFail($id);
 
         $request->validate([
