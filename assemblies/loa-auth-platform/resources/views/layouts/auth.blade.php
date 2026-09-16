@@ -337,11 +337,33 @@
             .mobile-lockup .brand-mark { border-color: var(--border); background: var(--surface-muted); color: var(--text); box-shadow: none; }
         }
 
-        @media (max-width: 420px) {
-            .content-panel { padding-inline: 1rem; }
+        @media (max-width: 820px) {
+            .auth-shell { grid-template-columns: 1fr; }
+            .brand-panel { display: none; }
+            .auth-card { width: min(100% - 1rem, 30rem); margin: 0 auto; box-shadow: none; border: none; padding: 0; }
+            .mobile-lockup { display: inline-flex; align-items: center; gap: 0.65rem; margin-bottom: 2rem; color: var(--text); font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+            .mobile-lockup .brand-mark { border-color: var(--border); background: var(--surface-muted); color: var(--text); box-shadow: none; }
+        }
+
+        @media (max-width: 820px) {
+            body { background: var(--slate-950); }
+            .content-panel { display: flex; flex-direction: column; padding: 2rem 1.25rem 2.5rem; }
+            .auth-card { width: 30rem; margin: 0 auto; }
             .card-header { margin-bottom: 1.5rem; }
-            .card-header h1 { font-size: 1.75rem; }
+            .card-intro { max-width: 25rem; }
+            .card-footer { margin-top: 1rem; }
+        }
+
+        @media (max-width: 480px) {
+            .content-panel { padding: 1.5rem 1rem 2rem; }
+            .auth-card { width: 100% !important; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 1.5rem; }
+            .card-header { margin-bottom: 1.25rem; }
+            .card-header h1 { font-size: 1.5rem; }
+            .card-intro { max-width: 100%; font-size: 0.95rem; }
             .form-row { align-items: flex-start; flex-direction: column; gap: 0.35rem; }
+            .button { height: 2.5rem; font-size: 0.875rem; }
+            .mobile-lockup { font-size: 0.65rem; }
+            .button:active { transform: scale(0.96); }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -352,10 +374,7 @@
 <body>
     <div class="auth-shell">
         <aside class="brand-panel" aria-label="LOA Platform">
-            <a class="brand-lockup" href="{{ route('login') }}">
-                <span class="brand-mark" aria-hidden="true">LOA</span>
-                <span>LOA Platform</span>
-            </a>
+     
 
             <div class="brand-copy">
                 <p class="brand-kicker">One identity. Every platform.</p>
