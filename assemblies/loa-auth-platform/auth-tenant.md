@@ -1,27 +1,28 @@
 # Auth Tenant + Member Management UX
 
-**Version:** 1.0  
-**Status:** Draft  
+**Version:** 1.1  
+**Status:** Final  
 **Spec Owner:** Auth Platform  
-**Last Updated:** 2026-08-27
+**Last Updated:** 2026-09-15
 
 ---
 
 ## 1. Purpose
 
-Register the auth app itself as a tenant, and unify the member-management UX across all tenant and group pages with a search-first "Add Member" pattern and a "Create User" flow available from any tenant page.
+Register the auth app itself as a tenant, provide a dedicated Platform Admin page for managing platform administrators, and unify the member-management UX across all tenant and group pages with a search-first "Add Member" pattern and a "Create User" flow available from any tenant page.
 
 ---
 
 ## 2. Background
 
-Currently the auth app's admin users have no tenant membership. The admin group (`loa-auth-admin`) is platform-level (`tenant_id = null`). There is no navigation path to `/admin/groups` from the topbar. Adding members to tenants or groups requires navigating to a specific page and using a static dropdown.
+Currently the auth app's admin users have no tenant membership. The admin group (`loa-auth-admin`) is platform-level (`tenant_id = null`). There is no dedicated navigation path for managing platform administrators — adding members requires navigating to the `loa-auth-admin` group page via the dashboard shortcut.
 
 This spec:
 1. Makes the auth app a tenant (consistent with how cert/consult work)
-2. Unifies the "add member" UX across all surfaces
-3. Adds a "Create User" flow available from any tenant page
-4. Adds a platform-groups shortcut on the admin dashboard
+2. Adds a dedicated Platform Admin page with "Platform Admin" topbar link
+3. Unifies the "add member" UX across all surfaces
+4. Adds a "Create User" flow available from any tenant page
+5. Adds a platform-groups shortcut on the admin dashboard
 
 ---
 
@@ -42,23 +43,23 @@ The auth tenant is created via a seeder (non-production) and SQL script (product
 
 ### 3.2 Read-Only Constraints
 
-The auth tenant page (`/admin/tenants/{auth-tenant-id}`) is **read-only** except for member management:
+The auth tenant page (`/admin/tenants/{auth-tenant-id}`) is **read-only** — no member management, no group management. Platform admin membership is managed via the dedicated Platform Admin page (§3.6).
 
 | Action | Allowed on auth tenant? |
 |--------|------------------------|
 | View tenant info | ✅ Yes |
 | Edit name/app_url/redirect_origins | ❌ No — edit button hidden |
 | Suspend/activate | ❌ No — status toggle hidden |
-| Manage groups | ✅ Yes |
-| Manage members | ✅ Yes |
-| Access config import/export | ✅ Yes |
-| Endpoint catalog | ✅ Yes |
+| Manage groups | ❌ No — use Platform Admin page |
+| Manage members | ❌ No — use Platform Admin page |
+| Access config import/export | ❌ No |
+| Endpoint catalog | ❌ No |
 
 Implementation: check `$tenant->slug === 'auth'` (or a `is_platform` boolean column) to conditionally hide edit/status controls.
 
-### 3.3 Tenant List Badge
+### 3.3 Tenant List
 
-In `/admin/tenants`, the auth tenant row shows a **"Platform"** badge next to its name. The badge is informational only — the row is still clickable and leads to the tenant detail page.
+The auth tenant is **NOT shown** in the `/admin/tenants` list. Platform admin membership is managed exclusively via the dedicated Platform Admin page (§3.6). The auth tenant detail page remains accessible via direct URL but is not linked from the tenants list or navbar.
 
 ### 3.4 JWT Claims
 
@@ -87,6 +88,94 @@ A user can be:
 - **Both**: member of `loa-auth-admin` AND in auth tenant (can log in + admin access)
 
 The `loa-auth-admin` group remains `tenant_id = null` throughout. No changes to `WebAdminMiddleware`, `PermissionPolicyService::isPlatformAdmin()`, or deactivation guards.
+
+### 3.6 Platform Admin Page
+
+A dedicated page at `/admin/platform-admin` provides member management for platform administrators.
+
+| Field | Value |
+|-------|-------|
+| URL | `/admin/platform-admin` |
+| Route name | `admin.platform-admin.show` |
+| Access | Platform admins only (`$isAdmin`) |
+| Navbar link | "Platform Admin" in topbar, visible only to admins |
+
+#### 3.6.1 Page Elements
+
+| Element | Description |
+|---------|-------------|
+| Heading | "Platform Admin" |
+| Subheading | "Manage platform administrator membership" |
+| Members count | "Members (N)" |
+| **+ Create user** button | Inline form: name, email → creates user + adds to auth tenant + assigns `loa-auth-admin` + sends set-password email |
+| **Add Member** search | Search-first multi-select: search existing users by name/email, select, batch add |
+| Members table | Name, email, status badge, joined date, Remove button |
+
+#### 3.6.2 Create User Form
+
+A **"+ Create user"** button toggles an inline form:
+
+| Field | Value |
+|-------|-------|
+| Name | Required text input |
+| Email | Required email input |
+| Group dropdown | Pre-selected: "Platform Admin" (value: `loa-auth-admin`) |
+| Submit button | "Create & Invite" |
+
+The group dropdown is pre-selected to `loa-auth-admin` (displayed as "Platform Admin") to minimize clicks. The admin can change it if needed, but the default matches the primary use case.
+
+On submit:
+1. Validate input (name, email unique)
+2. Create user (status: `pending`)
+3. Add user to auth tenant
+4. Add user to `loa-auth-admin` group (or selected group)
+5. Send set-password email
+6. Audit log: `user.created` + `tenant.member_added` + `group.member_added`
+7. Redirect back with success flash
+
+#### 3.6.3 Add Member (Existing Users)
+
+A **"Add Member"** button toggles a search input:
+
+1. User types ≥ 2 characters → debounced search (300ms) → results appear
+2. Results show: name, email, status badge
+3. User clicks a result → user is selected (shown as a chip below search input)
+4. **Multi-select**: user can search again and select additional users
+5. **"Add N members"** button shows count → click to add all selected in one batch
+
+On add:
+1. Add user to auth tenant (if not already a member)
+2. Add user to `loa-auth-admin` group
+3. Audit log: `tenant.member_added` + `group.member_added`
+4. Redirect back with success flash
+
+#### 3.6.4 Remove Member
+
+Each member row has a **"Remove"** button:
+- Revokes `loa-auth-admin` membership
+- User remains in the auth tenant (can still log in)
+- Audit log: `group.member_removed`
+- Redirect back with success flash
+
+#### 3.6.5 What is NOT on this page
+
+| Element | Reason |
+|---------|--------|
+| Group selector | Always assigns to `loa-auth-admin` |
+| Endpoint catalog | Not needed — auth platform uses middleware, not endpoint grants |
+| Import/Export config | Not needed |
+| Delete user | Use Users page |
+| Tenant info edit | Auth tenant is read-only |
+
+#### 3.6.6 Routes
+
+| Method | URI | Controller Method | Route Name |
+|--------|-----|-------------------|------------|
+| GET | `/admin/platform-admin` | `platformAdminShow` | `admin.platform-admin.show` |
+| POST | `/admin/platform-admin/members` | `platformAdminMembersStore` | `admin.platform-admin.members.store` |
+| GET | `/admin/platform-admin/members/search` | `platformAdminMemberSearch` | `admin.platform-admin.members.search` |
+| POST | `/admin/platform-admin/members/{userId}/remove` | `platformAdminMembersRemove` | `admin.platform-admin.members.remove` |
+| POST | `/admin/platform-admin/users` | `platformAdminCreateUser` | `admin.platform-admin.users.store` |
 
 ---
 
@@ -319,13 +408,11 @@ After this spec, the navigation flow is:
 
 | To manage… | Path |
 |------------|------|
-| Platform admins | Dashboard → **Platform Groups** shortcut → `loa-auth-admin` → Add/Remove members |
+| Platform admins | Topbar → **Platform Admin** → member list + Add/Remove / Create User |
 | Tenant users | Topbar → **Tenants** → click tenant → member list + Add Member / Create User |
 | Tenant groups | Tenant page → **Groups** tab → click group → members |
 | Platform groups | Dashboard → **Platform Groups** shortcut → click group → members |
 | Audit log | Topbar → **Audit log** |
-
-No new topbar links. The "Groups" concept is accessed via dashboard shortcut (platform) or tenant page (tenant-scoped).
 
 ---
 
@@ -341,20 +428,22 @@ No new topbar links. The "Groups" concept is accessed via dashboard shortcut (pl
 | `resources/views/auth/set-password.blade.php` | Set-password form page |
 | `database/migrations/xxxx_create_password_set_tokens_table.php` | Token table for set-password flow |
 | `app/Models/PasswordSetToken.php` | Token model |
+| `resources/views/admin/platform-admin/show.blade.php` | Platform Admin page view |
 
 ### Modified Files
 | File | Change |
 |------|--------|
-| `WebAdminController.php` | `tenantsShow()` hide edit/status for auth tenant; `tenantsCreateUser()` method; batch add member endpoint |
+| `WebAdminController.php` | `tenantsShow()` hide edit/status for auth tenant; `tenantsCreateUser()` method; batch add member endpoint; Platform Admin methods (`platformAdminShow`, `platformAdminMembersStore`, `platformAdminMemberSearch`, `platformAdminMembersRemove`, `platformAdminCreateUser`) |
 | `TenantMemberImportController.php` | Add group assignment to CSV import logic |
 | `Tenant.php` | Add `isPlatform()` helper (check slug) |
 | `admin/tenants/show.blade.php` | Hide edit/status for auth tenant; "Create User" button; search-first multi-select Add Member; "Import CSV" button |
-| `admin/tenants/index.blade.php` | "Platform" badge on auth tenant row |
+| `admin/tenants/index.blade.php` | Filter out auth tenant from list |
 | `admin/tenants/import.blade.php` | Editable preview table with group column, multi-select dropdown scoped to tenant groups, row editing/deletion |
 | `admin/groups/show.blade.php` | Search-first multi-select Add Member (replace static dropdown) |
 | `admin/tenants/group-members.blade.php` | Multi-select support (already search-first) |
 | `admin/partials/admin-zone.blade.php` | "Platform Groups" quick-action button |
-| `routes/web.php` | New routes for `tenantsCreateUser`, batch add, `setPassword` |
+| `layouts/admin.blade.php` | "Platform Admin" topbar link (gated by `$isAdmin`) |
+| `routes/web.php` | New routes for `tenantsCreateUser`, batch add, `setPassword`, Platform Admin |
 | `DatabaseSeeder.php` | Call `LocalAuthTenantSeeder` in non-production |
 
 ### Unchanged
@@ -390,8 +479,15 @@ No new topbar links. The "Groups" concept is accessed via dashboard shortcut (pl
 | Test | Surface | Assertion |
 |------|---------|-----------|
 | Auth tenant seeded | Seeder | `Tenant::where('slug', 'auth')->exists()` |
-| Auth tenant read-only | Web | Edit button hidden, status toggle hidden |
-| Auth tenant badge | Web | "Platform" badge visible in tenant list |
+| Auth tenant read-only | Web | Edit button hidden, status toggle hidden, no member management on tenant page |
+| Auth tenant hidden from list | Web | Auth tenant NOT shown in `/admin/tenants` list |
+| Platform Admin page accessible | Web | `/admin/platform-admin` loads for platform admins |
+| Platform Admin page hidden from non-admins | Web | `/admin/platform-admin` returns 403 for non-admins |
+| Platform Admin navbar link | Web | "Platform Admin" link visible in topbar for admins, hidden from non-admins |
+| Platform Admin members list | Web | Shows all `loa-auth-admin` members with name, email, status, joined date |
+| Create User (platform admin) | Web | User created (status: pending), added to auth tenant, added to `loa-auth-admin`, set-password email sent |
+| Add existing user (platform admin) | Web | User added to auth tenant, added to `loa-auth-admin` |
+| Remove member (platform admin) | Web | User removed from `loa-auth-admin`, remains in auth tenant |
 | Create User (tenant) | Web | User created (status: pending), tenant pivot exists, set-password email sent |
 | Create User (global) | Web | User created, no tenant pivot, no email |
 | Set password flow | Web | Token valid → set password → status becomes active; token deleted after use |
@@ -417,3 +513,4 @@ No new topbar links. The "Groups" concept is accessed via dashboard shortcut (pl
 | Version | Date | Author | Change |
 |---------|------|--------|--------|
 | 1.0 Final | 2026-08-27 | AI | Initial draft — auth tenant, search-first, CSV import, create user, set-password flow |
+| 1.1 Draft | 2026-09-15 | AI | Add Platform Admin page (§3.6); hide auth tenant from tenant list; remove group/endpoint/import-export from auth tenant detail page; add "Platform Admin" topbar link |

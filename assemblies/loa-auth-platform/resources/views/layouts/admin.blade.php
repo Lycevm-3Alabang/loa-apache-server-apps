@@ -49,6 +49,11 @@
 
         a { color: var(--brand-600); text-decoration: none; font-weight: 600; }
         a:hover { color: var(--brand-700); text-decoration: underline; }
+        .user-menu-link {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            margin: 0.125rem 0;
+        }
 
         .admin-topbar {
             position: sticky;
@@ -720,6 +725,54 @@
 
         .topbar-link:hover { color: #fff !important; text-decoration: none; }
 
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            color: #f8fafc;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            cursor: pointer;
+            list-style: none;
+            user-select: none;
+        }
+        .nav-dropdown-trigger::-webkit-details-marker { display: none; }
+        .nav-dropdown-trigger:hover { color: #fff; }
+        .nav-dropdown-caret {
+            flex-shrink: 0;
+            width: 0;
+            height: 0;
+            border-left: 0.28rem solid transparent;
+            border-right: 0.28rem solid transparent;
+            border-top: 0.34rem solid currentColor;
+            transition: transform 140ms ease;
+        }
+        .nav-dropdown[open] .nav-dropdown-caret { transform: rotate(180deg); }
+        .nav-dropdown-panel {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            left: 0;
+            z-index: 60;
+            min-width: 11rem;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            background: var(--surface);
+            box-shadow: 0 12px 32px rgba(2, 6, 23, 0.16);
+        }
+        .nav-dropdown-panel a {
+            display: block;
+            width: 100%;
+            padding: 0.65rem 1rem;
+            color: var(--text);
+            text-align: left;
+            text-decoration: none;
+            font-size: 0.84375rem;
+            font-weight: 600;
+        }
+        .nav-dropdown-panel a:hover { background: var(--surface-secondary); color: var(--text); }
+
         @media (max-width: 720px) {
             .admin-container { width: 100%; margin-top: 1rem; }
             .page-header { align-items: flex-start; flex-direction: column; }
@@ -742,16 +795,31 @@
     @endphp
     <header class="admin-topbar">
         <a class="brand-lockup" href="{{ route('home') }}">
-            <span class="brand-mark" aria-hidden="true">LOA</span>
-            <span>LOA Platform</span>
+            <span class="brand-mark" aria-hidden="true">LOA SSO Platform</span>
+
         </a>
         <nav class="topbar-nav" aria-label="Console">
             <a href="{{ route('home') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Dashboard</a>
             @if ($isAdmin)
-                <a href="{{ route('admin.users') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Users</a>
-                <a href="{{ route('admin.tenants') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Tenants</a>
-                <a href="{{ route('admin.audit-logs') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Audit log</a>
-                <a href="{{ route('admin.logs') }}" class="topbar-link" style="color:#f8fafc;font-size:0.8125rem;">Logs</a>
+              
+                <details class="nav-dropdown">
+                    <summary class="nav-dropdown-trigger topbar-link" style="color:#f8fafc;font-size:0.8125rem;list-style:none;">
+                        App Management
+                        <span class="nav-dropdown-caret" aria-hidden="true"></span>
+                    </summary>
+                    <div class="nav-dropdown-panel">
+                        <a href="{{ route('admin.tenants') }}">Tenants</a>
+                        <!-- <a href="{{ route('admin.groups') }}" disable>Groups</a> -->
+                        <a href="{{ route('admin.users') }}">Users</a>
+                        <a href="{{ route('admin.platform-admin.show') }}">Platform Admin 
+                            <span class="badge-notification-wrapper" style="position:relative;display:inline-flex;align-items:center;cursor:default;">
+                            <span class="notification-dot" style="position:absolute;bottom:-2px;right:-4px;width:7px;height:7px;border-radius:999px;background:#ef4444;box-shadow:0 0 4px rgba(239,68,68,.35);border:2px solid var(--slate-950);"></span>
+                            <span style="display:inline-block;">&#x1f522;</span>
+                        </span>
+                        </a>
+                    </div>
+                </details>
+ 
             @endif
             <details class="user-menu">
                 <summary class="user-menu-trigger">
@@ -764,6 +832,10 @@
                         <span class="user-menu-title">{{ Auth::guard('web')->user()?->name }}</span>
                         <span class="user-menu-email">{{ Auth::guard('web')->user()?->email }}</span>
                     </div>
+                    @if ($isAdmin)
+                        <a href="{{ route('admin.audit-logs') }}" class="user-menu-link">Audit logs</a>
+                        <a href="{{ route('admin.raw-logs') }}" class="user-menu-link">Raw logs</a>
+                    @endif
                     <a href="{{ route('portal.account') }}">Manage account</a>
                     <form method="post" action="{{ route('console.logout') }}">
                         @csrf

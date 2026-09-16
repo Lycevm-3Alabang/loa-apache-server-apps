@@ -26,3 +26,5 @@ loa_auth_dump.sql
 assemblies/loa-auth-platform/database/sql/cpanel-auth-db-install.sql
 assemblies/loa-cert-platform/database/sql/cpanel-cert-db-install.sql
 .vscode/sessions.json
+auth/loa-auth-platform-dist/*
+auth/loa-cert-platform-dist/

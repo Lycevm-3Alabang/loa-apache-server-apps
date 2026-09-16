@@ -176,6 +176,9 @@ Route::prefix('admin')->middleware('auth:web', 'web.admin')->group(function () {
     // Application log viewer
     Route::get('/logs', [LogViewerController::class, 'index'])->name('admin.logs');
     Route::get('/logs/download', [LogViewerController::class, 'download'])->name('admin.logs.download');
+
+// Raw logs — alias for admin logs (viewable by platform admins)
+Route::get('/raw-logs', [LogViewerController::class, 'index'])->name('admin.raw-logs');
 Route::get('/tenants/{tenant}/members/search', [WebAdminController::class, 'searchMembers'])
     ->name('admin.tenants.members.search')
     ->middleware('throttle:120,1');
@@ -225,4 +228,13 @@ Route::post('/tenants/{tenant}/members/import/discard', [\App\Http\Controllers\T
     Route::get('/tenants/{tenant}/api-keys', [App\Http\Controllers\TenantApiKeyController::class, 'index'])->name('admin.tenants.api-keys.index');
     Route::post('/tenants/{tenant}/api-keys', [App\Http\Controllers\TenantApiKeyController::class, 'store'])->name('admin.tenants.api-keys.store');
     Route::delete('/tenants/{tenant}/api-keys/{keyId}', [App\Http\Controllers\TenantApiKeyController::class, 'destroy'])->name('admin.tenants.api-keys.destroy');
+
+    // Platform Admin — dedicated loa-auth-admin member management (auth-tenant.md §3.6)
+    Route::get('/platform-admin', [WebAdminController::class, 'platformAdminShow'])->name('admin.platform-admin.show');
+    Route::post('/platform-admin/members', [WebAdminController::class, 'platformAdminMembersStore'])->name('admin.platform-admin.members.store');
+    Route::get('/platform-admin/members/search', [WebAdminController::class, 'platformAdminMemberSearch'])
+        ->name('admin.platform-admin.members.search')
+        ->middleware('throttle:120,1');
+    Route::post('/platform-admin/members/{userId}/remove', [WebAdminController::class, 'platformAdminMembersRemove'])->name('admin.platform-admin.members.remove');
+    Route::post('/platform-admin/users', [WebAdminController::class, 'platformAdminCreateUser'])->name('admin.platform-admin.users.store');
 });

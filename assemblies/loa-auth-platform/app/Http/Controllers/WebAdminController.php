@@ -276,6 +276,7 @@ class WebAdminController extends Controller
     public function tenantsIndex(): View
     {
         $tenants = Tenant::withCount('users')
+            ->where('slug', '!=', 'auth')
             ->orderBy('name')
             ->paginate(25);
 
@@ -854,10 +855,30 @@ class WebAdminController extends Controller
         }
 
         $added = 0;
+        $adminGroupName = config('auth-web.admin_group', 'loa-auth-admin');
+
         foreach ($userIds as $userId) {
             try {
                 $this->tenants->addUserToTenant($userId, $tenant->id);
                 $memberEmail = User::find($userId)?->email;
+
+                if ($tenant->isPlatform()) {
+                    $adminGroup = UserGroup::where('name', $adminGroupName)
+                        ->whereNull('tenant_id')
+                        ->first();
+
+                    if (!$adminGroup) {
+                        $adminGroup = UserGroup::create([
+                            'name' => $adminGroupName,
+                            'description' => 'Platform administrator group',
+                            'priority' => 1,
+                            'tenant_id' => null,
+                        ]);
+                    }
+
+                    $this->authorization->addToGroup($userId, $adminGroup->id);
+                    $this->auditGroupMembership('added', $adminGroup, $userId);
+                }
 
                 $this->audit->recordSafe(
                     'tenant.member_added',
@@ -931,6 +952,187 @@ class WebAdminController extends Controller
             );
 
             return back()->with('status', 'User created and set-password email sent.');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Unable to create user: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    // ─── Platform Admin (auth-tenant.md §3.6) ───────────────────────
+
+    public function platformAdminShow(): View
+    {
+        $adminGroupName = (string) config('auth-web.admin_group', 'loa-auth-admin');
+
+        $adminGroup = UserGroup::where('name', $adminGroupName)
+            ->whereNull('tenant_id')
+            ->firstOrFail();
+
+        $members = $adminGroup->users()
+            ->orderBy('email')
+            ->paginate(25);
+
+        return view('admin.platform-admin.show', [
+            'adminGroup' => $adminGroup,
+            'members' => $members,
+        ]);
+    }
+
+    public function platformAdminMembersStore(Request $request): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'user_ids' => 'required|array|min:1',
+            'user_ids.*' => 'string|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator);
+        }
+
+        $adminGroupName = (string) config('auth-web.admin_group', 'loa-auth-admin');
+        $adminGroup = UserGroup::where('name', $adminGroupName)
+            ->whereNull('tenant_id')
+            ->firstOrFail();
+        $tenant = Tenant::where('slug', 'auth')->firstOrFail();
+
+        $added = 0;
+        foreach ($request->input('user_ids', []) as $userId) {
+            try {
+                $this->tenants->addUserToTenant($userId, $tenant->id);
+                $this->authorization->addToGroup($userId, $adminGroup->id);
+                $this->auditGroupMembership('added', $adminGroup, $userId);
+
+                $memberEmail = User::find($userId)?->email;
+                $this->audit->recordSafe(
+                    'tenant.member_added',
+                    'tenant',
+                    $tenant->id,
+                    ['tenant' => $tenant->slug, 'member_email' => $memberEmail],
+                );
+
+                $added++;
+            } catch (\Throwable) {
+                // skip individual failures
+            }
+        }
+
+        return back()->with('status', $added . ' member(s) added to Platform Admin. No email sent.');
+    }
+
+    public function platformAdminMemberSearch(Request $request): JsonResponse
+    {
+        $term = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($term) < 2) {
+            return response()->json(['data' => []]);
+        }
+
+        $adminGroupName = (string) config('auth-web.admin_group', 'loa-auth-admin');
+        $adminGroup = UserGroup::where('name', $adminGroupName)
+            ->whereNull('tenant_id')
+            ->first();
+
+        $like = '%' . addcslashes(strtolower($term), '%_\\') . '%';
+        $exactEmail = strtolower($term);
+        $escapeChar = '\\';
+
+        $query = User::query()
+            ->where(function ($q) use ($like, $escapeChar) {
+                $q->whereRaw('LOWER(name) LIKE ? ESCAPE ?', [$like, $escapeChar])
+                    ->orWhereRaw('LOWER(email) LIKE ? ESCAPE ?', [$like, $escapeChar]);
+            })
+            ->where('status', '!=', 'disabled');
+
+        if ($adminGroup) {
+            $query->whereNotIn('users.id', function ($sub) use ($adminGroup) {
+                $sub->select('user_id')->from('user_user_group')
+                    ->where('user_group_id', $adminGroup->id);
+            });
+        }
+
+        $users = $query
+            ->orderByRaw('CASE WHEN LOWER(email) = ? THEN 0 ELSE 1 END', [$exactEmail])
+            ->orderBy('email')
+            ->limit(20)
+            ->get(['id', 'name', 'email', 'status']);
+
+        return response()->json(['data' => $users]);
+    }
+
+    public function platformAdminMembersRemove(Request $request, string $userId): RedirectResponse
+    {
+        $adminGroupName = (string) config('auth-web.admin_group', 'loa-auth-admin');
+        $adminGroup = UserGroup::where('name', $adminGroupName)
+            ->whereNull('tenant_id')
+            ->firstOrFail();
+
+        try {
+            $this->authorization->removeFromGroup($userId, $adminGroup->id);
+            $this->auditGroupMembership('removed', $adminGroup, $userId);
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('status', 'Platform admin membership revoked. The user was not deleted.');
+    }
+
+    public function platformAdminCreateUser(Request $request): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $adminGroupName = (string) config('auth-web.admin_group', 'loa-auth-admin');
+        $adminGroup = UserGroup::where('name', $adminGroupName)
+            ->whereNull('tenant_id')
+            ->firstOrFail();
+        $tenant = Tenant::where('slug', 'auth')->firstOrFail();
+
+        try {
+            $user = $this->identity->register(
+                $request->input('email'),
+                '',
+                $request->input('name'),
+            );
+            $user->update(['status' => 'pending']);
+
+            $user->tenants()->syncWithoutDetaching([$tenant->id]);
+
+            $this->authorization->addToGroup($user->id, $adminGroup->id);
+            $this->auditGroupMembership('added', $adminGroup, $user->id);
+
+            $rawToken = bin2hex(random_bytes(32));
+            $hashedToken = hash('sha256', $rawToken);
+
+            PasswordSetToken::where('user_id', $user->id)->delete();
+
+            PasswordSetToken::create([
+                'user_id' => $user->id,
+                'token' => $hashedToken,
+                'expires_at' => now()->addHours(48),
+            ]);
+
+            Mail::to($user->email)->queue(new SetPasswordMail($user, $rawToken));
+
+            $this->audit->recordSafe(
+                'user.created',
+                'user',
+                $user->id,
+                ['email' => $user->email, 'name' => $user->name, 'tenant' => $tenant->slug],
+            );
+
+            $this->audit->recordSafe(
+                'tenant.member_added',
+                'tenant',
+                $tenant->id,
+                ['tenant' => $tenant->slug, 'member_email' => $user->email],
+            );
+
+            return back()->with('status', 'User created, added to Platform Admin, and set-password email sent.');
         } catch (\Throwable $e) {
             return back()->with('error', 'Unable to create user: ' . $e->getMessage())->withInput();
         }
@@ -1563,3 +1765,4 @@ class WebAdminController extends Controller
         return back()->with('status', 'User endpoint overrides updated.');
     }
 }
+

@@ -1,6 +1,10 @@
 @extends('layouts.admin')
 
-@section('title', $tenant->name . ' | LOA Admin')
+@if ($tenant->isPlatform())
+    @section('title', 'Loa Auth Platform | LOA Admin')
+@else
+    @section('title', $tenant->name . ' | LOA Admin')
+@endif
 @section('content')
     @include('admin.partials.breadcrumbs', ['items' => [
         ['label' => 'Tenants', 'url' => route('admin.tenants')],
@@ -66,6 +70,7 @@
                 </span>
             </a>
             @endif
+            @if (!$tenant->isPlatform())
             <a class="action-tile" href="{{ route('admin.tenants.groups', $tenant) }}">
                 <span class="tile-icon tile-info" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -78,6 +83,8 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </span>
             </a>
+@endif
+            @if (!$tenant->isPlatform())
             <a class="action-tile" href="{{ route('admin.tenants.endpoints.manage', $tenant) }}">
                 <span class="tile-icon tile-violet" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
@@ -90,6 +97,8 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </span>
             </a>
+            @endif
+            @if (!$tenant->isPlatform())
             <a class="action-tile" href="{{ route('admin.tenants.access-config.import', $tenant) }}">
                 <span class="tile-icon tile-brand" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
@@ -102,6 +111,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                 </span>
             </a>
+@endif
         </div>
 
         @if (!$tenant->isPlatform())
