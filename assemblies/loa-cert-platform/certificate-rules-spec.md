@@ -173,36 +173,76 @@ The `api-endpoints.md` spec (§5.4, §9.6) declares an **owner rule** for certif
 
 ---
 
-# 3. Certificate File Storage
+# 3. Certificate File Storage & Generation Modes
 
 ## 3.1 Rule
 
-> Certificate PDFs are stored on the server filesystem. The `file_path` column on `certificates` holds a **relative path** from the storage root. Two storage paths exist: auto-generated PDFs (DomPDF) and manually uploaded PDFs.
+> Certificates support two generation modes: **template** (system-generated from HTML/CSS template via DomPDF) and **file** (user-uploaded PDF). The `generation_mode` is stored in `event_attendees.metadata.generation_mode` and determines which PDF is used as the certificate. Uploaded files are stored as base64 in `event_attendees.metadata.file_data` until issuance, at which point they are decoded and saved to disk.
 
-## 3.2 Storage Architecture
+## 3.2 Generation Modes
+
+| Mode | Source | Storage (pre-issuance) | Storage (post-issuance) | `file_path` on `certificates` |
+|------|--------|----------------------|------------------------|-------------------------------|
+| `template` | DomPDF renders HTML from `certificate_templates` | N/A | `storage/app/certificates/{CERT_NUMBER}.pdf` | Set by `PdfService::generateCertificatePdf()` |
+| `file` | User-uploaded PDF (base64 in CSV upload) | `event_attendees.metadata.file_data` (base64 JSONB) | `storage/app/certificates/{CERT_NUMBER}.pdf` (decoded from base64) | Set during `issueCertificates()` |
+
+## 3.3 Storage Architecture
 
 ```
 storage/app/
-├── private/
-│   └── certificates/          ← Auto-generated PDFs (DomPDF)
-│       ├── CERT-0001.pdf
-│       └── CERT-0002.pdf
-└── public/                    ← Uploaded PDFs (multipart upload)
-    └── certificates/
-        └── CERT-0003.pdf
+└── certificates/
+    ├── CERT-0001.pdf    ← template mode (DomPDF-generated)
+    └── CERT-0002.pdf    ← file mode (decoded from uploaded base64)
 ```
 
 | Source | Disk | Path pattern | Column |
 |--------|------|-------------|--------|
-| DomPDF auto-generation (`PdfService`) | `local` → `storage/app/` | `certificates/{CERT_NUMBER}.pdf` | `file_path` |
-| Manual upload (`CertificateController::upload`) | `public` → `storage/app/public/` | `certificates/{CERT_NUMBER}.pdf` | `file_path` |
+| DomPDF auto-generation (`PdfService`) | `local` | `certificates/{CERT_NUMBER}.pdf` | `file_path` |
+| Uploaded file decode (`issueCertificates`) | `local` | `certificates/{CERT_NUMBER}.pdf` | `file_path` |
 | Email attachment (`CertificateEmail`) | reads from `local` | `storage/app/{file_path}` | — |
 
-**Both paths use the same relative prefix** (`certificates/`) but land on **different disks**. This is an inconsistency — uploaded PDFs are publicly web-accessible (via the `public` symlink) while auto-generated ones are not.
+Both modes write to the **same disk** (`local`) and **same path pattern**. The `file_path` column always points to the final PDF regardless of generation mode.
 
-## 3.3 API Contract
+## 3.4 Issuance Flow — Uploaded Files
 
-### `POST /api/v1/certificates/upload` — Upload Certificate File
+### Step 1: CSV Import (Frontend → Backend)
+
+Frontend `upload-csv-form.tsx` reads files as base64 Data URIs and sends via `attendeesApi.bulkAdd()`:
+
+```json
+{
+  "attendees": [
+    {
+      "name": "Maria Santos",
+      "email": "maria@example.com",
+      "metadata": {
+        "generation_mode": "file",
+        "file_data": "data:application/pdf;base64,JVBERi0x...",
+        "file_name": "cert-maria.pdf",
+        "file_type": "application/pdf"
+      }
+    }
+  ]
+}
+```
+
+Backend `AttendeeController::import()` stores the metadata as JSONB in `event_attendees.metadata`. **No disk write occurs at this stage.**
+
+### Step 2: Certificate Issuance (`issueCompleted` → `issueCertificates`)
+
+`EventController::issueCertificates()` iterates attendees and for each:
+
+1. Checks `attendee->metadata['generation_mode']`
+2. **If `file`:** decodes `file_data` base64 → writes to `storage/app/certificates/{CERT_NUMBER}.pdf` → sets `file_path` on certificate
+3. **If `template`:** calls `PdfService::generateCertificatePdf()` → writes DomPDF output to `storage/app/certificates/{CERT_NUMBER}.pdf` → sets `file_path`
+
+### Step 3: Email Delivery
+
+`CertificateEmail::attachments()` reads from `storage_path('app/' . $this->pdfPath)` on the `local` disk. Works for both modes since both write to the same disk/path.
+
+## 3.5 API Contract
+
+### `POST /api/v1/certificates/upload` — Upload Certificate File (standalone)
 
 **Auth:** `write`
 
@@ -252,13 +292,14 @@ storage/app/
 
 **Success 200:** raw binary with `Content-Disposition: attachment; filename="CERT-0001.pdf"`.
 
-## 3.4 Identified Gaps
+## 3.6 Identified Gaps
 
 | Gap | Impact | Recommendation |
 |-----|--------|----------------|
-| **Disk inconsistency** — auto-generated PDFs go to `local`, uploaded PDFs go to `public`. Both use the same relative path. | Uploaded PDFs are publicly web-accessible without auth if the `storage/app/public` symlink exists. Auto-generated ones are not. | Unify to `local` disk. The `public` disk should only be used for intentionally public assets. Alternatively, add middleware to guard `/storage/` paths. |
-| **No file-type check on upload** — only PDF is validated (`mimes:pdf`). PNG/image uploads are not supported. | If the business needs PNG support, the upload validator must be extended. | Add `mimes:pdf,png,jpg` if image certificates are desired. Update the `file_path` extension accordingly. |
-| **No file cleanup on certificate deletion** — deleting a certificate does not delete the PDF from disk. | Orphaned PDF files accumulate over time. | Add a deletion hook or scheduled job to clean up `file_path` entries for deleted certificates. |
+| **`issueCertificates()` always generates template PDF** — does not check `attendee->metadata['generation_mode']`. When `file` mode, the uploaded base64 in `event_attendees.metadata.file_data` is ignored and a template PDF is generated instead. | **High** — uploaded certificates are never used; recipients always receive a system-generated PDF regardless of upload. | Add `generation_mode` check in `issueCertificates()`. When `file`, decode `file_data` base64 and write to disk instead of calling `PdfService::generateCertificatePdf()`. |
+| **`CertificateController::store()` and `bulk()` always generate template PDF** — no `generation_mode` awareness. These endpoints create certificates directly without attendee context. | Medium — these endpoints are for direct issuance (not CSV import). If a user wants to issue an uploaded cert via API, they must use `upload()` after `store()`. | Acceptable for now. Document that `store()`/`bulk()` are template-only. For uploaded certs, use `import()` → `issueCompleted()`. |
+| **No file cleanup on certificate deletion** — deleting a certificate does not delete the PDF from disk. | Low — orphaned PDF files accumulate over time. | Add a deletion hook or scheduled job to clean up `file_path` entries for deleted certificates. |
+| **`CertificateEmail` attachment path assumes `local` disk** — if uploaded files were stored on `public` disk, the attachment would fail. | Low — current fix unifies to `local` disk. | Verify `CertificateEmail::attachments()` uses `storage_path('app/' . $pdfPath)` consistently. |
 
 ---
 
@@ -373,8 +414,8 @@ Or via the combined endpoint:
 | 2 | Template Locking | `force=true` delete orphans event `template_id` silently | Medium | — | `ON DELETE SET NULL` clears reference |
 | 3 | Certificate Visibility | `CertificateController::show()` has no owner check | **High** | `api-endpoints.md` §9.6: owner rule for detail/pdf/download | Returns any cert to any authenticated user |
 | 4 | Certificate Visibility | `pdf()` and `download()` have no owner check | **High** | §9.6: owner rule | Streams PDF to any authenticated user |
-| 5 | File Storage | Auto-generated PDFs on `local` disk, uploaded PDFs on `public` disk | Medium | — | Inconsistent storage; `public` disk is web-accessible |
-| 6 | File Storage | No PNG/image upload support | Low | — | Only `mimes:pdf` validated |
+| 5 | File Storage | `issueCertificates()` always generates template PDF — ignores `generation_mode: "file"` in attendee metadata | **High** | §3.2: two modes (template/file) | Always calls `PdfService::generateCertificatePdf()`, never decodes uploaded base64 |
+| 6 | File Storage | `CertificateController::store()` and `bulk()` always generate template PDF — no file mode support | Medium | — | These endpoints have no attendee context; template-only by design |
 | 7 | File Storage | No file cleanup on certificate deletion | Low | — | Orphaned PDFs accumulate |
 | 8 | Issuance | No DB constraint on `(event_id, recipient_email)` for active certs | Medium | §7.2 declares `UNIQUE(event_id, recipient_email)` | Only app-level `whereNull('revoked_at')` check |
 
@@ -386,8 +427,8 @@ For gaps requiring implementation:
 
 1. **Gap 3+4 (certificate owner check)** — Add `recipient_email` check in `CertificateController::show()`, `pdf()`, `download()`. No migration needed. Add tests.
 2. **Gap 8 (no duplicate active cert per event+email)** — **Resolved without migration.** MySQL 8.0 InnoDB cannot create a unique index on a generated column referencing a FK column. Constraint already enforced at the application layer in all 4 issuance paths: `store()` (line 258), `bulk()` (line 412), `issueCertificates()` (line 662), and `reissue()` (revokes old before creating new, transactional). No code change needed.
-3. **Gap 5 (disk unification)** — Config change + update `CertificateController::upload()` to use `local` disk. No migration.
-4. **Gap 1 (lock check on issuance)** — Add `isTemplateLocked()` call in `CertificateController::store()` when `template_id` is explicitly provided. No migration.
+3. **Gap 5 (uploaded files ignored)** — In `EventController::issueCertificates()`, check `attendee->metadata['generation_mode']`. When `file`, decode `file_data` base64, write to `storage/app/certificates/{CERT_NUMBER}.pdf`, set `file_path`. Skip `PdfService::generateCertificatePdf()`. No migration.
+4. **Gap 6 (store/bulk template-only)** — Acceptable. `store()` and `bulk()` are direct issuance endpoints without attendee context. Uploaded certs flow through `import()` → `issueCompleted()`. Document in API docs.
 
 ---
 

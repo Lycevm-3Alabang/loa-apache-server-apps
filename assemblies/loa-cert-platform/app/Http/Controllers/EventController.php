@@ -806,10 +806,35 @@ class EventController extends Controller
                         'channel' => 'bulk',
                     ]);
 
-                    try {
-                        $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
-                    } catch (\Exception $e) {
-                        // PDF generation failure is non-fatal; certificate is still created
+                    $metadata = $attendee->metadata ?? [];
+                    $generationMode = $metadata['generation_mode'] ?? 'template';
+
+                    if ($generationMode === 'file' && !empty($metadata['file_data'])) {
+                        try {
+                            $filePath = 'certificates/' . $certificateNumber . '.pdf';
+                            $raw = $metadata['file_data'];
+                            if (str_starts_with($raw, 'data:')) {
+                                $raw = substr($raw, strpos($raw, ',') + 1);
+                            }
+                            $decoded = base64_decode($raw, true);
+                            if ($decoded !== false) {
+                                Storage::disk('local')->put($filePath, $decoded);
+                                $certificate->update(['file_path' => $filePath]);
+                            }
+                        } catch (\Exception $e) {
+                            // Upload decode failure is non-fatal; fall back to template
+                            try {
+                                $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+                            } catch (\Exception $e2) {
+                                // PDF generation failure is also non-fatal
+                            }
+                        }
+                    } else {
+                        try {
+                            $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+                        } catch (\Exception $e) {
+                            // PDF generation failure is non-fatal; certificate is still created
+                        }
                     }
 
                     if ($sendEmail) {
