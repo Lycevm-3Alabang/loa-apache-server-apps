@@ -343,14 +343,6 @@ class CertificateController extends Controller
                     'status' => 'sent',
                 ]);
 
-                if ($eventId) {
-                    $attendee = EventAttendee::firstOrCreate(
-                        ['event_id' => $eventId, 'email' => $request->input('recipient_email')],
-                        ['name' => $request->input('recipient_name'), 'organization_id' => $organizationId]
-                    );
-                    $attendee->update(['certificate_id' => $certificate->id, 'certificate_number' => $certificateNumber]);
-                }
-
                 $emailSent = true;
             } catch (\Exception $e) {
                 CertificateEmailModel::create([
@@ -362,16 +354,15 @@ class CertificateController extends Controller
                     'status' => 'failed',
                     'error_message' => $e->getMessage(),
                 ]);
-                // attendee NOT linked — retryable
             }
-        } else {
-            if ($eventId) {
-                $attendee = EventAttendee::firstOrCreate(
-                    ['event_id' => $eventId, 'email' => $request->input('recipient_email')],
-                    ['name' => $request->input('recipient_name'), 'organization_id' => $organizationId]
-                );
-                $attendee->update(['certificate_id' => $certificate->id, 'certificate_number' => $certificateNumber]);
-            }
+        }
+
+        if ($eventId) {
+            $attendee = EventAttendee::firstOrCreate(
+                ['event_id' => $eventId, 'email' => $request->input('recipient_email')],
+                ['name' => $request->input('recipient_name'), 'organization_id' => $organizationId]
+            );
+            $attendee->update(['certificate_id' => $certificate->id, 'certificate_number' => $certificateNumber]);
         }
 
         $formatted = $this->formatCertificate($certificate->fresh(['event', 'template']));
