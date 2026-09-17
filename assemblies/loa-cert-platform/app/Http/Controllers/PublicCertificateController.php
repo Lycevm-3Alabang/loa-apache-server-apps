@@ -154,6 +154,7 @@ class PublicCertificateController extends Controller
                     'name' => $certificate->event->name,
                     'event_date' => $certificate->event->event_date?->toDateString(),
                     'location' => $certificate->event->location,
+                    'organizer' => $certificate->event->organizer,
                 ] : null,
                 'qr_data_url' => $this->qrCodeService->toDataUri(($certificate->organization?->website ?? config('app.url')) . '/verify/' . $certificate->certificate_number),
                 'organization' => [

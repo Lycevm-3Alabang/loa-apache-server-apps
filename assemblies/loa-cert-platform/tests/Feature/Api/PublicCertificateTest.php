@@ -44,6 +44,7 @@ class PublicCertificateTest extends TestCase
             'name' => 'SPARK Bootcamp 2026',
             'event_date' => '2026-08-15',
             'location' => 'Multipurpose Hall',
+            'organizer' => 'Human Resources',
             'certificate_number_pattern' => 'CERT-####',
             'valid_until' => now()->addMonth(),
             'status' => 'active',
@@ -123,6 +124,7 @@ class PublicCertificateTest extends TestCase
             ->assertJsonPath('data.certificate.certificate_number', 'CERT-0001')
             ->assertJsonPath('data.template.name', 'Test Certificate')
             ->assertJsonPath('data.event.name', 'SPARK Bootcamp 2026')
+            ->assertJsonPath('data.event.organizer', 'Human Resources')
             ->assertJsonPath('data.organization.name', 'Lyceum of Alabang')
             ->assertJsonStructure(['data' => ['certificate', 'template', 'event', 'qr_data_url', 'organization']]);
 

@@ -7,6 +7,7 @@ use App\Models\CertificateTemplate;
 use App\Models\Event;
 use App\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 use Tests\Traits\WithJwt;
 
@@ -26,6 +27,12 @@ class CertificateTemplateTest extends TestCase
         ]);
 
         config(['cert-platform.organization_id' => $this->organization->id]);
+
+        // Template writes now verify the author against Auth (spec
+        // event-visibility §2 guard rail) — fake an active author.
+        Http::fake([
+            '*/api/v1/users/*' => Http::response(['status' => 'active'], 200),
+        ]);
     }
 
     public function test_list_templates(): void

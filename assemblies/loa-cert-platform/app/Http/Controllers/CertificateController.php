@@ -313,8 +313,7 @@ class CertificateController extends Controller
                 $certificate->load(['event', 'template', 'organization']);
                 $pdfPath = $certificate->file_path;
 
-                $appUrl = config('app.url');
-                $website = $certificate->organization?->website ?? $appUrl;
+                $website = $certificate->organization?->website ?? config('app.url');
                 $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                 $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 
@@ -1113,8 +1112,7 @@ class CertificateController extends Controller
         try {
             $pdfPath = $certificate->file_path;
 
-            $appUrl = config('app.url');
-            $website = $certificate->organization?->website ?? $appUrl;
+            $website = $certificate->organization?->website ?? config('app.url');
             $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
             $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
 

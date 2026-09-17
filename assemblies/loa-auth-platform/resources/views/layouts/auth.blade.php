@@ -56,11 +56,11 @@
             background: var(--surface-muted);
         }
 
-        .brand-panel {
-            display: none;
-        }
-
         .content-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
             padding: 1.5rem;
             max-width: 100%;
         }
@@ -211,42 +211,30 @@
 
         @media (min-width: 641px) {
             .auth-shell {
-                display: grid;
-                grid-template-columns: minmax(280px, 0.8fr) minmax(400px, 1.2fr);
+                display: flex;
                 min-height: 100vh;
             }
 
-            .brand-panel {
-                display: block;
-                position: relative;
-                order: 1;
-            }
-
             .content-panel {
-                order: 2;
-                padding: clamp(1.5rem, 4vw, 4rem);
+                display: flex;
                 align-items: center;
                 justify-content: center;
+                min-height: 100vh;
+                padding: clamp(1.5rem, 4vw, 4rem);
+                width: 100%;
             }
-
-            .auth-card {
-                width: min(100%, 24rem);
-                margin: 0;
-                box-shadow: var(--shadow-lg);
-                padding: 2rem;
-            }
-
-            .mobile-lockup { display: none; }
         }
 
         @media (max-width: 640px) {
-            .auth-shell { grid-template-columns: 1fr; }
-
-            .brand-panel { display: none; }
+            .auth-shell { display: flex; }
 
             .content-panel {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
                 padding: 1.5rem;
-                align-items: flex-start;
+                width: 100%;
             }
 
             .auth-card { width: 100%; max-width: none; margin: 0; }
@@ -261,21 +249,6 @@
 </head>
 <body>
     <div class="auth-shell">
-        <aside class="brand-panel" aria-label="LOA Platform">
-            <a class="brand-lockup" href="{{ route('login') }}">
-                <span class="brand-mark" aria-hidden="true">LOA</span>
-                <span>LOA Platform</span>
-            </a>
-
-            <div class="brand-copy">
-                <p class="brand-kicker">One identity. Every platform.</p>
-                <h2>Lyceum of Alabang Single Sign-On.</h2>
-                <p>Secure access to the LOA digital campus, from consultation to certificates and everything in between.</p>
-            </div>
-
-            <div class="brand-footer">Identity services operational</div>
-        </aside>
-
         <main class="content-panel">
             <div class="auth-card">
                 <a class="mobile-lockup" href="{{ route('login') }}">
