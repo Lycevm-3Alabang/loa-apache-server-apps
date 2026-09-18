@@ -14,9 +14,26 @@ class MetadataCertificateStorage implements CertificateStorage
     ) {
     }
 
-    public function store(Certificate $certificate, string $decodedPdf): void
+    public function store(Certificate $certificate, array $metadata = []): void
     {
-        // No-op: data already in event_attendees.metadata.file_data
+        $mode = $metadata['generation_mode'] ?? 'template';
+
+        if ($mode === 'file' && !empty($metadata['file_data'])) {
+            $raw = $metadata['file_data'];
+            if (str_starts_with($raw, 'data:')) {
+                $raw = substr($raw, strpos($raw, ',') + 1);
+            }
+            $decoded = base64_decode($raw, true);
+            if ($decoded !== false) {
+                return;
+            }
+        }
+
+        try {
+            $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+        } catch (\Exception) {
+            // PDF generation failure is non-fatal; certificate record is still valid
+        }
     }
 
     public function delete(Certificate $certificate): void
@@ -29,7 +46,6 @@ class MetadataCertificateStorage implements CertificateStorage
         $binary = $this->resolvePdfBinary($certificate);
 
         if ($binary === null) {
-            // Template mode: render on-the-fly via PdfService
             return $this->pdfService->streamCertificatePdf($certificate);
         }
 
@@ -44,7 +60,6 @@ class MetadataCertificateStorage implements CertificateStorage
         $binary = $this->resolvePdfBinary($certificate);
 
         if ($binary === null) {
-            // Template mode: render on-the-fly via PdfService
             return $this->pdfService->downloadCertificatePdf($certificate);
         }
 

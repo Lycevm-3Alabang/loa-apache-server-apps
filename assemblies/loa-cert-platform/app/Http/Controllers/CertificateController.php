@@ -12,7 +12,6 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Services\AuditLogger;
 use App\Services\CertUserChecker;
-use App\Services\PdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -93,7 +92,6 @@ class CertificateController extends Controller
 {
     public function __construct(
         private readonly CertificateStorage $certificateStorage,
-        private readonly PdfService $pdfService,
         private readonly AuditLogger $auditLogger,
         private readonly QrCodeService $qrCodeService,
         private readonly CertUserChecker $userChecker,
@@ -302,31 +300,11 @@ class CertificateController extends Controller
                 ->first()
             : null;
         $metadata = $attendee?->metadata ?? [];
-        $generationMode = $metadata['generation_mode'] ?? 'template';
 
-        if ($generationMode === 'file' && !empty($metadata['file_data'])) {
-            try {
-                $raw = $metadata['file_data'];
-                if (str_starts_with($raw, 'data:')) {
-                    $raw = substr($raw, strpos($raw, ',') + 1);
-                }
-                $decoded = base64_decode($raw, true);
-                if ($decoded !== false) {
-                    $this->certificateStorage->store($certificate, $decoded);
-                }
-            } catch (\Exception $e) {
-                try {
-                    $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
-                } catch (\Exception $e2) {
-                    // PDF generation failure is non-fatal
-                }
-            }
-        } else {
-            try {
-                $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
-            } catch (\Exception $e) {
-                // PDF generation failure is non-fatal; certificate is still created
-            }
+        try {
+            $this->certificateStorage->store($certificate, $metadata);
+        } catch (\Exception $e) {
+            // Storage failure is non-fatal; certificate record is still created
         }
 
         $this->auditLogger->record('certificate.issued', 'api', 'certificate', $certificate->id, [
@@ -529,31 +507,11 @@ class CertificateController extends Controller
                         ->where('email', $recipient['email'])
                         ->first();
                     $attMeta = $attendeeMeta?->metadata ?? [];
-                    $attGenMode = $attMeta['generation_mode'] ?? 'template';
 
-                    if ($attGenMode === 'file' && !empty($attMeta['file_data'])) {
-                        try {
-                            $raw = $attMeta['file_data'];
-                            if (str_starts_with($raw, 'data:')) {
-                                $raw = substr($raw, strpos($raw, ',') + 1);
-                            }
-                            $decoded = base64_decode($raw, true);
-                            if ($decoded !== false) {
-                                $this->certificateStorage->store($certificate, $decoded);
-                            }
-                        } catch (\Exception $e) {
-                            try {
-                                $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
-                            } catch (\Exception $e2) {
-                                // PDF generation failure is non-fatal
-                            }
-                        }
-                    } else {
-                        try {
-                            $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
-                        } catch (\Exception $e) {
-                            // PDF generation failure is non-fatal; certificate is still created
-                        }
+                    try {
+                        $this->certificateStorage->store($certificate, $attMeta);
+                    } catch (\Exception $e) {
+                        // Storage failure is non-fatal
                     }
 
                     if ($sendEmail) {

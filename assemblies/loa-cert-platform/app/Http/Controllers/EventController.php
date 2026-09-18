@@ -12,7 +12,6 @@ use App\Models\EventAttendee;
 use App\Services\AuditLogger;
 use App\Services\CertificateNumberService;
 use App\Services\CertUserChecker;
-use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Mail;
@@ -137,7 +136,6 @@ class EventController extends Controller
     public function __construct(
         private readonly CertificateNumberService $certificateNumberService,
         private readonly CertificateStorage $certificateStorage,
-        private readonly PdfService $pdfService,
         private readonly AuditLogger $auditLogger,
         private readonly CertUserChecker $userChecker,
     ) {
@@ -809,32 +807,11 @@ class EventController extends Controller
                     ]);
 
                     $metadata = $attendee->metadata ?? [];
-                    $generationMode = $metadata['generation_mode'] ?? 'template';
 
-                    if ($generationMode === 'file' && !empty($metadata['file_data'])) {
-                        try {
-                            $raw = $metadata['file_data'];
-                            if (str_starts_with($raw, 'data:')) {
-                                $raw = substr($raw, strpos($raw, ',') + 1);
-                            }
-                            $decoded = base64_decode($raw, true);
-                            if ($decoded !== false) {
-                                $this->certificateStorage->store($certificate, $decoded);
-                            }
-                        } catch (\Exception $e) {
-                            // Upload decode failure is non-fatal; fall back to template
-                            try {
-                                $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
-                            } catch (\Exception $e2) {
-                                // PDF generation failure is also non-fatal
-                            }
-                        }
-                    } else {
-                        try {
-                            $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
-                        } catch (\Exception $e) {
-                            // PDF generation failure is non-fatal; certificate is still created
-                        }
+                    try {
+                        $this->certificateStorage->store($certificate, $metadata);
+                    } catch (\Exception $e) {
+                        // Storage failure is non-fatal; certificate record is still created
                     }
 
                     if ($sendEmail) {
@@ -1062,9 +1039,9 @@ class EventController extends Controller
                 ]);
 
                 try {
-                    $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+                    $this->certificateStorage->store($certificate, $attendee->metadata ?? []);
                 } catch (\Exception $e) {
-                    // PDF generation failure is non-fatal; certificate is still created
+                    // Storage failure is non-fatal; certificate record is still created
                 }
 
                 $success = true;
