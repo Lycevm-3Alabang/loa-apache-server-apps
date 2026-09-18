@@ -329,7 +329,7 @@ email attachment():
 
 ## 3.8 Implementation Plan — Interface + Feature Flag
 
-**Status:** In progress
+**Status:** Done — 246/246 tests passing (2026-09-18)
 
 ### Architecture: Strategy Pattern with Feature Flag
 
@@ -383,11 +383,11 @@ interface CertificateStorage
 
 | Method | Behavior |
 |--------|----------|
-| `store()` | No-op (data already in `metadata.file_data`) |
+| `store()` | No-op (`metadata.file_data` is the source of truth) |
 | `delete()` | No-op (no files on disk) |
-| `pdf()` | Load attendee, decode `metadata.file_data`, return as PDF response |
-| `download()` | Same as `pdf()` with `Content-Disposition: attachment` |
-| `emailAttachment()` | Load attendee, decode `metadata.file_data`, return binary |
+| `pdf()` | File mode → decoded `metadata.file_data` binary inline; template mode → `PdfService::streamCertificatePdf()` on-the-fly |
+| `download()` | Same as `pdf()` with `Content-Disposition: attachment`; template mode → `PdfService::downloadCertificatePdf()` |
+| `emailAttachment()` | File mode → decoded binary; template mode → `null` (caller falls back to `PdfService` render) |
 
 ### Controller Changes
 
@@ -426,20 +426,31 @@ Mail::to(...)->send(new CertificateEmail(
 ```php
 public function register()
 {
-    $this->app->bind(
-        \App\Interfaces\CertificateStorage::class,
-        fn () => config('cert-platform.use_metadata_serving')
-            ? new \App\Services\MetadataCertificateStorage()
-            : new \App\Services\DiskCertificateStorage(app(\App\Services\PdfService::class))
-    );
+    $this->app->bind(CertificateStorage::class, function ($app) {
+        $useMetadata = $app['config']->get('cert-platform.use_metadata_serving', true);
+
+        if ($useMetadata) {
+            return $app->make(MetadataCertificateStorage::class);
+        }
+
+        return $app->make(DiskCertificateStorage::class);
+    });
 }
 ```
+
+> **Gotcha (2026-09-18):** `AppServiceProvider` is NOT auto-discovered — it must be registered explicitly in `bootstrap/app.php`, otherwise the container throws `Target [App\Interfaces\CertificateStorage] is not instantiable`:
+>
+> ```php
+> ->withProviders([
+>     \App\Providers\AppServiceProvider::class,
+> ])
+> ```
 
 ### Config
 
 ```php
 // config/cert-platform.php
-'use_metadata_serving' => env('CERT_USE_METADATA_SERVING', false),
+'use_metadata_serving' => env('CERT_USE_METADATA_SERVING', true),
 ```
 
 ### Revert strategy

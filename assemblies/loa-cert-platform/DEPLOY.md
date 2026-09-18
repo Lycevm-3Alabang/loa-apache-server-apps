@@ -155,6 +155,7 @@ php artisan l5-swagger:generate
 | `CORS_ALLOWED_ORIGINS` | `https://auth.lyceumalabang.edu.ph,https://e-cert.vercel.app` | Yes |
 | `CERT_TENANT_SLUG` | `loa-e-cert` | Yes |
 | `CERT_ORGANIZATION_ID` | `00000000-0000-0000-0000-000000000001` | Yes |
+| `CERT_USE_METADATA_SERVING` | `true` = metadata-based PDF serving (default), `false` = disk-based | Yes |
 | `CERT_REFRESH_COOKIE` | `loa_cert_refresh` | Yes |
 | `CERT_REFRESH_COOKIE_SECURE` | `true` | Yes |
 | `CERT_REFRESH_COOKIE_TTL` | `10080` (7 days) | Yes |
