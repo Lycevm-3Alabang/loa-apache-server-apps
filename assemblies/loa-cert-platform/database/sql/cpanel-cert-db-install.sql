@@ -1,3 +1,9 @@
+-- ============================================================================
+-- cPanel Cert DB — Schema Install (MACHINE-GENERATED via mysqldump)
+-- Safe to overwrite with a fresh dump. Seed rows live ONLY in
+--   cpanel-cert-db-seed.sql  (HAND-MAINTAINED — never overwrite with a dump)
+-- Run order: 1) import this file, 2) import cpanel-cert-db-seed.sql
+-- ============================================================================
 -- MySQL dump 10.13  Distrib 8.0.46, for Linux (x86_64)
 --
 -- Host: localhost    Database: lyceumalabang_e_cert_db

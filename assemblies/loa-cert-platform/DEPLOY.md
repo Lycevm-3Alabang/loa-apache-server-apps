@@ -121,7 +121,7 @@ composer install --no-dev --optimize-autoloader
 3. Create or update the `.env` file with the production values.
 4. Run the database work:
 
-> **Fresh-database path (drop → create → seed):** supported — but `db:seed` here is a **no-op** (empty seeder). After migrating you MUST insert the organization row or every event/template write fails with FK 1452. Full procedure incl. that SQL: root **`docs/cpanel-db-migration-runbook.md`** §5–§6.
+> **Fresh-database path (drop → create → seed):** `php artisan db:seed` inserts the `Lyceum of Alabang` organization row (`DatabaseSeeder`). If seeding via SQL import instead (phpMyAdmin/File Manager), import `database/sql/cpanel-cert-db-install.sql` (schema) **then** `database/sql/cpanel-cert-db-seed.sql` (organization row — hand-maintained, never overwritten by dumps). Without the organization row every event/template write fails with FK 1452, and verify links fall back to the API domain.
 
 ```bash
 php artisan config:clear
@@ -205,6 +205,7 @@ The tenant slug must match in **all four** places (see `cert-readiness.md` §4.1
 | 2 | Cert Platform backend | `CERT_TENANT_SLUG` env | `loa-e-cert` |
 | 3 | Auth Platform middleware | `TENANT_SLUG` env | `loa-e-cert` |
 | 4 | e-cert SPA (frontend) | `NEXT_PUBLIC_CERT_TENANT_SLUG` env | `loa-e-cert` |
+| 5 | Cert DB `organizations.website` | `cpanel-cert-db-seed.sql` | `https://staging-loa-vericert.vercel.app` |
 
 ---
 

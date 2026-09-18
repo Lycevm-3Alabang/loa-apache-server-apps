@@ -81,7 +81,7 @@ https://cert-api.lyceumalabang.edu.ph/api/v1
 
 ## 3.3 Tenant & Organization Scoping
 
-- LOA runs a **single organization**. The `organizations` table is kept and seeded with one row (`Lyceum of Alabang`), matching `CERT_TENANT_SLUG=loa-e-cert`.
+- LOA runs a **single organization**. The `organizations` table is kept and seeded with one row (`Lyceum of Alabang`, `website=https://staging-loa-vericert.vercel.app`), matching `CERT_TENANT_SLUG=loa-e-cert` — via `DatabaseSeeder`, or `database/sql/cpanel-cert-db-seed.sql` for SQL imports.
 - The current organization is **resolved server-side** from the authenticated JWT `tenant` claim via `config/cert-platform.php` (`tenant_slug` → organization). Clients never send `organization_id`.
 - Every query is implicitly filtered to the resolved organization. Cross-organization access is impossible by construction.
 - Tenant mismatch (token `tenant.slug` ≠ configured `loa`) → `403`.

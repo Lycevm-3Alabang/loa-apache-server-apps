@@ -665,6 +665,8 @@ config('app.url')
 null → link omitted from email
 ```
 
+> **Seed guarantee:** `organizations.website` must never be NULL in practice. It is set by `DatabaseSeeder` and backfilled by `database/sql/cpanel-cert-db-seed.sql` (idempotent, dump-proof). A NULL website silently produces API-domain verify links — if that ever recurs, check the seed row first.
+
 ### Database change
 
 `organizations` table gains a nullable `website` column:
@@ -694,11 +696,11 @@ ALTER TABLE organizations ADD COLUMN website VARCHAR(255) NULL AFTER slug;
 
 ## 7.5 Identified Gaps
 
-| Gap | Impact | Recommendation |
-|-----|--------|----------------|
-| **No `website` column on organizations** | Cannot store frontend URL per tenant | Add migration + model update |
-| **Download endpoint requires auth** | Email recipients cannot download | Add public download endpoint to `PublicCertificateController` |
-| **Verify URL points to API (JSON)** | Email recipients see raw JSON, not verification page | Point to frontend `/verify/{number}` route |
+| Gap | Impact | Status |
+|-----|--------|--------|
+| **No `website` column on organizations** | Cannot store frontend URL per tenant | ✅ Resolved — migration `2026_09_13_000001`; seeded via `DatabaseSeeder` + `database/sql/cpanel-cert-db-seed.sql` |
+| **Download endpoint requires auth** | Email recipients cannot download | ✅ Resolved — public download endpoint in `PublicCertificateController` |
+| **Verify URL points to API (JSON)** | Email recipients see raw JSON, not verification page | ✅ Resolved — frontend `/verify/{number}` via `organizations.website` (seed guarantee, 2026-09-18) |
 
 ---
 

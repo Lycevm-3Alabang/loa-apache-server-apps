@@ -11,7 +11,7 @@ class DatabaseSeeder extends Seeder
     {
         Organization::updateOrCreate(
             ['id' => '00000000-0000-0000-0000-000000000001'],
-            ['name' => 'LOA E-Cert Platform', 'slug' => 'loa-e-cert', 'website' => 'https://staging-loa-vericert.vercel.app']
+            ['name' => 'Lyceum of Alabang', 'slug' => 'loa-e-cert', 'website' => 'https://staging-loa-vericert.vercel.app']
         );
     }
 }
