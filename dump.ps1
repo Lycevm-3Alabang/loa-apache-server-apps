@@ -237,6 +237,47 @@ if ($dumpExit -ne 0) {
         }
     }
 
+    # ── Pass 4: inject seed rows (cert target only) ─────────────────────
+    # cpanel-cert-db-seed.sql is hand-maintained; the Docker loa_cert
+    # `organizations` table dumps empty, so embed the seed INSERTs into the
+    # install file to keep single-import working. Seed uses
+    # ON DUPLICATE KEY UPDATE, so re-imports stay safe.
+    if ($Target -eq 'cert') {
+        $seedSql = Join-Path $appRoot 'database\sql\cpanel-cert-db-seed.sql'
+        if (Test-Path -LiteralPath $seedSql) {
+            $seedLines = Get-Content -LiteralPath $seedSql | Where-Object { $_ -notmatch '^\s*--' -and $_ -match '\S' }
+            $firstInsert = -1
+            for ($i = 0; $i -lt $seedLines.Count; $i++) {
+                if ($seedLines[$i] -match '^\s*INSERT INTO') { $firstInsert = $i; break }
+            }
+            if ($firstInsert -ge 0) {
+                $seedInserts = $seedLines[$firstInsert..($seedLines.Count - 1)]
+                $newProcessed = @()
+                $inOrgs = $false
+                $injected = $false
+                foreach ($line in $processed) {
+                    $newProcessed += $line
+                    if (-not $injected) {
+                        if ($line -match 'LOCK TABLES `organizations` WRITE') { $inOrgs = $true }
+                        if ($inOrgs -and $line -match 'ALTER TABLE `organizations` DISABLE KEYS') {
+                            $newProcessed += $seedInserts
+                            $inOrgs = $false
+                            $injected = $true
+                        }
+                    }
+                }
+                # Fallback: append at end if organizations block not found.
+                if (-not $injected) { $newProcessed += ''; $newProcessed += $seedInserts }
+                $processed = $newProcessed
+                Write-Host "  Injected cert seed rows from cpanel-cert-db-seed.sql"
+            } else {
+                Write-Warning "No INSERT found in seed file: $seedSql"
+            }
+        } else {
+            Write-Warning "Seed SQL not found: $seedSql"
+        }
+    }
+
     # Write the file
     $fullSql = $processed -join "`n"
     [System.IO.File]::WriteAllText($sqlOut, $fullSql, [System.Text.UTF8Encoding]::new($false))
