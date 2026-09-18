@@ -107,15 +107,16 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 
 ### LOA Consult Platform — `assemblies/loa-consult-platform/`
 
-- **Status:** Draft spec only, no code. **Inventory savepoint complete 2026-09-18** (scan-only, frontend untouched).
-- **Key spec:** `README.md` v1.0 Draft.
+- **Status:** Specs drafted, scaffold done, HealthTest green in Docker. **Spec promotion + first migration next.**
+- **Key specs:** `api-endpoints.md` **Final v1.0**, `auth-integration.md` **Final v1.2**, `data-model.md` **Draft v0.2** (hybrid users: cache table, no FK), 3 endpoint modules Draft v0.1, `docker-compose-spec.md` Draft v0.1, `test-suite.md` Draft v0.1.
+- **Scaffold:** Laravel 12.12 via `composer create-project`, swagger + phpunit 12, PHP 8.3 pinned (downgraded symfony 8.x), `HealthTest` green in container. Root compose not yet wired (blocked on first migration).
 - **Design:** thin composition layer wiring **Consultation + Evaluation + Academic** business contexts; owns API routing, middleware, JWT validation, request/response transformation, API docs, deployment — owns **no business logic**.
-- **API surface (draft):** appointments (+batch/accept/decline/complete/cancel), availability-rules CRUD, semesters, evaluation-periods, evaluations (ratings/comments/submit/pending), admin departments/subjects/sections, 7 report endpoints.
-- **Deployment:** `aces-api.lyceumalabang.edu.ph`, Laravel 12, cPanel, PHP 8.2+, MySQL 8.
+- **API surface (draft):** appointments (+batch/accept/decline/complete/cancel), availability-rules CRUD, semesters, evaluation-periods, evaluations (ratings/comments/submit/pending), admin departments/subjects/sections, 7 report endpoints (deferred to Phase E).
+- **Deployment:** `aces-api.lyceumalabang.edu.ph`, Laravel 12, cPanel, PHP 8.3+, MySQL 8.
 - **Future:** evaluation → certificate event to Cert Platform.
-- **2026-09-18 inventory (ground truth, `D:\loa\e-consultation\app\api`):** 112 `route.ts` files (~142 method+path combos; 118 migrating to Laravel + 5 public/SSO) mapped to Laravel `/api/v1` controllers (Appointments, Availability, AdminUsers, Academic, Semesters, Evaluations, EvalPeriods, EvalResults admin/dean/faculty, RubricGroups, Import, DataAudit). 5 NextAuth routes marked delete-at-cutover (activate/forgot/change-password); `access-config`/`user-permissions` observed but auth-owned (no Laravel equivalent); support/public (`health`, `bug-reports`, `audit/forbidden`) stays in Next except Laravel `GET /api/v1/health`. **Drift recorded:** old `endpoint-catalog.md` (143) overstates — `[action]` POST-only, teams-link POST-only, `student/bootstrap` GET, `rubric/snapshot` GET, `categories` POST+DELETE, `semesters/[id]` extra POST, academic singletons PATCH/DELETE-only; README-claimed `sync-teams`, period `subjects`/`enrollments`, `evaluations/submitted`, sentiment routes have **no route files** (confirm with frontend team, no code touch).
 - **2026-09-18 decisions (locked):** Laravel owns SSO `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` + `loa_connect_refresh` cookie (cert pattern); reports deferred to Phase E (no REST report routes exist); modular **10-file spec savepoint** (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); dev phasing B (appointments/academic/semesters) → C (evaluations/periods/rubrics/results) → D (admin-users/import/data-audit + `/service/*`) → E (reports + cutover).
-- **Next:** draft spec files #1 (conventions + route summary) and #7 (auth integration) first; everything else hangs off them.
+- **2026-09-18 architecture change:** hybrid users approach — consult owns a **users cache table** (no FK relationships) populated from JWT claims; all consult domain rows use opaque Auth sub strings (TEXT, no FK). Eliminates circular FK (`departments.dean_id` ↔ `users.department_id`). Auth remains single source of truth for identity.
+- **Next:** Promote `data-model.md` v0.2 to Final (verify §3 column shapes flagged for module-spec verification), promote 3 endpoint modules, then first migration → compose wiring → consult-app in Docker.
 - **Reference basis (read-only):** Auth Final contracts (`tenant-group-endpoint-grants.md` v1.1, `tenant-endpoint-catalog.md` v3.2, `tenant-app-api.md`, `unified-auth-flow.md`) + Cert Final `api-endpoints.md` v1.8 with verified implementation (middleware, auth controllers, SSO contract).
 - **Delivery:** independent — Consult ships on its own schedule; it never blocks on Auth/Cert feature work, only on their Final contracts (already Final).
 
@@ -126,13 +127,19 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 ### Date: 2026-09-18
 
 ### Completed
-- **Consult endpoint inventory (scan-only savepoint)** — 112 `route.ts` files in `D:\loa\e-consultation\app\api` (~142 combos; 118 migrating) mapped to Laravel `/api/v1` groups (C–O); drift vs `endpoint-catalog.md` recorded; frontend untouched per instruction.
+- **Consult endpoint inventory (scan-only savepoint)** — 112 `route.ts` files in `D:\loa\e-consultation\app\api` (~142 combos; 118 migrating) mapped to Laravel `/api/v1` groups; drift vs `endpoint-catalog.md` recorded; frontend untouched per instruction.
 - **Consult modular spec plan** — 10-file savepoint + phasing B→C→D→E; decisions locked (Laravel owns auth per cert pattern; reports Phase E).
-- **Trackers updated** — `PROJECT.md` (Last Updated, consult savepoint rows, 4 decision-log entries) + `PROJECT_UPDATES.md` (consult section, this note, session log). `AI-GUIDE.md` / `AI-RULES.md` reviewed — no changes needed.
+- **Specs promoted:** `api-endpoints.md` **Final v1.0**, `auth-integration.md` **Final v1.2**.
+- **Specs drafted:** `data-model.md` v0.1→v0.2 (hybrid users: cache, no FK), `endpoints-academic.md` v0.1, `endpoints-appointments.md` v0.1, `endpoints-evaluations.md` v0.1, `test-suite.md` v0.1, `docker-compose-spec.md` v0.1, `LOCAL-DEV-RUNBOOK.md` v0.1, `DEPLOY.md` v0.1, `FRONTEND-INTEGRATION.md` v0.1.
+- **Laravel scaffold** — real Laravel 12.12 tree via `composer create-project`, swagger + phpunit 12, PHP 8.3 pinned, `HealthTest` green in container. `_stage/` reference files layered back.
+- **Architecture decision** — hybrid users approach: cache table with no FK relationships; all consult user-ref columns = opaque Auth sub TEXT; eliminates circular FK; users upserted from JWT on login, admin-written fields via import/management endpoints.
+- **Cert spec-vs-code audit** — `api-endpoints.md` v1.8, `authenticated-endpoints-spec.md` v1.2, `auth-proxy.md` (11 routes), `FRONTEND-INTEGRATION.md` updated.
+- **Trackers updated** — `PROJECT.md`, `PROJECT_UPDATES.md`, `TODO.md` (new file).
 
 ### Next Action
-- [ ] Draft consult spec files #1 (conventions + route summary) and #7 (auth integration)
-- [ ] Then endpoint modules, data-model, runbooks
+- [ ] Promote `data-model.md` v0.2 to Final (verify §3 column shapes flagged in module specs)
+- [ ] Promote `endpoints-academic.md`, `endpoints-appointments.md`, `endpoints-evaluations.md` to Final
+- [ ] Write first migration(s) → wire compose per `docker-compose-spec.md` → consult-app in Docker
 
 ### Date: 2026-08-27
 

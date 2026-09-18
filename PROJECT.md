@@ -76,7 +76,7 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Final (v1.2 — destination resolution) — implemented |
 | Assembly | LOA Admin Dashboard | `assemblies/loa-auth-platform/admin-dashboard.md` | ✅ Final (v1 + v2 implemented) |
 | Assembly | Access Config Import/Export | `assemblies/loa-auth-platform/access-config-import-export.md` | ✅ Final v1.0 — implemented |
-| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Draft + inventory savepoint (2026-09-18) |
+| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Scaffolded + specs drafted (2026-09-18); data-model Draft v0.2, 3 endpoint modules Draft v0.1, docker-compose-spec Draft v0.1 |
 | Assembly | LOA Cert Platform | `assemblies/loa-cert-platform/README.md` | ✅ Draft |
 
 ---
@@ -156,7 +156,17 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 |------|--------|-------|
 | Consult endpoint inventory (scan-only savepoint) | ✅ Done | 2026-09-18: 112 route files scanned (~142 combos; 118 migrating to Laravel); drift vs `endpoint-catalog.md` recorded; frontend untouched |
 | Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
-| Laravel project scaffold | ⬜ Not started | |
+| Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
+| `api-endpoints.md` spec | ✅ Final v1.0 | Root spec: conventions, 118-route summary, levels, design decisions |
+| `auth-integration.md` spec | ✅ Final v1.2 | SSO contract, cookie, middleware, 14-item port inventory |
+| `data-model.md` spec | ✅ Draft v0.2 | Hybrid users: cache table, no FK relationships, all user-ref = opaque Auth sub TEXT; circular FK eliminated |
+| `endpoints-academic.md` spec | ✅ Draft v0.1 | 14 handlers; parent levels corrected (POST/PATCH + impacts → admin) |
+| `endpoints-appointments.md` spec | ✅ Draft v0.1 | 12 combos: booking model, batch, action dispatch |
+| `endpoints-evaluations.md` spec | ✅ Draft v0.1 | 24 handlers: lifecycle/masking, periods, rubrics, results, dispute mail |
+| `test-suite.md` spec | ✅ Draft v0.1 | MySQL `loa_consult_test`, JWT helper, coverage per module |
+| `docker-compose-spec.md` spec | ✅ Draft v0.1 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
+| `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |
+| First migration(s) | ⬜ Blocked on data-model.md Final | `users` + `departments` (FK-safe per §8); wire compose per `docker-compose-spec.md` |
 | JWT middleware | ⬜ Not started | Validate token from auth app |
 | Permission middleware | ⬜ Not started | Check UserGroup permissions |
 | Appointment model + migrations | ⬜ Not started | |
@@ -174,7 +184,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Evaluation result computation | ⬜ Not started | |
 | Subject/Section/Enrollment models | ⬜ Not started | |
 | Academic infrastructure endpoints | ⬜ Not started | |
-| Report endpoints (7 types) | ⬜ Not started | |
+| Report endpoints (7 types) | ⬜ Deferred to Phase E | No REST routes exist; Server Components compute directly |
 | CSV import | ⬜ Not started | |
 | Email notifications | ⬜ Not started | |
 | Deploy to aces-api.lyceumalabang.edu.ph | ⬜ Not started | |
@@ -336,3 +346,5 @@ loa-apache-server-apps/
 | 2026-09-18 | Consult: frontend untouched, scan-only inventory | `access-config`/`user-permissions` observed but auth-owned; no frontend changes |
 | 2026-09-18 | Consult: reports deferred to Phase E | No REST report routes exist; Server Components keep computing reports |
 | 2026-09-18 | Consult: modular 10-file spec savepoint | Ground truth = `route.ts` scan (112 files, ~142 combos; 118 migrating), not `endpoint-catalog.md` (drift recorded) |
+| 2026-09-18 | Consult: hybrid users approach | Users cache table with no FK relationships; all consult user-ref columns = opaque Auth sub TEXT; eliminates circular FK; users upserted from JWT on login |
+| 2026-09-18 | Consult: Laravel scaffold done | Real Laravel 12.12 via composer, PHP 8.3 pinned, HealthTest green in Docker |

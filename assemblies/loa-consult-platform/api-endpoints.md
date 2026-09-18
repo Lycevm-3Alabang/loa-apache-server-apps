@@ -1,8 +1,8 @@
 # LOA Consult Platform — API Endpoints
 ## Product Assembly Component Specification
 
-**Version:** 0.1
-**Status:** Draft
+**Version:** 1.0
+**Status:** Final
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -39,7 +39,7 @@ The API is **API-first and level-gated**. Authentication is delegated to the LOA
 | Appointments | CRUD-lite + batch + faculty-booked + action + files + retry-sync + student-cancel + teams-link | `read` (get/list), `write` (all mutations) |
 | Availability | list + create | `read` / `write` |
 | Admin users | list/create/update + soft-delete/restore/bulk/deleted/related-data | `read` (list/views), `write` (update), `admin` (create/delete/destructive) |
-| Academic | departments, department-courses, subjects, sections, faculty-subjects, enrollments | `read` (list), `write` (create/update), `admin` (delete/fix-names) |
+| Academic | departments, department-courses, subjects, sections, faculty-subjects, enrollments | `read` (lists) / `write` (department-courses POST only) / `admin` (all other mutations, per module spec) |
 | Semesters | CRUD + impacts + count-active | `read` / `admin` (code gates ALL mutations to ADMIN-group holders); count-active public |
 | Evaluations | CRUD-lite + ratings + comments + submit + pending + dispute + bootstrap | `read` / `write` |
 | Evaluation periods | CRUD + activate/reset + rubric copy + rubric items | `read` / `write` / `admin` (delete/reset) |
@@ -160,7 +160,7 @@ Higher covers lower (`admin` satisfies `read`-required). `admin` is operational:
 Tenant groups (`ADMIN`, `DEAN`, `FACULTY`, `STUDENT`) are created, assigned, and granted **in Auth only** (provisioning: `auth-integration.md` §8). This spec declares no grants. Capability needs per group, for Auth provisioning:
 
 - `ADMIN` group: `admin` on every cataloged path.
-- `DEAN` group: `read` across academic/users/semesters/periods/results/appointments/import/data; `write` on period-activate. Visibility: `admin`-required, DEAN access is a deploy-time grant (§7 #10).
+- `DEAN` group: `read` across academic/users/semesters/periods/results/appointments/import/data; `write` on department-courses POST. `admin`-grants needed on: visibility (§7 #10), period-activate, department-courses DELETE, import-preview. No destructive.
 - `FACULTY` group: `read` on appointments/results/periods/rubrics/semesters/lookups; `write` on appointment-actions, teams-link, availability-rules.
 - `STUDENT` group: `write` on own appointments/evaluations/bootstrap; `read` on own views plus rubric/period/semester reads.
 
@@ -225,19 +225,19 @@ Next path → Laravel `/api/v1` path (prefix swap only). `required_level` per me
 | Method | Path | Level |
 |--------|------|-------|
 | GET | `/admin/departments` | `read` |
-| POST | `/admin/departments` | `write` |
-| PATCH | `/admin/departments/{id}` | `write` |
+| POST | `/admin/departments` | `admin` |
+| PATCH | `/admin/departments/{id}` | `admin` |
 | GET | `/admin/department-courses` | `read` |
 | POST | `/admin/department-courses` | `write` |
 | DELETE | `/admin/department-courses/{id}` | `admin` |
-| POST | `/admin/subjects` | `write` |
-| PATCH | `/admin/subjects/{id}` | `write` |
-| POST | `/admin/sections` | `write` |
-| PATCH | `/admin/sections/{id}` | `write` |
+| POST | `/admin/subjects` | `admin` |
+| PATCH | `/admin/subjects/{id}` | `admin` |
+| POST | `/admin/sections` | `admin` |
+| PATCH | `/admin/sections/{id}` | `admin` |
 | POST | `/admin/sections/fix-names` | `admin` |
-| POST | `/admin/faculty-subjects` | `write` |
-| POST | `/admin/faculty-subjects/reassign` | `write` |
-| POST | `/admin/student-enrollments` | `write` |
+| POST | `/admin/faculty-subjects` | `admin` |
+| POST | `/admin/faculty-subjects/reassign` | `admin` |
+| POST | `/admin/student-enrollments` | `admin` |
 | DELETE | `/admin/student-enrollments/{id}` | `admin` |
 
 ## 5.5 Semesters → `SemesterController`
@@ -250,7 +250,7 @@ Next path → Laravel `/api/v1` path (prefix swap only). `required_level` per me
 | POST | `/semesters/{id}` | `admin` |
 | PATCH | `/semesters/{id}` | `admin` |
 | DELETE | `/semesters/{id}` | `admin` |
-| GET | `/semesters/{id}/impacts` | `read` |
+| GET | `/semesters/{id}/impacts` | `admin` |
 | GET | `/semesters/count-active` | public |
 
 ## 5.6 Evaluations → `EvaluationController`
@@ -275,16 +275,16 @@ Next path → Laravel `/api/v1` path (prefix swap only). `required_level` per me
 | Method | Path | Level |
 |--------|------|-------|
 | GET | `/evaluation-periods` | `read` |
-| POST | `/evaluation-periods` | `write` |
+| POST | `/evaluation-periods` | `admin` |
 | GET | `/evaluation-periods/{id}` | `read` |
-| PUT | `/evaluation-periods/{id}` | `write` |
+| PUT | `/evaluation-periods/{id}` | `admin` |
 | DELETE | `/evaluation-periods/{id}` | `admin` |
-| POST | `/evaluation-periods/{id}/activate` | `write` |
+| POST | `/evaluation-periods/{id}/activate` | `admin` |
 | POST | `/evaluation-periods/{id}/reset` | `admin` |
 | GET | `/evaluation-periods/{id}/rubric` | `read` |
-| POST | `/evaluation-periods/{id}/rubric/copy` | `write` |
-| POST | `/evaluation-periods/{id}/rubrics/items` | `write` |
-| PATCH | `/evaluation-periods/{id}/rubrics/items/{itemId}` | `write` |
+| POST | `/evaluation-periods/{id}/rubric/copy` | `read` |
+| POST | `/evaluation-periods/{id}/rubrics/items` | `admin` |
+| PATCH | `/evaluation-periods/{id}/rubrics/items/{itemId}` | `admin` |
 | DELETE | `/evaluation-periods/{id}/rubrics/items/{itemId}` | `admin` |
 
 ## 5.8 Evaluation results → `EvaluationResultController`
@@ -299,14 +299,14 @@ Faculty (all `read`): `GET /faculty/evaluation-results`, `/subjects`, `/subjects
 | Method | Path | Level |
 |--------|------|-------|
 | GET | `/rubric-groups` | `read` |
-| POST | `/rubric-groups` | `write` |
+| POST | `/rubric-groups` | `admin` |
 | GET | `/rubric-groups/{id}` | `read` |
-| PATCH | `/rubric-groups/{id}` | `write` |
+| PATCH | `/rubric-groups/{id}` | `admin` |
 | DELETE | `/rubric-groups/{id}` | `admin` |
-| POST | `/rubric-groups/{id}/items` | `write` |
-| PATCH | `/rubric-groups/{id}/items/{itemId}` | `write` |
+| POST | `/rubric-groups/{id}/items` | `admin` |
+| PATCH | `/rubric-groups/{id}/items/{itemId}` | `admin` |
 | DELETE | `/rubric-groups/{id}/items/{itemId}` | `admin` |
-| POST | `/rubric-groups/{id}/duplicate` | `write` |
+| POST | `/rubric-groups/{id}/duplicate` | `admin` |
 | GET | `/rubric-groups/{id}/snapshot` | `read` (provisional; catalog claimed POST — see §7) |
 | POST | `/rubric-groups/{id}/categories` | `admin` |
 | DELETE | `/rubric-groups/{id}/categories` | `admin` (body `{categoryId}`, 400 if missing) |
@@ -347,7 +347,7 @@ Code permits ADMIN- and DEAN-group holders on preview — preserve via DEAN gran
 | GET | `/users/primary` | `read` |
 | GET | `/users/attendees` | `read` |
 
-Placement (AdminUserController vs `/service/*` proxy) decided in the admin module spec.
+Both accept `?department=` filter (booking flows). Placement (AdminUserController vs `/service/*` proxy) decided in the admin module spec.
 
 ## 5.13 Health (public)
 
@@ -385,6 +385,13 @@ Auth SSO group (`POST /auth/callback|refresh|logout`, public throttled) specifie
 | 10 | RESOLVED (2026-09-18): levels stay Auth-driven, no local roles | Consult strips local admin/role concepts — access comes from auth-app tenant groups (cert pattern). Visibility remains `required_level=admin`; whether DEAN toggles it is a grant in Auth (`admin` on that path for the DEAN group), default ADMIN-group-only. No level change, no local role logic |
 | 11 | Contracts reflect code, not cert | Bare shapes (§3.4), no pagination (§3.5), base64 files + CSV preview (§3.7), `{created,updated,failed}` bulk (§3.8). Cert-envelope/multipart/JSON-import adoption are build decisions, never assumed |
 | 12 | Local roles stripped (2026-09-18) | `ADMIN`/`DEAN`/`FACULTY`/`STUDENT`/`GUEST` exist only as auth-app tenant groups (§4.0). No role column, no pipe parsing, no local checks; gates are JWT group-membership + levels. Backend unification of group-split paths deferred to module specs; role-split presentation stays frontend (untouched) |
+| 15 | Academic levels corrected (module spec, 2026-09-18) | Code gates ADMIN-group holders on all academic POST/PATCH (not `write`); impacts ADMIN-only; dept-courses POST stays `write` (ADMIN-or-DEAN holders); DEAN grants on dept-courses DELETE + import-preview. Semesters GET has no code auth — hardened to `read` |
+| 16 | Appointments module clean (2026-09-18) | All 12 combos `read`/`write` as specced — code gates are group-membership only, no level corrections. Dispatch table, batch/single semantics, slot-link validation, availability self/other rules captured in module |
+| 17 | Evaluations levels corrected (module spec, 2026-09-18) | Periods POST/PUT/activate + period-items POST/PATCH + rubric-groups POST/PATCH/items/duplicate `write`→`admin` (code gates ADMIN holders); rubric-copy `write`→`read` (fetch misnomer, no duplication in code); evaluation-comments gate ADMIN-or-DEAN holders |
+| 18 | Admin+import module DEFERRED (2026-09-18) | §5.3/5.10/5.11/5.12 inventoried but not contracted: user management mirrors Auth identity, access-config/permissions already live in the Auth catalog, destructive data ops need Auth-governed handling — enforcement, not consult domain. Detailed contracts deferred to implementation phase; §5 stands as the endpoint list |
+| 19 | Frontend 403-contract (app scan, 2026-09-18) | UI locks per-endpoint on 403 (`setLockedEndpoint`, `LockedTab`) and reports via `POST /api/audit/forbidden` (`lib/api/client.ts`). Laravel must return JSON 403 — never redirects or login pages — on every gated API route |
+| 20 | Dormant watchlist (app scan, 2026-09-18) | No fetch callers observed for: `GET /api/evaluations/pending`, `POST /api/import/preview`, period `rubric` GET / `rubric/copy`, rubric `duplicate`/`snapshot`, `GET /api/faculty/evaluation-results/subjects/{id}`. Routes exist → retained in catalog; usage to confirm at cutover (server-driven or dormant). Dead ref only: commented-out `/api/faculty/search` (no such route — ignore) |
+| 21 | Redundancy audit (2026-09-18) | Exact duplicates (one impl, unify at module time): period `rubric` GET ≡ `rubric/copy` POST (identical fetch — alias then drop at cutover); period `rubrics/items*` ≡ group `items*` (same repo calls, but period variants skip the seed/lock guard — unify on the stronger guard). Cutover drops (frontend migrates first): `rubric/copy`, POST-evaluations-with-`{id}` branch (≡ GET-by-id), `pending` if bootstrap covers all callers. Overlaps kept with distinct scope: single vs bulk invalidates, result reads per prefix, bootstrap composite, activate vs PATCH-isActive. Unread handler: `DELETE /api/admin/audit-logs` (verify at build) |
 | 13 | Users final shape (lib/db + migrations, 2026-09-18) | `evaluationPeriodId` renamed to `semester_id` (Step 9); `deleted_at` backs soft-delete endpoints; no `evaluation_eligible` (README-only, never migrated). data-model §4 corrected |
 | 14 | Query shapes for module specs (lib/db/common.ts) | Appointment detail = appointment + student/faculty brief + attendees(+user brief) + timeSlots; history variant drops student join + attendees. PostgREST embeds pin FK names (`users!appointments_studentId_fkey`) — replace with Eloquent relationships. Ratings fan-out (ratings→items→categories + in-memory maps) becomes JOINs. `toUserWithRole` pipe-join retired by §4.0 |
 
@@ -392,8 +399,7 @@ Auth SSO group (`POST /auth/callback|refresh|logout`, public throttled) specifie
 
 ## Document Control
 
-- **Status:** Draft v0.1
+- **Status:** Final v1.0 (promoted 2026-09-18; academic/appointments/evaluations modules contracted, §7 #9–#12/#15–#17 resolved, admin+import deferred per #18, redundancy per #21)
 - **Created:** 2026-09-18
-- **Source:** route.ts scan (`D:\loa\e-consultation\app\api`, 112 files)
-- **Next:** endpoint module specs (#2–#6), then `data-model.md`
-- **Final bar (Rule 0):** promotion requires modules #2–#6 with per-endpoint request/response contracts + `data-model.md` + resolution of §7 #9–#10. No implementation code before Final.
+- **Source:** route.ts scan (`D:\loa\e-consultation\app\api`, 112 files) + 50 handlers read verbatim + frontend usage scan
+- **Next:** implementation phase (scaffold → domain slices → C-Auth → cutover); admin+import contracts at implementation time

@@ -1,0 +1,32 @@
+/vendor
+.env
+.env.backup
+.env.local
+.env.production
+.phpunit.result.cache
+.phpunit.cache/
+/storage/framework/views/*
+/storage/framework/sessions/*
+/storage/framework/cache/*
+!/storage/framework/cache/.gitkeep
+/storage/framework/cache/data/*
+!/storage/framework/cache/data/.gitkeep
+/storage/logs/*
+/storage/api-docs/*
+/storage/*.key
+/bootstrap/cache/*
+/public/build
+/public/hot
+/public/storage
+/node_modules
+
+# Scaffolding scratch (hand drafts staged aside during artisan generation — never deploy)
+_stage/
+
+# Local tooling / OS
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
+
+.env.cpanel
