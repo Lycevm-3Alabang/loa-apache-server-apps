@@ -26,6 +26,7 @@ class CertificateEmail extends Mailable
         public readonly ?string $verifyUrl,
         public readonly bool $isRegistered = true,
         public readonly ?string $activateUrl = null,
+        public readonly ?string $fileData = null,
     ) {
         $qrService = app(QrCodeService::class);
         $this->qrDataUri = $qrService->toDataUri($this->verifyUrl);
@@ -58,6 +59,14 @@ class CertificateEmail extends Mailable
 
     public function attachments(): array
     {
+        if ($this->fileData) {
+            return [
+                \Illuminate\Mail\Mailables\Attachment::fromData(
+                    fn () => $this->fileData,
+                    'certificate-' . $this->certificateNumber . '.pdf'
+                )->withMime('application/pdf'),
+            ];
+        }
         if ($this->pdfPath && file_exists(storage_path('app/' . $this->pdfPath))) {
             return [
                 \Illuminate\Mail\Mailables\Attachment::fromStorageDisk('local')

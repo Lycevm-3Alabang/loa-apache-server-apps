@@ -26,4 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 413);
             }
         });
-    })->create();
+    })
+    ->withProviders([
+        \App\Providers\AppServiceProvider::class,
+    ])
+    ->create();

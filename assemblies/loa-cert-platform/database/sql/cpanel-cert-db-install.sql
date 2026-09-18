@@ -336,7 +336,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -359,6 +359,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (11,'2026_09_13_000
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (12,'2026_09_15_000001_add_is_public_to_events_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (13,'2026_09_15_000002_add_updated_by_to_events_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (14,'2026_09_15_000003_enforce_event_authorship_constraints',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (15,'2026_09_17_000001_add_file_data_to_certificates_table',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (16,'2026_09_18_071347_drop_file_data_from_certificates_table',1);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -405,4 +407,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-17  6:53:12
+-- Dump completed on 2026-09-18  3:58:57

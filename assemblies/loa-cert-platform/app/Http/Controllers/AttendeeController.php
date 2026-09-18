@@ -597,20 +597,34 @@ class AttendeeController extends Controller
             ]);
         }
 
-        $path = $metadata['file_path'] ?? null;
+        $fileData = $metadata['file_data'] ?? null;
 
-        if (!$path || !Storage::disk('public')->exists($path)) {
+        if (!$fileData) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Uploaded file has been removed.',
             ], 410);
         }
 
-        $mimeType = Storage::disk('public')->mimeType($path) ?? $metadata['file_type'] ?? 'application/octet-stream';
+        $raw = $fileData;
+        if (str_starts_with($raw, 'data:')) {
+            $raw = substr($raw, strpos($raw, ',') + 1);
+        }
+        $decoded = base64_decode($raw, true);
 
-        return Storage::disk('public')->response($path, $metadata['file_name'] ?? basename($path), [
+        if ($decoded === false) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Uploaded file has been removed.',
+            ], 410);
+        }
+
+        $mimeType = $metadata['file_type'] ?? 'application/pdf';
+        $fileName = $metadata['file_name'] ?? 'certificate.pdf';
+
+        return response($decoded, 200, [
             'Content-Type' => $mimeType,
-            'Content-Disposition' => 'inline',
+            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
         ]);
     }
 

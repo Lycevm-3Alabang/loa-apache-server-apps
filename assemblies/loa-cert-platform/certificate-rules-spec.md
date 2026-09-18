@@ -177,37 +177,44 @@ The `api-endpoints.md` spec (§5.4, §9.6) declares an **owner rule** for certif
 
 ## 3.1 Rule
 
-> Certificates support two generation modes: **template** (system-generated from HTML/CSS template via DomPDF) and **file** (user-uploaded PDF). The `generation_mode` is stored in `event_attendees.metadata.generation_mode` and determines which PDF is used as the certificate. Uploaded files are stored as base64 in `event_attendees.metadata.file_data` until issuance, at which point they are decoded and saved to disk.
+> Certificates support two generation modes: **template** (system-generated from HTML/CSS template via DomPDF) and **file** (user-uploaded PDF). The `generation_mode` is stored in `event_attendees.metadata.generation_mode` and determines which PDF is used as the certificate. **Primary path: metadata-based serving.** Template-generated PDFs are rendered on-the-fly by DomPDF. Uploaded PDFs are decoded from `event_attendees.metadata.file_data` (base64). **Existing disk storage code is retained as fallback** — if metadata-based serving fails, the system falls back to the original file_path/disk approach. Certificates are always tied to an event-attendee; when the attendee is deleted, the certificate is deleted too.
 
 ## 3.2 Generation Modes
 
-| Mode | Source | Storage (pre-issuance) | Storage (post-issuance) | `file_path` on `certificates` |
-|------|--------|----------------------|------------------------|-------------------------------|
-| `template` | DomPDF renders HTML from `certificate_templates` | N/A | `storage/app/certificates/{CERT_NUMBER}.pdf` | Set by `PdfService::generateCertificatePdf()` |
-| `file` | User-uploaded PDF (base64 in CSV upload) | `event_attendees.metadata.file_data` (base64 JSONB) | `storage/app/certificates/{CERT_NUMBER}.pdf` (decoded from base64) | Set during `issueCertificates()` |
+| Mode | Source | Primary serving (metadata-based) | Fallback (disk-based) |
+|------|--------|----------------------------------|----------------------|
+| `template` | DomPDF renders HTML from `certificate_templates` | `PdfService::streamCertificatePdf()` — renders on-the-fly | `file_path` on disk (if exists) |
+| `file` | User-uploaded PDF (base64 in attendee metadata) | Decode `metadata.file_data` base64 → return as PDF response | `file_path` on disk (if exists) |
+
+**Key principle:** Metadata-based serving is the primary path. Existing disk storage code is **deferred, not removed**. If metadata-based serving fails or returns nothing, the system falls back to the original `file_path`/disk approach. This allows safe revert if issues arise.
 
 ## 3.3 Storage Architecture
 
 ```
-storage/app/
-└── certificates/
-    ├── CERT-0001.pdf    ← template mode (DomPDF-generated)
-    └── CERT-0002.pdf    ← file mode (decoded from uploaded base64)
+Primary (metadata-based):
+  event_attendees.metadata.file_data:
+      "JVBERi0x..."    ← file mode (base64, decoded on-the-fly)
+  certificate_templates.html_content:
+      <div>...</div>   ← template mode (rendered on-the-fly by DomPDF)
+
+Fallback (disk-based, retained):
+  storage/app/private/certificates/
+      CERT-0001.pdf    ← template mode (if file_path set)
+      CERT-0002.pdf    ← file mode (if file_path set)
 ```
 
-| Source | Disk | Path pattern | Column |
-|--------|------|-------------|--------|
-| DomPDF auto-generation (`PdfService`) | `local` | `certificates/{CERT_NUMBER}.pdf` | `file_path` |
-| Uploaded file decode (`issueCertificates`) | `local` | `certificates/{CERT_NUMBER}.pdf` | `file_path` |
-| Email attachment (`CertificateEmail`) | reads from `local` | `storage/app/{file_path}` | — |
+| Mode | Primary serving | Fallback | Column used |
+|------|----------------|----------|-------------|
+| `template` | DomPDF renders at request time | Read from `file_path` on disk | `file_path` (retained) |
+| `file` | Decode `metadata.file_data` at request time | Read from `file_path` on disk | `metadata.file_data` + `file_path` (retained) |
+| Email (template) | `fromData(fn() => $pdf->output())` | `fromStorageDisk('local')` | — |
+| Email (file) | `fromData(fn() => base64_decode($fileData))` | `fromStorageDisk('local')` | — |
 
-Both modes write to the **same disk** (`local`) and **same path pattern**. The `file_path` column always points to the final PDF regardless of generation mode.
-
-## 3.4 Issuance Flow — Uploaded Files
+## 3.4 Issuance Flow
 
 ### Step 1: CSV Import (Frontend → Backend)
 
-Frontend `upload-csv-form.tsx` reads files as base64 Data URIs and sends via `attendeesApi.bulkAdd()`:
+Frontend sends base64 in attendee metadata:
 
 ```json
 {
@@ -217,7 +224,7 @@ Frontend `upload-csv-form.tsx` reads files as base64 Data URIs and sends via `at
       "email": "maria@example.com",
       "metadata": {
         "generation_mode": "file",
-        "file_data": "data:application/pdf;base64,JVBERi0x...",
+        "file_data": "JVBERi0x...",
         "file_name": "cert-maria.pdf",
         "file_type": "application/pdf"
       }
@@ -226,21 +233,55 @@ Frontend `upload-csv-form.tsx` reads files as base64 Data URIs and sends via `at
 }
 ```
 
-Backend `AttendeeController::import()` stores the metadata as JSONB in `event_attendees.metadata`. **No disk write occurs at this stage.**
+Backend stores metadata as JSONB in `event_attendees.metadata`. **No disk write at this stage.**
 
 ### Step 2: Certificate Issuance (`issueCompleted` → `issueCertificates`)
 
 `EventController::issueCertificates()` iterates attendees and for each:
 
 1. Checks `attendee->metadata['generation_mode']`
-2. **If `file`:** decodes `file_data` base64 → writes to `storage/app/certificates/{CERT_NUMBER}.pdf` → sets `file_path` on certificate
-3. **If `template`:** calls `PdfService::generateCertificatePdf()` → writes DomPDF output to `storage/app/certificates/{CERT_NUMBER}.pdf` → sets `file_path`
+2. **If `file`:** creates certificate record. **Primary:** no disk write — `metadata.file_data` is the source of truth. **Fallback:** also writes to disk via existing code path (retained for safety).
+3. **If `template`:** creates certificate record. **Primary:** no disk write — PDF rendered on-the-fly when needed. **Fallback:** also writes to disk via `PdfService::generateCertificatePdf()` (retained for safety).
 
-### Step 3: Email Delivery
+### Step 3: Serving the PDF
 
-`CertificateEmail::attachments()` reads from `storage_path('app/' . $this->pdfPath)` on the `local` disk. Works for both modes since both write to the same disk/path.
+**Primary path (metadata-based):**
+- **Template mode:** `PdfService::streamCertificatePdf($certificate)` renders HTML from template → DomPDF → returns PDF binary
+- **File mode:** loads attendee relation, reads `attendee->metadata['file_data']`, decodes base64 → returns PDF binary
 
-## 3.5 API Contract
+**Fallback path (disk-based, if primary fails):**
+- If `file_path` is set and file exists on disk → serve from disk
+- If neither primary nor fallback works → return error
+
+### Step 4: Email Delivery
+
+**Primary path:**
+- **Template mode:** render PDF in-memory → `Attachment::fromData(fn() => $pdf->output())`
+- **File mode:** decode base64 → `Attachment::fromData(fn() => base64_decode($fileData))`
+
+**Fallback path (if primary fails):**
+- **Template mode:** `fromStorageDisk('local')` with `file_path`
+- **File mode:** `fromStorageDisk('local')` with `file_path`
+
+## 3.5 Serving Priority Logic
+
+```
+pdf() / download():
+  1. Check generation_mode via attendee metadata
+     → If 'file' and metadata.file_data exists: decode and serve
+     → If 'template': call PdfService::streamCertificatePdf()
+  2. Fallback: if file_path exists on disk → serve from disk
+  3. Error: nothing to serve
+
+email attachment():
+  1. Check generation_mode via attendee metadata
+     → If 'file' and metadata.file_data exists: fromData(decoded binary)
+     → If 'template': render PDF in-memory, fromData(output)
+  2. Fallback: if file_path exists on disk → fromStorageDisk('local')
+  3. No attachment
+```
+
+## 3.6 API Contract
 
 ### `POST /api/v1/certificates/upload` — Upload Certificate File (standalone)
 
@@ -263,43 +304,165 @@ Backend `AttendeeController::import()` stores the metadata as JSONB in `event_at
 }
 ```
 
-**Error 404:**
-```json
-{
-  "status": "error",
-  "message": "Certificate not found."
-}
-```
-
-**Error 422:**
-```json
-{
-  "status": "error",
-  "message": "Validation error.",
-  "errors": {
-    "file": ["The file must be a PDF."]
-  }
-}
-```
-
 ### `GET /api/v1/certificates/{id}/pdf` — Stream PDF
 
 **Success 200:** raw binary `Content-Type: application/pdf`.
-**Error 404:** certificate or file not found.
+**Error 404:** certificate not found.
 **Error 410:** revoked/expired.
 
 ### `GET /api/v1/certificates/{id}/download` — Download PDF
 
 **Success 200:** raw binary with `Content-Disposition: attachment; filename="CERT-0001.pdf"`.
 
-## 3.6 Identified Gaps
+## 3.7 Identified Gaps (resolved)
 
-| Gap | Impact | Recommendation |
-|-----|--------|----------------|
-| **`issueCertificates()` always generates template PDF** — does not check `attendee->metadata['generation_mode']`. When `file` mode, the uploaded base64 in `event_attendees.metadata.file_data` is ignored and a template PDF is generated instead. | **High** — uploaded certificates are never used; recipients always receive a system-generated PDF regardless of upload. | Add `generation_mode` check in `issueCertificates()`. When `file`, decode `file_data` base64 and write to disk instead of calling `PdfService::generateCertificatePdf()`. |
-| **`CertificateController::store()` and `bulk()` always generate template PDF** — no `generation_mode` awareness. These endpoints create certificates directly without attendee context. | Medium — these endpoints are for direct issuance (not CSV import). If a user wants to issue an uploaded cert via API, they must use `upload()` after `store()`. | Acceptable for now. Document that `store()`/`bulk()` are template-only. For uploaded certs, use `import()` → `issueCompleted()`. |
-| **No file cleanup on certificate deletion** — deleting a certificate does not delete the PDF from disk. | Low — orphaned PDF files accumulate over time. | Add a deletion hook or scheduled job to clean up `file_path` entries for deleted certificates. |
-| **`CertificateEmail` attachment path assumes `local` disk** — if uploaded files were stored on `public` disk, the attachment would fail. | Low — current fix unifies to `local` disk. | Verify `CertificateEmail::attachments()` uses `storage_path('app/' . $pdfPath)` consistently. |
+| Gap | Status | Resolution |
+|-----|--------|-----------|
+| **`issueCertificates()` ignores `generation_mode`** | **Fixed** | Checks `metadata.generation_mode`. Both primary (metadata) and fallback (disk) paths implemented. |
+| **`store()` and `bulk()` always generate template PDF** | **Fixed** | Checks `metadata.generation_mode`. Primary: metadata-based. Fallback: disk-based (retained). |
+| **`file_data` LONGBLOB on certificates table** | **Removed** | No column needed. Uploaded PDFs live in `event_attendees.metadata.file_data`. |
+| **`file_path` on certificates table** | **Retained as fallback** | Used only when metadata-based serving fails. |
+| **`CertificateEmail` dual attachment strategy** | **Fixed** | Primary: `fromData()`. Fallback: `fromStorageDisk('local')`. |
+| **`pdf()` and `download()` dual serving strategy** | **Fixed** | Primary: metadata-based. Fallback: disk-based. |
+| **Preview page for uploaded certs** | **Fixed** | `AttendeeController::fileData()` serves from `metadata.file_data`. Frontend checks `metadata.generation_mode` instead of `file_path`. |
+| **No file cleanup on certificate deletion** | **Retained** | `destroy()` still cleans up `file_path` from disk (fallback safety). |
+
+## 3.8 Implementation Plan — Interface + Feature Flag
+
+**Status:** In progress
+
+### Architecture: Strategy Pattern with Feature Flag
+
+Two storage strategies behind a common interface, toggled by an environment variable:
+
+```
+CertificateStorage (interface)
+├── DiskCertificateStorage      <-- old (CERT_USE_METADATA_SERVING=false)
+└── MetadataCertificateStorage  <-- new (CERT_USE_METADATA_SERVING=true)
+```
+
+**Feature flag:** `CERT_USE_METADATA_SERVING=true` in `.env`
+- `true` -> `MetadataCertificateStorage` (serves from `metadata.file_data`, no disk dependency)
+- `false` -> `DiskCertificateStorage` (original behavior, reads/writes from disk)
+
+**Binding:** `AppServiceProvider` reads the env flag and binds `CertificateStorage` interface to the correct implementation.
+
+**Dependency inversion:** Controllers depend only on the `CertificateStorage` interface, never on concrete implementations.
+
+**Liskov substitution:** Both implementations satisfy the same contract. Swapping requires zero controller changes -- only the `.env` flag changes.
+
+### Interface
+
+```php
+namespace App\Interfaces;
+
+use App\Models\Certificate;
+use Illuminate\Http\Response;
+
+interface CertificateStorage
+{
+    public function store(Certificate $certificate, string $decodedPdf): void;
+    public function delete(Certificate $certificate): void;
+    public function pdf(Certificate $certificate): Response;
+    public function download(Certificate $certificate): Response;
+    public function emailAttachment(Certificate $certificate): ?string;
+}
+```
+
+### DiskCertificateStorage (old behavior)
+
+| Method | Behavior |
+|--------|----------|
+| `store()` | Write to `Storage::disk('local')`, set `file_path` |
+| `delete()` | Remove from `Storage::disk('local')` via `file_path` |
+| `pdf()` | `PdfService::streamCertificatePdf()` |
+| `download()` | `PdfService::downloadCertificatePdf()` |
+| `emailAttachment()` | Read from `Storage::disk('local')` via `file_path` |
+
+### MetadataCertificateStorage (new behavior)
+
+| Method | Behavior |
+|--------|----------|
+| `store()` | No-op (data already in `metadata.file_data`) |
+| `delete()` | No-op (no files on disk) |
+| `pdf()` | Load attendee, decode `metadata.file_data`, return as PDF response |
+| `download()` | Same as `pdf()` with `Content-Disposition: attachment` |
+| `emailAttachment()` | Load attendee, decode `metadata.file_data`, return binary |
+
+### Controller Changes
+
+Controllers inject `CertificateStorage` interface instead of direct `PdfService` for PDF operations:
+
+```php
+public function __construct(
+    private readonly CertificateStorage $certificateStorage,
+    private readonly PdfService $pdfService,        // kept for template HTML rendering
+    private readonly AuditLogger $auditLogger,
+    // ...
+) {}
+```
+
+- `pdf()` -> `$this->certificateStorage->pdf($certificate)`
+- `download()` -> `$this->certificateStorage->download($certificate)`
+- `destroy()` -> `$this->certificateStorage->delete($certificate)`
+- Issuance paths -> `$this->certificateStorage->store($certificate, $decoded)`
+
+### CertificateEmail Changes
+
+`CertificateEmail` receives the raw PDF binary (already decoded) via `$fileData` param. The controller resolves which binary to pass using the interface:
+
+```php
+$pdfBinary = $this->certificateStorage->emailAttachment($certificate);
+Mail::to(...)->send(new CertificateEmail(
+    // ...
+    fileData: $pdfBinary,
+));
+```
+
+`CertificateEmail::attachments()` always uses `fromData()` when `$fileData` is set, falls back to `fromStorageDisk()` otherwise.
+
+### AppServiceProvider Binding
+
+```php
+public function register()
+{
+    $this->app->bind(
+        \App\Interfaces\CertificateStorage::class,
+        fn () => config('cert-platform.use_metadata_serving')
+            ? new \App\Services\MetadataCertificateStorage()
+            : new \App\Services\DiskCertificateStorage(app(\App\Services\PdfService::class))
+    );
+}
+```
+
+### Config
+
+```php
+// config/cert-platform.php
+'use_metadata_serving' => env('CERT_USE_METADATA_SERVING', false),
+```
+
+### Revert strategy
+
+Set `CERT_USE_METADATA_SERVING=false` in `.env` -> `DiskCertificateStorage` becomes active -> zero code changes needed.
+
+### Files to create/modify
+
+| File | Action |
+|------|--------|
+| `app/Interfaces/CertificateStorage.php` | **Create** -- interface definition |
+| `app/Services/DiskCertificateStorage.php` | **Create** -- old behavior implementation |
+| `app/Services/MetadataCertificateStorage.php` | **Create** -- new behavior implementation |
+| `app/Providers/AppServiceProvider.php` | **Modify** -- bind interface based on env flag |
+| `config/cert-platform.php` | **Modify** -- add `use_metadata_serving` key |
+| `.env` | **Modify** -- add `CERT_USE_METADATA_SERVING=true` |
+| `app/Http/Controllers/CertificateController.php` | **Modify** -- inject interface, use for pdf/download/destroy/store |
+| `app/Http/Controllers/EventController.php` | **Modify** -- inject interface, use for issuance paths |
+| `app/Mail/CertificateEmail.php` | **Modify** -- keep `$fileData` param, use `fromData()` primary |
+| `app/Http/Controllers/AttendeeController.php` | **Modify** -- serve from `metadata.file_data` |
+| `app/Models/Certificate.php` | **Modify** -- remove `file_data` from `$fillable` |
+| `database/migrations/` | **Create** -- drop `file_data` column |
+| `e-cert/src/app/view/[id]/page.tsx` | **Modify** -- check `metadata.generation_mode` |
 
 ---
 
@@ -408,16 +571,19 @@ Or via the combined endpoint:
 
 # 5. Summary of All Gaps
 
-| # | Area | Gap | Severity | Spec says | Code does |
-|---|------|-----|----------|-----------|-----------|
-| 1 | Template Locking | No lock check when issuing certificates with a locked `template_id` | Low | §1.1: "must not be editable once referenced" | Only checks update/delete, not issuance |
-| 2 | Template Locking | `force=true` delete orphans event `template_id` silently | Medium | — | `ON DELETE SET NULL` clears reference |
-| 3 | Certificate Visibility | `CertificateController::show()` has no owner check | **High** | `api-endpoints.md` §9.6: owner rule for detail/pdf/download | Returns any cert to any authenticated user |
-| 4 | Certificate Visibility | `pdf()` and `download()` have no owner check | **High** | §9.6: owner rule | Streams PDF to any authenticated user |
-| 5 | File Storage | `issueCertificates()` always generates template PDF — ignores `generation_mode: "file"` in attendee metadata | **High** | §3.2: two modes (template/file) | Always calls `PdfService::generateCertificatePdf()`, never decodes uploaded base64 |
-| 6 | File Storage | `CertificateController::store()` and `bulk()` always generate template PDF — no file mode support | Medium | — | These endpoints have no attendee context; template-only by design |
-| 7 | File Storage | No file cleanup on certificate deletion | Low | — | Orphaned PDFs accumulate |
-| 8 | Issuance | No DB constraint on `(event_id, recipient_email)` for active certs | Medium | §7.2 declares `UNIQUE(event_id, recipient_email)` | Only app-level `whereNull('revoked_at')` check |
+| # | Area | Gap | Severity | Status | Resolution |
+|---|------|-----|----------|--------|-----------|
+| 1 | Template Locking | No lock check when issuing certificates with a locked `template_id` | Low | Open | — |
+| 2 | Template Locking | `force=true` delete orphans event `template_id` silently | Medium | Open | — |
+| 3 | Certificate Visibility | `CertificateController::show()` has no owner check | **High** | Open | — |
+| 4 | Certificate Visibility | `pdf()` and `download()` have no owner check | **High** | Open | — |
+| 5 | File Storage | `issueCertificates()` ignores `generation_mode: "file"` | **High** | **Fixed** | Checks `metadata.generation_mode`. Primary: metadata-based. Fallback: disk-based (retained). |
+| 6 | File Storage | `store()` and `bulk()` always generate template PDF | Medium | **Fixed** | Checks `metadata.generation_mode`. Primary: metadata-based. Fallback: disk-based (retained). |
+| 7 | File Storage | No file cleanup on certificate deletion | Low | **Retained** | `destroy()` still cleans up `file_path` from disk (fallback safety). |
+| 8 | Issuance | No DB constraint on `(event_id, recipient_email)` for active certs | Medium | Open | — |
+| 9 | File Storage | `file_data` LONGBLOB on certificates table | Medium | **Removed** | No column needed. Uploaded PDFs live in `event_attendees.metadata.file_data`. |
+| 10 | File Storage | Flat folder structure — no event grouping | Low | **Deferred** | Disk fallback retains original path. Metadata-based serving doesn't use folders. |
+| 11 | Preview | Preview page for uploaded certs relies on disk-based file-data endpoint | Medium | **Fixed** | `AttendeeController::fileData()` serves from `metadata.file_data`. Frontend checks `metadata.generation_mode`. |
 
 ---
 
@@ -427,8 +593,39 @@ For gaps requiring implementation:
 
 1. **Gap 3+4 (certificate owner check)** — Add `recipient_email` check in `CertificateController::show()`, `pdf()`, `download()`. No migration needed. Add tests.
 2. **Gap 8 (no duplicate active cert per event+email)** — **Resolved without migration.** MySQL 8.0 InnoDB cannot create a unique index on a generated column referencing a FK column. Constraint already enforced at the application layer in all 4 issuance paths: `store()` (line 258), `bulk()` (line 412), `issueCertificates()` (line 662), and `reissue()` (revokes old before creating new, transactional). No code change needed.
-3. **Gap 5 (uploaded files ignored)** — In `EventController::issueCertificates()`, check `attendee->metadata['generation_mode']`. When `file`, decode `file_data` base64, write to `storage/app/certificates/{CERT_NUMBER}.pdf`, set `file_path`. Skip `PdfService::generateCertificatePdf()`. No migration.
-4. **Gap 6 (store/bulk template-only)** — Acceptable. `store()` and `bulk()` are direct issuance endpoints without attendee context. Uploaded certs flow through `import()` → `issueCompleted()`. Document in API docs.
+3. **Gap 5 (uploaded files ignored)** — **Fixed.** `issueCertificates()`, `store()`, and `bulk()` check `metadata['generation_mode']`. Primary path: metadata-based serving (no disk write). Fallback path: disk-based (existing code retained).
+4. **Gap 6 (store/bulk template-only)** — **Fixed.** Both endpoints now support `file` mode via `metadata.generation_mode` check. Primary + fallback paths.
+5. **Gap 9 (file_data LONGBLOB)** — **Removed.** New migration drops `file_data` column from `certificates`. Model updated. Uploaded PDFs served directly from `event_attendees.metadata.file_data`.
+6. **Gap 10 (flat folder structure)** — **Deferred.** Disk fallback retains original path format. Metadata-based serving doesn't depend on folder structure.
+7. **Gap 11 (preview page for uploaded certs)** — **Fixed.** `AttendeeController::fileData()` updated to serve from `metadata.file_data`. Frontend preview page updated to check `metadata.generation_mode` instead of `cert.file_path`.
+
+### Revert strategy
+
+If metadata-based serving causes issues:
+1. Remove the metadata-based primary path code (the `if ($attendee->metadata['generation_mode'] === 'file')` blocks in controllers)
+2. The fallback disk path becomes the active path again
+3. No data loss — `file_path` and disk files still exist from the fallback writes during issuance
+
+---
+
+# 6. Migration Path
+
+For gaps requiring implementation:
+
+1. **Gap 3+4 (certificate owner check)** — Add `recipient_email` check in `CertificateController::show()`, `pdf()`, `download()`. No migration needed. Add tests.
+2. **Gap 8 (no duplicate active cert per event+email)** — **Resolved without migration.** MySQL 8.0 InnoDB cannot create a unique index on a generated column referencing a FK column. Constraint already enforced at the application layer in all 4 issuance paths: `store()` (line 258), `bulk()` (line 412), `issueCertificates()` (line 662), and `reissue()` (revokes old before creating new, transactional). No code change needed.
+3. **Gap 5 (uploaded files ignored)** — **Fixed.** `issueCertificates()`, `store()`, and `bulk()` check `metadata['generation_mode']`. Primary path: metadata-based serving (no disk write). Fallback path: disk-based (existing code retained).
+4. **Gap 6 (store/bulk template-only)** — **Fixed.** Both endpoints now support `file` mode via `metadata.generation_mode` check. Primary + fallback paths.
+5. **Gap 9 (file_data LONGBLOB)** — **Removed.** New migration drops `file_data` column from `certificates`. Model updated. Uploaded PDFs served directly from `event_attendees.metadata.file_data`.
+6. **Gap 10 (flat folder structure)** — **Deferred.** Disk fallback retains original path format. Metadata-based serving doesn't depend on folder structure.
+7. **Gap 11 (preview page for uploaded certs)** — **Fixed.** `AttendeeController::fileData()` updated to serve from `metadata.file_data`. Frontend preview page updated to check `metadata.generation_mode` instead of `cert.file_path`.
+
+### Revert strategy
+
+If metadata-based serving causes issues:
+1. Remove the metadata-based primary path code (the `if ($attendee->metadata['generation_mode'] === 'file')` blocks in controllers)
+2. The fallback disk path becomes the active path again
+3. No data loss — `file_path` and disk files still exist from the fallback writes during issuance
 
 ---
 

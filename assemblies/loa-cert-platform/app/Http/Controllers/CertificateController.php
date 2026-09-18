@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Interfaces\CertificateStorage;
 use App\Mail\CertificateEmail;
 use App\Models\Certificate;
 use App\Services\QrCodeService;
@@ -91,6 +92,7 @@ use OpenApi\Attributes as OA;
 class CertificateController extends Controller
 {
     public function __construct(
+        private readonly CertificateStorage $certificateStorage,
         private readonly PdfService $pdfService,
         private readonly AuditLogger $auditLogger,
         private readonly QrCodeService $qrCodeService,
@@ -294,10 +296,37 @@ class CertificateController extends Controller
             'metadata' => $request->input('metadata'),
         ]);
 
-        try {
-            $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
-        } catch (\Exception $e) {
-            // PDF generation failure is non-fatal; certificate is still created
+        $attendee = $eventId
+            ? EventAttendee::where('event_id', $eventId)
+                ->where('email', $request->input('recipient_email'))
+                ->first()
+            : null;
+        $metadata = $attendee?->metadata ?? [];
+        $generationMode = $metadata['generation_mode'] ?? 'template';
+
+        if ($generationMode === 'file' && !empty($metadata['file_data'])) {
+            try {
+                $raw = $metadata['file_data'];
+                if (str_starts_with($raw, 'data:')) {
+                    $raw = substr($raw, strpos($raw, ',') + 1);
+                }
+                $decoded = base64_decode($raw, true);
+                if ($decoded !== false) {
+                    $this->certificateStorage->store($certificate, $decoded);
+                }
+            } catch (\Exception $e) {
+                try {
+                    $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+                } catch (\Exception $e2) {
+                    // PDF generation failure is non-fatal
+                }
+            }
+        } else {
+            try {
+                $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+            } catch (\Exception $e) {
+                // PDF generation failure is non-fatal; certificate is still created
+            }
         }
 
         $this->auditLogger->record('certificate.issued', 'api', 'certificate', $certificate->id, [
@@ -332,6 +361,7 @@ class CertificateController extends Controller
                     verifyUrl: $verifyUrl,
                     isRegistered: $isRegistered,
                     activateUrl: $activateUrl,
+                    fileData: $certificate->file_data,
                 ));
 
                 CertificateEmailModel::create([
@@ -495,10 +525,35 @@ class CertificateController extends Controller
                         'channel' => 'bulk',
                     ]);
 
-                    try {
-                        $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
-                    } catch (\Exception $e) {
-                        // PDF generation failure is non-fatal; certificate is still created
+                    $attendeeMeta = EventAttendee::where('event_id', $event->id)
+                        ->where('email', $recipient['email'])
+                        ->first();
+                    $attMeta = $attendeeMeta?->metadata ?? [];
+                    $attGenMode = $attMeta['generation_mode'] ?? 'template';
+
+                    if ($attGenMode === 'file' && !empty($attMeta['file_data'])) {
+                        try {
+                            $raw = $attMeta['file_data'];
+                            if (str_starts_with($raw, 'data:')) {
+                                $raw = substr($raw, strpos($raw, ',') + 1);
+                            }
+                            $decoded = base64_decode($raw, true);
+                            if ($decoded !== false) {
+                                $this->certificateStorage->store($certificate, $decoded);
+                            }
+                        } catch (\Exception $e) {
+                            try {
+                                $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+                            } catch (\Exception $e2) {
+                                // PDF generation failure is non-fatal
+                            }
+                        }
+                    } else {
+                        try {
+                            $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+                        } catch (\Exception $e) {
+                            // PDF generation failure is non-fatal; certificate is still created
+                        }
                     }
 
                     if ($sendEmail) {
@@ -563,6 +618,7 @@ class CertificateController extends Controller
                         verifyUrl: $verifyUrl,
                         isRegistered: $isRegistered,
                         activateUrl: $activateUrl,
+                        fileData: $certificate->file_data,
                     ));
 
                     CertificateEmailModel::create([
@@ -754,7 +810,7 @@ class CertificateController extends Controller
         }
 
         try {
-            return $this->pdfService->streamCertificatePdf($certificate);
+            return $this->certificateStorage->pdf($certificate);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -804,7 +860,7 @@ class CertificateController extends Controller
         }
 
         try {
-            return $this->pdfService->downloadCertificatePdf($certificate);
+            return $this->certificateStorage->download($certificate);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -901,9 +957,7 @@ class CertificateController extends Controller
             'certificate_number' => $certificate->certificate_number,
         ]);
 
-        if ($certificate->file_path && Storage::disk('local')->exists($certificate->file_path)) {
-            Storage::disk('local')->delete($certificate->file_path);
-        }
+        $this->certificateStorage->delete($certificate);
 
         // Cert-only delete: the attendee roster row is preserved, only its
         // link to this certificate is cleared.
@@ -1102,6 +1156,7 @@ class CertificateController extends Controller
 
         try {
             $pdfPath = $certificate->file_path;
+            $pdfBinary = $this->certificateStorage->emailAttachment($certificate);
 
             $website = $certificate->organization?->website ?? config('app.url');
             $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
@@ -1122,6 +1177,7 @@ class CertificateController extends Controller
                 verifyUrl: $verifyUrl,
                 isRegistered: $isRegistered,
                 activateUrl: $activateUrl,
+                fileData: $pdfBinary,
             ));
 
             CertificateEmailModel::create([

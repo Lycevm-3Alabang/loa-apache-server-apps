@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Interfaces\CertificateStorage;
 use App\Mail\CertificateEmail;
 use App\Models\Certificate;
 use App\Models\CertificateEmail as CertificateEmailModel;
@@ -135,6 +136,7 @@ class EventController extends Controller
 {
     public function __construct(
         private readonly CertificateNumberService $certificateNumberService,
+        private readonly CertificateStorage $certificateStorage,
         private readonly PdfService $pdfService,
         private readonly AuditLogger $auditLogger,
         private readonly CertUserChecker $userChecker,
@@ -811,15 +813,13 @@ class EventController extends Controller
 
                     if ($generationMode === 'file' && !empty($metadata['file_data'])) {
                         try {
-                            $filePath = 'certificates/' . $certificateNumber . '.pdf';
                             $raw = $metadata['file_data'];
                             if (str_starts_with($raw, 'data:')) {
                                 $raw = substr($raw, strpos($raw, ',') + 1);
                             }
                             $decoded = base64_decode($raw, true);
                             if ($decoded !== false) {
-                                Storage::disk('local')->put($filePath, $decoded);
-                                $certificate->update(['file_path' => $filePath]);
+                                $this->certificateStorage->store($certificate, $decoded);
                             }
                         } catch (\Exception $e) {
                             // Upload decode failure is non-fatal; fall back to template
@@ -879,6 +879,7 @@ class EventController extends Controller
 
                 try {
                     $pdfPath = $certificate->file_path;
+                    $pdfBinary = $this->certificateStorage->emailAttachment($certificate);
                     $website = $certificate->organization?->website ?? config('app.url');
                     $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                     $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
@@ -898,6 +899,7 @@ class EventController extends Controller
                         verifyUrl: $verifyUrl,
                         isRegistered: $isRegistered,
                         activateUrl: $activateUrl,
+                        fileData: $pdfBinary,
                     ));
 
                     CertificateEmailModel::create([
@@ -1072,6 +1074,7 @@ class EventController extends Controller
                     try {
                         $certificate->load(['event', 'template', 'organization']);
                         $pdfPath = $certificate->file_path;
+                        $pdfBinary = $this->certificateStorage->emailAttachment($certificate);
 
                         $website = $certificate->organization?->website ?? config('app.url');
                         $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
@@ -1092,6 +1095,7 @@ class EventController extends Controller
                             verifyUrl: $verifyUrl,
                             isRegistered: $isRegistered,
                             activateUrl: $activateUrl,
+                            fileData: $pdfBinary,
                         ));
 
                         CertificateEmailModel::create([
