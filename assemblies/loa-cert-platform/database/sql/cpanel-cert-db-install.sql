@@ -1,9 +1,3 @@
--- ============================================================================
--- cPanel Cert DB — Schema Install (MACHINE-GENERATED via mysqldump)
--- Safe to overwrite with a fresh dump. Seed rows live ONLY in
---   cpanel-cert-db-seed.sql  (HAND-MAINTAINED — never overwrite with a dump)
--- Run order: 1) import this file, 2) import cpanel-cert-db-seed.sql
--- ============================================================================
 -- MySQL dump 10.13  Distrib 8.0.46, for Linux (x86_64)
 --
 -- Host: localhost    Database: lyceumalabang_e_cert_db
@@ -397,6 +391,13 @@ CREATE TABLE `organizations` (
 
 LOCK TABLES `organizations` WRITE;
 /*!40000 ALTER TABLE `organizations` DISABLE KEYS */;
+INSERT INTO `organizations` (`id`, `name`, `slug`, `website`, `created_at`, `updated_at`)
+VALUES ('00000000-0000-0000-0000-000000000001', 'Lyceum of Alabang', 'loa-e-cert', 'https://staging-loa-vericert.vercel.app', NOW(), NOW())
+ON DUPLICATE KEY UPDATE
+  `name` = 'Lyceum of Alabang',
+  `slug` = 'loa-e-cert',
+  `website` = 'https://staging-loa-vericert.vercel.app',
+  `updated_at` = NOW();
 /*!40000 ALTER TABLE `organizations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -413,4 +414,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-09-18  3:58:57
+-- Dump completed on 2026-09-18 11:15:06

@@ -2,7 +2,7 @@
 ## Project Tracker
 
 **Started:** 2026-07-30
-**Last Updated:** 2026-08-07
+**Last Updated:** 2026-09-18
 **Target:** cPanel (PHP 8.3+ / MySQL 8 / Laravel 12)
 
 ---
@@ -76,7 +76,7 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 | Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Final (v1.2 — destination resolution) — implemented |
 | Assembly | LOA Admin Dashboard | `assemblies/loa-auth-platform/admin-dashboard.md` | ✅ Final (v1 + v2 implemented) |
 | Assembly | Access Config Import/Export | `assemblies/loa-auth-platform/access-config-import-export.md` | ✅ Final v1.0 — implemented |
-| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Draft |
+| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Draft + inventory savepoint (2026-09-18) |
 | Assembly | LOA Cert Platform | `assemblies/loa-cert-platform/README.md` | ✅ Draft |
 
 ---
@@ -154,6 +154,8 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 
 | Task | Status | Notes |
 |------|--------|-------|
+| Consult endpoint inventory (scan-only savepoint) | ✅ Done | 2026-09-18: 112 route files scanned (~142 combos; 118 migrating to Laravel); drift vs `endpoint-catalog.md` recorded; frontend untouched |
+| Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
 | Laravel project scaffold | ⬜ Not started | |
 | JWT middleware | ⬜ Not started | Validate token from auth app |
 | Permission middleware | ⬜ Not started | Check UserGroup permissions |
@@ -330,3 +332,7 @@ loa-apache-server-apps/
 | 2026-08-01 | Admin dashboard v2 tenant admin | Platform admins manage tenants, per-tenant groups, per-endpoint grants, membership via `/admin/tenants/*` |
 | 2026-08-01 | Tenancy + admin dashboard implemented (v3.0) | Migrations 000011–000015 applied; TenantService, tenant-scoped AuthorizationService, `tenant` claim + `jwt.tenant`, login destination matrix, WebAdminController + `web.admin` middleware + `/admin/users`; `database.sql` rebuilt from migration schema (verified structural parity) |
 | 2026-08-01 | Admin dashboard v2 implemented | Tenant CRUD (`/admin/tenants/*`), groups + per-group permissions, member add/remove, suspend/activate; `admin-dashboard.md` promoted to Final |
+| 2026-09-18 | Consult: Laravel owns SSO auth (cert pattern) | `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` + `loa_connect_refresh` cookie; mirrors `loa-cert-platform` |
+| 2026-09-18 | Consult: frontend untouched, scan-only inventory | `access-config`/`user-permissions` observed but auth-owned; no frontend changes |
+| 2026-09-18 | Consult: reports deferred to Phase E | No REST report routes exist; Server Components keep computing reports |
+| 2026-09-18 | Consult: modular 10-file spec savepoint | Ground truth = `route.ts` scan (112 files, ~142 combos; 118 migrating), not `endpoint-catalog.md` (drift recorded) |

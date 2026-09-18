@@ -14,11 +14,29 @@ class DiskCertificateStorage implements CertificateStorage
     ) {
     }
 
-    public function store(Certificate $certificate, string $decodedPdf): void
+    public function store(Certificate $certificate, array $metadata = []): void
     {
-        $filePath = 'certificates/' . $certificate->certificate_number . '.pdf';
-        Storage::disk('local')->put($filePath, $decodedPdf);
-        $certificate->update(['file_path' => $filePath]);
+        $mode = $metadata['generation_mode'] ?? 'template';
+
+        if ($mode === 'file' && !empty($metadata['file_data'])) {
+            $raw = $metadata['file_data'];
+            if (str_starts_with($raw, 'data:')) {
+                $raw = substr($raw, strpos($raw, ',') + 1);
+            }
+            $decoded = base64_decode($raw, true);
+            if ($decoded !== false) {
+                $filePath = 'certificates/' . $certificate->certificate_number . '.pdf';
+                Storage::disk('local')->put($filePath, $decoded);
+                $certificate->update(['file_path' => $filePath]);
+                return;
+            }
+        }
+
+        try {
+            $this->pdfService->generateCertificatePdf($certificate->fresh(['event', 'template', 'organization']));
+        } catch (\Exception) {
+            // PDF generation failure is non-fatal
+        }
     }
 
     public function delete(Certificate $certificate): void

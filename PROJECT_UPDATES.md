@@ -4,7 +4,7 @@
 
 1. **Starting a new session:** Paste the `## Startup Prompt` block below verbatim into the first message.
 2. **Ending a session:** Update the `## Last Session Notes` section so the next session knows exactly where to pick up.
-3. **Cross-boundary record:** `## PROJECT UPDATES` is the durable cross-platform record — it preserves high-level decisions, design, and changes made across `assemblies/loa-auth-platform/`, `assemblies/loa-cert-platform/`, and `assemblies/loa-consult-platform/`. Keep it updated whenever a decision or design change touches more than one assembly.
+3. **Cross-boundary record:** `## PROJECT UPDATES` is the durable cross-platform record — it preserves high-level decisions, design, and changes made across `assemblies/loa-auth-platform/`, `assemblies/loa-cert-platform/`, and `assemblies/loa-consult-platform/`. Keep it updated whenever a decision or design change touches more than one assembly. Delivery is tracked **per platform** (Auth / Cert / Consult tracks below) — each ships independently; Consult treats Auth + Cert as reference/basis only.
 4. **Platform-scoped prompts:** per-assembly session details (Last Session Notes, Session Log, open questions) live in `assemblies/loa-auth-platform/SESSION-PROMPT.md`. Read them for the platform you're working on.
 
 ---
@@ -41,6 +41,8 @@ Then:
 ## PROJECT UPDATES
 
 Durable cross-boundary record: high-level decisions, design, and changes across the three platform assemblies. Each platform keeps its own detailed spec; this section preserves only what must survive across boundaries.
+
+**Delivery tracks (independent):** Auth, Cert, and Consult each ship on their own schedule with their own Done/Next below. Consult's basis is the Auth + Cert Final contracts and verified implementations (reference only — Consult never blocks on Auth/Cert feature work).
 
 ### Shared / Cross-Platform
 
@@ -79,12 +81,13 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 - **Next:** Auth deployment **deferred** (user decision 2026-08-06 — focus on Cert platform). Provisioning per `cert-readiness.md` (**Final v0.4**) happens at deploy-time; no action needed until Auth is deployed. Three things lined up for the Cert platform: **(1) Phase C** — Laravel 12 Cert app **scaffold created 2026-08-06** (`cert-app/`: core models + migrations); next is the **unauth domain CRUD slice** (events/attendees/templates/certificates + tests); **(2) C-Auth phase** — SSO `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` middleware (deferred from Phase C per decision #20/D9); **(3) Phase D** — `e-cert` auth swap (CSR): in-memory token, silent refresh, SSO fragment handler, parse-only JWT, client auth guard (depends on C-Auth).
 - **2026-08-24 changes:** Admin UI overhaul committed (`4ed2e80`, `8d40f6b`) — breadcrumbs everywhere, link-text table actions, quick-action tiles; password API auth model documented (`37fcbb7`); JWT access TTL briefly 480 then **reverted to 15 min** per `token-lifecycle.md`; cPanel production DB names wired into DEPLOY/env docs (`d031994`); HeidiSQL runbook §14; `.env.cpanel` prod templates (gitignored). Details in `SESSION-PROMPT.md`.
 - **2026-08-26 changes:** Admin dashboard home implemented per `admin-dashboard-home.md` v1.0 Final — platform-admin-only zone on `/` with stat strip, attention queue, activity feed, quick actions. Zero-JS, H4 fail-degrade. `?status=pending` added to user filter. Details in `SESSION-PROMPT.md`.
+- **Delivery:** independent — Auth ships on its own schedule; Consult consumes only its Final contracts + verified implementation as reference.
 
 ### LOA Cert Platform — `assemblies/loa-cert-platform/`
 
 - **Status:** **C-Auth complete (2026-08-11).** All endpoints now enforce `jwt.auth` + `jwt.endpoint` middleware. Auth endpoints (callback/refresh/logout) live. Auth platform SSO entry is now live — E2E SSO flow unblocked for Phase D.
 - **2026-09-13:** Fixed `GET /events/{id}/attendees?status=not_issued` **500 error** — ambiguous `event_id` column after `LEFT JOIN certificates` (both tables have `event_id`). Qualified to `event_attendees.event_id`. Also fixed pagination bug: `$query->count()` was called after `skip()`/`take()` were applied, returning a paginated count instead of the true total; moved `count()` before pagination. `api-endpoints.md` updated: `has_certificate` (bool) → `status` (`not_issued`|`issued`|`revoked`|`expired`).
-- **Verified implementation (2026-08-11):** **All 48 domain endpoints + 2 public endpoints fully implemented.** Events (13), Attendees (8), Templates (5), Certificates (14), Me (4), Public (2), Dashboard (2), Audit (2), Auth SSO (3) — all fully implemented with real DB queries, validation, audit logging. **Stubs:** QR code generation (`GET /certificates/qr` and `GET /view/{id}` return hardcoded placeholder). **Missing:** `POST /certificates/{id}/email` (email sending service not built). Deferred to Service Phase: QR code generation, email sending.
+- **Verified implementation (2026-08-11, re-verified 2026-09-18):** 64 domain endpoints (61 gated + 3 public) + 3 SSO. Events (13), Attendees (9), Templates (6), Certificates (14), Me (4), Public (3), Dashboard (2), Audit (2), Service proxy (11), Auth SSO (3) — real DB queries, validation, audit logging. 2026-09-18 code check retired the old stub notes: email sends via `CertificateEmail` mailable + `certificate_emails` log rows (fail-logged); QR via `QrCodeService::toDataUri`.
 - **Key specs:** `api-endpoints.md` (**Final v1.7** — 59 domain endpoints: 57 JWT-gated + 2 public; C-Auth implemented), `legacy-e-cert-integration.md` (**Final v2.2**; authoritative retrofit spec), `authenticated-endpoints-spec.md` (v1.1, updated 2026-08-11).
 - **2026-08-24:** cPanel DB migration runbook drafted — root **`docs/cpanel-db-migration-runbook.md`** (Draft v0.1): fresh-database drop→create→seed path for `lyceumalabang_auth_db`/`lyceumalabang_e_cert`; documents that auth prod seed = admin only and cert seeder is empty (org-row FK 1452 gap), plus access-config export/import as the sanctioned groups+grants provisioning shortcut. Awaiting review/promotion.
 - **Retrofit decisions D1–D7 (locked) + D8 superseded:** refactor-in-place; fresh start with no migration; archive-then-drop legacy DB; roles via user-groups + level grants; PDF/QR/email owned by Cert; spec synced to `e-cert` repo; ~~D8 SSR access-token cookie~~ **superseded 2026-08-06 — CSR wins**: `e-cert` is a **client-side SPA** (token in memory only, no server actions, no server-side JWT verification, `src/proxy.ts` deleted, no shared secret; refresh stays in the Cert-proxied httpOnly `loa_cert_refresh` cookie; route guard is client-side only).
@@ -100,20 +103,36 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 - **Retrofit phases A–H COMPLETE** (per `D:\loa\e-cert\whats-next.md`, updated 2026-08-23): D auth swap (2026-08-12 — `src/lib/auth/` token-store/jwt/sso-fragment/auth-guard, legacy Supabase stack deleted), E data swap (`b613c22` — 122 files, typed API client replaces all server actions), F UI cleanup + Playwright parity, G legacy DB decommission, H cross-app JWT/audit tests + OpenAPI completion. Post-H polish: loading UX, role scoping via `/me/*`.
 - **2026-08-24:** **Template visibility spec Final + IMPLEMENTED** — `D:\loa\e-cert\specs\components\template-visibility.md` v1.1: `visibility ENUM(public,private)` + `updated_by` on `certificate_templates`; owner-set model (`created_by`/`updated_by`, never none); private = owners only, admin sees all; enforcement on list/show/**clone endpoints/event references** (side-door audit found unguarded `clone-template`/`clone-email-template`); 404-masking. Implementation commit `9904746`: 23 new visibility tests, full suite **168/557 green**; also fixed latent `jwt_claims.sub` dot-notation bug (`created_by` was never persisted) and corrected an inverted EndpointPolicy unit test. Runtime cache shards untracked.
 - **Known gap:** local cert stack seeds no organizations → template/certificate writes fail with FK 1452 until a row exists for the backend-configured org (`CERT_ORGANIZATION_ID`). Fix candidate: Laravel seeder in cert backend.
+- **Delivery:** independent — Cert ships on its own schedule; Consult consumes only its Final contracts + verified implementation as reference.
 
 ### LOA Consult Platform — `assemblies/loa-consult-platform/`
 
-- **Status:** Draft spec only, no code.
+- **Status:** Draft spec only, no code. **Inventory savepoint complete 2026-09-18** (scan-only, frontend untouched).
 - **Key spec:** `README.md` v1.0 Draft.
 - **Design:** thin composition layer wiring **Consultation + Evaluation + Academic** business contexts; owns API routing, middleware, JWT validation, request/response transformation, API docs, deployment — owns **no business logic**.
 - **API surface (draft):** appointments (+batch/accept/decline/complete/cancel), availability-rules CRUD, semesters, evaluation-periods, evaluations (ratings/comments/submit/pending), admin departments/subjects/sections, 7 report endpoints.
 - **Deployment:** `aces-api.lyceumalabang.edu.ph`, Laravel 12, cPanel, PHP 8.2+, MySQL 8.
 - **Future:** evaluation → certificate event to Cert Platform.
-- **Next:** needs its own endpoint/auth spec (mirror Cert's `api-endpoints.md`) before implementation; not yet started.
+- **2026-09-18 inventory (ground truth, `D:\loa\e-consultation\app\api`):** 112 `route.ts` files (~142 method+path combos; 118 migrating to Laravel + 5 public/SSO) mapped to Laravel `/api/v1` controllers (Appointments, Availability, AdminUsers, Academic, Semesters, Evaluations, EvalPeriods, EvalResults admin/dean/faculty, RubricGroups, Import, DataAudit). 5 NextAuth routes marked delete-at-cutover (activate/forgot/change-password); `access-config`/`user-permissions` observed but auth-owned (no Laravel equivalent); support/public (`health`, `bug-reports`, `audit/forbidden`) stays in Next except Laravel `GET /api/v1/health`. **Drift recorded:** old `endpoint-catalog.md` (143) overstates — `[action]` POST-only, teams-link POST-only, `student/bootstrap` GET, `rubric/snapshot` GET, `categories` POST+DELETE, `semesters/[id]` extra POST, academic singletons PATCH/DELETE-only; README-claimed `sync-teams`, period `subjects`/`enrollments`, `evaluations/submitted`, sentiment routes have **no route files** (confirm with frontend team, no code touch).
+- **2026-09-18 decisions (locked):** Laravel owns SSO `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` + `loa_connect_refresh` cookie (cert pattern); reports deferred to Phase E (no REST report routes exist); modular **10-file spec savepoint** (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); dev phasing B (appointments/academic/semesters) → C (evaluations/periods/rubrics/results) → D (admin-users/import/data-audit + `/service/*`) → E (reports + cutover).
+- **Next:** draft spec files #1 (conventions + route summary) and #7 (auth integration) first; everything else hangs off them.
+- **Reference basis (read-only):** Auth Final contracts (`tenant-group-endpoint-grants.md` v1.1, `tenant-endpoint-catalog.md` v3.2, `tenant-app-api.md`, `unified-auth-flow.md`) + Cert Final `api-endpoints.md` v1.8 with verified implementation (middleware, auth controllers, SSO contract).
+- **Delivery:** independent — Consult ships on its own schedule; it never blocks on Auth/Cert feature work, only on their Final contracts (already Final).
 
 ---
 
 ## Last Session Notes
+
+### Date: 2026-09-18
+
+### Completed
+- **Consult endpoint inventory (scan-only savepoint)** — 112 `route.ts` files in `D:\loa\e-consultation\app\api` (~142 combos; 118 migrating) mapped to Laravel `/api/v1` groups (C–O); drift vs `endpoint-catalog.md` recorded; frontend untouched per instruction.
+- **Consult modular spec plan** — 10-file savepoint + phasing B→C→D→E; decisions locked (Laravel owns auth per cert pattern; reports Phase E).
+- **Trackers updated** — `PROJECT.md` (Last Updated, consult savepoint rows, 4 decision-log entries) + `PROJECT_UPDATES.md` (consult section, this note, session log). `AI-GUIDE.md` / `AI-RULES.md` reviewed — no changes needed.
+
+### Next Action
+- [ ] Draft consult spec files #1 (conventions + route summary) and #7 (auth integration)
+- [ ] Then endpoint modules, data-model, runbooks
 
 ### Date: 2026-08-27
 
@@ -272,6 +291,7 @@ Durable cross-boundary record: high-level decisions, design, and changes across 
 
 | Date | Work Done | Next Action |
 |------|-----------|-------------|
+| 2026-09-18 | Consult endpoint inventory (scan-only) + modular spec plan + tracker updates | Draft specs #1 + #7 |
 | 2026-07-31 | Identity events/rules specs; auth controllers; middleware; CORS spec+impl; spec-first mandate | Deploy auth or start Phase 2 |
 | 2026-07-31 | RefreshToken entity spec + contract + README/PROJECT updates | Implement RefreshToken or deploy auth or Phase 2 |
 | 2026-07-31 | Auth Web UI spec (login redirect, forgot/change password, email, CSRF) + rule unification | Implement RefreshToken or Auth Web UI or deploy |
