@@ -1,8 +1,8 @@
 # LOA Consult Platform — Data Model
 ## Product Assembly Component Specification
 
-**Version:** 0.2
-**Status:** Draft
+**Version:** 1.0
+**Status:** Final
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -127,9 +127,9 @@ None required. Unlike cert (FK-1452 org-row trap), consult has no mandatory seed
 
 ## Document Control
 
-- **Status:** Draft v0.2
+- **Status:** Final v1.0
 - **Created:** 2026-09-18
-- **Updated:** 2026-09-18 — Hybrid users approach: cache table with no FK relationships (user's choice). All user-reference columns in consult tables are plain TEXT `// opaque Auth sub` — no FK constraints to users. Eliminates circular FK (`departments.dean_id` ↔ `users.department_id`).
+- **Updated:** 2026-09-19 — Promoted v0.2 → Final v1.0: §3 column shapes reviewed against endpoints-academic/appointments/evaluations v1.0 + `api-endpoints.md` Final v1.0 §5.4/§5.1–§5.2/§5.6–§5.9. Hybrid users approach unchanged (cache table, no FK, all user-ref TEXT `// opaque Auth sub`).
 - **Source:** `supabase-schema.sql` final migrated shape; relationship pattern verified against cert migrations (`// opaque Auth sub`, uuid PKs, audit shape, seeder policy)
-- **Verify in module specs:** `evaluations.faculty_subject_id`, `evaluation_results.subject_id` exact shapes (referenced by constraints/UNIQUEs, DDL read pending); `faculty_subjects.semester_id` + `student_enrollments.faculty_subject_id`/`semester_id` (repo-layer fields absent from DDL); `countBySemesterId` join paths for enrollments/sections
-- **Next:** endpoint modules #2–#6
+- **Build-time carry-forward (not blocking Final):** `evaluations.faculty_subject_id`, `evaluation_results.subject_id` exact shapes; `faculty_subjects.semester_id` + `student_enrollments.faculty_subject_id`/`semester_id` (repo-layer fields absent from DDL); `countBySemesterId` join paths for enrollments/sections — all flagged in module specs, resolve at first-migration build without inventing columns.
+- **Next:** first migration(s) — `users` + `departments` (FK-safe per §8)

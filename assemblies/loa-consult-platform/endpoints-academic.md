@@ -1,8 +1,8 @@
 # LOA Consult Platform — Academic Module
 ## Product Assembly Component Specification
 
-**Version:** 0.1
-**Status:** Draft
+**Version:** 1.0
+**Status:** Final
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -111,8 +111,9 @@ Returns `{count}` (used by the frontend lock gate). No auth in code or Laravel.
 
 ## Document Control
 
-- **Status:** Draft v0.1
+- **Status:** Final v1.0
 - **Created:** 2026-09-18
+- **Updated:** 2026-09-19 — Promoted v0.1 → Final v1.0: verified against data-model v1.0 + `api-endpoints.md` Final v1.0 §5.4/§5.5 (levels match; academic POST/PATCH + impacts `admin`, dept-courses POST `write`, semesters GET hardened `read`).
 - **Source:** 14 academic route handlers read verbatim
 - **Corrects parent spec:** academic POST/PATCH levels `write`→`admin` (code gates ADMIN); impacts `read`→`admin`; dept-courses DELETE carries DEAN grant; semesters GET hardened `read`
-- **Verify at build:** faculty-subjects/enrollments repo-only fields (`semesterId`, `faculty_subject_id`); `countBySemesterId` join paths; `createEnrollment` service rules (`EnrollmentError` vocabulary)
+- **Build-time carry-forward:** faculty-subjects/enrollments repo-only fields (`semesterId`, `faculty_subject_id`); `countBySemesterId` join paths; `createEnrollment` service rules (`EnrollmentError` vocabulary) — resolve at domain slice B build, do not invent columns.

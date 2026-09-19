@@ -1,8 +1,8 @@
 # LOA Consult Platform — Appointments Module
 ## Product Assembly Component Specification
 
-**Version:** 0.1
-**Status:** Draft
+**Version:** 1.0
+**Status:** Final
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -76,8 +76,9 @@ Body `{dayOfWeek 0–6, isBlocked?, startTime?, endTime?, startDate (YYYY-MM-DD 
 
 ## Document Control
 
-- **Status:** Draft v0.1
+- **Status:** Final v1.0
 - **Created:** 2026-09-18
+- **Updated:** 2026-09-19 — Promoted v0.1 → Final v1.0: verified against data-model v1.0 + `api-endpoints.md` Final v1.0 §5.1/§5.2 (no level corrections; all mutations `write`, all reads `read`).
 - **Source:** 10 appointment route handlers read verbatim
 - **No level corrections:** all mutations `write`, all reads `read` — code gates are group-membership only
-- **Verify at build:** actor-ownership inside accept/decline/complete/cancel/student-cancel controller paths; Teams sync orchestration + feature-flag equivalent; `slotLinks`/`meetingType` semantics in batch
+- **Build-time carry-forward:** actor-ownership inside accept/decline/complete/cancel/student-cancel controller paths; Teams sync orchestration + feature-flag equivalent; `slotLinks`/`meetingType` semantics in batch — resolve at domain slice B build.

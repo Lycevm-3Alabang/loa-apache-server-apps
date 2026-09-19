@@ -1,6 +1,6 @@
 # TODO — Consult Platform Spec Program
 
-**Updated:** 2026-09-18
+**Updated:** 2026-09-19
 **Scope:** `assemblies/loa-consult-platform/` specs, with Auth + Cert as reference/basis.
 **Rule:** No implementation code until the relevant spec `.md` file is Final (AI-RULES.md Rule 0).
 
@@ -8,21 +8,13 @@
 
 ## NOW (in progress)
 
-- [ ] Promote `data-model.md` v0.2 (hybrid users: cache table, no FK relationships, all user-ref columns = opaque Auth sub TEXT) to Final — **needs review of §3 column shapes flagged for module-spec verification before promotion**
+- [ ] First migration(s) — `users` + `departments` (FK-safe per data-model.md §8) → wire compose per `docker-compose-spec.md` → `loa_consult` DB init → consult-app in Docker
 
-- [ ] Promote `endpoints-academic.md` Draft v0.1 → Final — verify against data-model v0.2 + `api-endpoints.md` §5.4/§5.5
-
-- [ ] Promote `endpoints-appointments.md` Draft v0.1 → Final — verify against data-model v0.2 + `api-endpoints.md` §5.1/§5.2
-
-- [ ] Promote `endpoints-evaluations.md` Draft v0.1 → Final — verify against data-model v0.2 + `api-endpoints.md` §5.6–§5.9
+- [ ] Auth layer — middleware + controllers per `auth-integration.md` Final v1.2 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`)
 
 ---
 
 ## AFTER FINAL SPECS (implementation gates)
-
-- [ ] First migration(s) — `users` + `departments` (FK-safe per data-model.md §8) → wire compose per `docker-compose-spec.md` → `loa_consult` DB init → consult-app in Docker
-
-- [ ] Auth layer — middleware + controllers per `auth-integration.md` Final v1.2 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`)
 
 - [ ] Domain slice B — appointments/academic/semesters (appointments + academic + semesters handlers)
 
@@ -50,12 +42,12 @@
 |------|---------|--------|--------|
 | `api-endpoints.md` | v1.0 | **Final** | — (root spec) |
 | `auth-integration.md` | v1.2 | **Final** | — (root spec) |
-| `data-model.md` | v0.2 | **Draft** | first migration, compose wiring |
-| `endpoints-academic.md` | v0.1 | **Draft** | domain slice B implementation |
-| `endpoints-appointments.md` | v0.1 | **Draft** | domain slice B implementation |
-| `endpoints-evaluations.md` | v0.1 | **Draft** | domain slice C implementation |
+| `data-model.md` | v1.0 | **Final** | — (build-time carry-forward: §3 verify notes in modules) |
+| `endpoints-academic.md` | v1.0 | **Final** | — (build-time carry-forward: repo-only fields, join paths) |
+| `endpoints-appointments.md` | v1.0 | **Final** | — (build-time carry-forward: actor-ownership, Teams sync) |
+| `endpoints-evaluations.md` | v1.0 | **Final** | — (build-time carry-forward: service rules, nested keys) |
 | `test-suite.md` | v0.1 | **Draft** | test infrastructure |
-| `docker-compose-spec.md` | v0.1 | **Draft** | compose wiring (blocked on first migration) |
+| `docker-compose-spec.md` | v1.0 | **Final** | — (root stack wiring: §2 blocks + §3 init + §4 secrets + §7 scripts) |
 | `LOCAL-DEV-RUNBOOK.md` | v0.1 | **Draft** | local dev setup |
 | `DEPLOY.md` | v0.1 | **Draft** | deployment |
 | `FRONTEND-INTEGRATION.md` | v0.1 | **Draft** | cutover phase |
@@ -65,6 +57,11 @@
 
 ## DONE
 
+- [x] 2026-09-19 — `docker-compose-spec.md` Draft v0.1 → **Final v1.0** (verified root stack auth+cert already wired; corrected init.sql §3, added §4 shared secrets sync, §5 port map, §7 scripts reset-all.ps1 update; consult .env `ENCRYPTION_KEY` fixed to match auth)
+- [x] 2026-09-19 — `data-model.md` Draft v0.2 → **Final v1.0** (§3 column shapes reviewed vs modules; hybrid users cache table + opaque Auth sub TEXT unchanged; build-time verify notes carried forward)
+- [x] 2026-09-19 — `endpoints-academic.md` Draft v0.1 → **Final v1.0** (verified vs data-model v1.0 + api-endpoints §5.4/§5.5; levels match)
+- [x] 2026-09-19 — `endpoints-appointments.md` Draft v0.1 → **Final v1.0** (verified vs §5.1/§5.2; no level corrections)
+- [x] 2026-09-19 — `endpoints-evaluations.md` Draft v0.1 → **Final v1.0** (verified vs §5.6–§5.9; levels match)
 - [x] 2026-09-18 — Consult endpoint inventory: 112 `route.ts` files (~142 combos; 118 migrating to Laravel + 5 public/SSO), drift vs `endpoint-catalog.md` recorded, frontend untouched
 - [x] 2026-09-18 — `api-endpoints.md` **Final v1.0** (conventions, 118-route summary, levels, scoping from handlers, design decisions, 3 modules, #9/#10 resolved)
 - [x] 2026-09-18 — `auth-integration.md` **Final v1.2** (SSO contract verbatim from cert controllers, cookie reality, §10 14-item port inventory, group-wording)
