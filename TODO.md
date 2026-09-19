@@ -8,7 +8,7 @@
 
 ## NOW (in progress)
 
-- [ ] First migration(s) — `users` + `departments` (FK-safe per data-model.md §8) → wire compose per `docker-compose-spec.md` → `loa_consult` DB init → consult-app in Docker
+- [ ] Academic module — migrations (departments, department_courses, subjects, sections, semesters, faculty_subjects, student_enrollments) → models → controllers → routes (no auth middleware yet)
 
 - [ ] Auth layer — middleware + controllers per `auth-integration.md` Final v1.2 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`)
 
@@ -57,6 +57,7 @@
 
 ## DONE
 
+- [x] 2026-09-19 — `app_users` migration + model created (`course` → `course_id` FK ref to `department_courses`; `users` → `app_users` rename across all specs); migrate:fresh + HealthTest green
 - [x] 2026-09-19 — `docker-compose-spec.md` Draft v0.1 → **Final v1.0** (verified root stack auth+cert already wired; corrected init.sql §3, added §4 shared secrets sync, §5 port map, §7 scripts reset-all.ps1 update; consult .env `ENCRYPTION_KEY` fixed to match auth)
 - [x] 2026-09-19 — `data-model.md` Draft v0.2 → **Final v1.0** (§3 column shapes reviewed vs modules; hybrid users cache table + opaque Auth sub TEXT unchanged; build-time verify notes carried forward)
 - [x] 2026-09-19 — `endpoints-academic.md` Draft v0.1 → **Final v1.0** (verified vs data-model v1.0 + api-endpoints §5.4/§5.5; levels match)

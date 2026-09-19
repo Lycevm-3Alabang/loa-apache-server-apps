@@ -6,7 +6,7 @@
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
-> Follows the cert↔auth relationship pattern exactly: Consult owns its MySQL database, holds **no identity tables**, references Auth users only by **opaque sub string** (never FK). A **users cache table** (no FK relationships) stores profile data synced from JWT claims for fast local reads — Auth remains the single source of truth for identity.
+> Follows the cert↔auth relationship pattern exactly: Consult owns its MySQL database, holds **no identity tables**, references Auth users only by **opaque sub string** (never FK). An **app_users cache table** (no FK relationships) stores profile data synced from JWT claims for fast local reads — Auth remains the single source of truth for identity.
 > Source: `D:\loa\e-consultation\supabase-schema.sql` (2081 lines, final migrated shape). Column renames camelCase→snake_case cascade through queries per the e-consultation AGENTS lesson — module specs must map every quoted identifier.
 
 ---
@@ -16,7 +16,7 @@
 1. Database `loa_consult` (MySQL 8) holds **domain data only**.
 2. **No identity tables.** Dropped: `role`, `userrole`, `group_access`, `user_permissions`, `password_reset_tokens`, `accounts`, `sessions`, `verification_tokens` (see §5).
 3. **Opaque Auth sub.** Any reference to an Auth user is `string(...)->nullable()` with `// opaque Auth sub` — TEXT, no FK, no join, exactly like cert's `created_by`/`updated_by`/`user_id`/`sent_by`. Nullable-first; harden to NOT NULL later with backfill guards (cert `2026_09_15` pattern). Group membership is never stored: no role column, no pipe-delimited parsing — the JWT `groups` claim is the only membership input, read-only.
-4. **Users cache (no FK).** A `users` table stores profile data (`name`, `email`, `department_id`, `course`, `employee_no`, `semester_id`, `is_disabled`, `deleted_at`, `onboarding_version`) synced from JWT claims on login. It has **no PK referenced by other tables** — consult tables store opaque Auth sub strings, not FK integer/uuid references. The cache is populated by upserting on `email` from JWT; consult logic reads name/email/department locally instead of calling Auth API per query.
+4. **App users cache (no FK).** An `app_users` table stores profile data (`name`, `email`, `department_id`, `course_id`, `employee_no`, `semester_id`, `is_disabled`, `deleted_at`, `onboarding_version`) synced from JWT claims on login. It has **no PK referenced by other tables** — consult tables store opaque Auth sub strings, not FK integer/uuid references. The cache is populated by upserting on `email` from JWT; consult logic reads name/email/department locally instead of calling Auth API per query.
 5. **No cross-database reads.** Identity beyond claims comes via the Auth API, never SQL.
 6. **No RLS.** Authorization enforced in the API layer (`jwt.auth` + `jwt.endpoint` + controller scoping).
 
@@ -34,7 +34,7 @@
 | `DECIMAL(5,2)` | `DECIMAL(5,2)` |
 | `TEXT[]` (only on dropped `user_permissions`) | n/a — table dropped |
 | `CHECK (...)` enums | MySQL 8 CHECK (enforced ≥8.0.16); status values documented per table |
-| `DEFERRABLE` circular FK (`departments.dean_id` ↔ `users.department_id`) | Both columns become plain strings on consult tables; users table has no FK outward — circular FK eliminated entirely |
+| `DEFERRABLE` circular FK (`departments.dean_id` ↔ `app_users.department_id`) | Both columns become plain strings on consult tables; app_users table has no FK outward — circular FK eliminated entirely |
 | `exec_sql()` RPC (reset-db helper) | DROPPED — reset-db becomes Laravel truncates in FK-safe order (module spec) |
 | `ON CONFLICT` seed upserts | Laravel seeders, idempotent |
 
@@ -42,7 +42,7 @@
 
 # 3. Tables (final shapes, snake_case)
 
-> **FK note:** All user-reference columns are `string()->nullable()` TEXT — **no FK constraints** to the users cache table. The users cache exists for local reads; consult domain rows key on opaque Auth sub strings, not user PKs.
+> **FK note:** All user-reference columns are `string()->nullable()` TEXT — **no FK constraints** to the app_users cache table. The app_users cache exists for local reads; consult domain rows key on opaque Auth sub strings, not user PKs.
 
 ## 3.1 Academic infrastructure
 
@@ -82,13 +82,13 @@
 
 ---
 
-# 4. Users Cache Table (no FK)
+# 4. App Users Cache Table (no FK)
 
-> Profile cache only. **No PK referenced by other tables.** Consult domain rows store opaque Auth sub strings as TEXT; the users cache exists so queries can resolve name/email/department locally without calling Auth API per row.
+> Profile cache only. **No PK referenced by other tables.** Consult domain rows store opaque Auth sub strings as TEXT; the app_users cache exists so queries can resolve name/email/department locally without calling Auth API per row.
 
-**users** — `id` uuid PK `HasUuids`, `name`, `email` UNIQUE (sync key), `department_id` NULL `// opaque Auth sub`, `course` NULL, `employee_no` NULL, `semester_id` NULL `// opaque Auth sub`, `is_disabled` default false, `last_login_at` NULL, `deleted_at` NULL (soft-delete backing `/deleted`, `/restore`, `/soft-delete`, bulk), `onboarding_version` default 0, `created_at`. No `evaluation_eligible` — named in README only, never migrated, not ported.
+**app_users** — `id` uuid PK `HasUuids`, `name`, `email` UNIQUE (sync key), `department_id` NULL `// opaque Auth sub`, `course_id` NULL → `department_courses`, `employee_no` NULL, `semester_id` NULL `// opaque Auth sub`, `is_disabled` default false, `last_login_at` NULL, `deleted_at` NULL (soft-delete backing `/deleted`, `/restore`, `/soft-delete`, bulk), `onboarding_version` default 0, `created_at`. No `evaluation_eligible` — named in README only, never migrated, not ported.
 
-**Sync rule:** On every authenticated request, upsert by `email` from JWT claims (`name`, `email`, `groups`). Profile fields (`department_id`, `course`, `employee_no`) are written by admin endpoints (import, user management), not by JWT sync.
+**Sync rule:** On every authenticated request, upsert by `email` from JWT claims (`name`, `email`, `groups`). Profile fields (`department_id`, `course_id`, `employee_no`) are written by admin endpoints (import, user management), not by JWT sync.
 
 Drop: `password_hash`, `token_version`, `has_logged_in_before` (auth-owned). No password/resets/sessions tables (§5).
 
@@ -104,7 +104,7 @@ Drop: `password_hash`, `token_version`, `has_logged_in_before` (auth-owned). No 
 
 - PKs: `$table->uuid('id')->primary()` + `HasUuids` (no manual `Str::uuid` boot).
 - Opaque-sub columns: `string()->nullable()` + `// opaque Auth sub`; harden later with backfill-guard migrations (cert `2026_09_15` pattern), never at initial port.
-- **No FK constraints to users.** All `faculty_id`, `student_id`, `evaluator_id`, `evaluatee_id`, `dean_id`, `user_id` columns are plain TEXT — the users cache is read-only for lookups, never joined.
+- **No FK constraints to app_users.** All `faculty_id`, `student_id`, `evaluator_id`, `evaluatee_id`, `dean_id`, `user_id` columns are plain TEXT — the app_users cache is read-only for lookups, never joined.
 - Audit writes on mutations (CREATE/UPDATE/DELETE/activate), mirroring source `logAuditEvent` call sites — action vocabulary ported in module specs.
 - Carry source indexes (appointments faculty/status/date composite, enrollment/rubric/evaluation FK indexes, audit composite). No index is dropped without a module-spec note.
 - One migration per table, date-prefixed (`2026_xx_xxxxxx_create_*`), reversible `down()` (cert `database/migrations` pattern, 16 files).
@@ -119,9 +119,9 @@ None required. Unlike cert (FK-1452 org-row trap), consult has no mandatory seed
 
 # 8. Migration Order (FK-safe)
 
-`users` → `departments` → `department_courses` → `subjects` → `sections` → `semesters` → `evaluation_periods` → `rating_scales` → `rubric_groups` → `rubric_categories` → `rubric_items` → `rubric_group_snapshots` → `faculty_subjects` → `student_enrollments` → `appointments` → `time_slots` → `attendees` → `files` → `availability_rules` → `evaluations` → `ratings` → `comments` → `results` → `audit_logs` → `bug_reports`.
+`app_users` → `departments` → `department_courses` → `subjects` → `sections` → `semesters` → `evaluation_periods` → `rating_scales` → `rubric_groups` → `rubric_categories` → `rubric_items` → `rubric_group_snapshots` → `faculty_subjects` → `student_enrollments` → `appointments` → `time_slots` → `attendees` → `files` → `availability_rules` → `evaluations` → `ratings` → `comments` → `results` → `audit_logs` → `bug_reports`.
 
-> No circular FKs. The old `departments.dean_id` ↔ `users.department_id` circular FK is eliminated: `departments.dean_id` is now a plain TEXT `// opaque Auth sub` with no constraint.
+> No circular FKs. The old `departments.dean_id` ↔ `app_users.department_id` circular FK is eliminated: `departments.dean_id` is now a plain TEXT `// opaque Auth sub` with no constraint.
 
 ---
 
@@ -129,7 +129,7 @@ None required. Unlike cert (FK-1452 org-row trap), consult has no mandatory seed
 
 - **Status:** Final v1.0
 - **Created:** 2026-09-18
-- **Updated:** 2026-09-19 — Promoted v0.2 → Final v1.0: §3 column shapes reviewed against endpoints-academic/appointments/evaluations v1.0 + `api-endpoints.md` Final v1.0 §5.4/§5.1–§5.2/§5.6–§5.9. Hybrid users approach unchanged (cache table, no FK, all user-ref TEXT `// opaque Auth sub`).
+- **Updated:** 2026-09-19 — Promoted v0.2 → Final v1.0: §3 column shapes reviewed against endpoints-academic/appointments/evaluations v1.0 + `api-endpoints.md` Final v1.0 §5.4/§5.1–§5.2/§5.6–§5.9. Renamed `users` → `app_users` to avoid confusion with auth-platform users table. Hybrid cache table approach unchanged (no FK, all user-ref TEXT `// opaque Auth sub`).
 - **Source:** `supabase-schema.sql` final migrated shape; relationship pattern verified against cert migrations (`// opaque Auth sub`, uuid PKs, audit shape, seeder policy)
 - **Build-time carry-forward (not blocking Final):** `evaluations.faculty_subject_id`, `evaluation_results.subject_id` exact shapes; `faculty_subjects.semester_id` + `student_enrollments.faculty_subject_id`/`semester_id` (repo-layer fields absent from DDL); `countBySemesterId` join paths for enrollments/sections — all flagged in module specs, resolve at first-migration build without inventing columns.
-- **Next:** first migration(s) — `users` + `departments` (FK-safe per §8)
+- **Next:** first migration(s) — `app_users` + `departments` (FK-safe per §8)

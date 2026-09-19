@@ -101,7 +101,7 @@ Token from body or cookie → best-effort `POST {AUTH_BASE_URL}/api/v1/auth/logo
 
 # 7. User Data Sync
 
-On callback, upsert local `users` by `email` (name from claims). Application fields (`departmentId`, `course`, `employeeNo`, `isDisabled`) stay local. Drop at data migration: `passwordHash`, `tokenVersion`, `hasLoggedInBefore`, `group_access`, `user_permissions`, `role`, `userrole`, `password_reset_tokens` (+ NextAuth tables). Detail in `data-model.md`.
+On callback, upsert local `app_users` by `email` (name from claims). Application fields (`departmentId`, `course`, `employeeNo`, `isDisabled`) stay local. Drop at data migration: `passwordHash`, `tokenVersion`, `hasLoggedInBefore`, `group_access`, `user_permissions`, `role`, `userrole`, `password_reset_tokens` (+ NextAuth tables). Detail in `data-model.md`.
 
 ---
 
@@ -129,7 +129,7 @@ Auth surface only. Controllers/services copy 1:1; only config keys, cookie names
 |---|-------------|----------------|-------|
 | 1 | `app/Http/Middleware/JwtMiddleware.php` | same path | `tenant_slug` → `consult-platform`/`loa`; `cert_user` attr → `consult_user`; error shapes verbatim (401 missing/invalid, 403 tenant_mismatch) |
 | 2 | `app/Http/Middleware/EndpointPolicyMiddleware.php` | same path | catalog `cert-endpoints.php` → `consult-endpoints.php`; confirm request-attr names (`jwt_claims`) at port time; else verbatim |
-| 3 | `app/Http/Controllers/AuthCallbackController.php` | same path | config re-point; **ADD local user upsert by email** (slim users table); audit event under consult naming |
+| 3 | `app/Http/Controllers/AuthCallbackController.php` | same path | config re-point; **ADD local user upsert by email** (slim `app_users` table); audit event under consult naming |
 | 4 | `app/Http/Controllers/AuthRefreshController.php` | same path | cookie/config names only |
 | 5 | `app/Http/Controllers/AuthLogoutController.php` | same path | cookie/config names only |
 | 6 | `app/Services/JWTService.php` | same path | verbatim (HS256 validate-only) |

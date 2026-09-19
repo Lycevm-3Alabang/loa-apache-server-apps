@@ -512,14 +512,14 @@ Before the consult app can integrate, the Auth Platform must:
 
 # 9. User Data Sync
 
-The consult app maintains its own `users` table in Supabase for application-specific data (department assignments, course, employee number, etc.). After SSO login:
+The consult app maintains its own `app_users` table for application-specific data (department assignments, course, employee number, etc.). After SSO login:
 
 1. The consult app receives JWT claims (`sub`, `email`, `name`, `groups`, `permissions`)
-2. It upserts into its local `users` table by `email`
+2. It upserts into its local `app_users` table by `email`
 3. Application-specific fields (department, course, employeeNo) are managed locally
 4. Auth-specific fields (password, tokenVersion) are no longer needed
 
-**Fields to remove from consult `users` table:**
+**Fields to remove from consult `app_users` table:**
 - `passwordHash` (managed by loa-auth)
 - `tokenVersion` (managed by loa-auth refresh tokens)
 - `hasLoggedInBefore` (managed by loa-auth)
@@ -534,7 +534,7 @@ The consult app maintains its own `users` table in Supabase for application-spec
 
 # 10. Role-to-Group Migration
 
-Current consult app roles (pipe-delimited on `users.role`):
+Current consult app roles (pipe-delimited on `app_users.role`):
 
 | Current Role | loa-auth Group |
 |-------------|---------------|
