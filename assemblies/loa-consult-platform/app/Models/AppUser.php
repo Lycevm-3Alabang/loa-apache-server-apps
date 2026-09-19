@@ -22,7 +22,6 @@ class AppUser extends Model
         'email',
         'department_id',
         'course_id',
-        'employee_no',
         'semester_id',
         'is_disabled',
         'last_login_at',

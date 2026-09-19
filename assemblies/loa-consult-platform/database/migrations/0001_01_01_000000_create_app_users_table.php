@@ -14,7 +14,6 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('department_id')->nullable(); // opaque Auth sub
             $table->string('course_id')->nullable(); // → department_courses
-            $table->string('employee_no')->nullable();
             $table->string('semester_id')->nullable(); // opaque Auth sub
             $table->boolean('is_disabled')->default(false);
             $table->timestamp('last_login_at')->nullable();
