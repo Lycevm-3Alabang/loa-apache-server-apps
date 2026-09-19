@@ -10,10 +10,14 @@ return new class extends Migration
     {
         Schema::create('faculty_subjects', function (Blueprint $table) {
             $table->id();
-            $table->string('faculty_id'); // opaque Auth sub
+            $table->foreignUuid('faculty_id')->constrained('employees')->cascadeOnDelete();
             $table->foreignId('subject_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('section_id')->constrained()->cascadeOnDelete();
-            $table->unique(['subject_id', 'section_id']);
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
+            $table->string('created_by')->nullable();
+            $table->string('updated_by')->nullable();
+            $table->unique(['faculty_id', 'subject_id']);
         });
     }
 

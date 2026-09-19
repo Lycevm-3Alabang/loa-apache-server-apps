@@ -12,21 +12,20 @@ class Student extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'user_id',
+        'name',
+        'email',
         'student_number',
         'course_id',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
+            'is_active' => 'boolean',
             'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(AppUser::class, 'user_id');
     }
 
     public function course(): BelongsTo
@@ -36,6 +35,6 @@ class Student extends Model
 
     public function enrollments(): HasMany
     {
-        return $this->hasMany(StudentEnrollment::class, 'student_id', 'user_id');
+        return $this->hasMany(StudentEnrollment::class, 'student_id');
     }
 }

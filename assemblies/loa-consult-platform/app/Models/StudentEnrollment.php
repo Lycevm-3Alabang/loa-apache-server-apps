@@ -13,11 +13,24 @@ class StudentEnrollment extends Model
 
     protected $fillable = [
         'student_id',
-        'section_id',
+        'subject_id',
+        'is_active',
     ];
 
-    public function section(): BelongsTo
+    protected function casts(): array
     {
-        return $this->belongsTo(Section::class);
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class, 'student_id');
+    }
+
+    public function subject(): BelongsTo
+    {
+        return $this->belongsTo(Subject::class);
     }
 }

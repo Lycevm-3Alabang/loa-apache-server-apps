@@ -14,16 +14,23 @@ class FacultySubject extends Model
     protected $fillable = [
         'faculty_id',
         'subject_id',
-        'section_id',
+        'is_active',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'faculty_id');
+    }
 
     public function subject(): BelongsTo
     {
         return $this->belongsTo(Subject::class);
-    }
-
-    public function section(): BelongsTo
-    {
-        return $this->belongsTo(Section::class);
     }
 }

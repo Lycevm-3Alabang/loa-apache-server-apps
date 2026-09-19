@@ -8,13 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // app_users — add updated_at, created_by, updated_by
-        Schema::table('app_users', function (Blueprint $table) {
-            $table->timestamp('updated_at')->nullable()->after('created_at');
-            $table->string('created_by')->nullable()->after('updated_at');
-            $table->string('updated_by')->nullable()->after('created_by');
-        });
-
         // departments — replace is_disabled with is_active, add audit columns
         Schema::table('departments', function (Blueprint $table) {
             $table->dropColumn('is_disabled');
@@ -45,25 +38,7 @@ return new class extends Migration
         // sections — replace is_disabled with is_active, add audit columns
         Schema::table('sections', function (Blueprint $table) {
             $table->dropColumn('is_disabled');
-            $table->boolean('is_active')->default(true)->after('department_course_id');
-            $table->timestamp('created_at')->nullable()->after('is_active');
-            $table->timestamp('updated_at')->nullable()->after('created_at');
-            $table->string('created_by')->nullable()->after('updated_at');
-            $table->string('updated_by')->nullable()->after('created_by');
-        });
-
-        // faculty_subjects — add audit columns
-        Schema::table('faculty_subjects', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('section_id');
-            $table->timestamp('created_at')->nullable()->after('is_active');
-            $table->timestamp('updated_at')->nullable()->after('created_at');
-            $table->string('created_by')->nullable()->after('updated_at');
-            $table->string('updated_by')->nullable()->after('created_by');
-        });
-
-        // student_enrollments — add audit columns
-        Schema::table('student_enrollments', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('section_id');
+            $table->boolean('is_active')->default(true)->after('room');
             $table->timestamp('created_at')->nullable()->after('is_active');
             $table->timestamp('updated_at')->nullable()->after('created_at');
             $table->string('created_by')->nullable()->after('updated_at');
@@ -76,30 +51,10 @@ return new class extends Migration
             $table->string('created_by')->nullable()->after('updated_at');
             $table->string('updated_by')->nullable()->after('created_by');
         });
-
-        // students — add is_active + audit columns
-        Schema::table('students', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('course_id');
-            $table->timestamp('updated_at')->nullable()->after('created_at');
-            $table->string('created_by')->nullable()->after('updated_at');
-            $table->string('updated_by')->nullable()->after('created_by');
-        });
-
-        // faculty — add is_active + audit columns
-        Schema::table('faculty', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('department_id');
-            $table->timestamp('updated_at')->nullable()->after('created_at');
-            $table->string('created_by')->nullable()->after('updated_at');
-            $table->string('updated_by')->nullable()->after('created_by');
-        });
     }
 
     public function down(): void
     {
-        Schema::table('app_users', function (Blueprint $table) {
-            $table->dropColumn(['updated_at', 'created_by', 'updated_by']);
-        });
-
         Schema::table('departments', function (Blueprint $table) {
             $table->dropColumn(['is_active', 'created_at', 'updated_at', 'created_by', 'updated_by']);
             $table->boolean('is_disabled')->default(false)->after('dean_id');
@@ -115,27 +70,11 @@ return new class extends Migration
 
         Schema::table('sections', function (Blueprint $table) {
             $table->dropColumn(['is_active', 'created_at', 'updated_at', 'created_by', 'updated_by']);
-            $table->boolean('is_disabled')->default(false)->after('department_course_id');
-        });
-
-        Schema::table('faculty_subjects', function (Blueprint $table) {
-            $table->dropColumn(['is_active', 'created_at', 'updated_at', 'created_by', 'updated_by']);
-        });
-
-        Schema::table('student_enrollments', function (Blueprint $table) {
-            $table->dropColumn(['is_active', 'created_at', 'updated_at', 'created_by', 'updated_by']);
+            $table->boolean('is_disabled')->default(false)->after('room');
         });
 
         Schema::table('semesters', function (Blueprint $table) {
             $table->dropColumn(['updated_at', 'created_by', 'updated_by']);
-        });
-
-        Schema::table('students', function (Blueprint $table) {
-            $table->dropColumn(['is_active', 'updated_at', 'created_by', 'updated_by']);
-        });
-
-        Schema::table('faculty', function (Blueprint $table) {
-            $table->dropColumn(['is_active', 'updated_at', 'created_by', 'updated_by']);
         });
     }
 };

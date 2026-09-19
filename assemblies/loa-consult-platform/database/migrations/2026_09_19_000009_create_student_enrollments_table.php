@@ -8,23 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('sections', function (Blueprint $table) {
+        Schema::create('student_enrollments', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->foreignUuid('student_id')->constrained('students')->cascadeOnDelete();
             $table->foreignId('subject_id')->constrained()->cascadeOnDelete();
-            $table->string('schedule')->nullable();
-            $table->string('room')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamp('created_at')->nullable();
             $table->timestamp('updated_at')->nullable();
             $table->string('created_by')->nullable();
             $table->string('updated_by')->nullable();
-            $table->unique(['name', 'subject_id']);
+            $table->unique(['student_id', 'subject_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('sections');
+        Schema::dropIfExists('student_enrollments');
     }
 };

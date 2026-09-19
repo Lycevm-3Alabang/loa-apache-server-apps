@@ -12,21 +12,22 @@ class Section extends Model
 
     protected $fillable = [
         'name',
-        'program',
-        'department_course_id',
-        'is_disabled',
+        'subject_id',
+        'schedule',
+        'room',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_disabled' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 
-    public function departmentCourse(): BelongsTo
+    public function subject(): BelongsTo
     {
-        return $this->belongsTo(DepartmentCourse::class);
+        return $this->belongsTo(Subject::class);
     }
 
     public function facultySubjects(): HasMany

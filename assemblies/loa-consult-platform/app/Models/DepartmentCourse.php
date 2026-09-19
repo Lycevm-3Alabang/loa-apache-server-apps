@@ -16,11 +16,13 @@ class DepartmentCourse extends Model
         'department_id',
         'name',
         'code',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
+            'is_active' => 'boolean',
             'created_at' => 'datetime',
         ];
     }
@@ -30,8 +32,8 @@ class DepartmentCourse extends Model
         return $this->belongsTo(Department::class);
     }
 
-    public function sections(): HasMany
+    public function students(): HasMany
     {
-        return $this->hasMany(Section::class);
+        return $this->hasMany(Student::class, 'course_id');
     }
 }

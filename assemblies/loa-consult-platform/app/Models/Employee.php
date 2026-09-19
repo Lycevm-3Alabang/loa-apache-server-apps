@@ -6,27 +6,26 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Faculty extends Model
+class Employee extends Model
 {
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
-        'user_id',
+        'name',
+        'email',
         'employee_number',
         'department_id',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
+            'is_active' => 'boolean',
             'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(AppUser::class, 'user_id');
     }
 
     public function department(): BelongsTo
@@ -34,8 +33,8 @@ class Faculty extends Model
         return $this->belongsTo(Department::class);
     }
 
-    public function subjects(): HasMany
+    public function facultySubjects(): HasMany
     {
-        return $this->hasMany(FacultySubject::class, 'faculty_id', 'user_id');
+        return $this->hasMany(FacultySubject::class, 'faculty_id');
     }
 }

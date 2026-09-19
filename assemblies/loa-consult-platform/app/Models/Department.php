@@ -13,13 +13,13 @@ class Department extends Model
         'name',
         'code',
         'dean_id',
-        'is_disabled',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_disabled' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 
