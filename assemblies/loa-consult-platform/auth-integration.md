@@ -1,7 +1,7 @@
 # LOA Consult Platform — Auth Integration
 ## Product Assembly Component Specification
 
-**Version:** 1.2
+**Version:** 1.3
 **Status:** Final
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -101,7 +101,7 @@ Token from body or cookie → best-effort `POST {AUTH_BASE_URL}/api/v1/auth/logo
 
 # 7. User Data Sync
 
-On callback, upsert local `app_users` by `email` (name from claims). Application fields (`departmentId`, `course`, `employeeNo`, `isDisabled`) stay local. Drop at data migration: `passwordHash`, `tokenVersion`, `hasLoggedInBefore`, `group_access`, `user_permissions`, `role`, `userrole`, `password_reset_tokens` (+ NextAuth tables). Detail in `data-model.md`.
+On callback, upsert first-class domain entities by `email` from JWT claims per `data-model.md` §3.1.1 (`students`) and §3.1.2 (`employees`) — **no `app_users` cache**. Auth Platform is the sole identity authority (concepts: Identity Kernel); consult MUST NOT mirror or duplicate it (`data-model.md` §1.3, §4). Name from claims refreshes the local first-class cache; domain attributes (`student_number`, `course_id`, `employee_number`, `department_id`, `is_active`) stay local. Drop at data migration: legacy `app_users` (entire table — `passwordHash`/`tokenVersion`/`hasLoggedInBefore` go with it), plus `group_access`, `user_permissions`, `role`, `userrole`, `password_reset_tokens` (+ NextAuth tables). Detail in `data-model.md`.
 
 ---
 
@@ -123,13 +123,13 @@ SSO redirect · decrypt · local JWT validate · tenant-slug gate · refresh rot
 
 # 10. Implementation Inventory (port verbatim from cert)
 
-Auth surface only. Controllers/services copy 1:1; only config keys, cookie names, and the tenant slug change. The single functional delta is #3 (consult keeps a slim local `users` table; cert has none).
+Auth surface only. Controllers/services copy 1:1; only config keys, cookie names, and the tenant slug change. The single functional delta is #3 (consult upserts first-class `students`/`employees` by email; cert has no local user table).
 
 | # | Cert source | Consult target | Delta |
 |---|-------------|----------------|-------|
 | 1 | `app/Http/Middleware/JwtMiddleware.php` | same path | `tenant_slug` → `consult-platform`/`loa`; `cert_user` attr → `consult_user`; error shapes verbatim (401 missing/invalid, 403 tenant_mismatch) |
 | 2 | `app/Http/Middleware/EndpointPolicyMiddleware.php` | same path | catalog `cert-endpoints.php` → `consult-endpoints.php`; confirm request-attr names (`jwt_claims`) at port time; else verbatim |
-| 3 | `app/Http/Controllers/AuthCallbackController.php` | same path | config re-point; **ADD local user upsert by email** (slim `app_users` table); audit event under consult naming |
+| 3 | `app/Http/Controllers/AuthCallbackController.php` | same path | config re-point; **ADD first-class upsert by email** (`students`/`employees` per `data-model.md` §3.1.1–§3.1.2; no `app_users`); audit event under consult naming |
 | 4 | `app/Http/Controllers/AuthRefreshController.php` | same path | cookie/config names only |
 | 5 | `app/Http/Controllers/AuthLogoutController.php` | same path | cookie/config names only |
 | 6 | `app/Services/JWTService.php` | same path | verbatim (HS256 validate-only) |
@@ -148,6 +148,6 @@ DO NOT PORT: `AuthProxyController.php` (deferred with the `/service/*` decision,
 
 ## Document Control
 
-- **Status:** Final v1.2 (v1.0 promoted 2026-09-18; v1.1 added §10 port inventory; v1.2 group-wording: Auth owns all groups)
+- **Status:** Final v1.3 (v1.0 promoted 2026-09-18; v1.1 added §10 port inventory; v1.2 group-wording: Auth owns all groups; v1.3 §7 + §10 #3: `app_users` removed — first-class `students`/`employees` upsert per `data-model.md` Final v1.2; Auth Platform = sole identity authority, Identity Kernel = concepts)
 - **Created:** 2026-09-18
-- **Next:** `data-model.md`, endpoint modules #2–#6
+- **Next:** auth-layer port (middleware + SSO trio) per §10

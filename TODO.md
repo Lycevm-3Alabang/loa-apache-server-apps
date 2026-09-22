@@ -12,7 +12,7 @@
 
 - [x] 2026-09-19 — Academic slice partial — migrations 000001-000009 (departments, department_courses, subjects, sections, students, employees, semesters, faculty_subjects, student_enrollments) + 000010 audit → 9 models → `AcademicController` + `SemesterController` → ~24 routes (no auth middleware yet; stubs pass-through)
 
-- [ ] Auth layer — middleware + controllers per `auth-integration.md` Final v1.2 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`)
+- [ ] Auth layer — middleware + controllers per `auth-integration.md` Final v1.3 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`)
 
 - [x] 2026-09-22 — `data-model.md` Draft v1.1 → **Final v1.2** (all carry-forward source-verified: M19 semester columns, M21 enrollment mapping link, M26/M27 subject-level grain, M30/M31 periods; dropped invented `student_sections`; fixed course-linked `sections`; §7 baseline delta filed for slice build)
 
@@ -45,7 +45,7 @@
 | Spec | Version | Status | Blocks |
 |------|---------|--------|--------|
 | `api-endpoints.md` | v1.0 | **Final** | — (root spec) |
-| `auth-integration.md` | v1.2 | **Final** | — (root spec) |
+| `auth-integration.md` | v1.3 | **Final** | — (root spec; v1.3: no `app_users` — students/employees first-class per data-model v1.2; Auth Platform = sole identity authority) |
 | `data-model.md` | v1.2 | **Final** | — (source-verified vs supabase-schema M17/M19/M21/M26/M27/M30/M31; Owner + no-cross-FK rules) |
 | `endpoints-academic.md` | v1.0 | **Final** | — (build-time carry-forward: repo-only fields, join paths) |
 | `endpoints-appointments.md` | v1.0 | **Final** | — (build-time carry-forward: actor-ownership, Teams sync) |
@@ -55,7 +55,7 @@
 | `LOCAL-DEV-RUNBOOK.md` | v0.1 | **Draft** | local dev setup |
 | `DEPLOY.md` | v0.1 | **Draft** | deployment |
 | `FRONTEND-INTEGRATION.md` | v0.1 | **Draft** | cutover phase |
-| `consult-readiness.md` | v1.1 | **Draft** | auth provisioning checklist + historical notes (corrected 2026-09-22: Laravel assembly active; normative auth = `auth-integration.md` Final v1.2) |
+| `consult-readiness.md` | v1.2 | **Draft** | auth provisioning checklist + historical notes (v1.1: Laravel assembly active; v1.2: §9 students/employees no `app_users`, §13 no cross-repo sync — normative = assembly; normative auth = `auth-integration.md` Final v1.3) |
 | `AGENTS.md` (assembly contract) | v1.0 | **Final** | — (working agreements, scaffold, status, spec pointers) |
 | `student.md` / `faculty.md` / `faculty-loading.md` (education domains) | v1.1 | **Final** | — (first-class cache via SSO upsert, FK to domain IDs; unblock data-model Final) |
 
@@ -63,6 +63,8 @@
 
 ## DONE
 
+- [x] 2026-09-22 — Review pass: fixed internal `auth-integration.md` version refs (consult-readiness §1, LOCAL-DEV-RUNBOOK, FRONTEND-INTEGRATION → v1.3; runbook data-model → Final v1.2); cleared education-domain deferred marker
+- [x] 2026-09-22 — Identity ownership decision (user): students/employees correct; `app_users` mirrored/duplicated Auth + Identity Kernel → Classification C. `auth-integration.md` Final v1.2 → **v1.3** (§7/§10 #3: first-class upsert; Auth Platform = sole identity authority); `consult-readiness.md` Draft v1.1 → **v1.2** (§9 rewrite, §10 legacy-clarify, §13 cross-repo sync removed — normative = assembly only); `dependency-rules.md` consult-deferred markers cleared; trackers reconciled
 - [x] 2026-09-22 — `consult-readiness.md` Draft v1.0 → **v1.1** (removed false "Laravel assembly is deferred" claim → assembly active; §3–§4 superseded-by banners → `auth-integration.md` Final v1.2; §8 table: Laravel backend, cPanel deploy, local `loa_consult` store)
 - [x] 2026-09-22 — `assemblies/loa-consult-platform/AGENTS.md` created (wise_wallet format: 10 working agreements, scaffold, status journal, spec pointer) + referenced from root `AGENTS.md` (exclusive standing contract for consult work)
 - [x] 2026-09-22 — Spec format standard adopted (wise_wallet `06-web-warning-cleanup` shape: metadata + RFC 2119 + Context/Constraints CON-*/Goal DEC-*/ACC-*/Deliverables D-* + Glossary + References); applies to all future consult specs

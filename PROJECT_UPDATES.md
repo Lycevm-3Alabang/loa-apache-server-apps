@@ -52,7 +52,7 @@ Durable cross-boundary record only. Detail lives in assembly specs; history live
 | App | Subdomain | Database | Purpose |
 |-----|-----------|----------|---------|
 | Auth | auth.lyceumalabang.edu.ph | lyceumalabang_auth_db (local: `loa_auth`) | JWT service, users, admin dashboard |
-| Consult | aces-api.lyceumalabang.edu.ph | loa_consult | Booking + evaluation (**DEFERRED**) |
+| Consult | aces-api.lyceumalabang.edu.ph | loa_consult | Booking + evaluation (spec program **ACTIVE** 2026-09-22) |
 | Cert API | cert-api.lyceumalabang.edu.ph | lyceumalabang_e_cert (local: `loa_cert`) | Issuance, verification, PDF/QR/email |
 | e-cert UI | e-cert.vercel.app | — (Vercel) | Next.js consumer of Auth + Cert APIs |
 
@@ -74,11 +74,11 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 - **Known gaps:** local seed has no organization → FK 1452 on template/certificate writes (needs seeder); certificate owner-rule check missing on show/pdf/download (only `MeController` scopes); QR route shape code-vs-spec drift (`/{n}/qr` vs `?certificate_number=`); `test-suite.md` still Draft (says SQLite, actual MySQL `loa_cert_test`).
 - **Next:** auth/cert deploy; cert org seeder.
 
-### Consult — `assemblies/loa-consult-platform/` (**DEFERRED** by user)
+### Consult — `assemblies/loa-consult-platform/` (spec program **ACTIVE** 2026-09-22)
 
-- **Status:** scaffold done (`HealthTest` green) + academic slice partial (9 models/routes, JWT stubs pass-through). No further implementation until data-model Final (Rule 0 tension noted).
-- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.2, 3 endpoint modules Final v1.0, `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.2 (source-verified); `test-suite.md` + runbooks still Draft.
-- **Next (when resumed):** promote `data-model.md` v1.1 → Final, re-verify 3 modules vs v1.1, then auth port (middleware+controllers) → slices B/C.
+- **Status:** scaffold done (`HealthTest` green) + academic slice partial (9 models/routes, JWT stubs pass-through). Spec program resumed 2026-09-22 (spec-first); next implementation = auth layer (middleware + SSO trio).
+- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.3 (no `app_users` — students/employees first-class), 3 endpoint modules Final v1.0, `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.2 (source-verified); `consult-readiness.md` Draft v1.2 (Laravel assembly active; §9/§10 aligned); `test-suite.md` + runbooks still Draft.
+- **Next:** auth layer (middleware + controllers per `auth-integration.md` §10) → slices B/C.
 
 ---
 
@@ -88,7 +88,8 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 
 ### Completed
 - **Governance lean merge:** `AGENTS.md` rewritten as sole entry (SDD+TDD loop, Rule 0/0.5, No Auto-Pilot, testing, Laravel gotchas); detail migrated to `principles.md` §2b + `platform.md` §15b; `PROJECT.md` references updated.
-- **Scope change:** Consult deferred; focus is Auth + Cert alignment.
+- **Scope change (earlier same day):** Consult deferred; focus is Auth + Cert alignment — **superseded:** Consult spec program resumed 2026-09-22 (see TODO ACTIVE banner).
+- **Consult readiness/identity fix pass:** `consult-readiness.md` v1.0 → v1.2 (false deferred-claim removed; Laravel assembly active; §9/§10 no `app_users`); `auth-integration.md` Final v1.2 → v1.3 (students/employees first-class; Auth Platform = sole identity authority per user decision); trackers reconciled.
 - **This file consolidated:** startup prompt updated (no AI-RULES/AI-GUIDE); per-platform sections cut to Status/Done/Next; verbose history + session log dropped (git history is the archive).
 
 ### Next Action

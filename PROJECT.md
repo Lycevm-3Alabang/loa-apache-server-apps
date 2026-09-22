@@ -159,7 +159,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
 | `api-endpoints.md` spec | ✅ Final v1.0 | Root spec: conventions, 118-route summary, levels, design decisions |
-| `auth-integration.md` spec | ✅ Final v1.2 | SSO contract, cookie, middleware, 14-item port inventory |
+| `auth-integration.md` spec | ✅ Final v1.3 | SSO contract, cookie, middleware, 14-item port inventory; v1.3: no `app_users` — students/employees first-class; Auth Platform = sole identity authority |
 | `data-model.md` spec | ✅ Final v1.2 | Source-verified (M17/M19/M21/M26/M27/M30/M31); first-class students/employees; Owner + no-cross-FK rules; §7 baseline delta filed |
 | `endpoints-academic.md` spec | ✅ Final v1.0 | 14 handlers; parent levels corrected (POST/PATCH + impacts → admin) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
@@ -167,6 +167,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | `test-suite.md` spec | ✅ Draft v0.1 | MySQL `loa_consult_test`, JWT helper, coverage per module |
 | `docker-compose-spec.md` spec | ✅ Final v1.0 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |
+| `consult-readiness.md` spec | ✅ Draft v1.2 | Auth provisioning checklist; Laravel assembly active; no `app_users` (students/employees per data-model v1.2) |
 | First migration(s) | ✅ Partial 2026-09-19 | `000001-000010` academic (dept→enrollments + audit) exist; §7 baseline delta (follow-up migrations) gates slice build |
 | JWT middleware | ⬜ Stub only | `JwtMiddleware.php` pass-through until cert port per `auth-integration.md` §10; routes unauthenticated |
 | Permission middleware | ⬜ Stub only | `EndpointPolicyMiddleware.php` pass-through; no enforcement |
@@ -349,3 +350,4 @@ loa-apache-server-apps/
 | 2026-09-18 | Consult: modular 10-file spec savepoint | Ground truth = `route.ts` scan (112 files, ~142 combos; 118 migrating), not `endpoint-catalog.md` (drift recorded) |
 | 2026-09-18 | Consult: hybrid users approach | Users cache table with no FK relationships; all consult user-ref columns = opaque Auth sub TEXT; eliminates circular FK; users upserted from JWT on login |
 | 2026-09-18 | Consult: Laravel scaffold done | Real Laravel 12.12 via composer, PHP 8.3 pinned, HealthTest green in Docker |
+| 2026-09-22 | Consult: no `app_users` — students/employees first-class | User decision: `app_users` duplicated Auth + Identity Kernel; `auth-integration.md` v1.3 §7/§10 + `consult-readiness.md` v1.2 §9 aligned to `data-model.md` Final v1.2; Auth Platform = sole identity authority |

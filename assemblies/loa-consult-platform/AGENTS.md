@@ -115,6 +115,12 @@ envelope migration without a spec.
   upsert, FK to domain IDs).
 - **2026-09-22 — Assembly contract created.** This `AGENTS.md` (wise_wallet format); referenced from root `AGENTS.md`.
   Spec format standard adopted (§1.9 analogue).
+- **2026-09-22 — Readiness + identity fix.** `consult-readiness.md` Draft v1.0 → **v1.2** (v1.1: false "Laravel assembly
+  deferred" removed — assembly active; §3–§4 superseded-by `auth-integration`; §8 Laravel backend. v1.2: §9 no `app_users`
+  — first-class students/employees; §10 legacy role source only; §13 cross-repo sync duty removed — normative = assembly
+  only). `auth-integration.md` Final v1.2 → **v1.3** (§7/§10 #3 aligned: Auth Platform = sole identity authority;
+  Identity Kernel = concepts). Trackers reconciled (TODO / PROJECT / PROJECT_UPDATES; PROJECT_UPDATES + dependency-rules
+  consult-deferred markers cleared).
 
 ---
 
@@ -125,7 +131,7 @@ envelope migration without a spec.
 | Spec | Status |
 |---|---|
 | `api-endpoints.md` v1.0 | FINAL — 118 routes, levels, ground truth |
-| `auth-integration.md` v1.2 | FINAL — SSO/JWT/middleware/provisioning |
+| `auth-integration.md` v1.3 | FINAL — SSO/JWT/middleware/provisioning; no `app_users` (students/employees first-class) |
 | `endpoints-academic/appointments/evaluations.md` v1.0 | FINAL — module contracts |
 | `docker-compose-spec.md` v1.0 | FINAL — root-stack wiring `:9002` |
 | `data-model.md` v1.2 | FINAL — persistence contract, source-verified (M17/M19/M21/M26/M27/M30/M31); §7 baseline delta gates slice build |
@@ -133,5 +139,5 @@ envelope migration without a spec.
 | `LOCAL-DEV-RUNBOOK.md` v0.1 | DRAFT — local dev setup |
 | `DEPLOY.md` v0.1 | DRAFT — deployment skeleton |
 | `FRONTEND-INTEGRATION.md` v0.1 | DRAFT — cutover checklist skeleton |
-| `consult-readiness.md` v1.0 | DRAFT — historical Next.js SSO notes; Auth-provisioning checklist only |
+| `consult-readiness.md` v1.2 | DRAFT — historical Next.js SSO notes; Auth-provisioning checklist only |
 | `README.md` v1.0 | DRAFT — assembly composition (see §2) |

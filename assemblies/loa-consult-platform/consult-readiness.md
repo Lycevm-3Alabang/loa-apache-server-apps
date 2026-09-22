@@ -1,9 +1,9 @@
 # LOA Consult Platform — Auth Integration Readiness
 
-**Version:** 1.1
+**Version:** 1.2
 **Status:** Draft
 **Audience:** Auth Platform engineers, Consult Platform engineers
-**Purpose:** Auth Platform provisioning checklist for the LOA Consult Platform (Laravel backend + Next.js frontend on Vercel). Normative auth contract: `auth-integration.md` Final v1.2 — this doc is provisioning checklist + historical notes only.
+**Purpose:** Auth Platform provisioning checklist for the LOA Consult Platform (Laravel backend + Next.js frontend on Vercel). Normative auth contract: `auth-integration.md` Final v1.3 — this doc is provisioning checklist + historical notes only.
 
 ---
 
@@ -11,7 +11,7 @@
 
 The e-consultation app (`aces.lyceumalabang.edu.ph`) has a **Next.js 16** frontend (Vercel) currently using **NextAuth v4** with its own user store (Supabase PostgreSQL). It must migrate to the centralized **loa-auth-platform** for authentication and authorization, following the same pattern as the LOA Cert Platform.
 
-**Architecture (current):** The consult frontend stays Next.js (Vercel); the consult backend is the **`loa-consult-platform` Laravel assembly** — active, not deferred — mirroring cert's Laravel pattern. API routes migrate from Next.js to Laravel; the frontend remains untouched until cutover. Normative auth behavior (SSO flow, JWT validation, auth endpoints, provisioning steps) lives in `auth-integration.md` Final v1.2.
+**Architecture (current):** The consult frontend stays Next.js (Vercel); the consult backend is the **`loa-consult-platform` Laravel assembly** — active, not deferred — mirroring cert's Laravel pattern. API routes migrate from Next.js to Laravel; the frontend remains untouched until cutover. Normative auth behavior (SSO flow, JWT validation, auth endpoints, provisioning steps) lives in `auth-integration.md` Final v1.3.
 
 ---
 
@@ -390,7 +390,7 @@ All endpoints: `admin` level. Full access.
 
 # 3. SSO Flow
 
-> **HISTORICAL — superseded by `auth-integration.md` §2 (Final v1.2).** Paths below use the pre-Laravel `/api/auth/*` shape; the normative flow is Laravel `/api/v1/auth/*` (Laravel decrypts + sets the refresh cookie). Kept for provisioning context only.
+> **HISTORICAL — superseded by `auth-integration.md` §2 (Final v1.3).** Paths below use the pre-Laravel `/api/auth/*` shape; the normative flow is Laravel `/api/v1/auth/*` (Laravel decrypts + sets the refresh cookie). Kept for provisioning context only.
 
 The consult app uses the same SSO redirect pattern as the cert app.
 
@@ -412,7 +412,7 @@ The consult app uses the same SSO redirect pattern as the cert app.
 
 # 4. Consult App Endpoints to Implement
 
-> **HISTORICAL — superseded by `auth-integration.md` §3 (Final v1.2).** Auth endpoints are implemented by the **Laravel** assembly at `/api/v1/auth/*` (callback / refresh / logout), not by Next.js. Response shapes below are stale. Kept for provisioning context only.
+> **HISTORICAL — superseded by `auth-integration.md` §3 (Final v1.3).** Auth endpoints are implemented by the **Laravel** assembly at `/api/v1/auth/*` (callback / refresh / logout), not by Next.js. Response shapes below are stale. Kept for provisioning context only.
 
 Historical note (pre-Laravel): the consult app (Next.js) planned to implement 3 auth endpoints, following the cert app pattern:
 
@@ -517,31 +517,22 @@ Before the consult app can integrate, the Auth Platform must:
 
 # 9. User Data Sync
 
-The consult app maintains its own `app_users` table for application-specific data (department assignments, course, employee number, etc.). After SSO login:
+**No `app_users` cache** — Auth Platform is the sole identity authority (concepts: Identity Kernel); consult does not mirror it (`data-model.md` §1.3, §4; `auth-integration.md` §7 Final v1.3). After SSO login:
 
-1. The consult app receives JWT claims (`sub`, `email`, `name`, `groups`, `permissions`)
-2. It upserts into its local `app_users` table by `email`
-3. Application-specific fields (department, course, employeeNo) are managed locally
-4. Auth-specific fields (password, tokenVersion) are no longer needed
+1. The consult backend receives JWT claims (`sub`, `email`, `name`, `groups`, `permissions`)
+2. It upserts first-class domain entities by `email` per `data-model.md` §3.1.1 (`students`) and §3.1.2 (`employees`)
+3. Domain attributes (`student_number`, `course_id`, `employee_number`, `department_id`, `is_active`) stay local — never synced from Auth
+4. Groups/permissions are NOT stored locally — read from JWT claims only
 
-**Fields to remove from consult `app_users` table:**
-- `passwordHash` (managed by loa-auth)
-- `tokenVersion` (managed by loa-auth refresh tokens)
-- `hasLoggedInBefore` (managed by loa-auth)
-
-**Fields to keep:**
-- `id`, `name`, `email` (synced from JWT)
-- `departmentId`, `course`, `employeeNo` (application-specific)
-- `isDisabled` (consult-specific flag, separate from loa-auth status)
-- `createdAt`, `deletedAt`
+**Dropped at data migration:** legacy `app_users` (entire table — `passwordHash`, `tokenVersion`, `hasLoggedInBefore` go with it), plus identity tables owned by Auth (`group_access`, `user_permissions`, `role`, `userrole`, `password_reset_tokens`, NextAuth tables). Detail: `data-model.md` §4.
 
 ---
 
 # 10. Role-to-Group Migration
 
-Current consult app roles (pipe-delimited on `app_users.role`):
+Legacy Next.js app roles (pipe-delimited on the dropped `app_users.role` — historical source only; Laravel consult stores no membership):
 
-| Current Role | loa-auth Group |
+| Legacy Role | loa-auth Group |
 |-------------|---------------|
 | `ADMIN` | `ADMIN` |
 | `DEAN` | `DEAN` |
@@ -549,7 +540,7 @@ Current consult app roles (pipe-delimited on `app_users.role`):
 | `STUDENT` | `STUDENT` |
 | `GUEST` | (removed — no access) |
 
-Multi-role users (e.g., `ADMIN|FACULTY`) become members of multiple groups.
+Multi-role users (e.g., `ADMIN|FACULTY`) become members of multiple groups. Groups are Auth-owned (`auth-integration.md` §8); consult reads them from the JWT `groups` claim only.
 
 ---
 
@@ -594,25 +585,28 @@ After setup, verify:
 
 ---
 
-# 13. Cross-References (e-consultation specs)
+# 13. Cross-References (historical)
 
-The e-consultation repo contains aligned specs in `D:\loa\e-consultation\specs/`:
+Normative ownership: **`assemblies/loa-consult-platform/` only** (this doc + `auth-integration.md` Final v1.3 + `api-endpoints.md` Final v1.0 + `data-model.md` Final v1.2). Nothing outside the assembly redefines consult auth behavior.
 
-| Consult Spec | This Doc | Purpose |
-|-------------|----------|---------|
-| `specs/auth-integration.md` | §3-5 | SSO flow, JWT validation, shared secrets, user data sync |
-| `specs/endpoint-catalog.md` | §2.3-2.4 | Full endpoint catalog with required levels and group grants |
-| `specs/migration-checklist.md` | §6-7 | Step-by-step tasks for each side, verification checklist |
+Historical pointers (legacy e-consultation repo, `D:\loa\e-consultation\specs/` — **no sync duty**, may be stale):
 
-**Rule:** Both repos must keep these specs in sync. If this doc changes, the corresponding consult spec must be updated, and vice versa.
+| Legacy Spec | Related Section | Note |
+|-------------|-----------------|------|
+| `specs/auth-integration.md` | §3-5 | Superseded by assembly `auth-integration.md` Final v1.3 |
+| `specs/endpoint-catalog.md` | §2.3-2.4 | Superseded by assembly `api-endpoints.md` Final v1.0 |
+| `specs/migration-checklist.md` | §6-7 | Historical migration notes only |
+
+**Rule:** Updates land in the assembly. The e-consultation copies are never edited to match and never gate work.
 
 ---
 
 ## Document Control
 
-- **Status:** Draft v1.1
+- **Status:** Draft v1.2
 - **Created:** 2026-08-24
-- **Updated:** 2026-09-22 — v1.1: removed false "Laravel assembly is deferred" claim; architecture corrected (Laravel assembly active); §3–§4 marked historical/superseded by `auth-integration.md` Final v1.2 §2–§3; §8 table aligned to Laravel backend
+- **Updated:** 2026-09-22 — v1.2: §9 rewritten (no `app_users`; first-class `students`/`employees` upsert per `data-model.md` Final v1.2; Auth Platform = sole identity authority); §10 `app_users.role` marked legacy Next.js source only; §13 cross-repo sync duty removed — normative = assembly only, e-consultation specs historical
+- **Prior (2026-09-22) — v1.1:** removed false "Laravel assembly is deferred" claim; architecture corrected (Laravel assembly active); §3–§4 marked historical/superseded by `auth-integration.md`; §8 table aligned to Laravel backend
 - **Source:** e-consultation app analysis (`D:\loa\e-consultation`)
-- **Cross-references:** `D:\loa\e-consultation\specs/` (3 spec files), `assemblies/loa-consult-platform/auth-integration.md` Final v1.2 (normative)
+- **Cross-references:** `D:\loa\e-consultation\specs/` (3 legacy files — historical, no sync), `assemblies/loa-consult-platform/auth-integration.md` Final v1.3 (normative), `data-model.md` Final v1.2
 - **Supersedes:** None

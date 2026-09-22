@@ -451,11 +451,11 @@ Generic examples above use Automotive names (Commercial/CRM/Pricing). Concrete m
 
 | Layer | Lives in | LOA contents |
 |-------|----------|--------------|
-| Product Assemblies | `assemblies/` | `loa-auth-platform`, `loa-cert-platform`, `loa-consult-platform` (deferred) |
+| Product Assemblies | `assemblies/` | `loa-auth-platform`, `loa-cert-platform`, `loa-consult-platform` |
 | Business Contexts | `business-contexts/` | `consultation` (appointment, availability), `evaluation` (evaluation, rubric), `certificate` (certificate, template, event, event-attendee) |
 | Industry Domains | `domains/` | `education` (department, course, semester, subject, section, enrollment); `automotive/` is template reference only |
 | Platform Services | `services/` | `cors`, `api-documentation`, `qrcode` |
 | Platform Kernels | `kernels/` | `identity` (user, user-group, permission, tenancy, refresh-token, rules, events), `audit`, `activity`, workflow/document/events/configuration/organization/party/offline sketches |
 | Cross-platform specs | `integration/specs/` | `cert-activation.md` v2.0, `cert-activation-invite.md` v1.0 (auth ↔ cert invite flow) |
 
-LOA notes: Auth is the sole identity authority (consumer apps validate JWTs locally, provision via the tenant invite API — never shared-DB reads). Consult is deferred; it consumes Auth + Cert Final contracts as reference only.
+LOA notes: Auth is the sole identity authority (consumer apps validate JWTs locally, provision via the tenant invite API — never shared-DB reads). Consult spec program is active (2026-09-22); it consumes Auth + Cert Final contracts as reference.
