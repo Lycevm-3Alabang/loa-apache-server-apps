@@ -147,6 +147,27 @@ envelope migration without a spec.
   403 insufficient_level · sufficient pass + `jwt_endpoint_level` stored · real catalog 118+5).
   **Full suite green pasted.** Routes still ungated (Step 7). Trackers updated.
   **Stopped — Step 6 (auth trio) not started; needs user yes.**
+- **Current status (2026-09-22) — Step 6 landed, green pending.** `AuthCallbackController` (cert + email-domain
+  upsert: onmicrosoft→`students`, lyceumalabang→`employees`; name-only refresh; `SSO-` student_number placeholder on
+  create; explicit-UUID create since models lack `HasUuids`; unknown domain→no row; audit fail-soft) ·
+  `AuthRefreshController` (config re-point) · `AuthLogoutController` (config re-point + env-driven Secure deviation) ·
+  `AuditLogger` reshaped to `data-model` L119 (no org/source/entity cols; no model/table yet — gate holds) · public
+  `auth/*` trio routes (throttle in Step 7) · `tests/Feature/Api/AuthTrioTest.php` — 16 tests (incl. ≤10-char
+  placeholder + unknown-domain no-row asserts; `assertPlainCookie` — api routes skip `EncryptCookies`). Red-triage
+  fixes: `000010` fully guarded, `tests/bootstrap.php` pins `loa_consult_test` (phpunit `force` loses to container
+  `$_SERVER`). **Full suite green pasted 2026-09-22.** Routes still ungated (Step 7). Trackers updated.
+  **Stopped — Step 7 needs user yes.**
+- **Current status (2026-09-22) — Step 7 landed, green pending.** `routes/api.php`: `auth/*` public +
+  `throttle:10,1` on callback/refresh (cert pattern verbatim) · health + count-active public · semesters/admin
+  under `['jwt.auth','jwt.endpoint']` (removed duplicate public `GET /semesters` — catalog rates it gated `read`).
+  `tests/Feature/Api/RouteGatingTest.php` — 5 tests (health + count-active public · semesters/admin 401 tokenless ·
+  callback reachable with 400). Trackers updated.
+  **Stopped — suite green paste closes the §11 auth-layer port.**
+- **Current status (2026-09-22) — red-suite triage, fixes landed.** AuthTrio 15 red (unit suites green):
+  (A) `000010` sections block dropped never-existing `is_disabled` + re-added existing cols — Type A, fixed to
+  `created_by`/`updated_by` only (up + down); (B) suite hit `loa_consult` app DB — phpunit `force` loses to container
+  `$_SERVER` — Type B, fixed via `tests/bootstrap.php` (auth precedent, pins `loa_consult_test`) + phpunit bootstrap
+  rewire. Dev `loa_consult` was wiped by RefreshDatabase — user recovery + rerun pending.
 
 ---
 

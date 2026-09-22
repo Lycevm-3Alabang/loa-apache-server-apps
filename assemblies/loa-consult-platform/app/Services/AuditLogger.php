@@ -3,68 +3,41 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
-use Illuminate\Http\Request;
 
+/**
+ * Consult audit writer — data-model.md §3.4 shape (L119).
+ *
+ * No org FK (single tenant), no source/entity/ip columns — those are cert-only
+ * and were dropped in this port. Still uncallable until the audit_logs
+ * migration lands via an approved slice (Specified — not migrated); callers
+ * MUST wrap calls in try/catch (fail-soft) until then.
+ */
 class AuditLogger
 {
-    public function __construct(
-        private readonly Request $request,
-    ) {
-    }
-
     public function record(
         string $action,
-        string $source = 'api',
-        ?string $entityType = null,
-        ?string $entityId = null,
         ?array $details = null,
         ?string $userId = null,
         ?string $userEmail = null,
     ): AuditLog {
         return AuditLog::create([
-            'organization_id' => $this->resolveOrganizationId(),
-            'user_id' => $userId ?? $this->resolveUserId(),
-            'user_email' => $userEmail ?? $this->resolveUserEmail(),
+            'user_id' => $userId,
+            'user_email' => $userEmail,
             'action' => $action,
-            'source' => $source,
-            'entity_type' => $entityType,
-            'entity_id' => $entityId,
-            'details' => $details,
-            'ip_address' => $this->request->ip(),
-            'user_agent' => substr((string) $this->request->userAgent(), 0, 255) ?: null,
-            'created_at' => now(),
+            'details' => $details !== null ? json_encode($details) : null,
+            'is_active' => true,
+            'created_by' => $userId,
+            'updated_by' => $userId,
         ]);
     }
 
-    public function fromClaims(string $action, array $claims, ?string $entityType = null, ?string $entityId = null, ?array $details = null): AuditLog
+    public function fromClaims(string $action, array $claims, ?array $details = null): AuditLog
     {
         return $this->record(
             $action,
-            'api',
-            $entityType,
-            $entityId,
             $details,
             $claims['sub'] ?? null,
             $claims['email'] ?? null,
         );
-    }
-
-    private function resolveOrganizationId(): string
-    {
-        return config('cert-platform.organization_id', '00000000-0000-0000-0000-000000000001');
-    }
-
-    private function resolveUserId(): ?string
-    {
-        $claims = $this->request->attributes->get('jwt_claims');
-
-        return $claims['sub'] ?? null;
-    }
-
-    private function resolveUserEmail(): ?string
-    {
-        $claims = $this->request->attributes->get('jwt_claims');
-
-        return $claims['email'] ?? null;
     }
 }
