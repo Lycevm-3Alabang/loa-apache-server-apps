@@ -581,6 +581,28 @@ All of these must exist or artisan breaks silently: `artisan`, `public/index.php
 
 ---
 
+# 15c. The Grander Scheme — Three Shelves, One Platform (2026-09-22)
+
+The folders below are not filing categories. They are **underlying plans of a single scheme**: a long-lived reusable platform (kernels → domains → services → contexts) composed into independently-shippable products (assemblies), bound by joint contracts (integration), advanced by governed agents, kept alive by operations. Each shelf draws the same scheme at a different altitude:
+
+| Shelf | Question | Folders | Altitude |
+|-------|----------|---------|----------|
+| **Build** (vision made concrete) | What do we build? | `kernels/` → `domains/` → `services/` → `business-contexts/` → `assemblies/` → `integration/` | Ordered by stability: reusable foundations first, deployables last, handshakes between deployables after both sides exist |
+| **Govern** (conduct) | How do we work? | `AGENT.md` → `principles.md` / `platform.md` → `PROJECT.md` → `PROJECT_UPDATES.md` | Entry → rules → status → record. Describes agent behavior, never product behavior |
+| **Operate** (execution) | How does it run? | `docs/`, `SSO-SETUP.md`, `LOCAL-DEV-RUNBOOK.md`, `CLI-COMMANDS.md`, per-assembly `DEPLOY.md` | Human operators + pipelines. Workspace operations: specs + runbooks for running, not building |
+
+Traversing the repo means zooming through the scheme: a task arrives at govern (what are we doing?), descends the build shelf by dependency direction (where does this concept belong?), and lands on operate when it must run somewhere. A file's address should always answer *which plan, at which altitude* — never just *which topic*.
+
+## Independence yet correlation (law, 2026-09-22)
+
+Applies to every folder holding specs:
+
+- **Independent plans:** a shared layer never names an assembly to *define* itself. Cross-links may point *down* to implementations (informational), never *up* for meaning. Verified: `domains/` and `business-contexts/` name no assembly; `kernels/identity/` links point down only.
+- **Correlation at composition:** every spec folder declares its correlation in a fixed block — shared layers list `Composes` (what they wire from below) and informational consumers; assemblies list exactly what they compose (`Included` sections); joint contracts list `Parties` and each side's owned half.
+- **Convention:** `## Correlation (independent yet correlated)` in folder READMEs (`Composes` / `Consumed by` / `Contracts`); `Parties` header block in `integration/specs/` files. Assemblies satisfy it via their existing `Included` sections.
+
+---
+
 # 16. Guiding Principle
 
 The Automotive Business Platform is a platform—not a collection of applications.

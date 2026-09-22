@@ -5,6 +5,8 @@
 **Layer:** Product Assembly (Cert Platform + Auth Platform)
 **Audience:** Engineers, AI Development Agents
 
+> **Correlation (joint contract — owned by neither assembly alone).** Parties: `assemblies/loa-auth-platform/` (invite endpoint, token lifecycle, `/set-password` page — see `tenant-app-api.md`, `user-account-activation.md`) and `assemblies/loa-cert-platform/` (invite client, conditional email, activation URL). Each side's own half stays specified in its assembly; this file owns only the handshake.
+
 ---
 
 # 1. Purpose

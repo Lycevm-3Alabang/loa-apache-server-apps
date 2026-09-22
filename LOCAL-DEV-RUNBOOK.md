@@ -2,6 +2,8 @@
 
 This guide shows where to run the shared Docker stack, how to migrate and seed each application, and how to start only one app when needed.
 
+> Workspace pattern specified in [docs/local-dev-multi-app-spec.md](docs/local-dev-multi-app-spec.md) (shared-infra rules + acceptance criteria for adding future apps).
+
 ## 1. Start everything from the repository root
 
 Run all services:
@@ -76,7 +78,9 @@ Access Swagger UI at: `http://localhost:9001/api/docs`
 
 ---
 
-## 5. Run only one app instead of all
+## 5. Run only one app instead of all (debug-only)
+
+> **Scope note (2026-09-22):** the root-level `docker-compose.yml` (project `loa-platform`) is the canonical stack — see `AGENT.md`. Per-assembly compose files below are **debug-only** (isolated single-app troubleshooting); never run them alongside the root stack (shared host ports collide — see §10).
 
 If you want the full stack but only need one app at a time, start the specific service(s):
 
@@ -232,9 +236,9 @@ docker compose exec cert-app php artisan l5-swagger:generate
 
 ---
 
-## 8. Test structure
+## 8. Test structure (cert example — auth mirrors it)
 
-Tests are located in each app's `tests/` directory:
+Tests live in each app's `tests/` directory (cert currently has ~20 files across `Feature/Api`, `Feature/Web`, `Unit`, `Unit/Services`, plus `Traits/WithJwt.php`; auth mirrors this with `Feature/Api`, `Feature/Web`, `Feature/Seeders`, `Traits/`):
 
 ```
 cert-app/

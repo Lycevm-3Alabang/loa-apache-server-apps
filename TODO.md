@@ -1,5 +1,7 @@
 # TODO — Consult Platform Spec Program
 
+> **DEFERRED 2026-09-22** — Consult work is suspended; focus is Auth + Cert alignment. Body below is the resume plan. **Staleness warning:** the SPEC STATUS table claims `data-model.md` Final v1.0 (hybrid users cache), but the actual file is Draft v1.1 (students/employees first-class) — re-verify every row against the assembly files on resume. Do not implement from this file until reconciled.
+
 **Updated:** 2026-09-19
 **Scope:** `assemblies/loa-consult-platform/` specs, with Auth + Cert as reference/basis.
 **Rule:** No implementation code until the relevant spec `.md` file is Final (AGENT.md Rule 0).

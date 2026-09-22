@@ -522,3 +522,17 @@ The following terminology should be used consistently throughout the platform.
 A shared vocabulary is essential for a shared architecture.
 
 When every architect, engineer, and AI agent uses the same terminology, architectural intent becomes explicit, communication improves, and implementation remains consistent across the platform.
+
+---
+
+# 12. LOA Terms (this repo)
+
+| Term | Meaning |
+|------|---------|
+| Tenant | Client organization in Auth (`tenants.slug`, e.g. `loa-e-cert`, `loa`); scopes groups, grants, redirect origins |
+| Level-based grants | Consumer-app permissions as `<level>:<path>` JWT claims (`read`/`write`/`admin`/`deny`), resolved against a local catalog mirror (`jwt.endpoint`) |
+| Endpoint catalog | Per-tenant registry of `(method, path, required_level)` rows (`tenant-endpoint-catalog.md`) |
+| SSO fragment payload | AES-256-GCM blob delivered as `#payload=` URL fragment from Auth, POSTed to the consumer `auth/callback` for decryption + cookie set |
+| Tenant API key | `tk_...:tsk_...` server-side credential for Auth tenant APIs (`X-Api-Key`); used by Cert invite provisioning |
+| Invite-gated activation | Pending user + single-use set-password token created via `POST /api/v1/tenant/members/invite`; no public registration |
+| `integration/specs/` | Root cross-platform specs (`cert-activation.md`, `cert-activation-invite.md`) — auth ↔ cert flows owned by neither assembly alone |

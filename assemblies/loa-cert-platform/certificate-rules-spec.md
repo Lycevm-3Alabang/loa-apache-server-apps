@@ -104,19 +104,20 @@ The API response includes computed `is_locked` and `locked_reason` fields (not d
 
 Rationale: certificate data contains PII (recipient name, email) and should not be globally visible within the organization.
 
-## 2.2 Current Implementation — GAP
+## 2.2 Current Implementation — IMPLEMENTED (2026-09-22 verification)
 
-**Templates** have a full visibility system (`public`/`private` column, `scopeVisibleTo()`, `isVisibleTo()`, owner checks). **Certificates have NO equivalent.**
+**Templates** have a full visibility system (`public`/`private` column, `scopeVisibleTo()`, `isVisibleTo()`, owner checks). **Certificates enforce owner scoping inline** (no `visibility` column — scoping derives from `recipient_email`, per §2.3 item 4).
 
 | Component | Visibility field | Scope method | Owner check |
 |-----------|-----------------|--------------|-------------|
 | `CertificateTemplate` | `visibility` (`public`/`private`) | `scopeVisibleTo($sub, $groups)` | `isOwnedBy($sub)` via `created_by`/`updated_by` |
-| `Certificate` | **NONE** | **NONE** | **NONE** |
+| `Certificate` | **NONE (by design — §2.3 item 4)** | **inline in `show`/`pdf`/`download`** | **inline: `recipient_email === jwt.email` or `cert-admin`** |
 
-**Current behavior:**
-- `GET /api/v1/certificates` — returns **all** certificates to any user with `read` permission. No filtering by caller identity.
-- `GET /api/v1/certificates/{id}` — returns **any** certificate by ID. No ownership check.
-- `GET /api/v1/me/certificates` — filters by `recipient_email === JWT.email`. This is the **only** owner-scoped certificate endpoint.
+**Current behavior (verified 2026-09-22):**
+- `GET /api/v1/certificates` — returns **all** certificates to any user with `read` permission. No filtering by caller identity (list view, per §2.3 item 3).
+- `GET /api/v1/certificates/{id}` — owner check enforced (`CertificateController::show()`, 403 otherwise). Tested: recipient 200, non-recipient 403, admin 200 (`CertificateTest`).
+- `GET /api/v1/certificates/{id}/pdf`, `/download` — same owner check enforced (403 before 410, so non-recipients cannot probe revoked/expired state). **Behavioral tests pending** — no feature test hits these paths yet.
+- `GET /api/v1/me/certificates` — filters by `recipient_email === JWT.email`. Participant-scoped listing.
 
 The `api-endpoints.md` spec (§5.4, §9.6) declares an **owner rule** for certificate detail/pdf/download endpoints (`jwt.email === certificate.recipient_email`), but this is **not enforced** in `CertificateController::show()`, `pdf()`, or `download()`.
 
@@ -586,8 +587,8 @@ Or via the combined endpoint:
 |---|------|-----|----------|--------|-----------|
 | 1 | Template Locking | No lock check when issuing certificates with a locked `template_id` | Low | Open | — |
 | 2 | Template Locking | `force=true` delete orphans event `template_id` silently | Medium | Open | — |
-| 3 | Certificate Visibility | `CertificateController::show()` has no owner check | **High** | Open | — |
-| 4 | Certificate Visibility | `pdf()` and `download()` have no owner check | **High** | Open | — |
+| 3 | Certificate Visibility | `CertificateController::show()` had no owner check | **High** | **Fixed** | Owner check enforced + tested (recipient 200 / non-recipient 403 / admin 200) |
+| 4 | Certificate Visibility | `pdf()` and `download()` had no owner check | **High** | **Fixed in code, tests pending** | Owner check enforced (403 before 410); feature tests for pdf/download owner matrix still to add |
 | 5 | File Storage | `issueCertificates()` ignores `generation_mode: "file"` | **High** | **Fixed** | Checks `metadata.generation_mode`. Primary: metadata-based. Fallback: disk-based (retained). |
 | 6 | File Storage | `store()` and `bulk()` always generate template PDF | Medium | **Fixed** | Checks `metadata.generation_mode`. Primary: metadata-based. Fallback: disk-based (retained). |
 | 7 | File Storage | No file cleanup on certificate deletion | Low | **Retained** | `destroy()` still cleans up `file_path` from disk (fallback safety). |
@@ -602,7 +603,7 @@ Or via the combined endpoint:
 
 For gaps requiring implementation:
 
-1. **Gap 3+4 (certificate owner check)** — Add `recipient_email` check in `CertificateController::show()`, `pdf()`, `download()`. No migration needed. Add tests.
+1. **Gap 3+4 (certificate owner check)** — **Done in code (verified 2026-09-22).** `show()`, `pdf()`, `download()` enforce the owner check. `show()` covered by tests; pdf/download owner-matrix tests still to add. No migration needed.
 2. **Gap 8 (no duplicate active cert per event+email)** — **Resolved without migration.** MySQL 8.0 InnoDB cannot create a unique index on a generated column referencing a FK column. Constraint already enforced at the application layer in all 4 issuance paths: `store()` (line 258), `bulk()` (line 412), `issueCertificates()` (line 662), and `reissue()` (revokes old before creating new, transactional). No code change needed.
 3. **Gap 5 (uploaded files ignored)** — **Fixed.** `issueCertificates()`, `store()`, and `bulk()` check `metadata['generation_mode']`. Primary path: metadata-based serving (no disk write). Fallback path: disk-based (existing code retained).
 4. **Gap 6 (store/bulk template-only)** — **Fixed.** Both endpoints now support `file` mode via `metadata.generation_mode` check. Primary + fallback paths.
@@ -623,7 +624,7 @@ If metadata-based serving causes issues:
 
 For gaps requiring implementation:
 
-1. **Gap 3+4 (certificate owner check)** — Add `recipient_email` check in `CertificateController::show()`, `pdf()`, `download()`. No migration needed. Add tests.
+1. **Gap 3+4 (certificate owner check)** — **Done in code (verified 2026-09-22).** `show()`, `pdf()`, `download()` enforce the owner check. `show()` covered by tests; pdf/download owner-matrix tests still to add. No migration needed.
 2. **Gap 8 (no duplicate active cert per event+email)** — **Resolved without migration.** MySQL 8.0 InnoDB cannot create a unique index on a generated column referencing a FK column. Constraint already enforced at the application layer in all 4 issuance paths: `store()` (line 258), `bulk()` (line 412), `issueCertificates()` (line 662), and `reissue()` (revokes old before creating new, transactional). No code change needed.
 3. **Gap 5 (uploaded files ignored)** — **Fixed.** `issueCertificates()`, `store()`, and `bulk()` check `metadata['generation_mode']`. Primary path: metadata-based serving (no disk write). Fallback path: disk-based (existing code retained).
 4. **Gap 6 (store/bulk template-only)** — **Fixed.** Both endpoints now support `file` mode via `metadata.generation_mode` check. Primary + fallback paths.
@@ -723,9 +724,9 @@ ALTER TABLE organizations ADD COLUMN website VARCHAR(255) NULL AFTER slug;
 
 Rationale: email recipients do not have JWT tokens. The download link must work from any email client.
 
-## 8.2 Current Implementation
+## 8.2 Current Implementation — IMPLEMENTED (2026-09-22 verification)
 
-`CertificateController::download()` requires `jwt.auth` middleware. No public equivalent exists.
+`CertificateController::download()` requires `jwt.auth` middleware (owner-scoped, §2). The public equivalent exists: `GET /api/v1/public/certificates/{id}/download` in `PublicCertificateController::publicDownload()` (no auth, org-scoped, 404/410 contract per §7.4/§8.3; route outside the `jwt.auth` group).
 
 ## 8.3 Required Behavior (Spec)
 

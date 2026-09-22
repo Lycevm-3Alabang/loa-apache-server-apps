@@ -69,8 +69,9 @@ This rule is enforced in `AGENT.md` (sole entry; detail in `principles.md` / `pl
 
 | Layer | Component | Spec | Status |
 |-------|-----------|------|--------|
-| Service | CORS | `services/cors/README.md` | ✅ Final |
-| Service | API Documentation | `services/api-documentation/README.md` | ✅ Final |
+| Service | QR Code | `services/qrcode/README.md` | ✅ Draft (spec behind code: `QrCodeService::toDataUri` implemented in cert) |
+| Pattern (not a service) | CORS | `platform.md` §15b + per-assembly `config/cors.php` | ✅ Implemented (no service spec — config + gotcha, not a reusable capability) |
+| Pattern (not a service) | API Documentation | Controllers' `#[OA]` attributes + `l5-swagger` | ✅ Implemented (no service spec — doc generation, not a capability) |
 | Service | Database Seeder | `assemblies/loa-auth-platform/database/seeders/seeder-spec.md` | ✅ Final |
 | Assembly | LOA Auth Platform | `assemblies/loa-auth-platform/README.md` | ✅ Scaffolded |
 | Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Final (v1.2 — destination resolution) — implemented |

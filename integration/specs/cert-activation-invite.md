@@ -4,6 +4,8 @@
 **Status:** Final
 **Applies to:** `loa-cert-platform` (issuance), `loa-auth-platform` (invite + token page)
 
+> **Correlation (delta to the joint contract).** Amends `cert-activation.md` §§5–9; implements `user-account-activation.md` for the cert product; extends `tenant-app-api.md` (D1, D2). Owned here so neither assembly restates the other's obligations.
+
 ---
 
 # 1. Purpose

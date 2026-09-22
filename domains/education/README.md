@@ -336,3 +336,13 @@ Every educational application should build upon these Domains rather than redefi
 When introducing a new educational concept, always ask:
 
 > **Does this belong to an existing Education Domain before creating a new one?**
+
+---
+
+# 15. Correlation (independent yet correlated)
+
+Independent: this pack defines educational language — its meaning derives only from the plans in this folder and `kernels/`. The links below point *down* to orchestrators/consumers and are informational only.
+
+- **Composes:** `kernels/identity/` (academic actors authenticate as identity users; referenced, never redefined).
+- **Consumed by:** `business-contexts/consultation/` (academic entities in booking flows), `business-contexts/evaluation/` (subjects, sections, enrollments in evaluation flows), `assemblies/loa-consult-platform/` (academic module — deferred).
+- **Contracts:** none.

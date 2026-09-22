@@ -447,6 +447,7 @@ application-template/
 ├── business-contexts/          # Business Contexts (specs)
 ├── services/                   # Platform Services (specs)
 ├── assemblies/                 # Product Assemblies (specs)
+├── integration/specs/           # Cross-platform specs (cert-activation + delta)
 ├── examples/                   # Worked examples with diagrams
 ├── decisions/                  # Architecture Decision Records
 ├── AGENT.md                    # Sole agent entry (rules + SDD+TDD + gotchas)
@@ -464,6 +465,7 @@ application-template/
 | Document | Purpose |
 |---|---|
 | `AGENT.md` | Sole agent entry: SDD+TDD, rules, code generation guide |
+| `integration/specs/` | Cross-platform specs (cert activation + invite delta) |
 | `principles.md` | Design principles + coding conventions |
 | `dependency-rules.md` | Dependency matrix |
 | `glossary.md` | Architectural terms |
