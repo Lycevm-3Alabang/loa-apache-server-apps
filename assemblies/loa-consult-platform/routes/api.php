@@ -4,6 +4,7 @@ use App\Http\Controllers\AcademicController;
 use App\Http\Controllers\AuthCallbackController;
 use App\Http\Controllers\AuthLogoutController;
 use App\Http\Controllers\AuthRefreshController;
+use App\Http\Controllers\AvailabilityRuleController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\SemesterController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/semesters/count-active', [SemesterController::class, 'countActive']);
     // Everything below requires a valid JWT + endpoint level (§11 Step 7)
     Route::middleware(['jwt.auth', 'jwt.endpoint'])->group(function () {
+        // Availability
+        Route::get('/availability-rules', [AvailabilityRuleController::class, 'index']);
+        Route::post('/availability-rules', [AvailabilityRuleController::class, 'store']);
+
         // Semesters
         Route::get('/semesters', [SemesterController::class, 'index']);
         Route::post('/semesters', [SemesterController::class, 'store']);

@@ -173,6 +173,9 @@ envelope migration without a spec.
   tests. Repairs en route: FK-before-column/unique order + student relink, DDL-builds-on-close guards via
   information_schema, short trio unique (conventional 74 > MySQL 64). Trackers updated.
   **Stopped — B2 (appointment-family tables) needs user yes.**
+- **Current status (2026-09-22) — B2 green pasted.** `000012` (§3.2: appointments + slots + attendees +
+  files + availability rules) + 5 thin models + 3 structure tests. Trackers updated.
+  **Stopped — B3 (availability endpoints) needs user yes.**
 
 ---
 
