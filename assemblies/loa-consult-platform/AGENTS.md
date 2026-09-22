@@ -162,7 +162,7 @@ envelope migration without a spec.
   under `['jwt.auth','jwt.endpoint']` (removed duplicate public `GET /semesters` — catalog rates it gated `read`).
   `tests/Feature/Api/RouteGatingTest.php` — 5 tests (health + count-active public · semesters/admin 401 tokenless ·
   callback reachable with 400). Trackers updated.
-  **Stopped — suite green paste closes the §11 auth-layer port.**
+  **Full suite green pasted 2026-09-22 — §11 auth-layer port COMPLETE. Stopped — next phase needs user yes.**
 - **Current status (2026-09-22) — red-suite triage, fixes landed.** AuthTrio 15 red (unit suites green):
   (A) `000010` sections block dropped never-existing `is_disabled` + re-added existing cols — Type A, fixed to
   `created_by`/`updated_by` only (up + down); (B) suite hit `loa_consult` app DB — phpunit `force` loses to container

@@ -159,7 +159,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
 | `api-endpoints.md` spec | ✅ Final v1.0 | Root spec: conventions, 118-route summary, levels, design decisions |
-| `auth-integration.md` spec | ✅ Final v1.4 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed (config · services · JwtMiddleware · catalog 118+5 · EndpointPolicy · auth trio · gate routes + tests) — Step 7 green pending |
+| `auth-integration.md` spec | ✅ Final v1.4 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed (config · services · JwtMiddleware · catalog 118+5 · EndpointPolicy · auth trio · gate routes + tests) — suite green 2026-09-22, port COMPLETE |
 | `data-model.md` spec | ✅ Final v1.3 | Shape contract (M17/M19/M21/M26/M27/M30/M31); §3 Status gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
 | `endpoints-academic.md` spec | ✅ Final v1.0 | 14 handlers; parent levels corrected (POST/PATCH + impacts → admin) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
@@ -171,7 +171,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | First migration(s) | ✅ Partial 2026-09-19 | `000001-000010` academic (dept→enrollments + audit) exist; §7 baseline delta (follow-up migrations) gates slice build |
 | JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa`, `consult_user`; Unit tests green. **Gated in Step 7** |
 | Permission middleware | ✅ Step 5 done | Cert port verbatim (`consult-endpoints` re-point only, `jwt_claims` confirmed); Unit tests green (public/403/level/catalog-count). **Gates all domain routes since Step 7** |
-| Route gating | ✅ Step 7 landed | `auth/*` public + `throttle:10,1` on callback/refresh; health + count-active public; semesters/admin under `jwt.auth`+`jwt.endpoint`; RouteGatingTest green pending |
+| Route gating | ✅ Step 7 done | `auth/*` public + `throttle:10,1` on callback/refresh; health + count-active public; semesters/admin under `jwt.auth`+`jwt.endpoint`; RouteGatingTest green 2026-09-22 |
 | Appointment model + migrations | ⬜ Not started | |
 | TimeSlot model + migrations | ⬜ Not started | |
 | Attendee model + migrations | ⬜ Not started | |
