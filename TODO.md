@@ -20,7 +20,7 @@
 
 ## AFTER FINAL SPECS (implementation gates)
 
-- [ ] Domain slice B — appointments/academic/semesters (appointments + academic + semesters handlers)
+- [ ] Domain slice B — appointments/academic/semesters — B1 delta migration landed (awaiting suite green): `000011` sections course-link + mappings/semester + enrollments section-links (guarded; slice-C deltas excluded); models converged (Section/FacultySubject/StudentEnrollment fillables + relations); `AcademicDeltaTest` 3 structure tests
 
 - [ ] Domain slice C — evaluations/periods/rubrics/results
 

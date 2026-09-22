@@ -12,9 +12,8 @@ class Section extends Model
 
     protected $fillable = [
         'name',
-        'subject_id',
-        'schedule',
-        'room',
+        'program',
+        'department_course_id',
         'is_active',
     ];
 
@@ -25,9 +24,9 @@ class Section extends Model
         ];
     }
 
-    public function subject(): BelongsTo
+    public function course(): BelongsTo
     {
-        return $this->belongsTo(Subject::class);
+        return $this->belongsTo(DepartmentCourse::class, 'department_course_id');
     }
 
     public function facultySubjects(): HasMany

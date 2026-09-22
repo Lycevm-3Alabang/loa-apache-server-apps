@@ -13,7 +13,9 @@ class StudentEnrollment extends Model
 
     protected $fillable = [
         'student_id',
-        'subject_id',
+        'section_id',
+        'semester_id',
+        'faculty_subject_id',
         'is_active',
     ];
 
@@ -29,8 +31,18 @@ class StudentEnrollment extends Model
         return $this->belongsTo(Student::class, 'student_id');
     }
 
-    public function subject(): BelongsTo
+    public function section(): BelongsTo
     {
-        return $this->belongsTo(Subject::class);
+        return $this->belongsTo(Section::class);
+    }
+
+    public function semester(): BelongsTo
+    {
+        return $this->belongsTo(Semester::class);
+    }
+
+    public function facultySubject(): BelongsTo
+    {
+        return $this->belongsTo(FacultySubject::class);
     }
 }
