@@ -176,6 +176,9 @@ envelope migration without a spec.
 - **Current status (2026-09-22) — B2 green pasted.** `000012` (§3.2: appointments + slots + attendees +
   files + availability rules) + 5 thin models + 3 structure tests. Trackers updated.
   **Stopped — B3 (availability endpoints) needs user yes.**
+- **Current status (2026-09-22) — B3 green pasted.** `AvailabilityRuleController` (groups-claim ownership, forced
+  self, ADMIN-other + fail-soft audit, 400 validation) + gated routes + 10 tests. Trackers updated.
+  **Stopped — B4 (appointments endpoints) needs user yes.**
 
 ---
 
