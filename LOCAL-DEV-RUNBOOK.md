@@ -80,7 +80,7 @@ Access Swagger UI at: `http://localhost:9001/api/docs`
 
 ## 5. Run only one app instead of all (debug-only)
 
-> **Scope note (2026-09-22):** the root-level `docker-compose.yml` (project `loa-platform`) is the canonical stack — see `AGENT.md`. Per-assembly compose files below are **debug-only** (isolated single-app troubleshooting); never run them alongside the root stack (shared host ports collide — see §10).
+> **Scope note (2026-09-22):** the root-level `docker-compose.yml` (project `loa-platform`) is the canonical stack — see `AGENTS.md`. Per-assembly compose files below are **debug-only** (isolated single-app troubleshooting); never run them alongside the root stack (shared host ports collide — see §10).
 
 If you want the full stack but only need one app at a time, start the specific service(s):
 

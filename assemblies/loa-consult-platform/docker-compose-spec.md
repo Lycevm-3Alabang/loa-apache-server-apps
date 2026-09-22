@@ -4,7 +4,7 @@
 **Status:** Final
 **Layer:** Product Assembly (`loa-consult-platform`)
 
-> Adds `consult-*` services to the canonical root stack (`docker-compose.yml`, project `loa-platform`). No assembly-local compose file — ever (`AGENT.md`, `docs/local-dev-multi-app-spec.md`).
+> Adds `consult-*` services to the canonical root stack (`docker-compose.yml`, project `loa-platform`). No assembly-local compose file — ever (`AGENTS.md`, `docs/local-dev-multi-app-spec.md`).
 > Verified against root `docker-compose.yml` (2026-09-19: auth + cert already wired) and `docker/mysql/init.sql`.
 
 ---

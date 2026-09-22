@@ -6,7 +6,7 @@
 **Audience:** Architects, Engineers, AI Development Agents
 
 > Follows `../loa-cert-platform/test-suite.md` as pattern, adapted to Consult.
-> Per `AGENT.md`: the AI agent never runs tests — the USER runs every command below. Suites run sequentially (concurrent runs deadlock the shared test DB).
+> Per `AGENTS.md`: the AI agent never runs tests — the USER runs every command below. Suites run sequentially (concurrent runs deadlock the shared test DB).
 
 ---
 

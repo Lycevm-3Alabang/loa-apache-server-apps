@@ -1,18 +1,20 @@
 # TODO — Consult Platform Spec Program
 
-> **DEFERRED 2026-09-22** — Consult work is suspended; focus is Auth + Cert alignment. Body below is the resume plan. **Staleness warning:** the SPEC STATUS table claims `data-model.md` Final v1.0 (hybrid users cache), but the actual file is Draft v1.1 (students/employees first-class) — re-verify every row against the assembly files on resume. Do not implement from this file until reconciled.
+> **ACTIVE 2026-09-22** — Consult spec program resumed (spec-first); Auth + Cert deferred (working, no changes). Staleness resolved 2026-09-22: SPEC STATUS reconciled against assembly files. Boundary decision: ONE assembly, two contexts (Consultation + Evaluation, no split).
 
-**Updated:** 2026-09-19
+**Updated:** 2026-09-22
 **Scope:** `assemblies/loa-consult-platform/` specs, with Auth + Cert as reference/basis.
-**Rule:** No implementation code until the relevant spec `.md` file is Final (AGENT.md Rule 0).
+**Rule:** No implementation code until the relevant spec `.md` file is Final (AGENTS.md Rule 0).
 
 ---
 
 ## NOW (in progress)
 
-- [ ] Academic module — migrations (departments, department_courses, subjects, sections, semesters, faculty_subjects, student_enrollments) → models → controllers → routes (no auth middleware yet)
+- [x] 2026-09-19 — Academic slice partial — migrations 000001-000009 (departments, department_courses, subjects, sections, students, employees, semesters, faculty_subjects, student_enrollments) + 000010 audit → 9 models → `AcademicController` + `SemesterController` → ~24 routes (no auth middleware yet; stubs pass-through)
 
 - [ ] Auth layer — middleware + controllers per `auth-integration.md` Final v1.2 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`)
+
+- [x] 2026-09-22 — `data-model.md` Draft v1.1 → **Final v1.2** (all carry-forward source-verified: M19 semester columns, M21 enrollment mapping link, M26/M27 subject-level grain, M30/M31 periods; dropped invented `student_sections`; fixed course-linked `sections`; §7 baseline delta filed for slice build)
 
 ---
 
@@ -44,7 +46,7 @@
 |------|---------|--------|--------|
 | `api-endpoints.md` | v1.0 | **Final** | — (root spec) |
 | `auth-integration.md` | v1.2 | **Final** | — (root spec) |
-| `data-model.md` | v1.1 | **Draft** | BLOCKS all implementation (Rule 0) — first-class students/employees, no app_users cache |
+| `data-model.md` | v1.2 | **Final** | — (source-verified vs supabase-schema M17/M19/M21/M26/M27/M30/M31; Owner + no-cross-FK rules) |
 | `endpoints-academic.md` | v1.0 | **Final** | — (build-time carry-forward: repo-only fields, join paths) |
 | `endpoints-appointments.md` | v1.0 | **Final** | — (build-time carry-forward: actor-ownership, Teams sync) |
 | `endpoints-evaluations.md` | v1.0 | **Final** | — (build-time carry-forward: service rules, nested keys) |
@@ -54,11 +56,20 @@
 | `DEPLOY.md` | v0.1 | **Draft** | deployment |
 | `FRONTEND-INTEGRATION.md` | v0.1 | **Draft** | cutover phase |
 | `consult-readiness.md` | v1.0 | **Draft** | auth provisioning — **OUTDATED: says "Laravel assembly is deferred" — no longer true** |
+| `AGENTS.md` (assembly contract) | v1.0 | **Final** | — (working agreements, scaffold, status, spec pointers) |
+| `student.md` / `faculty.md` / `faculty-loading.md` (education domains) | v1.1 | **Final** | — (first-class cache via SSO upsert, FK to domain IDs; unblock data-model Final) |
 
 ---
 
 ## DONE
 
+- [x] 2026-09-22 — `assemblies/loa-consult-platform/AGENTS.md` created (wise_wallet format: 10 working agreements, scaffold, status journal, spec pointer) + referenced from root `AGENTS.md` (exclusive standing contract for consult work)
+- [x] 2026-09-22 — Spec format standard adopted (wise_wallet `06-web-warning-cleanup` shape: metadata + RFC 2119 + Context/Constraints CON-*/Goal DEC-*/ACC-*/Deliverables D-* + Glossary + References); applies to all future consult specs
+- [x] 2026-09-22 — `student.md` / `faculty.md` / `faculty-loading.md` Draft v1.0 → **Final v1.1** (`name`/`email` first-class cache via SSO upsert, Auth promotion optional; loading refs `employees.id` FK, never opaque sub; resolves G6/G7)
+- [x] 2026-09-22 — Boundary decision (ONE assembly, two contexts, no split): no consultation↔evaluation FK, shared academic actors + Auth claims only, events-only correlation; spec hardening list filed (README diagram, Owner column, no-cross-imports, joint history contract)
+- [x] 2026-09-22 — Governance re-check (`AGENTS.md` ↔ `principles.md` ↔ `platform.md`): 8 Type-C findings filed (G1 layer names, G2 automotive template, G3 comms vocab, G4 missing Correlation, G5 stale deferred, G6 app_users, G7 opaque-sub, G8 subject typo)
+- [x] 2026-09-22 — Trackers reconciled: `TODO.md` SPEC STATUS + DONE (struck void `app_users` + `data-model` Final claims), `PROJECT.md` Phase 2 + assembly row, `PROJECT_UPDATES.md` Consult section
+- [x] 2026-09-22 — Auth + Cert spec-vs-code audits (read-only, Type A/B/C filed; Auth 10A/6C, Cert 7A/4B/7C) — DEFERRED after, no implementation
 - [ ] SUPERSEDED 2026-09-22 — `app_users` claim void: no app_users file in database/migrations/ (12 files), grep app_users|AppUser = 0 hits; v1.1 uses students/employees first-class. HealthTest green = health only.
 - [x] 2026-09-19 — `docker-compose-spec.md` Draft v0.1 → **Final v1.0** (verified root stack auth+cert already wired; corrected init.sql §3, added §4 shared secrets sync, §5 port map, §7 scripts reset-all.ps1 update; consult .env `ENCRYPTION_KEY` fixed to match auth)
 - [ ] SUPERSEDED 2026-09-22 — `data-model.md` v1.0 hybrid void; actual file is Draft v1.1 first-class (students/employees, no app_users cache) pending Final.

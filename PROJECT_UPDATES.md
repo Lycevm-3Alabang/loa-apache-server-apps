@@ -15,7 +15,7 @@ Paste this block into the first message of a new session:
 ```
 Read these files IN ORDER and report your understanding of where we left off:
 
-1. AGENT.md        - sole agent entry: SDD+TDD loop, Rule 0, Rule 0.5, No Auto-Pilot
+1. AGENTS.md        - sole agent entry: SDD+TDD loop, Rule 0, Rule 0.5, No Auto-Pilot
 2. principles.md   - SDD+TDD detail + coding rules (authoritative)
 3. platform.md     - LOA architecture + Laravel gotchas
 4. PROJECT.md      - project tracker: status of every layer and phase
@@ -26,7 +26,7 @@ Read these files IN ORDER and report your understanding of where we left off:
 Then:
 - Summarize Done / In Progress / Backlog for the platform in scope
 - Identify the NEXT action item from "Last Session Notes"
-- Do NOT write code until the governing spec is Final (AGENT.md Rule 0)
+- Do NOT write code until the governing spec is Final (AGENTS.md Rule 0)
 ```
 
 ---
@@ -41,13 +41,13 @@ Durable cross-boundary record only. Detail lives in assembly specs; history live
 |----------|--------|
 | App topology | 3 Laravel 12 APIs + 1 Next.js 16 UI (table below) |
 | Domains | All APIs on `*.lyceumalabang.edu.ph`; example emails `@lyceumalabang.edu.ph` |
-| Spec-first + TDD | No code without a Final spec (`AGENT.md` Rule 0); SDD sets the contract, TDD explores/refines it (`principles.md` §2b) |
+| Spec-first + TDD | No code without a Final spec (`AGENTS.md` Rule 0); SDD sets the contract, TDD explores/refines it (`principles.md` §2b) |
 | JWT model | Shared HMAC-SHA256, HS256, `type=access`, local validation — no HTTP per request |
 | Cross-app access | JWT local validation + HTTP (Bearer) user lookup; each app owns its DB |
 | Identity authority | Auth is sole source of truth; apps are consumers (state changes via Auth API) |
 | Permission model | Level-based grants (`<level>:<path>`) per `tenant-group-endpoint-grants.md`, not static keys |
 | Consumer allowlist | `AUTH_ALLOWED_REDIRECTS` + `CORS_ALLOWED_ORIGINS` + tenant `redirect_origins` must include every UI origin (currently `https://e-cert.vercel.app`) |
-| Governance (2026-09-22) | `AGENT.md` is the sole agent entry; `AI-RULES.md`/`AI-GUIDE.md` merged into it (+ `principles.md`/`platform.md`) and removed |
+| Governance (2026-09-22) | `AGENTS.md` is the sole agent entry; `AI-RULES.md`/`AI-GUIDE.md` merged into it (+ `principles.md`/`platform.md`) and removed |
 
 | App | Subdomain | Database | Purpose |
 |-----|-----------|----------|---------|
@@ -76,7 +76,7 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 ### Consult — `assemblies/loa-consult-platform/` (**DEFERRED** by user)
 
 - **Status:** scaffold done (`HealthTest` green) + academic slice partial (9 models/routes, JWT stubs pass-through). No further implementation until data-model Final (Rule 0 tension noted).
-- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.2, 3 endpoint modules Final v1.0, `docker-compose-spec.md` Final v1.0; `data-model.md` Draft v1.1 (first-class, blocks resume), `test-suite.md` + runbooks still Draft.
+- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.2, 3 endpoint modules Final v1.0, `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.2 (source-verified); `test-suite.md` + runbooks still Draft.
 - **Next (when resumed):** promote `data-model.md` v1.1 → Final, re-verify 3 modules vs v1.1, then auth port (middleware+controllers) → slices B/C.
 
 ---
@@ -86,10 +86,10 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 ### Date: 2026-09-22
 
 ### Completed
-- **Governance lean merge:** `AGENT.md` rewritten as sole entry (SDD+TDD loop, Rule 0/0.5, No Auto-Pilot, testing, Laravel gotchas); detail migrated to `principles.md` §2b + `platform.md` §15b; `PROJECT.md` references updated.
+- **Governance lean merge:** `AGENTS.md` rewritten as sole entry (SDD+TDD loop, Rule 0/0.5, No Auto-Pilot, testing, Laravel gotchas); detail migrated to `principles.md` §2b + `platform.md` §15b; `PROJECT.md` references updated.
 - **Scope change:** Consult deferred; focus is Auth + Cert alignment.
 - **This file consolidated:** startup prompt updated (no AI-RULES/AI-GUIDE); per-platform sections cut to Status/Done/Next; verbose history + session log dropped (git history is the archive).
 
 ### Next Action
-- [x] Merge done 2026-09-22: `TODO.md`, `README.md`, `build-your-own-app.md`, auth `SESSION-PROMPT.md` reading lists updated; `AI-RULES.md` + `AI-GUIDE.md` deleted. Remaining `AI-RULES/AI-GUIDE` mentions are historical (assembly Final specs) — rule now lives in `AGENT.md`.
+- [x] Merge done 2026-09-22: `TODO.md`, `README.md`, `build-your-own-app.md`, auth `SESSION-PROMPT.md` reading lists updated; `AI-RULES.md` + `AI-GUIDE.md` deleted. Remaining `AI-RULES/AI-GUIDE` mentions are historical (assembly Final specs) — rule now lives in `AGENTS.md`.
 - [ ] Auth + Cert spec-vs-code alignment (read-only audit findings → Type A/B/C classification per SDD+TDD)

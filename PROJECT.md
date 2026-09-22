@@ -15,7 +15,7 @@
 - Draft spec → complete it first
 - Final spec → code exactly to it
 
-This rule is enforced in `AGENT.md` (sole entry; detail in `principles.md` / `platform.md`). Violations are failures.
+This rule is enforced in `AGENTS.md` (sole entry; detail in `principles.md` / `platform.md`). Violations are failures.
 
 ---
 
@@ -77,7 +77,7 @@ This rule is enforced in `AGENT.md` (sole entry; detail in `principles.md` / `pl
 | Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Final (v1.2 — destination resolution) — implemented |
 | Assembly | LOA Admin Dashboard | `assemblies/loa-auth-platform/admin-dashboard.md` | ✅ Final (v1 + v2 implemented) |
 | Assembly | Access Config Import/Export | `assemblies/loa-auth-platform/access-config-import-export.md` | ✅ Final v1.0 — implemented |
-| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Scaffolded (2026-09-18); data-model Draft v1.1 first-class, 3 endpoint modules Final v1.0, docker-compose-spec Final v1.0 |
+| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Scaffolded (2026-09-18); data-model Final v1.2 source-verified, 3 endpoint modules Final v1.0, docker-compose-spec Final v1.0 |
 | Assembly | LOA Cert Platform | `assemblies/loa-cert-platform/README.md` | ✅ Draft |
 
 ---
@@ -160,14 +160,14 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
 | `api-endpoints.md` spec | ✅ Final v1.0 | Root spec: conventions, 118-route summary, levels, design decisions |
 | `auth-integration.md` spec | ✅ Final v1.2 | SSO contract, cookie, middleware, 14-item port inventory |
-| `data-model.md` spec | ✅ Draft v1.1 | First-class students/employees, FK junctions, no app_users cache; BLOCKS resume (Rule 0) |
+| `data-model.md` spec | ✅ Final v1.2 | Source-verified (M17/M19/M21/M26/M27/M30/M31); first-class students/employees; Owner + no-cross-FK rules; §7 baseline delta filed |
 | `endpoints-academic.md` spec | ✅ Final v1.0 | 14 handlers; parent levels corrected (POST/PATCH + impacts → admin) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
 | `endpoints-evaluations.md` spec | ✅ Final v1.0 | 24 handlers: lifecycle/masking, periods, rubrics, results, dispute mail |
 | `test-suite.md` spec | ✅ Draft v0.1 | MySQL `loa_consult_test`, JWT helper, coverage per module |
 | `docker-compose-spec.md` spec | ✅ Final v1.0 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |
-| First migration(s) | ✅ Partial 2026-09-19 | `000001-000010` academic (dept→enrollments + audit) exist; Rule 0 tension — code before data-model Final |
+| First migration(s) | ✅ Partial 2026-09-19 | `000001-000010` academic (dept→enrollments + audit) exist; §7 baseline delta (follow-up migrations) gates slice build |
 | JWT middleware | ⬜ Stub only | `JwtMiddleware.php` pass-through until cert port per `auth-integration.md` §10; routes unauthenticated |
 | Permission middleware | ⬜ Stub only | `EndpointPolicyMiddleware.php` pass-through; no enforcement |
 | Appointment model + migrations | ⬜ Not started | |
@@ -260,7 +260,7 @@ All JWT validation is local (shared HMAC-SHA256 secret). No HTTP call per reques
 ```
 loa-apache-server-apps/
 ├── PROJECT.md                          # This file
-├── AGENT.md                            # AI agent instructions (sole entry)
+├── AGENTS.md                            # AI agent instructions (sole entry)
 ├── principles.md                       # SDD+TDD + coding rules (authoritative detail)
 ├── platform.md                         # LOA architecture + Laravel gotchas
 ├── dependency-rules.md                 # Dependency matrix
@@ -327,7 +327,7 @@ loa-apache-server-apps/
 | 2026-07-31 | UserGroup model (replaces Role) | Flexible grouping, multi-department support |
 | 2026-07-31 | Department in Education Domain | Education-specific, not a canonical kernel |
 | 2026-07-31 | Spec-first development | Design before code, catch issues early |
-| 2026-07-31 | Specs-before-code is MANDATORY | No code without a Final spec — enforced in AGENT.md (detail: principles.md / platform.md) |
+| 2026-07-31 | Specs-before-code is MANDATORY | No code without a Final spec — enforced in AGENTS.md (detail: principles.md / platform.md) |
 | 2026-07-31 | Identity Kernel v2.0 | Universal grouping, not role-based |
 | 2026-07-31 | Event spec files (15) | Per-event spec under kernels/identity/events/ |
 | 2026-07-31 | Business rule spec files (8) | Per-rule spec under kernels/identity/rules/ |

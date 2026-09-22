@@ -3,7 +3,7 @@
 > This file is the standing contract for any AI agent working in `assemblies/loa-consult-platform/`.
 > It outranks ad-hoc instructions when they conflict. If a request violates
 > Section 1, stop and ask instead of proceeding.
-> Companion rules: root `AGENT.md` (sole entry) + `principles.md` (SDD+TDD detail) + `platform.md` (architecture + gotchas). Change journal: root `TODO.md` + `PROJECT_UPDATES.md`.
+> Companion rules: root `AGENTS.md` (sole entry) + `principles.md` (SDD+TDD detail) + `platform.md` (architecture + gotchas). Change journal: root `TODO.md` + `PROJECT_UPDATES.md`.
 
 ---
 
@@ -89,8 +89,8 @@ assemblies/loa-consult-platform/
 ├── database/seeders/       # DatabaseSeeder (BROKEN: refs missing App\Models\User)
 ├── tests/                  # Feature/Api/HealthTest (1/1 green) + empty Unit
 ├── docker/                 # php/Dockerfile + nginx/default.conf (cert-identical)
-├── *.md specs              # api-endpoints + auth-integration + 3 modules + docker-compose (Final);
-│                           # data-model + test-suite + runbooks (Draft)
+├── *.md specs              # all Final (api-endpoints, auth-integration, 3 modules, docker-compose, data-model);
+│                           # test-suite + runbooks (Draft)
 └── AGENTS.md               # this file
 ```
 
@@ -109,11 +109,11 @@ envelope migration without a spec.
 - **2026-09-19 — Module finals.** `endpoints-academic/appointments/evaluations.md` Draft → Final v1.0;
   `docker-compose-spec.md` → Final v1.0 (root stack wired, `loa_consult` init, secrets sync, `:9002`).
   Academic slice built (9 tables/models/routes). `data-model.md` v1.0 hybrid claim SUPERSEDED by v1.1 first-class Draft.
-- **2026-09-22 — Deferred + governed.** Consult DEFERRED by user; focus Auth + Cert. `AGENT.md` sole entry (lean merge).
+- **2026-09-22 — Deferred + governed.** Consult DEFERRED by user; focus Auth + Cert. `AGENTS.md` sole entry (lean merge).
   Trackers reconciled (`TODO.md` / `PROJECT.md` / `PROJECT_UPDATES.md` match files). Boundary decision: ONE assembly,
   two contexts (no split). `student.md` / `faculty.md` / `faculty-loading.md` Final v1.1 (first-class cache via SSO
   upsert, FK to domain IDs).
-- **2026-09-22 — Assembly contract created.** This `AGENTS.md` (wise_wallet format); referenced from root `AGENT.md`.
+- **2026-09-22 — Assembly contract created.** This `AGENTS.md` (wise_wallet format); referenced from root `AGENTS.md`.
   Spec format standard adopted (§1.9 analogue).
 
 ---
@@ -126,8 +126,8 @@ envelope migration without a spec.
 |---|---|
 | `api-endpoints.md` v1.0 | FINAL — 118 routes, levels, ground truth |
 | `auth-integration.md` v1.2 | FINAL — SSO/JWT/middleware/provisioning |
-| `endpoints-academic/appointments/evaluations.md` v1.0 | FINAL — module contracts (re-verify vs data-model v1.1 on resume) |
+| `endpoints-academic/appointments/evaluations.md` v1.0 | FINAL — module contracts |
 | `docker-compose-spec.md` v1.0 | FINAL — root-stack wiring `:9002` |
-| `data-model.md` v1.1 | DRAFT — blocks resume (Rule 0) |
+| `data-model.md` v1.2 | FINAL — persistence contract, source-verified (M17/M19/M21/M26/M27/M30/M31); §7 baseline delta gates slice build |
 | `test-suite.md` v0.1 | DRAFT — coverage plan |
 | `LOCAL-DEV-RUNBOOK.md` / `DEPLOY.md` / `FRONTEND-INTEGRATION.md` / `consult-readiness.md` | DRAFT / skeletons |

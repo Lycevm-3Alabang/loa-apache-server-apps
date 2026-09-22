@@ -35,7 +35,7 @@ Every architectural decision should increase reuse, reduce coupling, and preserv
 
 # 2b. Specification-First Development + Test-Driven Development (authoritative)
 
-> Merged here 2026-09-22 from `AI-RULES.md` / `AI-GUIDE.md`. `AGENT.md` is the lean entry; this section is the authoritative detail.
+> Merged here 2026-09-22 from `AI-RULES.md` / `AI-GUIDE.md`. `AGENTS.md` is the lean entry; this section is the authoritative detail.
 
 **SDD establishes the current contract. TDD tests that contract against reality and explores its boundaries. Discoveries from TDD refine the specification. The refined specification then drives another TDD cycle.**
 

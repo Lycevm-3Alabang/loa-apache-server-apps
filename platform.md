@@ -554,7 +554,7 @@ No lower-level document may contradict the rules defined in this specification.
 
 # 15b. LOA Platform Notes (merged 2026-09-22 from AI-GUIDE)
 
-> `AGENT.md` is the lean entry; this section holds LOA-specific architecture and gotchas.
+> `AGENTS.md` is the lean entry; this section holds LOA-specific architecture and gotchas.
 
 ## App topology
 
@@ -588,7 +588,7 @@ The folders below are not filing categories. They are **underlying plans of a si
 | Shelf | Question | Folders | Altitude |
 |-------|----------|---------|----------|
 | **Build** (vision made concrete) | What do we build? | `kernels/` → `domains/` → `services/` → `business-contexts/` → `assemblies/` → `integration/` | Ordered by stability: reusable foundations first, deployables last, handshakes between deployables after both sides exist |
-| **Govern** (conduct) | How do we work? | `AGENT.md` → `principles.md` / `platform.md` → `PROJECT.md` → `PROJECT_UPDATES.md` | Entry → rules → status → record. Describes agent behavior, never product behavior |
+| **Govern** (conduct) | How do we work? | `AGENTS.md` → `principles.md` / `platform.md` → `PROJECT.md` → `PROJECT_UPDATES.md` | Entry → rules → status → record. Describes agent behavior, never product behavior |
 | **Operate** (execution) | How does it run? | `docs/`, `SSO-SETUP.md`, `LOCAL-DEV-RUNBOOK.md`, `CLI-COMMANDS.md`, per-assembly `DEPLOY.md` | Human operators + pipelines. Workspace operations: specs + runbooks for running, not building |
 
 Traversing the repo means zooming through the scheme: a task arrives at govern (what are we doing?), descends the build shelf by dependency direction (where does this concept belong?), and lands on operate when it must run somewhere. A file's address should always answer *which plan, at which altitude* — never just *which topic*.

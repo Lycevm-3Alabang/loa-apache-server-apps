@@ -284,7 +284,7 @@ This is **not a code repository**. It is a reference that code repositories use.
 
 Start with:
 
-- `AGENT.md` — Sole agent entry (SDD+TDD, rules, gotchas)
+- `AGENTS.md` — Sole agent entry (SDD+TDD, rules, gotchas)
 - `dependency-rules.md` — Dependency matrix
 - `glossary.md` — Architectural terms
 - `principles.md` — Design principles + coding detail
@@ -300,7 +300,7 @@ Start with:
 
 Start with:
 
-- `AGENT.md` — Contains the SDD+TDD loop, rules, and placement guide
+- `AGENTS.md` — Contains the SDD+TDD loop, rules, and placement guide
 
 ---
 
@@ -450,7 +450,7 @@ application-template/
 ├── integration/specs/           # Cross-platform specs (cert-activation + delta)
 ├── examples/                   # Worked examples with diagrams
 ├── decisions/                  # Architecture Decision Records
-├── AGENT.md                    # Sole agent entry (rules + SDD+TDD + gotchas)
+├── AGENTS.md                    # Sole agent entry (rules + SDD+TDD + gotchas)
 ├── dependency-rules.md         # Dependency matrix
 ├── glossary.md                 # Architectural terms
 ├── platform.md                 # Platform overview
@@ -464,7 +464,7 @@ application-template/
 
 | Document | Purpose |
 |---|---|
-| `AGENT.md` | Sole agent entry: SDD+TDD, rules, code generation guide |
+| `AGENTS.md` | Sole agent entry: SDD+TDD, rules, code generation guide |
 | `integration/specs/` | Cross-platform specs (cert activation + invite delta) |
 | `principles.md` | Design principles + coding conventions |
 | `dependency-rules.md` | Dependency matrix |

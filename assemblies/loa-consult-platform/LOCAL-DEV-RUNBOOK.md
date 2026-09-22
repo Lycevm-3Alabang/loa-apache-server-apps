@@ -64,7 +64,7 @@ FLUSH PRIVILEGES;
 
 ## 4. Common Tasks (once wired)
 
-> Per `AGENT.md`: the AI agent never runs `docker compose` — the USER runs every command below from the repo root. Run test suites sequentially (never overlapping runs — concurrent suites deadlock the shared test DB).
+> Per `AGENTS.md`: the AI agent never runs `docker compose` — the USER runs every command below from the repo root. Run test suites sequentially (never overlapping runs — concurrent suites deadlock the shared test DB).
 
 From the repo root (`loa-apache-server-apps/`):
 
