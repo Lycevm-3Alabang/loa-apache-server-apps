@@ -15,7 +15,7 @@
 - Draft spec → complete it first
 - Final spec → code exactly to it
 
-This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violations are failures.
+This rule is enforced in `AGENT.md` (sole entry; detail in `principles.md` / `platform.md`). Violations are failures.
 
 ---
 
@@ -259,9 +259,9 @@ All JWT validation is local (shared HMAC-SHA256 secret). No HTTP call per reques
 ```
 loa-apache-server-apps/
 ├── PROJECT.md                          # This file
-├── AGENT.md                            # AI agent instructions
-├── AI-GUIDE.md                         # Architecture guide
-├── AI-RULES.md                         # Naming & coding rules
+├── AGENT.md                            # AI agent instructions (sole entry)
+├── principles.md                       # SDD+TDD + coding rules (authoritative detail)
+├── platform.md                         # LOA architecture + Laravel gotchas
 ├── dependency-rules.md                 # Dependency matrix
 ├── kernels/
 │   └── identity/                       # Identity Kernel (v2.0)
@@ -326,7 +326,7 @@ loa-apache-server-apps/
 | 2026-07-31 | UserGroup model (replaces Role) | Flexible grouping, multi-department support |
 | 2026-07-31 | Department in Education Domain | Education-specific, not a canonical kernel |
 | 2026-07-31 | Spec-first development | Design before code, catch issues early |
-| 2026-07-31 | Specs-before-code is MANDATORY | No code without a Final spec — enforced in AGENT.md, AI-GUIDE.md, AI-RULES.md |
+| 2026-07-31 | Specs-before-code is MANDATORY | No code without a Final spec — enforced in AGENT.md (detail: principles.md / platform.md) |
 | 2026-07-31 | Identity Kernel v2.0 | Universal grouping, not role-based |
 | 2026-07-31 | Event spec files (15) | Per-event spec under kernels/identity/events/ |
 | 2026-07-31 | Business rule spec files (8) | Per-rule spec under kernels/identity/rules/ |

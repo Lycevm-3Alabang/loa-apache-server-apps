@@ -2,7 +2,7 @@
 
 **Updated:** 2026-09-19
 **Scope:** `assemblies/loa-consult-platform/` specs, with Auth + Cert as reference/basis.
-**Rule:** No implementation code until the relevant spec `.md` file is Final (AI-RULES.md Rule 0).
+**Rule:** No implementation code until the relevant spec `.md` file is Final (AGENT.md Rule 0).
 
 ---
 

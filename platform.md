@@ -552,6 +552,35 @@ No lower-level document may contradict the rules defined in this specification.
 
 ---
 
+# 15b. LOA Platform Notes (merged 2026-09-22 from AI-GUIDE)
+
+> `AGENT.md` is the lean entry; this section holds LOA-specific architecture and gotchas.
+
+## App topology
+
+| App | Subdomain | Database | Purpose |
+|-----|-----------|----------|---------|
+| Auth | auth.lyceumalabang.edu.ph | loa_auth | JWT service, users, admin dashboard |
+| Consult | aces-api.lyceumalabang.edu.ph | loa_consult | Booking + evaluation |
+| Cert API | cert-api.lyceumalabang.edu.ph | loa_cert | Issuance, verification, PDF/QR/email |
+| e-cert UI | e-cert.vercel.app | — (Vercel) | Next.js consumer of Auth + Cert APIs |
+
+JWT: shared HMAC-SHA256 secret, HS256, `type=access`, local validation, no HTTP per request. Cross-app identity via Auth API / JWT claims only — no shared DB reads. See `PROJECT.md` for live status.
+
+## Laravel assembly scaffolding checklist
+
+All of these must exist or artisan breaks silently: `artisan`, `public/index.php`, `bootstrap/app.php` (NO `providers` array — Laravel 11+ auto-registers), quoted-space `.env`, `config/app.php` (NO `providers` array), `routes/api.php` (must exist even if empty).
+
+## Recurring gotchas (full)
+
+- **`.env` quoting:** quote every value with spaces (`APP_NAME="LOA Cert Platform"`), or dotenv fails to parse.
+- **Apache strips `Authorization` on cPanel:** `public/.htaccess` MUST forward it BEFORE the front-controller rule:
+  `RewriteCond %{HTTP:Authorization} .` + `RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]`. Without it, JWT endpoints 401 in prod while passing locally (Docker uses nginx).
+- **`.env.cpanel` secret parity:** `JWT_SECRET` and `ENCRYPTION_KEY` byte-identical across Auth ↔ consumers; tenant slug must match Auth DB `tenants.slug`. Verify via `php artisan tinker --execute="echo config('jwt.secret');"` post-deploy; never commit secrets.
+- **Layer map for LOA work:** Product Assemblies (`assemblies/`) → Business Contexts (`business-contexts/`) → Industry Domains (`domains/`) → Platform Services (`services/`) → Platform Kernels (`kernels/`). Assemblies contain no business logic; contexts collaborate via events only.
+
+---
+
 # 16. Guiding Principle
 
 The Automotive Business Platform is a platform—not a collection of applications.

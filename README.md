@@ -284,24 +284,23 @@ This is **not a code repository**. It is a reference that code repositories use.
 
 Start with:
 
-- `AI-GUIDE.md` — Architecture and code generation guide
+- `AGENT.md` — Sole agent entry (SDD+TDD, rules, gotchas)
 - `dependency-rules.md` — Dependency matrix
 - `glossary.md` — Architectural terms
-- `principles.md` — Design principles
+- `principles.md` — Design principles + coding detail
 
 ## For Developers
 
 Start with:
 
-- `AI-RULES.md` — Coding conventions
-- `build-your-own-app.md` — Step-by-step assembly guide
+- `principles.md` — Coding conventions + SDD+TDD detail
 - `examples/` — Worked examples with Mermaid diagrams
 
 ## For AI Agents
 
 Start with:
 
-- `AI-GUIDE.md` — Contains the code generation decision tree and placement guide
+- `AGENT.md` — Contains the SDD+TDD loop, rules, and placement guide
 
 ---
 
@@ -450,9 +449,7 @@ application-template/
 ├── assemblies/                 # Product Assemblies (specs)
 ├── examples/                   # Worked examples with diagrams
 ├── decisions/                  # Architecture Decision Records
-├── AI-GUIDE.md                 # Architecture + code generation guide
-├── AI-RULES.md                 # Coding conventions
-├── build-your-own-app.md       # Step-by-step assembly guide
+├── AGENT.md                    # Sole agent entry (rules + SDD+TDD + gotchas)
 ├── dependency-rules.md         # Dependency matrix
 ├── glossary.md                 # Architectural terms
 ├── platform.md                 # Platform overview
@@ -466,9 +463,8 @@ application-template/
 
 | Document | Purpose |
 |---|---|
-| `AI-GUIDE.md` | Architecture + code generation guide |
-| `AI-RULES.md` | Coding conventions |
-| `build-your-own-app.md` | Step-by-step assembly guide |
+| `AGENT.md` | Sole agent entry: SDD+TDD, rules, code generation guide |
+| `principles.md` | Design principles + coding conventions |
 | `dependency-rules.md` | Dependency matrix |
 | `glossary.md` | Architectural terms |
 | `principles.md` | Design principles |

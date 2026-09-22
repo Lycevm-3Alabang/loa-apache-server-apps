@@ -33,6 +33,54 @@ Every architectural decision should increase reuse, reduce coupling, and preserv
 
 ---
 
+# 2b. Specification-First Development + Test-Driven Development (authoritative)
+
+> Merged here 2026-09-22 from `AI-RULES.md` / `AI-GUIDE.md`. `AGENT.md` is the lean entry; this section is the authoritative detail.
+
+**SDD establishes the current contract. TDD tests that contract against reality and explores its boundaries. Discoveries from TDD refine the specification. The refined specification then drives another TDD cycle.**
+
+```text
+Specification first → implementation baseline → TDD exploration → edge-case discovery → specification refinement → continued TDD → verification
+```
+
+## Phase 1 — Specification
+
+Read the Final spec before modifying code. Extract business intent, functional requirements, business rules, acceptance criteria, inputs/outputs, validation rules, error behavior, constraints, security requirements, domain invariants, state transitions, explicit edge cases, explicitly unsupported behavior. Distinguish `Specified behavior vs. Unspecified behavior`. Do not silently invent requirements.
+
+## Phase 2 — Initial Implementation
+
+Implement the minimum behavior to satisfy the spec. No unrelated architectural changes. Initial behavioral contract first (observable examples), without assuming completeness.
+
+## Phase 3 — TDD Exploration (RED → GREEN → REFACTOR)
+
+Challenge the implementation systematically: happy path → boundary → invalid input → duplicate/repeated operation → failure → state transition → rule interaction → concurrency (where relevant) → security (where relevant). Write tests where the behavior matters.
+
+## Phase 4 — Analyze Discoveries
+
+- A. Implementation defect (spec ✓, test ✓, code ✗) → fix the implementation.
+- B. Test defect (spec ✓, test ✗) → fix the test.
+- C. Specification gap (spec incomplete, test exposes undefined behavior) → record the discovery, refine the spec, then implement. Never silently choose behavior.
+- Out-of-scope behavior → leave it out, note it explicitly.
+
+## Phase 5 — Refine the Specification
+
+`TDD discovery → spec update → acceptance criteria update → test update → implementation hardening`. The spec remains the authoritative description of intended behavior.
+
+## Phase 6 — Continue TDD + Verify
+
+Return to RED → GREEN → REFACTOR until behavioral coverage is adequate: happy, boundary, invalid, rule combinations, failure, state, security-sensitive, concurrency-sensitive, regression. Coverage is an outcome, not the objective. Final gate: spec clear, acceptance criteria satisfied, edge cases explored, discoveries documented, unit/integration/acceptance/regression tests green, no invented requirements.
+
+## Coding detail (from merged AI-RULES)
+
+- Constructor injection; no service locator; no static business logic. Depend on contracts (`IRepository`), small focused interfaces.
+- Entities: unique identity, mutable, encapsulate rules, no public setters. Value objects: immutable, compared by value. Aggregates: consistency boundary, reference other aggregates by identity only, publish events on state change, one root.
+- Errors: domain-specific exceptions with meaningful messages; never swallow silently; structured logging (never passwords/cards/PINs). Log levels Trace→Critical.
+- API: nouns + verbs, `/api/v1/...` versioning, statuses 200/201/204/400/401/403/404/500.
+- Migrations: one reversible change each, timestamped names, schema separate from data, rollback plan, production downtime/notify/monitor.
+- Docs: entity specs, event definitions, API contracts, business rules, architecture decisions — markdown, templated, current, with examples.
+
+---
+
 # 3. Architectural Principles
 
 ---

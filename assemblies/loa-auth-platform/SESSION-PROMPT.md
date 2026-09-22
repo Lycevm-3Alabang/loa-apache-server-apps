@@ -17,8 +17,8 @@ Paste this block into the first message of a new session:
 ```
 Read these files IN ORDER and report your understanding of where we left off:
 
-1. AI-RULES.md                       - mandatory spec-first rules (Rule 0: no code without a Final spec)
-2. AI-GUIDE.md                       - architecture + Step 0 (spec check)
+1. AGENT.md                        - sole agent entry (SDD+TDD, Rule 0/0.5, No Auto-Pilot)
+2. principles.md + platform.md      - coding detail + LOA architecture/gotchas
 3. PROJECT.md                        - repo tracker: Phase 1 "Auth Service" = this platform's status
 4. PROJECT_UPDATES.md (root)         - repo-wide cross-boundary tracker: decisions/design/changes per platform
 5. assemblies/loa-auth-platform/README.md   - assembly scope + API surface
@@ -101,5 +101,5 @@ Then:
 | No consumer app code here | Cert/Consult implementations belong to their own assemblies |
 | No direct consumer DB access | Consumer apps own their DB; Auth data is consumed via Auth API / JWT claims only |
 | No business logic in the assembly | Auth Platform wires identity/auth/admin; domain logic lives in `kernels/`, `domains/`, `business-contexts/` |
-| Specs before code, always | No implementation until the governing spec is Final (AI-RULES.md Rule 0) |
-| No auto-pilot | Confirm every significant action with the user (AI-RULES.md §13, AI-GUIDE.md) |
+| Specs before code, always | No implementation until the governing spec is Final (AGENT.md Rule 0) |
+| No auto-pilot | Confirm every significant action with the user (AGENT.md) |
