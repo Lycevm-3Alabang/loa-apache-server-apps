@@ -2,8 +2,8 @@
 
 ## Education Domain Specification
 
-**Version:** 1.0
-**Status:** Draft
+**Version:** 1.1
+**Status:** Final
 **Layer:** Industry Domain
 **Industry Pack:** Education
 **Audience:** Architects, Engineers, AI Development Agents
@@ -123,7 +123,7 @@ The Faculty Loading Domain does not own these relationships.
 - A faculty member can be assigned to teach a subject.
 - A subject can have multiple faculty members (different sections/batches).
 - A faculty member can teach multiple subjects.
-- Assignment references faculty by user_id (opaque Auth sub), not by embedded data.
+- Assignment references faculty by `employees.id` FK (Faculty Domain ID), never by opaque Auth sub or embedded data. Identity is referenced by JWT claims only.
 - Assignment references subject by ID, not by embedded data.
 - Duplicate assignments (same faculty + same subject) are prohibited.
 - Section assignment is separate and loosely coupled (logistical).

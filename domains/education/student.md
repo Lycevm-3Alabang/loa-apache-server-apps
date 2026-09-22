@@ -2,8 +2,8 @@
 
 ## Education Domain Specification
 
-**Version:** 1.0
-**Status:** Draft
+**Version:** 1.1
+**Status:** Final
 **Layer:** Industry Domain
 **Industry Pack:** Education
 **Audience:** Architects, Engineers, AI Development Agents
@@ -41,12 +41,12 @@ The Student Domain is responsible for:
 
 Examples include:
 
-- Student Profile
+- Student Profile (first-class cache: `name`, `email` UNIQUE, upserted from SSO JWT claims on first login; Auth-platform promotion optional by email, same pattern as cert `event_attendees`)
 - Student Number
 - Course Affiliation
 - Student Status
 
-These concepts belong exclusively to the Student Domain.
+These concepts belong exclusively to the Student Domain. Identity Kernel remains the sole authority for authentication; `name`/`email` here are a domain-owned cache for tenant membership, never credentials.
 
 ---
 
@@ -54,7 +54,7 @@ These concepts belong exclusively to the Student Domain.
 
 The Student Domain does not own:
 
-- User identity (name, email) — belongs to Identity Kernel
+- User authentication / credentials — belongs to Identity Kernel (Auth Platform, sole authority for login, tokens, passwords)
 - Subject enrollments — belongs to Enrollment Domain
 - Section assignments — belongs to Section Domain (logistical)
 - Consultations — belongs to Consultation Business Context
@@ -126,8 +126,8 @@ The Student Domain does not own these relationships.
 - Every student has a unique student_number.
 - A student belongs to exactly one course (program).
 - A student may be active or inactive.
-- Student identity (name, email) comes from the Identity Kernel via SSO.
-- A user can be both a student and a faculty (dual role).
+- `name`/`email` are first-class cached attributes (upserted by `email` from SSO JWT claims on login; `email` UNIQUE; domain `*@itmlyceumalabang.onmicrosoft.com`). Identity Kernel is the auth authority, never read via SQL — claims only.
+- A user can be both a student and a faculty (dual role — separate rows in each domain).
 - Student profile is created on first SSO login (email domain: `*@itmlyceumalabang.onmicrosoft.com`).
 
 ---

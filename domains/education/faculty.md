@@ -2,8 +2,8 @@
 
 ## Education Domain Specification
 
-**Version:** 1.0
-**Status:** Draft
+**Version:** 1.1
+**Status:** Final
 **Layer:** Industry Domain
 **Industry Pack:** Education
 **Audience:** Architects, Engineers, AI Development Agents
@@ -41,12 +41,12 @@ The Faculty Domain is responsible for:
 
 Examples include:
 
-- Faculty Profile
+- Faculty Profile (first-class cache: `name`, `email` UNIQUE, upserted from SSO JWT claims on first login; Auth-platform promotion optional by email, same pattern as cert `event_attendees`)
 - Employee Number
 - Department Affiliation
 - Faculty Status
 
-These concepts belong exclusively to the Faculty Domain.
+These concepts belong exclusively to the Faculty Domain. Identity Kernel remains the sole authority for authentication; `name`/`email` here are a domain-owned cache for tenant membership, never credentials.
 
 ---
 
@@ -54,7 +54,7 @@ These concepts belong exclusively to the Faculty Domain.
 
 The Faculty Domain does not own:
 
-- User identity (name, email) — belongs to Identity Kernel
+- User authentication / credentials — belongs to Identity Kernel (Auth Platform, sole authority for login, tokens, passwords)
 - Subject assignments (Faculty Loading) — belongs to Faculty Loading Domain
 - Section scheduling — belongs to Section Domain (logistical)
 - Consultations — belongs to Consultation Business Context
@@ -127,8 +127,8 @@ The Faculty Domain does not own these relationships.
 - Every faculty member has a unique employee_number (nullable — may not be assigned yet).
 - A faculty member belongs to exactly one department.
 - A faculty member may be active or inactive.
-- Faculty identity (name, email) comes from the Identity Kernel via SSO.
-- A user can be both a student and a faculty (dual role).
+- `name`/`email` are first-class cached attributes (upserted by `email` from SSO JWT claims on login; `email` UNIQUE; domain `*@lyceumalabang.edu.ph`). Identity Kernel is the auth authority, never read via SQL — claims only.
+- A user can be both a student and a faculty (dual role — separate rows in each domain).
 - Faculty profile is created on first SSO login (email domain: `*@lyceumalabang.edu.ph`).
 
 ---

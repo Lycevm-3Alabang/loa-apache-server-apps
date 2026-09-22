@@ -77,7 +77,7 @@ This rule is enforced in `AGENT.md` (sole entry; detail in `principles.md` / `pl
 | Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Final (v1.2 — destination resolution) — implemented |
 | Assembly | LOA Admin Dashboard | `assemblies/loa-auth-platform/admin-dashboard.md` | ✅ Final (v1 + v2 implemented) |
 | Assembly | Access Config Import/Export | `assemblies/loa-auth-platform/access-config-import-export.md` | ✅ Final v1.0 — implemented |
-| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Scaffolded + specs drafted (2026-09-18); data-model Draft v0.2, 3 endpoint modules Draft v0.1, docker-compose-spec Draft v0.1 |
+| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Scaffolded (2026-09-18); data-model Draft v1.1 first-class, 3 endpoint modules Final v1.0, docker-compose-spec Final v1.0 |
 | Assembly | LOA Cert Platform | `assemblies/loa-cert-platform/README.md` | ✅ Draft |
 
 ---
@@ -160,16 +160,16 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
 | `api-endpoints.md` spec | ✅ Final v1.0 | Root spec: conventions, 118-route summary, levels, design decisions |
 | `auth-integration.md` spec | ✅ Final v1.2 | SSO contract, cookie, middleware, 14-item port inventory |
-| `data-model.md` spec | ✅ Draft v0.2 | Hybrid users: cache table, no FK relationships, all user-ref = opaque Auth sub TEXT; circular FK eliminated |
-| `endpoints-academic.md` spec | ✅ Draft v0.1 | 14 handlers; parent levels corrected (POST/PATCH + impacts → admin) |
-| `endpoints-appointments.md` spec | ✅ Draft v0.1 | 12 combos: booking model, batch, action dispatch |
-| `endpoints-evaluations.md` spec | ✅ Draft v0.1 | 24 handlers: lifecycle/masking, periods, rubrics, results, dispute mail |
+| `data-model.md` spec | ✅ Draft v1.1 | First-class students/employees, FK junctions, no app_users cache; BLOCKS resume (Rule 0) |
+| `endpoints-academic.md` spec | ✅ Final v1.0 | 14 handlers; parent levels corrected (POST/PATCH + impacts → admin) |
+| `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
+| `endpoints-evaluations.md` spec | ✅ Final v1.0 | 24 handlers: lifecycle/masking, periods, rubrics, results, dispute mail |
 | `test-suite.md` spec | ✅ Draft v0.1 | MySQL `loa_consult_test`, JWT helper, coverage per module |
-| `docker-compose-spec.md` spec | ✅ Draft v0.1 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
+| `docker-compose-spec.md` spec | ✅ Final v1.0 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |
-| First migration(s) | ⬜ Blocked on data-model.md Final | `users` + `departments` (FK-safe per §8); wire compose per `docker-compose-spec.md` |
-| JWT middleware | ⬜ Not started | Validate token from auth app |
-| Permission middleware | ⬜ Not started | Check UserGroup permissions |
+| First migration(s) | ✅ Partial 2026-09-19 | `000001-000010` academic (dept→enrollments + audit) exist; Rule 0 tension — code before data-model Final |
+| JWT middleware | ⬜ Stub only | `JwtMiddleware.php` pass-through until cert port per `auth-integration.md` §10; routes unauthenticated |
+| Permission middleware | ⬜ Stub only | `EndpointPolicyMiddleware.php` pass-through; no enforcement |
 | Appointment model + migrations | ⬜ Not started | |
 | TimeSlot model + migrations | ⬜ Not started | |
 | Attendee model + migrations | ⬜ Not started | |
@@ -178,13 +178,13 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Batch appointment creation | ⬜ Not started | |
 | Conflict detection service | ⬜ Not started | |
 | Accept/decline/complete endpoints | ⬜ Not started | |
-| Semester model + migrations | ⬜ Not started | |
+| Semester model + migrations | ✅ Partial | `Semester.php` + `000007` + `SemesterController` (8 routes) exist; unauthenticated |
 | Rubric models + migrations | ⬜ Not started | |
 | Evaluation model + migrations | ⬜ Not started | |
 | Evaluation endpoints | ⬜ Not started | |
 | Evaluation result computation | ⬜ Not started | |
-| Subject/Section/Enrollment models | ⬜ Not started | |
-| Academic infrastructure endpoints | ⬜ Not started | |
+| Subject/Section/Enrollment models | ✅ Partial | `Subject/Section/StudentEnrollment/Department/DepartmentCourse/Student/Employee/FacultySubject.php` + `000001-000009` exist |
+| Academic infrastructure endpoints | ✅ Partial | `AcademicController` + `admin/*16` routes exist; unauthenticated, no import |
 | Report endpoints (7 types) | ⬜ Deferred to Phase E | No REST routes exist; Server Components compute directly |
 | CSV import | ⬜ Not started | |
 | Email notifications | ⬜ Not started | |

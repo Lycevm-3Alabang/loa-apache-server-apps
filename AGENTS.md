@@ -15,7 +15,7 @@ Specification first → implementation baseline → TDD exploration → edge-cas
 - **Classify discoveries** — A. implementation defect → fix code. B. test defect → fix test. C. spec gap → refine the spec, then code. Never silently choose behavior.
 - **Coverage is an outcome** — happy, boundary, invalid, combinations, failure, state, security, concurrency, regression. Not a percentage.
 
-Detail: `principles.md` (loop, phases, verification gate). Map: `platform.md`. Status: `PROJECT.md`.
+Detail: `principles.md` (loop, phases, verification gate). Map: `platform.md`. Status: `PROJECT.md`. Consult assembly contract: `assemblies/loa-consult-platform/AGENTS.md` (exclusive standing contract for consult work — outranks ad-hoc instructions there).
 
 ## ⛔ MANDATORY: Docker From Repo Root Only — User Runs It
 
@@ -57,4 +57,5 @@ Dependencies point downward only; assemblies hold no business logic; contexts co
 | Architecture + gotchas | `platform.md` |
 | Status + decisions | `PROJECT.md` |
 | Dependencies | `dependency-rules.md` |
+| Consult assembly | `assemblies/loa-consult-platform/AGENTS.md` (exclusive — working agreements, scaffold, status, spec pointers for consult only) |
 | Specs | `kernels/` `domains/` `business-contexts/` `services/` `assemblies/` `integration/specs/` |

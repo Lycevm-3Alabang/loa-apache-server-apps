@@ -75,9 +75,9 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 
 ### Consult — `assemblies/loa-consult-platform/` (**DEFERRED** by user)
 
-- **Status:** scaffold done (`HealthTest` green). No implementation until specs Final.
-- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.2; `data-model.md`, 3 endpoint modules, `docker-compose-spec.md`, `test-suite.md` still Draft.
-- **Next (when resumed):** promote `data-model.md` → Final, promote endpoint modules, first migration → compose wiring.
+- **Status:** scaffold done (`HealthTest` green) + academic slice partial (9 models/routes, JWT stubs pass-through). No further implementation until data-model Final (Rule 0 tension noted).
+- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.2, 3 endpoint modules Final v1.0, `docker-compose-spec.md` Final v1.0; `data-model.md` Draft v1.1 (first-class, blocks resume), `test-suite.md` + runbooks still Draft.
+- **Next (when resumed):** promote `data-model.md` v1.1 → Final, re-verify 3 modules vs v1.1, then auth port (middleware+controllers) → slices B/C.
 
 ---
 

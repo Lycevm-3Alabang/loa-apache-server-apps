@@ -1,0 +1,133 @@
+# AGENTS.md — LOA Consult Platform Agent Contract
+
+> This file is the standing contract for any AI agent working in `assemblies/loa-consult-platform/`.
+> It outranks ad-hoc instructions when they conflict. If a request violates
+> Section 1, stop and ask instead of proceeding.
+> Companion rules: root `AGENT.md` (sole entry) + `principles.md` (SDD+TDD detail) + `platform.md` (architecture + gotchas). Change journal: root `TODO.md` + `PROJECT_UPDATES.md`.
+
+---
+
+## 1. Working agreements (must-follow, moving forward)
+
+1. **Spec-first, no exceptions.** No code, migration, config, or dependency changes without a
+   written spec the user has explicitly marked **Final**. The loop is:
+   discuss → write spec → user approves spec as Final → implement exactly the spec.
+   SDD writes the contract; TDD tests it against reality.
+2. **No auto-pilot.** Never chain beyond what was approved. Finish the approved
+   step, report, and stop. Ask before starting the next phase, even if it seems
+   "obvious."
+3. **Agent does not run CLIs — the user does.** The agent must NEVER execute
+   terminal commands (`docker compose`/`php artisan`/`composer`/`git`/builds/deploys, etc. — even read-only ones). The agent
+   provides the exact commands; the user runs them and pastes back output.
+   Rationale: the user owns the device, build environment, and credentials.
+   Docker runs from repo root only (`loa-platform` project); never an assembly-level compose file.
+4. **No breaking changes unless the finalized spec requires them.** Bare response shapes
+   (`{appointments}`, `{data}`, `{success:true}`, `{error}` — no envelope), route paths under
+   `/api/v1/*`, the `loa_consult` schema, and Auth tenant catalog/grant entries must stay compatible. Any
+   migration must be in the spec with rollback noted.
+5. **Auth invariant.** Every change must keep JWT local validation working (shared HMAC-SHA256 secret,
+   `type=access`, local validation — no HTTP per request) + tenant scoping (`TENANT_SLUG=loa`,
+   token `tenant.slug ≠ loa → 403`) + bare shapes until cutover. Never add local roles; groups come
+   only from the JWT `groups` claim (Auth-owned).
+6. **Keep it cPanel-deployable.** `public/` docroot; `public/.htaccess` MUST forward `Authorization`
+   before the front-controller rule (else gated endpoints 401 in prod while passing locally on nginx);
+   `JWT_SECRET`/`ENCRYPTION_KEY` byte-identical with Auth; tenant slug must match Auth DB. Never commit secrets.
+7. **Keep HealthTest green.** Nothing may break `GET /api/v1/health → {status:ok, service:loa-consult-platform}`.
+   Suites run sequentially only (shared `loa_consult_test` DB deadlocks on concurrent runs). No change is
+   complete until the user pastes green results.
+8. **Document after approved changes.** Update root `TODO.md` (program tracker) + `PROJECT.md` (Phase 2 rows) +
+   `PROJECT_UPDATES.md` (Consult section + Last Session Notes) and append a `Current status` entry in Section 3 below.
+9. **Spec format standard (all future specs).** Every normative spec MUST live
+   as its own file under `assemblies/loa-consult-platform/` (never inline in `AGENTS.md` — §4 is a
+   pointer only) and MUST follow the consult template: metadata table
+   (ID/Title/Status/Owner/Version/Scope/Non-goals/Layer) + RFC 2119 terminology +
+   `Context` + `Constraints` (numbered `CON-*`, MUST/MUST NOT) + `Goal`
+   (decisions `DEC-*`, acceptance `ACC-*`) + `Deliverables` (numbered `D-*`) + `Glossary` + `References`.
+   No normative change via reformat/polish alone.
+10. **Spec-first + TDD with behavioral coverage.** Every future spec MUST separate:
+    - **Objective** — deterministic, machine-checkable (`ACC-*`): statuses, shapes, counts, guards
+      (409/422/403/404), level gates, idempotency.
+    - **Subjective** — human-judged checks stated as observable reviewer steps
+      (e.g. "reviewer confirms admin setup flow completes end-to-end in the UI with no error toast").
+    TDD MUST cover both: `php artisan test` (user-run, request-level over mocks, one behavior per test,
+    `RefreshDatabase`, JWT claims helper — never hardcoded tokens) for logic, plus user-run manual
+    checks (health curl, SSO callback) for paths tests cannot prove. No behavior without a `CON-*` +
+    `ACC-*` + `D-*`.
+
+---
+
+## 2. App overview and scaffold
+
+**What it is:** LOA Consult Platform — consultation booking + faculty evaluation API, Laravel 12 +
+PHP 8.3 + MySQL 8 (`loa_consult`), subdomain `aces-api.lyceumalabang.edu.ph`. **Thin product assembly**:
+owns routing/middleware/JWT-validation/RBAC/docs/deploy only; owns **no business logic**. It answers
+"How do students book consultations and evaluate faculty?"
+
+**Contexts composed (one assembly, two capabilities):** Consultation (appointments, availability, slots,
+attendees, files, PENDING→APPROVED→COMPLETED) + Evaluation (periods, rubrics, ratings, comments, results,
+DRAFT→SUBMITTED) over shared Education domains (Department, Course, Semester, Subject, Section, Enrollment,
+Student, Faculty, Faculty Loading). Logically independent (no consultation↔evaluation FK; correlation via
+events only); single deployable sharing academic actors + Auth claims.
+
+**Features:** SSO trio (callback/refresh/logout, `loa_connect_refresh` cookie) · `jwt.auth` + `jwt.endpoint`
+level gates · appointments CRUD-lite + batch + action dispatch + files (base64, owner rule) + Teams sync ·
+availability rules · academic CRUD + semesters + impacts/count-active · evaluation lifecycle + 404-masking +
+ratings/comments + rubric seed/lock + lazy `computeAll` results · audit logs · (deferred: admin+import contracts,
+Phase E reports, cutover).
+
+**Scaffold:**
+
+```
+assemblies/loa-consult-platform/
+├── app/Http/Controllers/   # Health, Semester, Academic (Appointment/Availability/Evaluation/Auth = slices B/C)
+├── app/Http/Middleware/    # JwtMiddleware + EndpointPolicyMiddleware (stubs until cert port)
+├── app/Models/ (9)         # Department, DepartmentCourse, Subject, Section, Student, Employee,
+│                           # Semester, FacultySubject, StudentEnrollment
+├── routes/api.php          # v1 + health + semesters*8 + admin/*16 (~24 routes)
+├── config/                 # stock Laravel (jwt/auth-platform/consult-*.php pending per auth-integration §5)
+├── database/migrations/    # cache/jobs + 000001-000009 academic + 000010 audit
+├── database/seeders/       # DatabaseSeeder (BROKEN: refs missing App\Models\User)
+├── tests/                  # Feature/Api/HealthTest (1/1 green) + empty Unit
+├── docker/                 # php/Dockerfile + nginx/default.conf (cert-identical)
+├── *.md specs              # api-endpoints + auth-integration + 3 modules + docker-compose (Final);
+│                           # data-model + test-suite + runbooks (Draft)
+└── AGENTS.md               # this file
+```
+
+**Architecture notes:** Eloquent models stay thin persistence (fillable/casts/relations, `HasUuids`, zero logic);
+rules live in FormRequests/controllers/services + model events. Contexts never import each other; both may import
+Academic. Identity referenced by JWT claims only — no Auth DB reads. Bare shapes preserved until cutover; no
+envelope migration without a spec.
+
+---
+
+## 3. Current status (historical tracking — append newest at bottom)
+
+- **2026-09-18 — Scaffold + specs.** Laravel 12.12 via composer (PHP 8.3 pinned), swagger + phpunit 12,
+  `HealthTest` green in Docker. Endpoint inventory: 112 `route.ts` files (~142 combos; 118 migrating + 5 public/SSO).
+  `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.2, module drafts, runbook/test-suite/docker drafts.
+- **2026-09-19 — Module finals.** `endpoints-academic/appointments/evaluations.md` Draft → Final v1.0;
+  `docker-compose-spec.md` → Final v1.0 (root stack wired, `loa_consult` init, secrets sync, `:9002`).
+  Academic slice built (9 tables/models/routes). `data-model.md` v1.0 hybrid claim SUPERSEDED by v1.1 first-class Draft.
+- **2026-09-22 — Deferred + governed.** Consult DEFERRED by user; focus Auth + Cert. `AGENT.md` sole entry (lean merge).
+  Trackers reconciled (`TODO.md` / `PROJECT.md` / `PROJECT_UPDATES.md` match files). Boundary decision: ONE assembly,
+  two contexts (no split). `student.md` / `faculty.md` / `faculty-loading.md` Final v1.1 (first-class cache via SSO
+  upsert, FK to domain IDs).
+- **2026-09-22 — Assembly contract created.** This `AGENTS.md` (wise_wallet format); referenced from root `AGENT.md`.
+  Spec format standard adopted (§1.9 analogue).
+
+---
+
+## 4. Specs (pointer only)
+
+**Normative text lives in the assembly `*.md` files; implement exactly those. This section is a pointer only.**
+
+| Spec | Status |
+|---|---|
+| `api-endpoints.md` v1.0 | FINAL — 118 routes, levels, ground truth |
+| `auth-integration.md` v1.2 | FINAL — SSO/JWT/middleware/provisioning |
+| `endpoints-academic/appointments/evaluations.md` v1.0 | FINAL — module contracts (re-verify vs data-model v1.1 on resume) |
+| `docker-compose-spec.md` v1.0 | FINAL — root-stack wiring `:9002` |
+| `data-model.md` v1.1 | DRAFT — blocks resume (Rule 0) |
+| `test-suite.md` v0.1 | DRAFT — coverage plan |
+| `LOCAL-DEV-RUNBOOK.md` / `DEPLOY.md` / `FRONTEND-INTEGRATION.md` / `consult-readiness.md` | DRAFT / skeletons |
