@@ -511,7 +511,7 @@ Before the consult app can integrate, the Auth Platform must:
 | Refresh cookie | `loa_cert_refresh` | `loa_connect_refresh` |
 | Endpoint catalog size | 48 endpoints | ~130 endpoints |
 | RBAC | EndpointPolicyMiddleware (Laravel) | EndpointPolicyMiddleware (Laravel) |
-| User store | None local | Local `loa_consult` (see `data-model.md` v1.2) |
+| User store | None local | Local `loa_consult` (see `data-model.md` v1.3) |
 
 ---
 
@@ -587,7 +587,7 @@ After setup, verify:
 
 # 13. Cross-References (historical)
 
-Normative ownership: **`assemblies/loa-consult-platform/` only** (this doc + `auth-integration.md` Final v1.4 + `api-endpoints.md` Final v1.0 + `data-model.md` Final v1.2). Nothing outside the assembly redefines consult auth behavior.
+Normative ownership: **`assemblies/loa-consult-platform/` only** (this doc + `auth-integration.md` Final v1.4 + `api-endpoints.md` Final v1.0 + `data-model.md` Final v1.3). Nothing outside the assembly redefines consult auth behavior.
 
 Historical pointers (legacy e-consultation repo, `D:\loa\e-consultation\specs/` — **no sync duty**, may be stale):
 
@@ -605,8 +605,8 @@ Historical pointers (legacy e-consultation repo, `D:\loa\e-consultation\specs/` 
 
 - **Status:** Draft v1.2
 - **Created:** 2026-08-24
-- **Updated:** 2026-09-22 — v1.2: §9 rewritten (no `app_users`; first-class `students`/`employees` upsert per `data-model.md` Final v1.2; Auth Platform = sole identity authority); §10 `app_users.role` marked legacy Next.js source only; §13 cross-repo sync duty removed — normative = assembly only, e-consultation specs historical
+- **Updated:** 2026-09-22 — v1.2: §9 rewritten (no `app_users`; first-class `students`/`employees` upsert per `data-model.md` Final v1.3; Auth Platform = sole identity authority); §10 `app_users.role` marked legacy Next.js source only; §13 cross-repo sync duty removed — normative = assembly only, e-consultation specs historical
 - **Prior (2026-09-22) — v1.1:** removed false "Laravel assembly is deferred" claim; architecture corrected (Laravel assembly active); §3–§4 marked historical/superseded by `auth-integration.md`; §8 table aligned to Laravel backend
 - **Source:** e-consultation app analysis (`D:\loa\e-consultation`)
-- **Cross-references:** `D:\loa\e-consultation\specs/` (3 legacy files — historical, no sync), `assemblies/loa-consult-platform/auth-integration.md` Final v1.4 (normative), `data-model.md` Final v1.2
+- **Cross-references:** `D:\loa\e-consultation\specs/` (3 legacy files — historical, no sync), `assemblies/loa-consult-platform/auth-integration.md` Final v1.4 (normative), `data-model.md` Final v1.3
 - **Supersedes:** None

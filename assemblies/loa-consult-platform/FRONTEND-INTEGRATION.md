@@ -60,7 +60,7 @@ NEXT_PUBLIC_CONSULT_TENANT_SLUG=loa
 |-----|--------|
 | `api-endpoints.md` | Final v1.0 |
 | `auth-integration.md` | Final v1.4 |
-| `data-model.md` | Final v1.2 |
+| `data-model.md` | Final v1.3 |
 | `endpoints-academic.md`, `endpoints-appointments.md`, `endpoints-evaluations.md` | Final v1.0 |
 | `test-suite.md`, `LOCAL-DEV-RUNBOOK.md`, `DEPLOY.md` | Draft v0.1 |
 

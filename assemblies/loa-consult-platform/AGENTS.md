@@ -125,13 +125,15 @@ envelope migration without a spec.
   landing added; re-promotion to Final gates code per Rule 0). Trackers updated.
 - **2026-09-22 — v1.4 re-Final + Step 1 config.** User approved §11 → Final v1.4. Landed `config/jwt.php` +
   `config/auth-platform.php` (verbatim cert) + `config/consult-platform.php` (tenant_slug=loa, loa_connect_refresh,
-  cert-only keys dropped) + `phpunit.xml.dist` test secrets (JWT/encryption/tenant/cookie). HealthTest paste pending.
-- **Current status (2026-09-22) — Phase 0 data-model v1.3.** User approved Option A (“okay” = Final v1.3):
-  `data-model.md` v1.2 → **Final v1.3** — banner (Final = shape ≠ codeable), §3 Status legend + column
-  (6 Implemented / 3 Delta pending / 17 Specified—not migrated incl. `audit_logs`/`bug_reports`), §7 authority note;
-  no shape changes. §4 pointer updated. Trackers reconciled (TODO / PROJECT / PROJECT_UPDATES). Next: Phase 1
-  HealthTest paste (close Step 1) → Phase 2 full services trio per §11 (AuditLogger residual: no model/table until
-  later slice — flag at step 6).
+  cert-only keys dropped) + `phpunit.xml.dist` test secrets (JWT/encryption/tenant/cookie).
+- **Current status (2026-09-22) — Phase 0 + Steps 1–2 complete.** `data-model.md` v1.2 → **Final v1.3**
+  (Option A, user-approved): Final = shape ≠ codeable; §3 Status legend + column (6 Implemented / 3 Delta pending /
+  17 Specified—not migrated incl. `audit_logs`/`bug_reports`); §7 authority note; no shape changes; §4 pointer updated.
+  Step 1 HealthTest green pasted. Step 2 full services trio landed verbatim cert →
+  `app/Services/{JWTService,EncryptionService,AuditLogger}.php` (content match; hash diff = CRLF only); HealthTest
+  green pasted. Residual: `AuditLogger` uncallable (no model/table; cert org-FK/`source`/`entity_*` vs `data-model`
+  L109) — **open at Step 6** (class-C). Trackers reconciled (TODO / PROJECT / PROJECT_UPDATES).
+  **Stopped — Step 3 (`JwtMiddleware`) not started; needs user yes.**
 
 ---
 
@@ -142,7 +144,7 @@ envelope migration without a spec.
 | Spec | Status |
 |---|---|
 | `api-endpoints.md` v1.0 | FINAL — 118 routes, levels, ground truth |
-| `auth-integration.md` v1.4 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Step 1 config ✓) |
+| `auth-integration.md` v1.4 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Step 1 config ✓ HealthTest green; Step 2 services trio ✓ HealthTest green) |
 | `endpoints-academic/appointments/evaluations.md` v1.0 | FINAL — module contracts |
 | `docker-compose-spec.md` v1.0 | FINAL — root-stack wiring `:9002` |
 | `data-model.md` v1.3 | FINAL — shape contract (source-verified M17/M19/M21/M26/M27/M30/M31); §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |

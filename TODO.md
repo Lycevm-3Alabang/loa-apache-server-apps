@@ -12,7 +12,7 @@
 
 - [x] 2026-09-19 — Academic slice partial — migrations 000001-000009 (departments, department_courses, subjects, sections, students, employees, semesters, faculty_subjects, student_enrollments) + 000010 audit → 9 models → `AcademicController` + `SemesterController` → ~24 routes (no auth middleware yet; stubs pass-through)
 
-- [ ] Auth layer — middleware + controllers per `auth-integration.md` Final v1.4 §10–§11 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`) — Step 1 config ✓; Step 2+ next
+- [ ] Auth layer — middleware + controllers per `auth-integration.md` Final v1.4 §10–§11 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`) — Step 1 config ✓ HealthTest green; Step 2 services trio ✓ HealthTest green; Step 3+ next
 
 - [x] 2026-09-22 — `data-model.md` Final v1.2 → **Final v1.3** (Option A status split, user-approved): Final = shape contract only; §3 Status legend + column (6 Implemented / 3 Delta pending / 17 Specified—not migrated, incl. `audit_logs`/`bug_reports`); §7 implementability authority; no shape changes
 
@@ -45,7 +45,7 @@
 | Spec | Version | Status | Blocks |
 |------|---------|--------|--------|
 | `api-endpoints.md` | v1.0 | **Final** | — (root spec) |
-| `auth-integration.md` | v1.4 | **Final** | §11 port plan (user-approved Final 2026-09-22); gates auth-layer code; Step 1 config trio landed |
+| `auth-integration.md` | v1.4 | **Final** | §11 port plan (user-approved Final 2026-09-22); gates auth-layer code; Step 1 config ✓ + Step 2 services trio landed (HealthTest green both) |
 | `data-model.md` | v1.3 | **Final** | — (shape contract; §3 Status gates implementability: 6 Implemented / 3 Delta pending / 17 Specified—not migrated; source-verified M17/M19/M21/M26/M27/M30/M31) |
 | `endpoints-academic.md` | v1.0 | **Final** | — (build-time carry-forward: repo-only fields, join paths) |
 | `endpoints-appointments.md` | v1.0 | **Final** | — (build-time carry-forward: actor-ownership, Teams sync) |
@@ -63,8 +63,10 @@
 
 ## DONE
 
+- [x] 2026-09-22 — **Phase 1 closed:** Step 1 HealthTest green pasted (config trio verified)
+- [x] 2026-09-22 — **Phase 2** Step 2 **services trio** landed verbatim cert → consult: `app/Services/{JWTService,EncryptionService,AuditLogger}.php` — HealthTest green pasted. Residual: `AuditLogger` uncallable (no `App\Models\AuditLog`, no `audit_logs` table; cert `organization_id` vs `data-model` L109 shape) — **open at Step 6**, not Step 2
 - [x] 2026-09-22 — **Phase 0** `data-model.md` v1.2 → **Final v1.3** (Option A, user-approved “okay”): Status banner/legend/column; 6/3/17 split; §7 authority note; assembly AGENTS §4 pointer updated; no shape changes; trackers reconciled
-- [x] 2026-09-22 — `auth-integration.md` §11 approved → **Final v1.4**; **Step 1 config trio** landed (`jwt.php`, `auth-platform.php` verbatim; `consult-platform.php` renamed keys; `phpunit.xml.dist` test secrets added) — HealthTest paste pending
+- [x] 2026-09-22 — `auth-integration.md` §11 approved → **Final v1.4**; **Step 1 config trio** landed (`jwt.php`, `auth-platform.php` verbatim; `consult-platform.php` renamed keys; `phpunit.xml.dist` test secrets added)
 - [x] 2026-09-22 — Port plan filed in spec (user): `auth-integration.md` v1.3 Final → **v1.4 Draft** (§11 sequenced landing added); re-promotion to Final gates code per Rule 0
 - [x] 2026-09-22 — Review pass: fixed internal `auth-integration.md` version refs (consult-readiness §1, LOCAL-DEV-RUNBOOK, FRONTEND-INTEGRATION → v1.3; runbook data-model → Final v1.2); cleared education-domain deferred marker
 - [x] 2026-09-22 — Identity ownership decision (user): students/employees correct; `app_users` mirrored/duplicated Auth + Identity Kernel → Classification C. `auth-integration.md` Final v1.2 → **v1.3** (§7/§10 #3: first-class upsert; Auth Platform = sole identity authority); `consult-readiness.md` Draft v1.1 → **v1.2** (§9 rewrite, §10 legacy-clarify, §13 cross-repo sync removed — normative = assembly only); `dependency-rules.md` consult-deferred markers cleared; trackers reconciled

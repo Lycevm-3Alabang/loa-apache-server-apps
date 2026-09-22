@@ -111,4 +111,4 @@ Follow the cert pattern: dedicated `loa_consult_test` database for phpunit (neve
 - [Multi-app spec](../../docs/local-dev-multi-app-spec.md) (shared-infra rules + acceptance criteria)
 - [MySQL init](../../docker/mysql/init.sql) (`loa_consult` lines added at wiring time)
 - [Auth runbook](../loa-auth-platform/LOCAL-DEV-RUNBOOK.md) · [Cert runbook](../loa-cert-platform/LOCAL-DEV-RUNBOOK.md)
-- [API Endpoints](api-endpoints.md) (Final v1.0) · [Auth Integration](auth-integration.md) (Final v1.4) · [Data Model](data-model.md) (Final v1.2)
+- [API Endpoints](api-endpoints.md) (Final v1.0) · [Auth Integration](auth-integration.md) (Final v1.4) · [Data Model](data-model.md) (Final v1.3)
