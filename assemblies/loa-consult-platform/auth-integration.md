@@ -172,4 +172,4 @@ DO NOT PORT: `AuthProxyController.php` (deferred with the `/service/*` decision,
 
 - **Status:** Final v1.4 (history: v1.0 promoted 2026-09-18; v1.1 §10 port inventory; v1.2 group-wording; v1.3 §7/§10 #3 no-`app_users`; v1.4 §11 port plan — user-approved Final 2026-09-22, gates Step 1+)
 - **Created:** 2026-09-18
-- **Next:** auth-layer port per §10–§11 (Step 1 config ✓ HealthTest green; Step 2 services trio ✓ HealthTest green; Step 3 `JwtMiddleware` next — awaiting user yes)
+- **Next:** auth-layer port per §10–§11 (Steps 1–3 ✓ suite green; Step 4 `config/consult-endpoints.php` catalog next — awaiting user yes)

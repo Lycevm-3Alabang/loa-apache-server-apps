@@ -159,7 +159,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
 | `api-endpoints.md` spec | ✅ Final v1.0 | Root spec: conventions, 118-route summary, levels, design decisions |
-| `auth-integration.md` spec | ✅ Final v1.4 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 port plan; Step 1 config + Step 2 services trio landed (HealthTest green) |
+| `auth-integration.md` spec | ✅ Final v1.4 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–3 landed (config · services · JwtMiddleware + Unit tests) — suite green |
 | `data-model.md` spec | ✅ Final v1.3 | Shape contract (M17/M19/M21/M26/M27/M30/M31); §3 Status gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
 | `endpoints-academic.md` spec | ✅ Final v1.0 | 14 handlers; parent levels corrected (POST/PATCH + impacts → admin) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
@@ -169,7 +169,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |
 | `consult-readiness.md` spec | ✅ Draft v1.2 | Auth provisioning checklist; Laravel assembly active; no `app_users` (students/employees per data-model v1.2) |
 | First migration(s) | ✅ Partial 2026-09-19 | `000001-000010` academic (dept→enrollments + audit) exist; §7 baseline delta (follow-up migrations) gates slice build |
-| JWT middleware | ⬜ Stub only | `JwtMiddleware.php` pass-through until cert port per `auth-integration.md` §10; routes unauthenticated |
+| JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa`, `consult_user`; Unit tests green. **Routes still ungated until Step 7** |
 | Permission middleware | ⬜ Stub only | `EndpointPolicyMiddleware.php` pass-through; no enforcement |
 | Appointment model + migrations | ⬜ Not started | |
 | TimeSlot model + migrations | ⬜ Not started | |
@@ -354,3 +354,4 @@ loa-apache-server-apps/
 | 2026-09-22 | Consult: no `app_users` — students/employees first-class | User decision: `app_users` duplicated Auth + Identity Kernel; `auth-integration.md` v1.3 §7/§10 + `consult-readiness.md` v1.2 §9 aligned to `data-model.md` Final v1.3; Auth Platform = sole identity authority |
 | 2026-09-22 | Consult: `data-model.md` Final = shape ≠ codeable | User decision (Option A): §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); `audit_logs` not codeable until migration lands |
 | 2026-09-22 | Consult: Step 2 services trio landed | `JWTService`/`EncryptionService`/`AuditLogger` verbatim from cert; HealthTest green. `AuditLogger` residual (no model/table, org-FK vs L109) opens at Step 6 |
+| 2026-09-22 | Consult: Step 3 JwtMiddleware landed | Cert port with consult re-points only; 401/403 shapes verbatim; Unit tests green. Routes remain open until Step 7 gate |

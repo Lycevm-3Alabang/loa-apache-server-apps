@@ -12,7 +12,8 @@
 
 - [ ] Auth endpoints (`POST /api/v1/auth/callback|refresh|logout`) — spec Final (`auth-integration.md`), not built
 - [ ] Domain endpoints (`api-endpoints.md` Final v1.0) — not built
-- [ ] `jwt.auth` + `jwt.endpoint` middleware — not built
+- [x] `jwt.auth` middleware — Step 3 done (unit-tested; routes gated at Step 7)
+- [ ] `jwt.endpoint` middleware — not built (Step 5)
 - [ ] Config (`jwt.php`, `auth-platform.php`, `consult-platform.php`, `consult-endpoints.php`) — not built
 
 ## What the Frontend Builds at Cutover (TODO each)

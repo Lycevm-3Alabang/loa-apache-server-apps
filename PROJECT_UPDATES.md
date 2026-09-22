@@ -77,8 +77,8 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 ### Consult — `assemblies/loa-consult-platform/` (spec program **ACTIVE** 2026-09-22)
 
 - **Status:** scaffold done (`HealthTest` green) + academic slice partial (9 models/routes, JWT stubs pass-through). Spec program resumed 2026-09-22 (spec-first); next implementation = auth layer (middleware + SSO trio).
-- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.4 (§11; Step 1 config + Step 2 services trio landed, HealthTest green), 3 endpoint modules Final v1.0, `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.3 (shape contract + §3 Status implementability gate: 6/3/17); `consult-readiness.md` Draft v1.2; `test-suite.md` + runbooks still Draft.
-- **Next:** Step 3 `JwtMiddleware` (replace stub) per `auth-integration.md` §11 — needs user yes; then catalog → EndpointPolicy → auth controllers → gate routes → slices B/C. Step 6 must resolve `AuditLogger` vs `data-model` L109 (class C) before callback audit writes.
+- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.4 (§11 Steps 1–3 landed: config · services trio · JwtMiddleware — suite green), 3 endpoint modules Final v1.0, `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.3 (shape contract + §3 Status gate 6/3/17); `consult-readiness.md` Draft v1.2; `test-suite.md` + runbooks still Draft.
+- **Next:** Step 4 catalog `config/consult-endpoints.php` from `api-endpoints.md` §5 — needs user yes; then EndpointPolicy → auth controllers → gate routes. Step 6 must resolve `AuditLogger` vs `data-model` L109 (class C) before callback audit writes. Routes still ungated until Step 7.
 
 ---
 
@@ -89,7 +89,7 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 ### Completed
 - **Governance lean merge:** `AGENTS.md` rewritten as sole entry (SDD+TDD loop, Rule 0/0.5, No Auto-Pilot, testing, Laravel gotchas); detail migrated to `principles.md` §2b + `platform.md` §15b; `PROJECT.md` references updated.
 - **Scope change (earlier same day):** Consult deferred; focus is Auth + Cert alignment — **superseded:** Consult spec program resumed 2026-09-22 (see TODO ACTIVE banner).
-- **Last Session Notes (2026-09-22):** `data-model.md` → **Final v1.3** (Option A Status gate). **Step 1** HealthTest green; **Step 2** full services trio landed verbatim + HealthTest green. `AuditLogger` residual (no model/table; cert shape vs L109) held for Step 6. Stopped before Step 3 — awaiting user yes.
+- **Last Session Notes (2026-09-22):** `data-model.md` → **Final v1.3**. Steps 1–3 complete (config · services trio · JwtMiddleware) — **full suite green**. Routes still open until Step 7. `AuditLogger` residual held for Step 6. Stopped before Step 4 (catalog) — awaiting user yes.
 - **Consult readiness/identity fix pass:** `consult-readiness.md` v1.0 → v1.2 (false deferred-claim removed; Laravel assembly active; §9/§10 no `app_users`); `auth-integration.md` Final v1.2 → v1.3 (students/employees first-class; Auth Platform = sole identity authority per user decision); trackers reconciled.
 - **This file consolidated:** startup prompt updated (no AI-RULES/AI-GUIDE); per-platform sections cut to Status/Done/Next; verbose history + session log dropped (git history is the archive).
 

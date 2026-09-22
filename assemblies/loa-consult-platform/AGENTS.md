@@ -80,7 +80,7 @@ Phase E reports, cutover).
 ```
 assemblies/loa-consult-platform/
 ├── app/Http/Controllers/   # Health, Semester, Academic (Appointment/Availability/Evaluation/Auth = slices B/C)
-├── app/Http/Middleware/    # JwtMiddleware + EndpointPolicyMiddleware (stubs until cert port)
+├── app/Http/Middleware/    # JwtMiddleware (ported ✓ Step 3) + EndpointPolicyMiddleware (stub until Step 5)
 ├── app/Models/ (9)         # Department, DepartmentCourse, Subject, Section, Student, Employee,
 │                           # Semester, FacultySubject, StudentEnrollment
 ├── routes/api.php          # v1 + health + semesters*8 + admin/*16 (~24 routes)
@@ -134,6 +134,11 @@ envelope migration without a spec.
   green pasted. Residual: `AuditLogger` uncallable (no model/table; cert org-FK/`source`/`entity_*` vs `data-model`
   L109) — **open at Step 6** (class-C). Trackers reconciled (TODO / PROJECT / PROJECT_UPDATES).
   **Stopped — Step 3 (`JwtMiddleware`) not started; needs user yes.**
+- **Current status (2026-09-22) — Step 3 complete.** `JwtMiddleware` stub → cert port (only deltas:
+  `consult-platform.tenant_slug` default `loa`, `consult_user` attr); error shapes verbatim (401 missing/invalid,
+  403 tenant_mismatch). `tests/Unit/JwtMiddlewareTest.php` — 6 tests (valid passes · 401 missing · invalid ·
+  expired · wrong-type · 403 tenant mismatch). **Full suite green pasted.** Routes still ungated (Step 7).
+  Trackers updated. **Stopped — Step 4 (`config/consult-endpoints.php` catalog) not started; needs user yes.**
 
 ---
 
@@ -144,7 +149,7 @@ envelope migration without a spec.
 | Spec | Status |
 |---|---|
 | `api-endpoints.md` v1.0 | FINAL — 118 routes, levels, ground truth |
-| `auth-integration.md` v1.4 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Step 1 config ✓ HealthTest green; Step 2 services trio ✓ HealthTest green) |
+| `auth-integration.md` v1.4 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Steps 1–3 ✓ suite green; Step 4 catalog next) |
 | `endpoints-academic/appointments/evaluations.md` v1.0 | FINAL — module contracts |
 | `docker-compose-spec.md` v1.0 | FINAL — root-stack wiring `:9002` |
 | `data-model.md` v1.3 | FINAL — shape contract (source-verified M17/M19/M21/M26/M27/M30/M31); §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
