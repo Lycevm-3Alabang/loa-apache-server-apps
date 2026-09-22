@@ -20,7 +20,7 @@
 
 ## AFTER FINAL SPECS (implementation gates)
 
-- [ ] Domain slice B — appointments/academic/semesters — B1 delta migration landed (awaiting suite green): `000011` sections course-link + mappings/semester + enrollments section-links (guarded; slice-C deltas excluded); models converged (Section/FacultySubject/StudentEnrollment fillables + relations); `AcademicDeltaTest` 3 structure tests
+- [ ] Domain slice B — appointments/academic/semesters — B1 **green pasted**; B2 landed (awaiting suite green): `000012` 5 appointment-family tables + 5 thin models + `AppointmentTablesTest` 3/3
 
 - [ ] Domain slice C — evaluations/periods/rubrics/results
 
@@ -64,7 +64,7 @@
 ## DONE
 
 - [x] 2026-09-22 — Red-suite triage (AuthTrio 15 red, suite otherwise green): (A) 000010 sections block dropped never-existing `is_disabled` + re-added existing cols — Type A, fixed to `created_by`/`updated_by` only incl. down(); (B) suite ran against `loa_consult` app DB — phpunit `force` loses to container `$_SERVER` (Type B test-infra, fixed via `tests/bootstrap.php` auth-precedent + phpunit bootstrap rewire). Dev `loa_consult` wiped by RefreshDatabase — user recovery + rerun pending
-- [x] 2026-09-22 — `000010` hardened to fully guarded (hasColumn up + down) after dev DB half-states from partial runs; `tests/bootstrap.php` pins `loa_consult_test`
+- [x] 2026-09-22 — B1 **green pasted**: `000011` academic baseline delta + model convergence + `AcademicDeltaTest`; repairs en route: sections FK-drop, guarded idempotence (information_schema checks — DDL builds on closure close), FK-before-unique order + student relink, short trio unique `enr_stu_map_sem_unique` (74-char conventional > MySQL 64)
 
 - [x] 2026-09-22 — **Step 7** gate routes **full suite green pasted — §11 auth-layer port COMPLETE**: `auth/*` public + `throttle:10,1` on callback/refresh (cert pattern) · health + count-active public · semesters/admin under `['jwt.auth','jwt.endpoint']` (removed duplicate public `GET /semesters`) · `tests/Feature/Api/RouteGatingTest.php` 5 tests (public stays public · gated 401 tokenless · callback reachable)
 - [x] 2026-09-22 — **Step 6** auth trio landed **full suite green pasted** (`AuthCallbackController` + email-domain upsert + `SSO-` placeholder ≤10 chars + fail-soft audit · refresh/logout · `AuditLogger` L119 reshape · public `auth/*` trio · `AuthTrioTest` 16 tests; red-triage fixes: `000010` guarded, `tests/bootstrap.php` test-DB pin)

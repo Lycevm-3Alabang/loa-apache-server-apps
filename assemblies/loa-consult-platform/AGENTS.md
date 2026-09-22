@@ -168,6 +168,11 @@ envelope migration without a spec.
   `created_by`/`updated_by` only (up + down); (B) suite hit `loa_consult` app DB — phpunit `force` loses to container
   `$_SERVER` — Type B, fixed via `tests/bootstrap.php` (auth precedent, pins `loa_consult_test`) + phpunit bootstrap
   rewire. Dev `loa_consult` was wiped by RefreshDatabase — user recovery + rerun pending.
+- **Current status (2026-09-22) — B1 green pasted.** `000011` academic baseline delta (§7: sections course-link +
+  program, mappings `semester_id`, enrollments section links; slice-C excluded) + model convergence + 3 structure
+  tests. Repairs en route: FK-before-column/unique order + student relink, DDL-builds-on-close guards via
+  information_schema, short trio unique (conventional 74 > MySQL 64). Trackers updated.
+  **Stopped — B2 (appointment-family tables) needs user yes.**
 
 ---
 
