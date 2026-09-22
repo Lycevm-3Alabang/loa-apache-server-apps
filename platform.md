@@ -607,6 +607,64 @@ Applies to every folder holding specs:
 
 The Automotive Business Platform is a platform—not a collection of applications.
 
+---
+
+# 17. Layer Diagram — Services vs Domains vs Contexts (2026-09-22)
+
+```
+┌─ Product Assemblies ──────────────── What SHIPS (no logic) ──┐
+│  auth-app · cert-app · consult-app     deployables            │
+└────────────────────── ▲ ─────────────────────────────────────┘
+                         │ composes
+┌─ Business Contexts ────┴───────────── What HAPPENS ──────────┐
+│  Consultation ──events──▶ Evaluation    lifecycles,          │
+│  Certificate                            aggregates, events    │
+└────────────────────── ▲ ─────────────────────────────────────┘
+                         │ references by ID
+┌─ Industry Domains ─────┴───────────── What things MEAN ──────┐
+│  education: Student, Faculty, Semester  concepts + rules,    │
+│  Subject, Enrollment…                   tech-agnostic         │
+└────────────────────── ▲ ─────────────────────────────────────┘
+                         │ uses (no entities owned)
+┌─ Platform Services ────┴───────────── What WORK gets done ───┐
+│  qrcode · (pdf, mail candidates)        replaceable,          │
+│                                         entity-free           │
+└────────────────────── ▲ ─────────────────────────────────────┘
+                         │ stands on
+┌─ Platform Kernels ─────┴───────────── What things ARE ───────┐
+│  identity: User, groups, tokens…        entities + lifecycles│
+│                                         most stable           │
+└──────────────────────────────────────────────────────────────┘
+
+Arrows point DOWN only. Nothing points up; contexts never
+point sideways (events, not calls).
+```
+
+## Three jobs
+
+- **Domains own knowledge** — what things are and their rules, shared across apps, no workflows, no tech.
+  `domains/education/student.md`: what a student is, SSO-upsert rule. Never mentions MySQL, HTTP, or bookings.
+- **Contexts own workflows** — what happens: aggregates, state machines, events.
+  `business-contexts/consultation/`: booking lifecycle PENDING→COMPLETED, conflict detection, publishes
+  `AppointmentCompleted`. References domain entities by ID; never redefines them.
+- **Services own technical work** — how something gets done, no business entities, replaceable.
+  `services/qrcode/`: bytes into a QR image. Doesn't know what a certificate *is*; cert calls it during issuance.
+
+## Telling them apart
+
+If it has a lifecycle or state machine → context. If it's meaning/rules reused across apps → domain.
+If the implementation could be swapped (QR lib, PDF engine, mailer) without the business noticing → service.
+
+## Placed example (consult)
+
+`appointments` table + booking rules → Context. `Student` meaning → Domains. `loa_consult` DDL + migration
+order (`assemblies/loa-consult-platform/data-model.md`) → Assemblies (composition no lower layer describes).
+Login identity → Kernels. QR rendering → Services.
+
+---
+
+The Automotive Business Platform is a platform—not a collection of applications.
+
 Business Applications are temporary compositions built upon stable architectural foundations.
 
 Invest in reusable foundations first.

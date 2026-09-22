@@ -119,7 +119,7 @@ Rationale: certificate data contains PII (recipient name, email) and should not 
 - `GET /api/v1/certificates/{id}/pdf`, `/download` — same owner check enforced (403 before 410, so non-recipients cannot probe revoked/expired state). **Behavioral tests pending** — no feature test hits these paths yet.
 - `GET /api/v1/me/certificates` — filters by `recipient_email === JWT.email`. Participant-scoped listing.
 
-The `api-endpoints.md` spec (§5.4, §9.6) declares an **owner rule** for certificate detail/pdf/download endpoints (`jwt.email === certificate.recipient_email`), but this is **not enforced** in `CertificateController::show()`, `pdf()`, or `download()`.
+The `api-endpoints.md` spec (§5.4, §9.6) declares an **owner rule** for certificate detail/pdf/download endpoints (`jwt.email === certificate.recipient_email`), and it **is** enforced in `CertificateController::show()`, `pdf()`, and `download()` (403 on non-owner non-admin).
 
 ## 2.3 Required Behavior (Spec)
 
@@ -520,7 +520,7 @@ $table->unique('number_active');
 
 This prevents duplicate **certificate numbers** among active certificates globally. It does NOT enforce `(event_id, recipient_email)` uniqueness — that is application-only.
 
-**Note:** The `api-endpoints.md` spec (§7.2) declares `UNIQUE(event_id, recipient_email)` on the certificates table, but the actual migration uses the `number_active` generated-column trick instead. These are different constraints.
+**Note:** The `api-endpoints.md` spec (§7.2) declared `UNIQUE(event_id, recipient_email)` on the certificates table, but the actual migration uses the `number_active` generated-column trick instead (one active number globally). The app-level duplicate check is the only per-recipient guard.
 
 ## 4.3 API Contract
 
@@ -576,7 +576,7 @@ Or via the combined endpoint:
 
 | Gap | Impact | Recommendation |
 |-----|--------|----------------|
-| **No DB-level unique constraint on `(event_id, recipient_email)`** — the spec declares it but the migration uses `number_active` instead. The app-level check is the only guard. | Medium — a race condition in concurrent issuance could bypass the app check (though atomic number generation mitigates this). | Add a composite unique index on `(event_id, recipient_email, is_active)` using a generated column: `IF(revoked_at IS NULL, CONCAT(event_id, recipient_email), NULL)` with a unique index. |
+| **No DB-level unique constraint on `(event_id, recipient_email)`** — the migration uses `number_active` instead; the app-level check is the only guard. | Medium — a race condition in concurrent issuance could bypass the app check (though atomic number generation mitigates this). | DEFERRED: composite unique index on `(event_id, recipient_email, is_active)` using a generated column: `IF(revoked_at IS NULL, CONCAT(event_id, recipient_email), NULL)` with a unique index. |
 | **Bulk issue does not stop on first duplicate** — it continues processing all recipients and reports per-item errors. | Low — this is by design (§3.8 idempotency semantics). | Acceptable. The per-item error reporting is correct. |
 
 ---

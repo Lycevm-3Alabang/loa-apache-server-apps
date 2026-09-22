@@ -55,7 +55,7 @@
 | `LOCAL-DEV-RUNBOOK.md` | v0.1 | **Draft** | local dev setup |
 | `DEPLOY.md` | v0.1 | **Draft** | deployment |
 | `FRONTEND-INTEGRATION.md` | v0.1 | **Draft** | cutover phase |
-| `consult-readiness.md` | v1.0 | **Draft** | auth provisioning — **OUTDATED: says "Laravel assembly is deferred" — no longer true** |
+| `consult-readiness.md` | v1.1 | **Draft** | auth provisioning checklist + historical notes (corrected 2026-09-22: Laravel assembly active; normative auth = `auth-integration.md` Final v1.2) |
 | `AGENTS.md` (assembly contract) | v1.0 | **Final** | — (working agreements, scaffold, status, spec pointers) |
 | `student.md` / `faculty.md` / `faculty-loading.md` (education domains) | v1.1 | **Final** | — (first-class cache via SSO upsert, FK to domain IDs; unblock data-model Final) |
 
@@ -63,6 +63,7 @@
 
 ## DONE
 
+- [x] 2026-09-22 — `consult-readiness.md` Draft v1.0 → **v1.1** (removed false "Laravel assembly is deferred" claim → assembly active; §3–§4 superseded-by banners → `auth-integration.md` Final v1.2; §8 table: Laravel backend, cPanel deploy, local `loa_consult` store)
 - [x] 2026-09-22 — `assemblies/loa-consult-platform/AGENTS.md` created (wise_wallet format: 10 working agreements, scaffold, status journal, spec pointer) + referenced from root `AGENTS.md` (exclusive standing contract for consult work)
 - [x] 2026-09-22 — Spec format standard adopted (wise_wallet `06-web-warning-cleanup` shape: metadata + RFC 2119 + Context/Constraints CON-*/Goal DEC-*/ACC-*/Deliverables D-* + Glossary + References); applies to all future consult specs
 - [x] 2026-09-22 — `student.md` / `faculty.md` / `faculty-loading.md` Draft v1.0 → **Final v1.1** (`name`/`email` first-class cache via SSO upsert, Auth promotion optional; loading refs `employees.id` FK, never opaque sub; resolves G6/G7)
@@ -99,3 +100,41 @@
 
 - Auth: `tenant-group-endpoint-grants.md` v1.1, `tenant-endpoint-catalog.md` v3.2, `tenant-app-api.md`, `unified-auth-flow.md`
 - Cert: `api-endpoints.md` v1.8 (verified implementation), `auth-proxy.md`, middleware + auth controllers
+
+---
+
+## DEFERRED IMPROVEMENTS (cross-platform — filed during 2026-09-22 mirror passes, not scheduled)
+
+### Cert (`assemblies/loa-cert-platform/`)
+- [ ] Stop returning `refresh_token` in callback + refresh bodies (cookie-only); migrate callers first (`api-endpoints.md` §§9.3/9.7)
+- [ ] Logout `Secure` from `cert-platform.refresh_cookie_secure` (§9.8)
+- [ ] Owner rule on `jwt_endpoint_level === 'admin'` instead of group check (§9.6)
+- [ ] Remove `recipient_email` from public `verify` + fix `PublicCertificateTest` (§5.6)
+- [ ] Composite unique `(event_id, recipient_email, active)` via generated column (`certificate-rules-spec.md`)
+- [ ] Align `.user.ini` to 10M (`body-size-limits.md`, DEPLOY.md)
+- [ ] `permissions:sync-cert-catalog` artisan command (§9.5)
+- [ ] `JwtMiddlewareTest` slug → `loa-e-cert`; add QR-spec-path + owner-negative tests
+- [ ] Verify QR `read` grant matching for path-param route (`config/cert-endpoints.php`, `WithJwt.php`)
+- [ ] e-cert repo `legacy-e-cert-integration.md` copy still shows query QR path (different repo)
+- [ ] Backfill `data-model.md` from migrations (proposed; pure transcription)
+
+### Auth (`assemblies/loa-auth-platform/`)
+- [ ] Enforce I1 422 guard in `AuthorizationService::addToGroup()` (M7/Q1)
+- [ ] `POST /admin/users/{id}/platform-permissions` + toggle panel (§12.3)
+- [ ] `POST /admin/users/{id}/sessions/invalidate` + controller (`admin-dashboard.md`)
+- [ ] Strip `password`/`status` from create form (`user-account-activation.md` §10.1)
+- [ ] Delete dead `showRegister`/`register` methods (§8.1)
+- [ ] Unify `deny` handling (store vs delete on import)
+- [ ] `tenant_id` nullable migration for platform-wide grants/overrides
+- [ ] Maximize level on priority ties (`PermissionPolicyService`)
+- [ ] Tenant-create `group_id` optional (`auth-tenant.md` §5)
+- [ ] Accept `"none"` in import validator or remove §5.4
+- [ ] Unify `Activation` (24h) vs `PasswordSetToken` (48h)
+- [ ] Random hashed placeholder instead of empty-string (`auth-tenant.md` §5.4)
+- [ ] Rewrite `web-ui.md` §§3/4.1 against unified pipeline
+- [ ] Cross-platform ordinal review (admin-top adopted 2026-09-22)
+
+### Consult + shared
+- [ ] Slices B/C + auth port + `test-suite.md` promotion (gated; see AFTER FINAL SPECS)
+- [ ] Mail service extraction (spec `services/mail/README.md` Final v1.0 — unblocked, unscheduled)
+- [ ] `decisions/` — adopt (ADR-005+) or delete + prune `platform.md` refs (open)

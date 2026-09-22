@@ -130,4 +130,8 @@ envelope migration without a spec.
 | `docker-compose-spec.md` v1.0 | FINAL — root-stack wiring `:9002` |
 | `data-model.md` v1.2 | FINAL — persistence contract, source-verified (M17/M19/M21/M26/M27/M30/M31); §7 baseline delta gates slice build |
 | `test-suite.md` v0.1 | DRAFT — coverage plan |
-| `LOCAL-DEV-RUNBOOK.md` / `DEPLOY.md` / `FRONTEND-INTEGRATION.md` / `consult-readiness.md` | DRAFT / skeletons |
+| `LOCAL-DEV-RUNBOOK.md` v0.1 | DRAFT — local dev setup |
+| `DEPLOY.md` v0.1 | DRAFT — deployment skeleton |
+| `FRONTEND-INTEGRATION.md` v0.1 | DRAFT — cutover checklist skeleton |
+| `consult-readiness.md` v1.0 | DRAFT — historical Next.js SSO notes; Auth-provisioning checklist only |
+| `README.md` v1.0 | DRAFT — assembly composition (see §2) |

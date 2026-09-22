@@ -107,6 +107,7 @@ fragment; direct → reject + revoke). Consumers validate locally — no per-req
   6 Type-C (ordinal tables disagree; `admin==write?`; `none` vs `deny`; dual 24h/48h tokens; empty-password placeholder; stale `web-ui.md` blocks).
   No hard Type-B. Next: user runs tests + lint, then commit + push, then `user-account-activation.md` v1.0 implementation.
 - **2026-09-22 — Assembly contract created.** This `AGENTS.md` (wise_wallet format); referenced from root `AGENTS.md`.
+- **2026-09-22 — Spec-mirror pass (auth).** Specs rewritten to match working code, improvements filed DEFERRED: admin-top ordinals, wrapped catalog shape, auto-attach (no 422), deny-deletes + `none` dead path, NOT NULL platform-wide block, tie first-wins, tenant-create `group_id` + 48h/24h token split, empty-string placeholder, unimplemented toggle/invalidate/register-cleanup marked, web-ui supersession pointers, §15 inventory closed.
 
 ---
 
@@ -114,15 +115,38 @@ fragment; direct → reject + revoke). Consumers validate locally — no per-req
 
 **Normative text lives in the assembly `*.md` files; implement exactly those. This section is a pointer only.**
 
+### Normative specs
+
 | Spec | Status |
 |---|---|
 | `web-ui.md` | FINAL v1.4 (unified-auth-flow D5/D8 supersedes §§3/4.1) |
-| `admin-dashboard.md` | FINAL v3.0 (v1+v2 implemented) |
+| `unified-auth-flow.md` | FINAL v1.0 (amended by `dashboard-account.md` v1.1–v1.3) |
+| `dashboard-account.md` | FINAL v1.3 |
+| `admin-dashboard.md` | FINAL (v1–v4 implemented) |
+| `admin-dashboard-home.md` | FINAL |
+| `admin-audit-log.md` | FINAL |
 | `tenant-endpoint-catalog.md` | FINAL v3.2 |
 | `tenant-group-endpoint-grants.md` | FINAL v1.1 |
+| `tenant-group-access.md` | FINAL |
 | `access-config-import-export.md` | FINAL v1.0 |
 | `group-permission-management.md` | FINAL v3.0 (§12) |
 | `auth-tenant.md` | FINAL v1.1 |
-| `user-account-activation.md` | v1.0 (baseline exists; implementation next) |
+| `tenant-app-api.md` | FINAL |
+| `tenant-member-import.md` | FINAL |
+| `bulk-user-import.md` | FINAL |
+| `permission-registry.md` | FINAL |
+| `redirect-interstitial.md` | FINAL |
+| `sso-logout.md` | FINAL |
+| `cert-readiness.md` | FINAL (Auth-side provisioning for cert) |
+| `user-account-activation.md` | FINAL v1.0 (baseline exists; implementation next) |
+| `tenant-member-picker.md` | PROPOSED (not Final — no code) |
+
+### Operate / session (not normative specs)
+
+| File | Status |
+|---|---|
 | `test-suite.md` | DRAFT (says SQLite; actual MySQL — mirror fix deferred) |
+| `environment.md` | DRAFT — tooling spec |
+| `DEPLOY.md` / `LOCAL-DEV-RUNBOOK.md` / `CPANEL-DEPLOYMENT-NOTES.md` | runbooks (see file) |
+| `README.md` | DRAFT — assembly overview |
 | `SESSION-PROMPT.md` | session details (not normative spec) |

@@ -222,8 +222,8 @@ proxy to auth-platform.  No additional authentication setup needed.
 - [x] Add `AUTH_API_KEY` to `config/auth-platform.php`
 - [x] Add `AUTH_API_KEY` to `.env.example` and `.env.cpanel`
 - [x] Create `AuthProxyController` with all 11 proxy methods
-- [ ] Add routes to `routes/api.php` under `service` prefix
-- [ ] Add endpoints to `config/cert-endpoints.php` catalog
+- [x] Add routes to `routes/api.php` under `service` prefix (11 routes live)
+- [x] Add endpoints to `config/cert-endpoints.php` catalog
 - [ ] Update frontend `users-admin.ts` base URL
 - [ ] Remove `/auth-api/v1` rewrite from `next.config.ts`
 - [ ] Run cert-api test suite

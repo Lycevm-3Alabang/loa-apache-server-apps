@@ -103,7 +103,7 @@ https://cert-api.lyceumalabang.edu.ph/api/v1
 | `POST` | `/certificates` | `write` | Issue a single certificate |
 | `POST` | `/certificates/bulk` | `write` | Bulk issue certificates |
 | `POST` | `/certificates/upload` | `write` | Upload pre-rendered certificate PDF |
-| `GET` | `/certificates/qr` | `read` | Generate QR code for verification |
+| `GET` | `/certificates/{certificateNumber}/qr` | `read` | Generate QR code for verification |
 | `POST` | `/certificates/expire` | `admin` | Auto-revoke expired certificates |
 | `GET` | `/certificates/{id}` | `read` | Get a single certificate |
 | `GET` | `/certificates/{id}/pdf` | `read` | Stream PDF (inline) |
@@ -158,7 +158,7 @@ All endpoints except those listed as "Public" require:
 1. `Authorization: Bearer <access_token>` header
 2. Valid JWT token issued by LOA Auth Platform
 3. Token validates locally using shared `JWT_SECRET` (HMAC-SHA256)
-4. Token must be of type `access`, not expired, and contain valid tenant claim (`tenant.slug = loa`)
+4. Token must be of type `access`, not expired, and contain valid tenant claim (`tenant.slug = loa-e-cert`)
 5. Caller must have sufficient level for the endpoint (checked against JWT `permissions` claim)
 
 **Middleware (enforced on every request):**

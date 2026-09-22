@@ -341,6 +341,7 @@ A **"Create User"** button appears on **every tenant show page** (`/admin/tenant
 2. A modal or inline form appears with fields:
    - Name (required)
    - Email (required)
+   - Group (required as implemented — `group_id` validated, cross-tenant rejected; DEFERRED: make optional)
 3. User fills form → clicks **"Create & Invite"**
 4. System creates the user (status: `pending`) AND adds them to the current tenant in one transaction
 5. System sends an email with a **set-password link** (unique, signed, single-use)
@@ -363,10 +364,10 @@ The set-password link uses a dedicated route (`/set-password?token=...`) and a d
 
 Controller method: `tenantsCreateUser(Request $request, Tenant $tenant)`
 
-1. Validate input (name, email unique)
-2. Create user via `User::create()` with status `pending`, random hashed password placeholder
-3. Attach to tenant via `$tenant->users()->attach($user->id)`
-4. Generate set-password token (signed, expires 48h)
+1. Validate input (name, email unique, `group_id` required + same-tenant as implemented)
+2. Create user via `User::create()` with status `pending`, password placeholder (as implemented: empty-string hash via `register(email, '', name)`; DEFERRED: `Str::random(32)` hashed placeholder)
+3. Attach to tenant via `$tenant->users()->attach($user->id)` AND attach `group_id` (rejected if group belongs to another tenant)
+4. Generate set-password token (signed, expires 48h) via `PasswordSetToken` (tenant flow; distinct from the 24h `Activation` flow used by global create — DEFERRED: unify token tables)
 5. Send set-password email via `Mail::to($email)`
 6. Audit log: `user.created` + `tenant.member_added`
 7. Redirect back with success flash

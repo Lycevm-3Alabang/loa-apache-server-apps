@@ -84,7 +84,7 @@ https://cert-api.lyceumalabang.edu.ph/api/v1
 - LOA runs a **single organization**. The `organizations` table is kept and seeded with one row (`Lyceum of Alabang`, `website=https://staging-loa-vericert.vercel.app`), matching `CERT_TENANT_SLUG=loa-e-cert` — via `DatabaseSeeder`, or `database/sql/cpanel-cert-db-seed.sql` for SQL imports.
 - The current organization is **resolved server-side** from the authenticated JWT `tenant` claim via `config/cert-platform.php` (`tenant_slug` → organization). Clients never send `organization_id`.
 - Every query is implicitly filtered to the resolved organization. Cross-organization access is impossible by construction.
-- Tenant mismatch (token `tenant.slug` ≠ configured `loa`) → `403`.
+- Tenant mismatch (token `tenant.slug` ≠ configured `loa-e-cert`) → `403`.
 
 ## 3.4 Response Envelope
 
@@ -185,7 +185,7 @@ The e-cert admin/staff/participant vocabulary maps to **groups granted levels in
 | `admin` | `admin` on every cataloged path (Appendix A). Bypasses the owner rule (§9.6). |
 | `staff` | `write` on management paths (events, attendees, templates, certificates issue/email), `read` on read paths. No grants on `admin` paths (revoke, delete, reissue, expire, audit, with-cert). |
 | `staff` (author-scoped) | `read`/`write` on **item paths only** (`/api/v1/events/{id}`, `/api/v1/templates/{id}`) + `read` on `/api/v1/me/events` and `/api/v1/me/templates`. **Not** granted the unscoped collection reads (`/api/v1/events`, `/api/v1/templates`). Author scope enforced in controllers (§9.6). |
-| `participant` | `read` on participant paths only: `/api/v1/me/certificates`, `/api/v1/me/certificates/{id}`, `/api/v1/certificates/{id}`, `/api/v1/certificates/{id}/pdf`, `/api/v1/certificates/{id}/download`, `/api/v1/events/{id}`, `/api/v1/certificates/qr`. Subject to the owner rule (§9.6). |
+| `participant` | `read` on participant paths only: `/api/v1/me/certificates`, `/api/v1/me/certificates/{id}`, `/api/v1/certificates/{id}`, `/api/v1/certificates/{id}/pdf`, `/api/v1/certificates/{id}/download`, `/api/v1/events/{id}`, `/api/v1/certificates/{certificateNumber}/qr`. Subject to the owner rule (§9.6). |
 
 ### 4.4.1 Minimum Required Grants per Group
 
@@ -199,7 +199,7 @@ The table below lists the **exact `<level>:<path>` grants** each seed group must
 | | `read:/api/v1/certificates/{id}/pdf` |
 | | `read:/api/v1/certificates/{id}/download` |
 | | `read:/api/v1/events/{id}` |
-| | `read:/api/v1/certificates/qr` |
+| | `read:/api/v1/certificates/{certificateNumber}/qr` |
 | `cert-staff` | `read`/`write` on management paths (events, attendees, templates, certificates) **excluding** admin paths (revoke, delete, reissue, expire, audit, with-cert). Plus `read` on `/api/v1/me/events` and `/api/v1/me/templates` for author-scoped staff. |
 | `cert-admin` | `admin` on every cataloged path (Appendix A). |
 
@@ -919,16 +919,18 @@ Auto-revoke all expired certificates and notify recipients nearing expiry.
 
 **Errors:** 401, 403, 500.
 
-### `GET /api/v1/certificates/qr`
-Generate a QR data URL for a certificate's public verification URL.
+### `GET /api/v1/certificates/{certificateNumber}/qr`
+Generate a QR data URL for a certificate's public verification URL. Path-param form as implemented and as the UI calls it (`getQrCode` → `/certificates/${n}/qr`, typed `{ data_url }`).
 
 **Auth:** `read`
 
-**Query:** `certificate_number` (required).
+**Path:** `certificateNumber` (required, `[A-Za-z0-9\-]+`).
 
-**Response 200:** `{ "data": { "certificate_number": "CERT-0001", "qr_data_url": "data:image/png;base64,..." } }`
+**Response 200:** `{ "certificate_number": "CERT-0001", "data_url": "data:image/png;base64,..." }` (bare shape, no `data` envelope; key is `data_url`, not `qr_data_url`).
 
-**Errors:** 401, 403, 404, 422 (missing number).
+**Errors:** 401, 403, 404.
+
+> DEFERRED improvement: none scheduled — UI and API agree on this shape (dashboard tolerates both keys). The query-param form (`/certificates/qr?certificate_number=`) documented in v1.8 does not exist in code; do not reintroduce without a spec.
 
 ---
 
@@ -956,7 +958,7 @@ Get one of the caller's own certificates.
 
 ## 5.6 Public Verification & View
 
-No authentication. Public responses must **never** expose email addresses, internal ids beyond the certificate id, or `html_content`.
+No authentication. Public responses SHOULD NOT expose email addresses, internal ids beyond the certificate id, or `html_content` — as implemented, `verify` currently returns `recipient_email` (DEFERRED improvement: remove it; `PublicCertificateTest` asserts its absence after removal).
 
 ### `GET /api/v1/verify/{certificate_number}`
 Verify a certificate by its public number.
@@ -1191,7 +1193,7 @@ All domain routes under `/api/v1`. `required_level` refers to the endpoint catal
 | GET | `/certificates/{id}/email-logs` | `read` |
 | POST | `/certificates/{id}/reissue` | `admin` |
 | POST | `/certificates/expire` | `admin` |
-| GET | `/certificates/qr` | `read` |
+| GET | `/certificates/{certificateNumber}/qr` | `read` |
 | GET | `/me/certificates` | `read` + owner |
 | GET | `/me/certificates/{id}` | `read` + owner |
 | GET | `/me/events` | `read` + author |
@@ -1406,6 +1408,7 @@ Processes the encrypted SSO payload and establishes the Cert session.
   "status": "success",
   "data": {
     "access_token": "eyJ...",
+    "refresh_token": "eyJ...",
     "token_type": "Bearer",
     "expires_in": 900,
     "user": { "id": "...", "email": "...", "name": "..." },
@@ -1414,7 +1417,8 @@ Processes the encrypted SSO payload and establishes the Cert session.
 }
 ```
 
-- `refresh_token` is **not** returned in the body. It is set as an **httpOnly, SameSite=Lax, Secure** cookie `loa_cert_refresh` (`HttpOnly; Path=/api/v1/auth; SameSite=Lax; Secure`) so it is invisible to JS.
+- `refresh_token` is returned in the body **and** set as an **httpOnly, SameSite=Lax, Secure** cookie `loa_cert_refresh` (`HttpOnly; Path=/api/v1/auth; SameSite=Lax; Secure`).
+- DEFERRED improvement: stop returning `refresh_token` in the body (cookie-only, XSS posture); callers must migrate to cookie-first reads before removal.
 - **Errors:** `400` (missing/malformed/expired/tampered payload), `401` (invalid token), `403` (tenant mismatch), `429` (rate limit).
 - **Throttle:** `10/min` per IP (`ThrottleRequests`).
 - **Audit:** log `auth.sso_callback` (user_email, source, IP) after success.
@@ -1458,12 +1462,13 @@ Levels decide *whether* a caller may invoke an endpoint; **scope** decides *whic
 | `author` | `/api/v1/events/{id}`, `/api/v1/events/{id}/*`, `/api/v1/templates/{id}`, `/api/v1/me/events`, `/api/v1/me/templates` | Caller created the record: `jwt.sub === record.created_by` |
 | `unscoped` | any | No filter |
 
-**Rule selection:**
+**Rule selection (as implemented — group check, not level check):**
 
-1. If `jwt_endpoint_level === 'admin'` → **unscoped** (no record filter).
+1. If caller holds the `cert-admin` Auth tenant group → **unscoped** (no record filter).
 2. Certificate item endpoints (detail/pdf/download) with granted level `read` → **recipient** scope.
 3. Event/template item operations (detail, PATCH, DELETE) and event sub-resource actions with granted level `read` or `write` (i.e., non-admin) → **author** scope.
 4. `/me/*` endpoints (`/me/certificates`, `/me/events`, `/me/templates`) are **always** scoped to the caller regardless of level — recipient for certificates, author for events/templates.
+- DEFERRED improvement: select rule 1 on `jwt_endpoint_level === 'admin'` (covers per-user `admin` overrides, not just group members).
 
 **Grant patterns (author-scoped staff):**
 
@@ -1477,7 +1482,8 @@ Levels decide *whether* a caller may invoke an endpoint; **scope** decides *whic
 
 - Reads the `loa_cert_refresh` httpOnly cookie → else `401`.
 - Calls Auth `POST https://auth.lyceumalabang.edu.ph/api/v1/auth/refresh` server-to-server with `{ "refresh_token": "<cookie>" }`.
-- On success: re-issues the refresh cookie (rotated by Auth), returns `{ "data": { "access_token", "token_type", "expires_in" } }`.
+- On success: re-issues the refresh cookie (rotated by Auth), returns `{ "data": { "access_token", "refresh_token", "token_type", "expires_in" } }` (body carries the rotated `refresh_token` as implemented).
+- DEFERRED improvement: drop `refresh_token` from the refresh body (cookie-only); same caller migration as §9.3.
 - On Auth failure: clears the cookie, `401`.
 - **Throttle:** `10/min` per IP.
 - Refines README §11.5 (previously the frontend called Auth directly; now Cert proxies so the refresh token stays in the httpOnly cookie).
@@ -1485,7 +1491,9 @@ Levels decide *whether* a caller may invoke an endpoint; **scope** decides *whic
 ## 9.8 Logout — `POST /api/v1/auth/logout`
 
 - Reads the `loa_cert_refresh` cookie; if present, calls Auth `POST /api/v1/auth/logout` server-to-server with the refresh token.
-- Clears the cookie; returns `204`.
+- Clears the cookie with `Secure=true` hardcoded (as implemented — http-local clear fails without HTTPS).
+- DEFERRED improvement: drive `Secure` from `cert-platform.refresh_cookie_secure` like callback/refresh.
+- Returns `204`.
 - Frontend also discards its in-memory access token (`legacy-e-cert-integration.md` §6.3).
 - Refines README §11.6.
 
@@ -1643,7 +1651,7 @@ The import payload for Auth `POST /api/v1/admin/tenants/{tenant}/endpoints/bulk`
     { "method": "GET",    "path": "/api/v1/certificates/{id}/email-logs", "label": "Certificate email logs",            "required_level": "read" },
     { "method": "POST",   "path": "/api/v1/certificates/{id}/reissue",    "label": "Reissue certificate",               "required_level": "admin" },
     { "method": "POST",   "path": "/api/v1/certificates/expire",          "label": "Expire certificates",               "required_level": "admin" },
-    { "method": "GET",    "path": "/api/v1/certificates/qr",              "label": "Certificate QR code",               "required_level": "read" },
+    { "method": "GET",    "path": "/api/v1/certificates/{certificateNumber}/qr", "label": "Certificate QR code", "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/me/certificates",              "label": "My certificates",                   "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/me/certificates/{id}",         "label": "My certificate",                    "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/me/events",                    "label": "My authored events",                "required_level": "read" },

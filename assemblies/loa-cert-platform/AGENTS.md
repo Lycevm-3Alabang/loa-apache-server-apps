@@ -108,6 +108,7 @@ pattern (404-masking, seed-immutable). Identity referenced by JWT claims + `crea
   enshrines leak; `JwtMiddlewareTest` slug `loa` vs `loa-e-cert`; QR/owner coverage gaps). 7 Type-C (slug split; counts;
   proxy checklist; public-list mirror; 10M vs 50M limits; manual catalog sync; `28f152e` scope).
 - **2026-09-22 — Assembly contract created.** This `AGENTS.md` (wise_wallet format); referenced from root `AGENTS.md`.
+- **2026-09-22 — Spec-mirror pass (cert).** Specs rewritten to match working code, improvements filed DEFERRED: QR path-param + `data_url` (UI-verified), callback/refresh body token + Secure-note, group-check owner rule, verify email note, `loa-e-cert` slug, number_active + app-check uniqueness, proxy checklist closed, test-suite MySQL, `.user.ini` 50M note.
 
 ---
 
@@ -115,12 +116,23 @@ pattern (404-masking, seed-immutable). Identity referenced by JWT claims + `crea
 
 **Normative text lives in the assembly `*.md` files; implement exactly those. This section is a pointer only.**
 
+### Normative specs
+
 | Spec | Status |
 |---|---|
-| `api-endpoints.md` | FINAL v1.8 (61 gated + 6 public; tenant slug `loa-e-cert`) |
+| `api-endpoints.md` | FINAL v1.8 (61 gated + 3 domain-public + 3 SSO; tenant slug `loa-e-cert`) |
 | `legacy-e-cert-integration.md` | FINAL v2.2 |
 | `authenticated-endpoints-spec.md` | FINAL v1.2 |
-| `auth-proxy.md` | DRAFT v1.0 (11 routes live; §9 checklist stale) |
-| `certificate-rules-spec.md` | rules (see file) |
-| `body-size-limits.md` | limits (10M; `.user.ini` 50M mismatch noted) |
-| `test-suite.md` | DRAFT (says SQLite; actual MySQL `loa_cert_test` — mirror fix deferred) |
+| `certificate-rules-spec.md` | FINAL |
+| `body-size-limits.md` | FINAL (10M effective; `.user.ini` 50M note) |
+| `queue-infrastructure-spec.md` | FINAL |
+| `auth-proxy.md` | DRAFT v1.0 (11 routes live; §9 checklist closed this pass) |
+| `bff-layer.md` | DRAFT (future — not developed now) |
+
+### Operate (not normative specs)
+
+| File | Status |
+|---|---|
+| `test-suite.md` | DRAFT (MySQL `loa_cert_test` — mirrored this pass) |
+| `DEPLOY.md` / `LOCAL-DEV-RUNBOOK.md` / `FRONTEND-INTEGRATION.md` | runbooks (FRONTEND: ready for Phase D) |
+| `README.md` | DRAFT — assembly overview |

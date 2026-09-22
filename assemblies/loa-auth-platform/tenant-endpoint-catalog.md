@@ -61,7 +61,7 @@ This mirrors `e-consultation`'s static `lib/page-api-map.ts`, but makes it **dyn
 | `write` | create / update / delete (non-destructive admin) | `POST`, `PUT`, `PATCH`, `DELETE` |
 | `admin` | reserved label for destructive / administrative endpoints | same operations as `write` |
 
-**Semantics:** `deny` < `admin` < `write` < `read` (by ordinal: -1, 98, 99, 100). Any higher level covers lower levels (e.g., `admin` satisfies a `read`-required endpoint). A caller granted `write` or `admin` may call any endpoint whose `required_level` is `read`, `write`, or `admin`; a caller granted only `read` may call `read`-required endpoints only.
+**Semantics (as implemented):** `deny=-1, read=1, write=2, admin=3`; `admin` is top. ALLOW iff granted ≥ required. A caller granted `admin` may call any endpoint; a caller granted only `read` may call `read`-required endpoints only. (`write` does NOT satisfy `admin`-required — admin paths are granted only to the admin group.) DEFERRED review: see `tenant-group-endpoint-grants.md` §3.1 mirror note (was read-top).
 
 This vocabulary is intentionally coarse: it drives the **admin UI dropdowns** and the **session payload**. Finer data filtering (owner-scoped, department-scoped) remains the tenant app's job per-endpoint (cf. `permission-claims.md` authored/scoped — consumed, not managed, here).
 
@@ -165,10 +165,10 @@ All API contracts from the original §6, renumbered.
 
 ### 7.1 List catalog
 
-`GET /admin/tenants/{tenant}/endpoints` → `200`
+`GET /admin/tenants/{tenant}/endpoints` → `200` `{ "endpoints": [...] }` (wrapped shape as implemented; DEFERRED: bare array):
 
 ```json
-[
+{ "endpoints": [
   {
     "method": "GET",
     "path": "/api/v1/appointments",
@@ -196,7 +196,7 @@ All API contracts from the original §6, renumbered.
     "tenant_id": "tenant_ccs",
     "created_at": "2026-08-02T00:00:00Z"
   }
-]
+] }
 ```
 
 ### 7.2 Create one endpoint

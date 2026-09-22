@@ -1,17 +1,17 @@
 # LOA Consult Platform — Auth Integration Readiness
 
-**Version:** 1.0
+**Version:** 1.1
 **Status:** Draft
 **Audience:** Auth Platform engineers, Consult Platform engineers
-**Purpose:** What the Auth Platform must configure/provision for the e-consultation app (Next.js on Vercel) to integrate with loa-auth.
+**Purpose:** Auth Platform provisioning checklist for the LOA Consult Platform (Laravel backend + Next.js frontend on Vercel). Normative auth contract: `auth-integration.md` Final v1.2 — this doc is provisioning checklist + historical notes only.
 
 ---
 
 # 1. Overview
 
-The e-consultation app (`aces.lyceumalabang.edu.ph`) is a **Next.js 16** application currently using **NextAuth v4** with its own user store (Supabase PostgreSQL). It must migrate to the centralized **loa-auth-platform** for authentication and authorization, following the same pattern as the LOA Cert Platform.
+The e-consultation app (`aces.lyceumalabang.edu.ph`) has a **Next.js 16** frontend (Vercel) currently using **NextAuth v4** with its own user store (Supabase PostgreSQL). It must migrate to the centralized **loa-auth-platform** for authentication and authorization, following the same pattern as the LOA Cert Platform.
 
-**Key difference from Cert:** The consult app's frontend is Next.js (Vercel), while the cert app's backend is Laravel (cPanel). The consult app keeps its Next.js backend — it does **not** use the planned Laravel `loa-consult-platform` assembly. The Laravel assembly is deferred.
+**Architecture (current):** The consult frontend stays Next.js (Vercel); the consult backend is the **`loa-consult-platform` Laravel assembly** — active, not deferred — mirroring cert's Laravel pattern. API routes migrate from Next.js to Laravel; the frontend remains untouched until cutover. Normative auth behavior (SSO flow, JWT validation, auth endpoints, provisioning steps) lives in `auth-integration.md` Final v1.2.
 
 ---
 
@@ -390,6 +390,8 @@ All endpoints: `admin` level. Full access.
 
 # 3. SSO Flow
 
+> **HISTORICAL — superseded by `auth-integration.md` §2 (Final v1.2).** Paths below use the pre-Laravel `/api/auth/*` shape; the normative flow is Laravel `/api/v1/auth/*` (Laravel decrypts + sets the refresh cookie). Kept for provisioning context only.
+
 The consult app uses the same SSO redirect pattern as the cert app.
 
 ```
@@ -410,7 +412,9 @@ The consult app uses the same SSO redirect pattern as the cert app.
 
 # 4. Consult App Endpoints to Implement
 
-The consult app (Next.js) must implement 3 auth endpoints, following the cert app pattern:
+> **HISTORICAL — superseded by `auth-integration.md` §3 (Final v1.2).** Auth endpoints are implemented by the **Laravel** assembly at `/api/v1/auth/*` (callback / refresh / logout), not by Next.js. Response shapes below are stale. Kept for provisioning context only.
+
+Historical note (pre-Laravel): the consult app (Next.js) planned to implement 3 auth endpoints, following the cert app pattern:
 
 ### `POST /api/auth/callback`
 
@@ -500,13 +504,14 @@ Before the consult app can integrate, the Auth Platform must:
 
 | Aspect | Cert Platform | Consult App |
 |--------|---------------|-------------|
-| Backend framework | Laravel 12 (PHP) | Next.js 16 (TypeScript) |
-| Deployment | cPanel (PHP-FPM) | Vercel (Serverless) |
+| Backend framework | Laravel 12 (PHP) | Laravel 12 (PHP) — `loa-consult-platform` assembly |
+| Frontend | e-cert UI (Next.js, Vercel) | Next.js 16 (Vercel) |
+| Deployment | Backend cPanel (PHP-FPM) | Backend cPanel (PHP-FPM); frontend Vercel (Serverless) |
 | JWT validation | Local (shared secret) | Local (shared secret) |
 | Refresh cookie | `loa_cert_refresh` | `loa_connect_refresh` |
 | Endpoint catalog size | 48 endpoints | ~130 endpoints |
-| RBAC | EndpointPolicyMiddleware (Laravel) | EndpointPolicyMiddleware (Next.js middleware) |
-| User store | Separate DB (`loa_cert`) | Separate DB (Supabase PostgreSQL) |
+| RBAC | EndpointPolicyMiddleware (Laravel) | EndpointPolicyMiddleware (Laravel) |
+| User store | None local | Local `loa_consult` (see `data-model.md` v1.2) |
 
 ---
 
@@ -605,8 +610,9 @@ The e-consultation repo contains aligned specs in `D:\loa\e-consultation\specs/`
 
 ## Document Control
 
-- **Status:** Draft v1.0
+- **Status:** Draft v1.1
 - **Created:** 2026-08-24
+- **Updated:** 2026-09-22 — v1.1: removed false "Laravel assembly is deferred" claim; architecture corrected (Laravel assembly active); §3–§4 marked historical/superseded by `auth-integration.md` Final v1.2 §2–§3; §8 table aligned to Laravel backend
 - **Source:** e-consultation app analysis (`D:\loa\e-consultation`)
-- **Cross-references:** `D:\loa\e-consultation\specs/` (3 spec files)
+- **Cross-references:** `D:\loa\e-consultation\specs/` (3 spec files), `assemblies/loa-consult-platform/auth-integration.md` Final v1.2 (normative)
 - **Supersedes:** None
