@@ -12,7 +12,7 @@
 
 - [x] 2026-09-19 — Academic slice partial — migrations 000001-000009 (departments, department_courses, subjects, sections, students, employees, semesters, faculty_subjects, student_enrollments) + 000010 audit → 9 models → `AcademicController` + `SemesterController` → ~24 routes (no auth middleware yet; stubs pass-through)
 
-- [ ] Auth layer — middleware + controllers per `auth-integration.md` Final v1.4 §10–§11 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`) — Step 1 config ✓ · Step 2 services trio ✓ · Step 3 JwtMiddleware ✓ (all green); Step 4 catalog next
+- [ ] Auth layer — middleware + controllers per `auth-integration.md` Final v1.4 §10–§11 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`) — Step 1 config ✓ · Step 2 services trio ✓ · Step 3 JwtMiddleware ✓ · Step 4 catalog ✓ · Step 5 EndpointPolicy ✓ (all green); Step 6 auth trio next
 
 - [x] 2026-09-22 — `data-model.md` Final v1.2 → **Final v1.3** (Option A status split, user-approved): Final = shape contract only; §3 Status legend + column (6 Implemented / 3 Delta pending / 17 Specified—not migrated, incl. `audit_logs`/`bug_reports`); §7 implementability authority; no shape changes
 
@@ -63,6 +63,8 @@
 
 ## DONE
 
+- [x] 2026-09-22 — **Step 5** `EndpointPolicyMiddleware` stub → cert port (config re-point `cert-endpoints` → `consult-endpoints` only; `jwt_claims` attr confirmed at port time; ordinals read1/write2/admin3/deny-1 verbatim); `tests/Unit/EndpointPolicyMiddlewareTest.php` 5 tests (public tokenless pass / 403 closed-by-default / 403 insufficient_level / sufficient pass+level stored / real catalog 118+5) — **full suite green pasted**
+- [x] 2026-09-22 — **Step 4** `config/consult-endpoints.php` generated from `api-endpoints.md` Final v1.0 §5: public 5 (health, count-active, auth trio) + catalog 118 gated rows; Auth JSON counterpart deferred to deploy-time per user choice (no Auth spec/files now)
 - [x] 2026-09-22 — **Step 3** `JwtMiddleware` stub → cert port (deltas only: `consult-platform.tenant_slug=loa`, `consult_user` attr); error shapes verbatim; `tests/Unit/JwtMiddlewareTest.php` 6 tests (valid / 401 missing / invalid / expired / wrong-type / 403 tenant_mismatch) — **full suite green pasted**
 - [x] 2026-09-22 — `tests/Unit/JwtMiddlewareTest.php` written with Step 3 (covered in suite-green paste above)
 - [x] 2026-09-22 — **Phase 1 closed:** Step 1 HealthTest green pasted (config trio verified)

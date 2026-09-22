@@ -139,6 +139,14 @@ envelope migration without a spec.
   403 tenant_mismatch). `tests/Unit/JwtMiddlewareTest.php` — 6 tests (valid passes · 401 missing · invalid ·
   expired · wrong-type · 403 tenant mismatch). **Full suite green pasted.** Routes still ungated (Step 7).
   Trackers updated. **Stopped — Step 4 (`config/consult-endpoints.php` catalog) not started; needs user yes.**
+- **Current status (2026-09-22) — Steps 4–5 complete.** Step 4: `config/consult-endpoints.php` generated from
+  `api-endpoints.md` §5 (public 5 + catalog 118; static-before-param ordering); Auth JSON counterpart deferred to
+  deploy-time per user choice. Step 5: `EndpointPolicyMiddleware` stub → cert port (only delta:
+  `consult-endpoints` config re-point; `jwt_claims` attr confirmed at port time; ordinals verbatim).
+  `tests/Unit/EndpointPolicyMiddlewareTest.php` — 5 tests (public tokenless pass · 403 closed-by-default ·
+  403 insufficient_level · sufficient pass + `jwt_endpoint_level` stored · real catalog 118+5).
+  **Full suite green pasted.** Routes still ungated (Step 7). Trackers updated.
+  **Stopped — Step 6 (auth trio) not started; needs user yes.**
 
 ---
 
@@ -149,7 +157,7 @@ envelope migration without a spec.
 | Spec | Status |
 |---|---|
 | `api-endpoints.md` v1.0 | FINAL — 118 routes, levels, ground truth |
-| `auth-integration.md` v1.4 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Steps 1–3 ✓ suite green; Step 4 catalog next) |
+| `auth-integration.md` v1.4 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Steps 1–5 ✓ suite green; Step 6 auth trio next) |
 | `endpoints-academic/appointments/evaluations.md` v1.0 | FINAL — module contracts |
 | `docker-compose-spec.md` v1.0 | FINAL — root-stack wiring `:9002` |
 | `data-model.md` v1.3 | FINAL — shape contract (source-verified M17/M19/M21/M26/M27/M30/M31); §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
