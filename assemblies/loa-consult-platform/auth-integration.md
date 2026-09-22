@@ -1,7 +1,7 @@
 # LOA Consult Platform — Auth Integration
 ## Product Assembly Component Specification
 
-**Version:** 1.3
+**Version:** 1.4
 **Status:** Final
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -146,8 +146,30 @@ DO NOT PORT: `AuthProxyController.php` (deferred with the `/service/*` decision,
 
 ---
 
+# 11. Port Plan (sequenced landing)
+
+> Plan only — no code lands until this spec returns to Final (Rule 0).
+
+**Preconditions (verified 2026-09-22):** cert sources exist for all §10 items · consult stubs + `jwt.auth`/`jwt.endpoint` aliases present · `public/.htaccess` Authorization rule present · `Student`/`Employee` models exist (callback upsert target) · tests = `TestCase` + `HealthTest` only; `app/Services/` empty; no auth config files.
+
+| Step | Files | Delta | Tests (user-run, `php artisan test`) |
+|------|-------|-------|--------------------------------------|
+| 1. Config trio | `config/jwt.php`, `config/auth-platform.php` (verbatim) · `config/consult-platform.php` (from cert's: `tenant_slug=loa`, `loa_connect_refresh`, drop cert-only keys) | None — no behavior change | `HealthTest` green |
+| 2. Services trio | `app/Services/{JWTService,EncryptionService,AuditLogger}.php` | Verbatim; Audit writes consult `audit_logs` | Indirect (exercised via steps 3–6) |
+| 3. `JwtMiddleware` | Replace stub | Tenant/attr re-point; error shapes verbatim | 401 missing · 401 invalid/expired/wrong-type · 403 tenant mismatch · valid passes |
+| 4. Catalog | `config/consult-endpoints.php` | Generated from `api-endpoints.md` §5: `public[]` + 118 gated rows | Validated via step 5 |
+| 5. `EndpointPolicyMiddleware` | Replace stub | `consult-endpoints.php`; confirm `jwt_claims` attr at port time | Public passes tokenless · unknown path 403 (closed-by-default) · level-denied 403 · level-sufficient passes |
+| 6. Auth trio | `AuthCallback/Refresh/LogoutController` | Cookie/config names; callback ADDS first-class `students`/`employees` upsert (§7, no `app_users`) | Callback 400/401/403/200+cookie+upsert+audit · Refresh 200/401/502 · Logout 204 always + cookie cleared |
+| 7. Gate routes | `routes/api.php`: `auth/*` public + throttle 10/min; everything else under `['jwt.auth','jwt.endpoint']` (health stays public) | Current open routes become gated | Health public · semesters/admin 401 tokenless · full suite green |
+
+**Test rules:** one behavior per test · `RefreshDatabase` · JWT claims helper, never hardcoded tokens · request-level over mocks · suites sequential only · `HealthTest` green after every step.
+
+**Risks:** `DatabaseSeeder` is BROKEN (refs missing `User`) — tests must avoid seeding or fix seeder first (out of scope unless it blocks; flag at step 6) · test secrets (`JWT_SECRET`/`ENCRYPTION_KEY`) must exist in `phpunit.xml.dist`/`.env.testing` — verify at step 1.
+
+---
+
 ## Document Control
 
-- **Status:** Final v1.3 (v1.0 promoted 2026-09-18; v1.1 added §10 port inventory; v1.2 group-wording: Auth owns all groups; v1.3 §7 + §10 #3: `app_users` removed — first-class `students`/`employees` upsert per `data-model.md` Final v1.2; Auth Platform = sole identity authority, Identity Kernel = concepts)
+- **Status:** Final v1.4 (history: v1.0 promoted 2026-09-18; v1.1 §10 port inventory; v1.2 group-wording; v1.3 §7/§10 #3 no-`app_users`; v1.4 §11 port plan — user-approved Final 2026-09-22, gates Step 1+)
 - **Created:** 2026-09-18
-- **Next:** auth-layer port (middleware + SSO trio) per §10
+- **Next:** auth-layer port per §10–§11 (Step 1 config trio)

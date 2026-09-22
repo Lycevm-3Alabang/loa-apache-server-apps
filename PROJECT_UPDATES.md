@@ -77,8 +77,8 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 ### Consult — `assemblies/loa-consult-platform/` (spec program **ACTIVE** 2026-09-22)
 
 - **Status:** scaffold done (`HealthTest` green) + academic slice partial (9 models/routes, JWT stubs pass-through). Spec program resumed 2026-09-22 (spec-first); next implementation = auth layer (middleware + SSO trio).
-- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.3 (no `app_users` — students/employees first-class), 3 endpoint modules Final v1.0, `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.2 (source-verified); `consult-readiness.md` Draft v1.2 (Laravel assembly active; §9/§10 aligned); `test-suite.md` + runbooks still Draft.
-- **Next:** auth layer (middleware + controllers per `auth-integration.md` §10) → slices B/C.
+- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.4 (§11 port plan; Step 1 config trio landed), 3 endpoint modules Final v1.0, `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.3 (shape contract + §3 Status implementability gate: 6/3/17); `consult-readiness.md` Draft v1.2 (Laravel assembly active; §9/§10 aligned); `test-suite.md` + runbooks still Draft.
+- **Next:** Phase 1 HealthTest paste (close Step 1) → Step 2 full services trio (`JWTService`/`EncryptionService`/`AuditLogger` verbatim; AuditLogger uncallable until `audit_logs` migrates — flag at step 6) → middleware → catalog → controllers → gate routes → slices B/C.
 
 ---
 
@@ -89,6 +89,7 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 ### Completed
 - **Governance lean merge:** `AGENTS.md` rewritten as sole entry (SDD+TDD loop, Rule 0/0.5, No Auto-Pilot, testing, Laravel gotchas); detail migrated to `principles.md` §2b + `platform.md` §15b; `PROJECT.md` references updated.
 - **Scope change (earlier same day):** Consult deferred; focus is Auth + Cert alignment — **superseded:** Consult spec program resumed 2026-09-22 (see TODO ACTIVE banner).
+- **Last Session Notes (2026-09-22):** `data-model.md` v1.2 → **Final v1.3** (user Option A): Status column gates implementability — Final means shape-verified, not “ready to code”; `audit_logs`/`bug_reports`/§3.2–3.3 = Specified—not migrated. Phase 1 HealthTest paste still outstanding; Phase 2 = full services trio (`JWTService`/`EncryptionService`/`AuditLogger` verbatim per `auth-integration` §11).
 - **Consult readiness/identity fix pass:** `consult-readiness.md` v1.0 → v1.2 (false deferred-claim removed; Laravel assembly active; §9/§10 no `app_users`); `auth-integration.md` Final v1.2 → v1.3 (students/employees first-class; Auth Platform = sole identity authority per user decision); trackers reconciled.
 - **This file consolidated:** startup prompt updated (no AI-RULES/AI-GUIDE); per-platform sections cut to Status/Done/Next; verbose history + session log dropped (git history is the archive).
 

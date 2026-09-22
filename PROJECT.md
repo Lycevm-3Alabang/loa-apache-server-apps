@@ -77,7 +77,7 @@ This rule is enforced in `AGENTS.md` (sole entry; detail in `principles.md` / `p
 | Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Final (v1.2 — destination resolution) — implemented |
 | Assembly | LOA Admin Dashboard | `assemblies/loa-auth-platform/admin-dashboard.md` | ✅ Final (v1 + v2 implemented) |
 | Assembly | Access Config Import/Export | `assemblies/loa-auth-platform/access-config-import-export.md` | ✅ Final v1.0 — implemented |
-| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Scaffolded (2026-09-18); data-model Final v1.2 source-verified, 3 endpoint modules Final v1.0, docker-compose-spec Final v1.0 |
+| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Scaffolded (2026-09-18); data-model Final v1.3 status-split, 3 endpoint modules Final v1.0, docker-compose-spec Final v1.0 |
 | Assembly | LOA Cert Platform | `assemblies/loa-cert-platform/README.md` | ✅ Draft |
 
 ---
@@ -159,8 +159,8 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
 | `api-endpoints.md` spec | ✅ Final v1.0 | Root spec: conventions, 118-route summary, levels, design decisions |
-| `auth-integration.md` spec | ✅ Final v1.3 | SSO contract, cookie, middleware, 14-item port inventory; v1.3: no `app_users` — students/employees first-class; Auth Platform = sole identity authority |
-| `data-model.md` spec | ✅ Final v1.2 | Source-verified (M17/M19/M21/M26/M27/M30/M31); first-class students/employees; Owner + no-cross-FK rules; §7 baseline delta filed |
+| `auth-integration.md` spec | ✅ Final v1.4 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 port plan; Step 1 config trio landed |
+| `data-model.md` spec | ✅ Final v1.3 | Shape contract (M17/M19/M21/M26/M27/M30/M31); §3 Status gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
 | `endpoints-academic.md` spec | ✅ Final v1.0 | 14 handlers; parent levels corrected (POST/PATCH + impacts → admin) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
 | `endpoints-evaluations.md` spec | ✅ Final v1.0 | 24 handlers: lifecycle/masking, periods, rubrics, results, dispute mail |
@@ -350,4 +350,6 @@ loa-apache-server-apps/
 | 2026-09-18 | Consult: modular 10-file spec savepoint | Ground truth = `route.ts` scan (112 files, ~142 combos; 118 migrating), not `endpoint-catalog.md` (drift recorded) |
 | 2026-09-18 | Consult: hybrid users approach | Users cache table with no FK relationships; all consult user-ref columns = opaque Auth sub TEXT; eliminates circular FK; users upserted from JWT on login |
 | 2026-09-18 | Consult: Laravel scaffold done | Real Laravel 12.12 via composer, PHP 8.3 pinned, HealthTest green in Docker |
-| 2026-09-22 | Consult: no `app_users` — students/employees first-class | User decision: `app_users` duplicated Auth + Identity Kernel; `auth-integration.md` v1.3 §7/§10 + `consult-readiness.md` v1.2 §9 aligned to `data-model.md` Final v1.2; Auth Platform = sole identity authority |
+| 2026-09-22 | Consult: port plan filed in spec | User decision: §11 sequenced landing lives in `auth-integration.md` (v1.4 Draft); re-promotion to Final gates auth-layer code per Rule 0 |
+| 2026-09-22 | Consult: no `app_users` — students/employees first-class | User decision: `app_users` duplicated Auth + Identity Kernel; `auth-integration.md` v1.3 §7/§10 + `consult-readiness.md` v1.2 §9 aligned to `data-model.md` Final v1.3; Auth Platform = sole identity authority |
+| 2026-09-22 | Consult: `data-model.md` Final = shape ≠ codeable | User decision (Option A): §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); `audit_logs` not codeable until migration lands |

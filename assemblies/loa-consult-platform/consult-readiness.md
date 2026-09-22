@@ -3,7 +3,7 @@
 **Version:** 1.2
 **Status:** Draft
 **Audience:** Auth Platform engineers, Consult Platform engineers
-**Purpose:** Auth Platform provisioning checklist for the LOA Consult Platform (Laravel backend + Next.js frontend on Vercel). Normative auth contract: `auth-integration.md` Final v1.3 — this doc is provisioning checklist + historical notes only.
+**Purpose:** Auth Platform provisioning checklist for the LOA Consult Platform (Laravel backend + Next.js frontend on Vercel). Normative auth contract: `auth-integration.md` Final v1.4 — this doc is provisioning checklist + historical notes only.
 
 ---
 
@@ -11,7 +11,7 @@
 
 The e-consultation app (`aces.lyceumalabang.edu.ph`) has a **Next.js 16** frontend (Vercel) currently using **NextAuth v4** with its own user store (Supabase PostgreSQL). It must migrate to the centralized **loa-auth-platform** for authentication and authorization, following the same pattern as the LOA Cert Platform.
 
-**Architecture (current):** The consult frontend stays Next.js (Vercel); the consult backend is the **`loa-consult-platform` Laravel assembly** — active, not deferred — mirroring cert's Laravel pattern. API routes migrate from Next.js to Laravel; the frontend remains untouched until cutover. Normative auth behavior (SSO flow, JWT validation, auth endpoints, provisioning steps) lives in `auth-integration.md` Final v1.3.
+**Architecture (current):** The consult frontend stays Next.js (Vercel); the consult backend is the **`loa-consult-platform` Laravel assembly** — active, not deferred — mirroring cert's Laravel pattern. API routes migrate from Next.js to Laravel; the frontend remains untouched until cutover. Normative auth behavior (SSO flow, JWT validation, auth endpoints, provisioning steps) lives in `auth-integration.md` Final v1.4.
 
 ---
 
@@ -390,7 +390,7 @@ All endpoints: `admin` level. Full access.
 
 # 3. SSO Flow
 
-> **HISTORICAL — superseded by `auth-integration.md` §2 (Final v1.3).** Paths below use the pre-Laravel `/api/auth/*` shape; the normative flow is Laravel `/api/v1/auth/*` (Laravel decrypts + sets the refresh cookie). Kept for provisioning context only.
+> **HISTORICAL — superseded by `auth-integration.md` §2 (Final v1.4).** Paths below use the pre-Laravel `/api/auth/*` shape; the normative flow is Laravel `/api/v1/auth/*` (Laravel decrypts + sets the refresh cookie). Kept for provisioning context only.
 
 The consult app uses the same SSO redirect pattern as the cert app.
 
@@ -412,7 +412,7 @@ The consult app uses the same SSO redirect pattern as the cert app.
 
 # 4. Consult App Endpoints to Implement
 
-> **HISTORICAL — superseded by `auth-integration.md` §3 (Final v1.3).** Auth endpoints are implemented by the **Laravel** assembly at `/api/v1/auth/*` (callback / refresh / logout), not by Next.js. Response shapes below are stale. Kept for provisioning context only.
+> **HISTORICAL — superseded by `auth-integration.md` §3 (Final v1.4).** Auth endpoints are implemented by the **Laravel** assembly at `/api/v1/auth/*` (callback / refresh / logout), not by Next.js. Response shapes below are stale. Kept for provisioning context only.
 
 Historical note (pre-Laravel): the consult app (Next.js) planned to implement 3 auth endpoints, following the cert app pattern:
 
@@ -517,7 +517,7 @@ Before the consult app can integrate, the Auth Platform must:
 
 # 9. User Data Sync
 
-**No `app_users` cache** — Auth Platform is the sole identity authority (concepts: Identity Kernel); consult does not mirror it (`data-model.md` §1.3, §4; `auth-integration.md` §7 Final v1.3). After SSO login:
+**No `app_users` cache** — Auth Platform is the sole identity authority (concepts: Identity Kernel); consult does not mirror it (`data-model.md` §1.3, §4; `auth-integration.md` §7 Final v1.4). After SSO login:
 
 1. The consult backend receives JWT claims (`sub`, `email`, `name`, `groups`, `permissions`)
 2. It upserts first-class domain entities by `email` per `data-model.md` §3.1.1 (`students`) and §3.1.2 (`employees`)
@@ -587,13 +587,13 @@ After setup, verify:
 
 # 13. Cross-References (historical)
 
-Normative ownership: **`assemblies/loa-consult-platform/` only** (this doc + `auth-integration.md` Final v1.3 + `api-endpoints.md` Final v1.0 + `data-model.md` Final v1.2). Nothing outside the assembly redefines consult auth behavior.
+Normative ownership: **`assemblies/loa-consult-platform/` only** (this doc + `auth-integration.md` Final v1.4 + `api-endpoints.md` Final v1.0 + `data-model.md` Final v1.2). Nothing outside the assembly redefines consult auth behavior.
 
 Historical pointers (legacy e-consultation repo, `D:\loa\e-consultation\specs/` — **no sync duty**, may be stale):
 
 | Legacy Spec | Related Section | Note |
 |-------------|-----------------|------|
-| `specs/auth-integration.md` | §3-5 | Superseded by assembly `auth-integration.md` Final v1.3 |
+| `specs/auth-integration.md` | §3-5 | Superseded by assembly `auth-integration.md` Final v1.4 |
 | `specs/endpoint-catalog.md` | §2.3-2.4 | Superseded by assembly `api-endpoints.md` Final v1.0 |
 | `specs/migration-checklist.md` | §6-7 | Historical migration notes only |
 
@@ -608,5 +608,5 @@ Historical pointers (legacy e-consultation repo, `D:\loa\e-consultation\specs/` 
 - **Updated:** 2026-09-22 — v1.2: §9 rewritten (no `app_users`; first-class `students`/`employees` upsert per `data-model.md` Final v1.2; Auth Platform = sole identity authority); §10 `app_users.role` marked legacy Next.js source only; §13 cross-repo sync duty removed — normative = assembly only, e-consultation specs historical
 - **Prior (2026-09-22) — v1.1:** removed false "Laravel assembly is deferred" claim; architecture corrected (Laravel assembly active); §3–§4 marked historical/superseded by `auth-integration.md`; §8 table aligned to Laravel backend
 - **Source:** e-consultation app analysis (`D:\loa\e-consultation`)
-- **Cross-references:** `D:\loa\e-consultation\specs/` (3 legacy files — historical, no sync), `assemblies/loa-consult-platform/auth-integration.md` Final v1.3 (normative), `data-model.md` Final v1.2
+- **Cross-references:** `D:\loa\e-consultation\specs/` (3 legacy files — historical, no sync), `assemblies/loa-consult-platform/auth-integration.md` Final v1.4 (normative), `data-model.md` Final v1.2
 - **Supersedes:** None
