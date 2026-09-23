@@ -34,6 +34,7 @@ class ResultsTest extends TestCase
         '/api/v1/admin/evaluation-results/invalidate',
         '/api/v1/admin/evaluation-results/visibility',
         '/api/v1/admin/evaluations/disabled',
+        '/api/v1/admin/evaluations/disabled/restore',
         '/api/v1/admin/evaluations/{evaluationId}/details',
         '/api/v1/admin/evaluations/{evaluationId}/invalidate',
         '/api/v1/dean/evaluation-results',

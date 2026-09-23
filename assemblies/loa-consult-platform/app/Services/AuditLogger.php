@@ -20,6 +20,13 @@ class AuditLogger
         ?string $userId = null,
         ?string $userEmail = null,
     ): AuditLog {
+        // Fail closed with a catchable exception until the audit_logs slice
+        // lands (no model/table yet). Callers MUST stay fail-soft: a missing
+        // class would otherwise surface as a fatal Error.
+        if (!class_exists(AuditLog::class)) {
+            throw new \RuntimeException('Audit store unavailable (audit_logs not migrated)');
+        }
+
         return AuditLog::create([
             'user_id' => $userId,
             'user_email' => $userEmail,
