@@ -41,11 +41,6 @@ class FacultySubject extends Model
         return $this->belongsTo(Section::class);
     }
 
-    public function section(): BelongsTo
-    {
-        return $this->belongsTo(Section::class);
-    }
-
     public function semester(): BelongsTo
     {
         return $this->belongsTo(Semester::class);
