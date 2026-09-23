@@ -2,7 +2,7 @@
 ## Project Tracker
 
 **Started:** 2026-07-30
-**Last Updated:** 2026-09-18
+**Last Updated:** 2026-09-23
 **Target:** cPanel (PHP 8.3+ / MySQL 8 / Laravel 12)
 
 ---
@@ -164,29 +164,29 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | `endpoints-academic.md` spec | ✅ Final v1.0 | 14 handlers; parent levels corrected (POST/PATCH + impacts → admin) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
 | `endpoints-evaluations.md` spec | ✅ Final v1.0 | 24 handlers: lifecycle/masking, periods, rubrics, results, dispute mail |
-| `test-suite.md` spec | ✅ Draft v0.1 | MySQL `loa_consult_test`, JWT helper, coverage per module |
+| `test-suite.md` spec | ✅ Final v1.0 | Test contract for auth-layer + B/C (CON/DEC/ACC/D); MySQL `loa_consult_test`, JWT helper, user-run sequential |
 | `docker-compose-spec.md` spec | ✅ Final v1.0 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |
 | `consult-readiness.md` spec | ✅ Draft v1.2 | Auth provisioning checklist; Laravel assembly active; no `app_users` (students/employees per data-model v1.2) |
-| First migration(s) | ✅ Partial 2026-09-19 | `000001-000010` academic (dept→enrollments + audit) exist; §7 baseline delta (follow-up migrations) gates slice build |
+| First migration(s) + baseline deltas | ✅ Done 2026-09-22 | `000001-000010` academic + `000011` academic baseline + `000012` appointment-family + `000013` section-link + `000014` evaluation tables; per data-model Final v1.3 §3/§7 |
 | JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa`, `consult_user`; Unit tests green. **Gated in Step 7** |
 | Permission middleware | ✅ Step 5 done | Cert port verbatim (`consult-endpoints` re-point only, `jwt_claims` confirmed); Unit tests green (public/403/level/catalog-count). **Gates all domain routes since Step 7** |
 | Route gating | ✅ Step 7 done | `auth/*` public + `throttle:10,1` on callback/refresh; health + count-active public; semesters/admin under `jwt.auth`+`jwt.endpoint`; RouteGatingTest green 2026-09-22 |
-| Appointment model + migrations | ⬜ Not started | |
-| TimeSlot model + migrations | ⬜ Not started | |
-| Attendee model + migrations | ⬜ Not started | |
-| AvailabilityRule model + migrations | ⬜ Not started | |
-| Appointment CRUD endpoints | ⬜ Not started | |
-| Batch appointment creation | ⬜ Not started | |
-| Conflict detection service | ⬜ Not started | |
-| Accept/decline/complete endpoints | ⬜ Not started | |
-| Semester model + migrations | ✅ Partial | `Semester.php` + `000007` + `SemesterController` (8 routes) exist; unauthenticated |
-| Rubric models + migrations | ⬜ Not started | |
-| Evaluation model + migrations | ⬜ Not started | |
-| Evaluation endpoints | ⬜ Not started | |
-| Evaluation result computation | ⬜ Not started | |
-| Subject/Section/Enrollment models | ✅ Partial | `Subject/Section/StudentEnrollment/Department/DepartmentCourse/Student/Employee/FacultySubject.php` + `000001-000009` exist |
-| Academic infrastructure endpoints | ✅ Partial | `AcademicController` + `admin/*16` routes exist; unauthenticated, no import |
+| Appointment model + migrations | ✅ Done 2026-09-22 | B2 `000012`: appointments table + thin model; slice B COMPLETE green pasted |
+| TimeSlot model + migrations | ✅ Done 2026-09-22 | B2 `000012`: slots table + thin model; slice B COMPLETE green pasted |
+| Attendee model + migrations | ✅ Done 2026-09-22 | B2 `000012`: attendees table + thin model; slice B COMPLETE green pasted |
+| AvailabilityRule model + migrations | ✅ Done 2026-09-22 | B2 `000012` table + B3 `AvailabilityRuleController` + `AvailabilityTest` 10/10 green pasted |
+| Appointment CRUD endpoints | ✅ Done 2026-09-22 | B4 `AppointmentController` 10 routes + `AppointmentTest` 12/12 green pasted |
+| Batch appointment creation | ✅ Done 2026-09-22 | B4 batch path in `AppointmentController`; green pasted with B4 |
+| Conflict detection service | ✅ Done 2026-09-22 | B4 legacy-verified conflicts/slots/rules; green pasted with B4 |
+| Accept/decline/complete endpoints | ✅ Done 2026-09-22 | B4 action dispatch; green pasted with B4 |
+| Semester model + migrations | ✅ Done 2026-09-22 | `Semester.php` + `000007` + `SemesterController` gated (`jwt.auth`+`jwt.endpoint`) + B5 per-semester impacts; slice B COMPLETE |
+| Rubric models + migrations | ✅ Done 2026-09-22 | C1 `000014` rubric tables + C2 periods/rubric-groups endpoints + `PeriodsRubricsTest` green pasted |
+| Evaluation model + migrations | ✅ Done 2026-09-22 | C1 `000014` 10 evaluation tables + 10 thin models + `EvaluationTablesTest` 4/4 green pasted |
+| Evaluation endpoints | ✅ Done 2026-09-22 | C3 evaluations lifecycle + `EvaluationFlowTest` green pasted |
+| Evaluation result computation | ✅ Done 2026-09-22 | C4 ResultsService + 20 routes + `ResultsTest` green pasted; slice C COMPLETE |
+| Subject/Section/Enrollment models | ✅ Done 2026-09-22 | 9 models + `000001-000009` + B1 `000011` baseline delta + B5 hardening; slice B COMPLETE |
+| Academic infrastructure endpoints | ✅ Done 2026-09-22 | `AcademicController` + gated `admin/*` routes + B5 hardening (`AcademicHardeningTest`) + `000013`; slice B COMPLETE |
 | Report endpoints (7 types) | ⬜ Deferred to Phase E | No REST routes exist; Server Components compute directly |
 | CSV import | ⬜ Not started | |
 | Email notifications | ⬜ Not started | |

@@ -76,9 +76,9 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 
 ### Consult — `assemblies/loa-consult-platform/` (spec program **ACTIVE** 2026-09-22)
 
-- **Status:** scaffold done (`HealthTest` green) + academic slice partial (9 models/routes, JWT stubs pass-through). Spec program resumed 2026-09-22 (spec-first); next implementation = auth layer (middleware + SSO trio).
-- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.4 (§11 Steps 1–7 landed: config · services trio · JwtMiddleware · catalog 118+5 · EndpointPolicy · auth trio · gate routes — suite green 2026-09-22, port COMPLETE), 3 endpoint modules Final v1.0, `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.3 (shape contract + §3 Status gate 6/3/17); `consult-readiness.md` Draft v1.2; `test-suite.md` + runbooks still Draft.
-- **Next:** paste suite green (covers Steps 4–6), then Step 7 gate routes (`auth/*` public + throttle 10/min, rest under `jwt.auth`+`jwt.endpoint`). Auth JSON deferred to deploy-time. Routes still ungated until Step 7.
+- **Status:** scaffold done + auth-layer port COMPLETE (§11 Steps 1–7 green 2026-09-22) + slices B/C COMPLETE (B1–B5 academic/appointments, C1–C4 evaluations green 2026-09-22). Stopped — next phase needs user yes.
+- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.4 (§11 Steps 1–7 landed: config · services trio · JwtMiddleware · catalog 118+5 · EndpointPolicy · auth trio · gate routes — suite green 2026-09-22, port COMPLETE), 3 endpoint modules Final v1.0, `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.3 (shape contract + §3 Status gate 6/3/17); `test-suite.md` Final v1.0; `consult-readiness.md` Draft v1.2; runbooks still Draft.
+- **Next:** implementation phase planning (scaffold, domain slices, C-Auth, cutover) — gated; see TODO AFTER FINAL SPECS. Auth JSON deferred to deploy-time.
 
 ---
 

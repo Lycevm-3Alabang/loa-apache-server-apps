@@ -195,6 +195,11 @@ envelope migration without a spec.
 - **Current status (2026-09-22) — C3 green pasted.** Evaluations lifecycle (masking, get-or-create, pending,
   bootstrap, dispute, comments) + flow tests. Trackers updated.
   **Stopped — C4 (results/computeAll) needs user yes.**
+- **Current status (2026-09-22) — C4 green pasted, slice C COMPLETE.** ResultsService (computeAll, lazy,
+  visibility, camelCase aggregates) + 20 result routes + tests; reassign/enrollment side effects wired. Trackers
+  updated. **Stopped — next phase needs user yes.**
+- **Current status (2026-09-23) — trackers reconciled + test-suite Final v1.0.** TODO boxes (Auth/B/C) ticked COMPLETE, auth row Steps 1–7, PROJECT Phase 2 B/C Done, UPDATES Consult Status/Next current. `test-suite.md` Draft v0.1 → Final v1.0 (§1.9 template, CON/ACC/D, user-approved). Trackers updated.
+  **Stopped — next spec or phase needs user yes.**
 
 ---
 
@@ -205,11 +210,11 @@ envelope migration without a spec.
 | Spec | Status |
 |---|---|
 | `api-endpoints.md` v1.0 | FINAL — 118 routes, levels, ground truth |
-| `auth-integration.md` v1.4 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Steps 1–5 ✓ suite green; Step 6 auth trio next) |
+| `auth-integration.md` v1.4 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Steps 1–7 ✓ suite green 2026-09-22, port COMPLETE) |
 | `endpoints-academic/appointments/evaluations.md` v1.0 | FINAL — module contracts |
 | `docker-compose-spec.md` v1.0 | FINAL — root-stack wiring `:9002` |
 | `data-model.md` v1.3 | FINAL — shape contract (source-verified M17/M19/M21/M26/M27/M30/M31); §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
-| `test-suite.md` v0.1 | DRAFT — coverage plan |
+| `test-suite.md` v1.0 | FINAL — auth + B/C contract (CON/ACC/D), user-run sequential |
 | `LOCAL-DEV-RUNBOOK.md` v0.1 | DRAFT — local dev setup |
 | `DEPLOY.md` v0.1 | DRAFT — deployment skeleton |
 | `FRONTEND-INTEGRATION.md` v0.1 | DRAFT — cutover checklist skeleton |

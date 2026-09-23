@@ -12,7 +12,7 @@
 
 - [x] 2026-09-19 — Academic slice partial — migrations 000001-000009 (departments, department_courses, subjects, sections, students, employees, semesters, faculty_subjects, student_enrollments) + 000010 audit → 9 models → `AcademicController` + `SemesterController` → ~24 routes (no auth middleware yet; stubs pass-through)
 
-- [ ] Auth layer — middleware + controllers per `auth-integration.md` Final v1.4 §10–§11 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`) — Steps 1–7 landed (config · services · JwtMiddleware · catalog · EndpointPolicy · auth trio · gate routes); **full suite green pasted 2026-09-22 — auth-layer port COMPLETE per §11**
+- [x] Auth layer — middleware + controllers per `auth-integration.md` Final v1.4 §10–§11 (SSO callback/refresh/logout, `jwt.auth`/`jwt.endpoint`) — Steps 1–7 landed (config · services · JwtMiddleware · catalog · EndpointPolicy · auth trio · gate routes); **full suite green pasted 2026-09-22 — auth-layer port COMPLETE per §11**
 
 - [x] 2026-09-22 — `data-model.md` Final v1.2 → **Final v1.3** (Option A status split, user-approved): Final = shape contract only; §3 Status legend + column (6 Implemented / 3 Delta pending / 17 Specified—not migrated, incl. `audit_logs`/`bug_reports`); §7 implementability authority; no shape changes
 
@@ -20,9 +20,9 @@
 
 ## AFTER FINAL SPECS (implementation gates)
 
-- [ ] Domain slice B — appointments/academic/semesters — **COMPLETE green pasted** (B1 deltas + B2 tables + B3 availability + B4 appointments + B5 academic hardening)
+- [x] Domain slice B — appointments/academic/semesters — **COMPLETE green pasted** (B1 deltas + B2 tables + B3 availability + B4 appointments + B5 academic hardening)
 
-- [ ] Domain slice C — evaluations/periods/rubrics/results — C1+C2+C3 **green pasted**; C4 landed (awaiting suite green): results service (computeAll, lazy, visibility, aggregates) + 20 result routes + `ResultsTest` + reassign/enrollment side effects wired
+- [x] Domain slice C — evaluations/periods/rubrics/results — **COMPLETE green pasted** (C1 tables + C2 periods/rubrics + C3 lifecycle + C4 results/compute)
 
 - [ ] Implementation phase planning (scaffold, domain slices, C-Auth, cutover) — flush out when all specs are Final
 
@@ -45,12 +45,12 @@
 | Spec | Version | Status | Blocks |
 |------|---------|--------|--------|
 | `api-endpoints.md` | v1.0 | **Final** | — (root spec) |
-| `auth-integration.md` | v1.4 | **Final** | §11 port plan; Steps 1–3 landed (config · services trio · JwtMiddleware) — all tests green |
+| `auth-integration.md` | v1.4 | **Final** | §11 port plan; Steps 1–7 landed (config · services trio · JwtMiddleware · catalog 118+5 · EndpointPolicy · auth trio · gate routes) — full suite green 2026-09-22, port COMPLETE |
 | `data-model.md` | v1.3 | **Final** | — (shape contract; §3 Status gates implementability: 6 Implemented / 3 Delta pending / 17 Specified—not migrated; source-verified M17/M19/M21/M26/M27/M30/M31) |
 | `endpoints-academic.md` | v1.0 | **Final** | — (build-time carry-forward: repo-only fields, join paths) |
 | `endpoints-appointments.md` | v1.0 | **Final** | — (build-time carry-forward: actor-ownership, Teams sync) |
 | `endpoints-evaluations.md` | v1.0 | **Final** | — (build-time carry-forward: service rules, nested keys) |
-| `test-suite.md` | v0.1 | **Draft** | test infrastructure |
+| `test-suite.md` | v1.0 | **Final** | test contract for auth-layer + B/C (CON/DEC/ACC/D); user-run sequential |
 | `docker-compose-spec.md` | v1.0 | **Final** | — (root stack wiring: §2 blocks + §3 init + §4 secrets + §7 scripts) |
 | `LOCAL-DEV-RUNBOOK.md` | v0.1 | **Draft** | local dev setup |
 | `DEPLOY.md` | v0.1 | **Draft** | deployment |
@@ -71,6 +71,7 @@
 - [x] 2026-09-22 — C1 **green pasted**: `000014` evaluation tables + 10 thin models + `EvaluationTablesTest` 4/4
 - [x] 2026-09-22 — C2 **green pasted**: periods + rubric-groups endpoints + `PeriodsRubricsTest` (one Type-B test-typo fix en route)
 - [x] 2026-09-22 — C3 **green pasted**: evaluations lifecycle + `EvaluationFlowTest` (one Type-B seed-unique fix en route)
+- [x] 2026-09-22 — C4 **green pasted**: results service + 20 routes + `ResultsTest`; repairs: restore test perm, AuditLogger catchable guard
 
 - [x] 2026-09-22 — **Step 7** gate routes **full suite green pasted — §11 auth-layer port COMPLETE**: `auth/*` public + `throttle:10,1` on callback/refresh (cert pattern) · health + count-active public · semesters/admin under `['jwt.auth','jwt.endpoint']` (removed duplicate public `GET /semesters`) · `tests/Feature/Api/RouteGatingTest.php` 5 tests (public stays public · gated 401 tokenless · callback reachable)
 - [x] 2026-09-22 — **Step 6** auth trio landed **full suite green pasted** (`AuthCallbackController` + email-domain upsert + `SSO-` placeholder ≤10 chars + fail-soft audit · refresh/logout · `AuditLogger` L119 reshape · public `auth/*` trio · `AuthTrioTest` 16 tests; red-triage fixes: `000010` guarded, `tests/bootstrap.php` test-DB pin)
