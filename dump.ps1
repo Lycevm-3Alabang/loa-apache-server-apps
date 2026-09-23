@@ -5,10 +5,11 @@
 .EXAMPLE
   ./dump.ps1 --target auth
   ./dump.ps1 --target cert
+  ./dump.ps1 --target consult
   ./dump.ps1 -Target auth -Path D:\somewhere-else
 #>
 param(
-    [ValidateSet('auth', 'cert')]
+    [ValidateSet('auth', 'cert', 'consult')]
     [string]$Target = 'auth',
 
     # Default dump destination when not supplied.
@@ -24,6 +25,7 @@ $repoRoot = $PSScriptRoot
 $targets = @{
     auth = @{ App = 'loa-auth-platform'; Container = 'loa-platform-auth-app-1' }
     cert = @{ App = 'loa-cert-platform'; Container = 'loa-platform-cert-app-1' }
+    consult = @{ App = 'loa-consult-platform'; Container = 'loa-platform-consult-app-1' }
 }
 
 $t       = $targets[$Target]
@@ -48,7 +50,7 @@ Get-ChildItem -LiteralPath $appRoot | Where-Object {
     $_.Name -notin @(
         '.git', 'node_modules', 'vendor', 'docker', 'docker-compose.yml',
         '.phpunit.cache', '.phpunit.result.cache', 'tmp', 'loa_auth',
-        '.dist-stage', 'generate-dist.ps1'
+        '.dist-stage', 'generate-dist.ps1', '_stage'
     )
 } | ForEach-Object {
     Copy-Item $_.FullName -Destination $stage -Recurse -Force
@@ -138,9 +140,15 @@ Write-Host "  Zip:    $zip"
 # ── Regenerate cPanel SQL installer from Docker schema ───────────────────
 Write-Host "Regenerating cPanel SQL installer for '$Target'..."
 
-$dockerDb = @{ auth = 'loa_auth'; cert = 'loa_cert' }[$Target]
-$cpanelDb = @{ auth = 'lyceumalabang_auth_db'; cert = 'lyceumalabang_e_cert_db' }[$Target]
+$dockerDb = @{ auth = 'loa_auth'; cert = 'loa_cert'; consult = 'loa_consult' }[$Target]
+$cpanelDb = @{ auth = 'lyceumalabang_auth_db'; cert = 'lyceumalabang_e_cert_db'; consult = 'loa_consult' }[$Target]
 $sqlOut   = Join-Path $appRoot "database\sql\cpanel-$Target-db-install.sql"
+# Consult keeps its Docker DB name in production (per consult DEPLOY.md §3),
+# so the rename above is a no-op for that target.
+$sqlDir = Split-Path -Parent $sqlOut
+if (-not (Test-Path -LiteralPath $sqlDir)) {
+    New-Item -ItemType Directory -Path $sqlDir -Force | Out-Null
+}
 
 # Tenants to REMOVE from the dump (only loa-e-cert and auth are kept).
 $removeTenantSlugs = @('aces-api', 'e-cert')

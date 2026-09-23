@@ -24,7 +24,7 @@
 
 - [x] Domain slice C — evaluations/periods/rubrics/results — **COMPLETE green pasted** (C1 tables + C2 periods/rubrics + C3 lifecycle + C4 results/compute)
 
-- [x] 2026-09-23 — Implementation phase planning **FLUSHED (user-approved draft)**: P0 scaffold done (`docker-compose-spec.md` Final v1.0) · P1 C-Auth done (`auth-integration.md` Final v1.4 §11 Steps 1–7: Jwt 6 + Policy 5 + Trio 16 + Gating 5 green) · P2 Slice B done (B1 `000011` + B2 `000012` 5 models + B3 2 routes 10/10 + B4 10 routes 12/12 + B5 `000013` hardening; semesters 7+1) · P3 Slice C done (C1 `000014` 10 tables/models 4/4 + C2 periods 12 + rubrics 12 + C3 lifecycle 12 + C4 `ResultsService` + 15 scoped results; C2 7 methods vs 16-claim drift open) · P4 Slice D baselines green (link-reads 3 + import 10 + data 4 served, audit-logs 2 pending by gate; DEC-5 proxy OPEN; config L131-132 unflattened) · P5 Flatten F1/F2 done (104+5 normative) · **P6 Cutover/Phase E BLOCKED**: runbooks Draft v0.1 (LOCAL-DEV/DEPLOY/FRONTEND) + frontend decision + reports + §8 provisioning. Cross-gates: `TENANT_SLUG=loa`, secrets identical, `.htaccess` Authorization, bare shapes, no local roles, sequential `loa_consult_test`, HealthTest green + user paste
+- [x] 2026-09-23 — Implementation phase planning **FLUSHED (user-approved draft)**: P0 scaffold done (`docker-compose-spec.md` Final v1.0) · P1 C-Auth done (`auth-integration.md` Final v1.4 §11 Steps 1–7: Jwt 6 + Policy 5 + Trio 16 + Gating 5 green) · P2 Slice B done (B1 `000011` + B2 `000012` 5 models + B3 2 routes 10/10 + B4 10 routes 12/12 + B5 `000013` hardening; semesters 7+1) · P3 Slice C done (C1 `000014` 10 tables/models 4/4 + C2 periods 12 + rubrics 12 + C3 lifecycle 12 + C4 `ResultsService` + 15 scoped results; C2 7 methods green, 16-claim fixed) · P4 Slice D baselines green (link-reads 3 + import 10 + data 4 served, audit-logs 2 pending by gate; config audit-logs flattened fixed) · P5 Flatten F1/F2 done (104+5 normative; full suite **120 passed green 2026-09-23**) · **P6 PARKED 2026-09-23 — get back later**: runbook promotions + DEC-5 + Phase E + §8 provisioning (see PLANNED). Cross-gates: `TENANT_SLUG=loa`, secrets identical, `.htaccess` Authorization, bare shapes, no local roles, sequential `loa_consult_test`, HealthTest green + user paste
 
 ---
 
@@ -34,9 +34,13 @@
 
 - [x] SUPERSEDED 2026-09-23 — Phase D spec slice (was DEFERRED with admin+import above): `endpoints-admin-import.md` Final v1.1 covers admin-users + import + data-audit; `/service/*` proxy decision still OPEN per DEC-5 (no proxy code until recorded)
 
-- [ ] Phase E: reports as Laravel API + cutover (frontend rewrite decision: Vercel rewrite vs direct+CORS)
+- [ ] PARKED 2026-09-23 — get back later — Phase E: reports as Laravel API + cutover (frontend rewrite decision: Vercel rewrite vs direct+CORS)
 
-- [ ] Auth provisioning per `auth-integration.md` §8 at deploy time (tenant, groups, catalog import, grants, secrets)
+- [ ] PARKED 2026-09-23 — get back later — Auth provisioning per `auth-integration.md` §8 at deploy time (tenant, groups, catalog import, grants, secrets)
+
+- [ ] PARKED 2026-09-23 — get back later — Runbook promotions to Final (`LOCAL-DEV-RUNBOOK.md` / `DEPLOY.md` / `FRONTEND-INTEGRATION.md` v0.1 Draft → Final)
+
+- [ ] PARKED 2026-09-23 — get back later — DEC-5 `/service/*` proxy decision (record before any proxy code)
 
 ---
 
@@ -64,6 +68,10 @@
 ---
 
 ## DONE
+
+- [x] 2026-09-23 — Cert `test_pdf_allows_admin` 500 fixed (user-approved): `PdfService::streamCertificatePdf()` called non-existent `$pdf->inline()` (installed barryvdh exposes `stream/download/output/save` only) → one-line fix to `$pdf->stream()`; probe added + reverted byte-identical. **Full cert suite green: 249 passed (738 assertions)**
+
+- [x] 2026-09-23 — Consult wired into Docker pipelines (user-requested, per `docker-compose-spec.md` Final §7): new `assemblies/loa-consult-platform/generate-dist.ps1` (cert twin + `_stage` exclusion) · `scripts/build-all.ps1` + consult in `$apps` · `scripts/reset-all.ps1` + consult cache/migrate/swagger steps (NO seed — none per spec §7) · `scripts/run-tests.ps1` + consult block (`php artisan test`, `loa_consult_test` ensure, `-ConsultFilter`) · `dump.ps1` `-Target consult` (dist + `loa_consult` SQL, skips auth/cert-only passes) · `mega.ps1` Step 5 Dump Consult (6 steps total). Auth/cert blocks untouched; root compose + init.sql already wired. 2026-09-23 red-triage (Type A): consult `l5-swagger:generate` exits 1 — app/ has zero OpenApi attributes (no `#[OA\Info]`; cert keeps its Info in `CertificateTemplateController`) — reset-all consult swagger made best-effort (warn + continue; `$global:LASTEXITCODE` scoping fix after bare assignment failed to propagate to mega). 2026-09-23 red-triage (Type C gap): `init.sql` created `loa_consult` but not `loa_consult_test`, so direct `migrate → php artisan test` failed on fresh volumes (user created it by hand) — added `loa_consult_test` + grant to `init.sql` (additive; existing volumes unaffected, `run-tests.ps1` ensure already covered test-time). 2026-09-23 1044 episode closed: `loa`@`%` grant on `loa_consult_test` verified live (PDO connect OK; single mysql on network) + **consult suite re-green: 120 passed (594 assertions)**. Note: cert effectively tests against `loa_cert` app DB (no `$_SERVER`-pinning bootstrap like consult's `tests/bootstrap.php`) — cert-deferred, untouched. Verification (user-runs): `.\scripts\reset-all.ps1` then `.\scripts\run-tests.ps1` then `.\mega.ps1`
 
 - [x] 2026-09-23 — Spec-owned drift fixed (user-approved): assembly `AGENTS.md` §4 113+5 → 104+5 per ACC-2 · `url-flattening.md` Doc Control 113+5 → 104+5 (113+5 = F2 intermediate) · `endpoints-admin-import.md` Refs config 118 → 104 gated flattened · `config/consult-endpoints.php` L131-132 `/admin/audit-logs` → `/audit-logs` per DEC-1 (flat). **Full suite green pasted 2026-09-23: 120 passed (594 assertions)** incl Policy `real catalog has 104 gated plus 5 public`; migrations 000001–000014 DONE
 - [x] 2026-09-23 — Tracker reconciliation (user-approved): header ACTIVE/Updated → 2026-09-23; Phase D deferred markers → SUPERSEDED (Final v1.1 + baselines green); counts → **104+5** normative (`api-endpoints.md` v2.0 §5 Total + `url-flattening.md` ACC-2 + `consult-readiness.md` CON-2 + `config/consult-endpoints.php` 104 gated); 118+5 = v1.0 pre-flatten history, 113+5 = F2 intermediate. Open drift (not edited, spec-owned): assembly `AGENTS.md` §4 still says url-flattening 113+5; `url-flattening.md` Document Control still says 113+5; `endpoints-admin-import.md` Refs still say config 118; `config/consult-endpoints.php` L131-132 still `/admin/audit-logs` (unflattened)

@@ -52,7 +52,7 @@ MAIL_*=[copy MAIL table from cert DEPLOY at build]
 
 ## 4. Dist packaging (TODO)
 
-- [ ] `generate-dist.ps1` twin (parameterized `-Path`, excludes vendor/tests/docs/env, empties storage framework dirs) — copy cert pattern at build
+- [x] 2026-09-23 — `generate-dist.ps1` twin landed (cert pattern + `_stage` exclusion); wired into `scripts/build-all.ps1`
 - [ ] `vendor/` strategy: prebuilt upload (pure-PHP deps) per cert no-terminal-deploy notes
 
 ## 5. Database deploy (TODO)

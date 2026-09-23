@@ -8,7 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
-$apps = @('loa-cert-platform', 'loa-auth-platform')
+$apps = @('loa-cert-platform', 'loa-auth-platform', 'loa-consult-platform')
 
 foreach ($app in $apps) {
     Write-Host "==> Building dist for $app"

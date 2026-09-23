@@ -92,6 +92,8 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 - **Open drift (spec-owned, not edited):** assembly `AGENTS.md` §4 url-flattening 113+5; `url-flattening.md` Document Control 113+5; `endpoints-admin-import.md` Refs config 118; `config/consult-endpoints.php` L131-132 `/admin/audit-logs` unflattened.
 - **Phase planning FLUSHED 2026-09-23 (user-approved):** TODO AFTER FINAL + `PROJECT.md` Phase 2 rows synced (P0-P5 done, P6 blocked).
 - **Drift fix green pasted 2026-09-23:** 4 spec-owned drifts fixed (AGENTS §4, url-flattening Doc Control, admin-import Refs, config audit-logs flat) — full suite **120 passed (594 assertions)** incl Policy 104+5; migrations 000001–000014 DONE.
+- **Docker pipelines wired 2026-09-23 (user-requested):** consult in `reset-all`/`build-all`/`run-tests`/`dump.ps1`/`mega.ps1` (+ new `generate-dist.ps1` twin); auth/cert blocks untouched. Verify by running `.\scripts\reset-all.ps1`, `.\scripts\run-tests.ps1`, `.\mega.ps1`.
+- **Cert PDF 500 fixed 2026-09-23:** `PdfService::streamCertificatePdf()` used non-existent `$pdf->inline()` → `$pdf->stream()` (one line); full cert suite **249 passed (738 assertions)**.
 
 ### Next Action
 - [ ] Implementation phase planning (scaffold, domain slices, C-Auth, cutover) — gated; see TODO AFTER FINAL SPECS. Spec-owned drift fixes need separate yes per Rule 0.

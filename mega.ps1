@@ -1,14 +1,15 @@
 <#
 .SYNOPSIS
-    All-in-one pipeline: reset → test → dump auth → dump cert → open builds folder.
+    All-in-one pipeline: reset → test → dump auth → dump cert → dump consult → open builds folder.
 
 .DESCRIPTION
     Runs the full LOA workflow in one go with visible progress:
       1. Reset all (teardown + rebuild + migrate + seed + Swagger)
-      2. Run all tests (auth + cert)
+      2. Run all tests (auth + cert + consult)
       3. Dump auth (dist build + SQL regeneration)
       4. Dump cert (dist build + SQL regeneration)
-      5. Open D:\builds
+      5. Dump consult (dist build + SQL regeneration)
+      6. Open D:\builds
 
 .PARAMETER SkipReset
     Skip the reset-all step (useful when infra is already fresh).
@@ -42,6 +43,7 @@ $steps = @(
     @{ Name = 'Run Tests';       Skip = $SkipTests },
     @{ Name = 'Dump Auth';       Skip = $false },
     @{ Name = 'Dump Cert';       Skip = $false },
+    @{ Name = 'Dump Consult';    Skip = $false },
     @{ Name = 'Open Builds';     Skip = $false }
 )
 
@@ -97,7 +99,7 @@ if (-not $SkipReset) {
 
 # ── Step 2: Tests ───────────────────────────────────────────────────────
 if (-not $SkipTests) {
-    Show-Header -StepNum 2 -Total $total -Name 'Run Tests (auth + cert)'
+    Show-Header -StepNum 2 -Total $total -Name 'Run Tests (auth + cert + consult)'
     & (Join-Path $PSScriptRoot 'scripts\run-tests.ps1')
     if ($LASTEXITCODE -ne 0) { throw "Tests failed (exit $LASTEXITCODE)" }
     $passed++
@@ -128,8 +130,17 @@ $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 Write-Host "  [$ts] Step 4 complete" -ForegroundColor Green
 Show-Progress -Current $passed -Total $total -Name 'Dump Cert' -Elapsed ((Get-Date) - $startTime)
 
-# ── Step 5: Open Builds ────────────────────────────────────────────────
-Show-Header -StepNum 5 -Total $total -Name 'Open Builds Folder'
+# ── Step 5: Dump Consult ───────────────────────────────────────────────
+Show-Header -StepNum 5 -Total $total -Name 'Dump Consult'
+& (Join-Path $PSScriptRoot 'dump.ps1') -Target consult -Path $DumpPath
+if ($LASTEXITCODE -ne 0) { throw "Dump consult failed (exit $LASTEXITCODE)" }
+$passed++
+$ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+Write-Host "  [$ts] Step 5 complete" -ForegroundColor Green
+Show-Progress -Current $passed -Total $total -Name 'Dump Consult' -Elapsed ((Get-Date) - $startTime)
+
+# ── Step 6: Open Builds ────────────────────────────────────────────────
+Show-Header -StepNum 6 -Total $total -Name 'Open Builds Folder'
 if (Test-Path -LiteralPath $DumpPath) {
     Start-Process explorer.exe $DumpPath
     $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
