@@ -52,7 +52,7 @@ Durable cross-boundary record only. Detail lives in assembly specs; history live
 | App | Subdomain | Database | Purpose |
 |-----|-----------|----------|---------|
 | Auth | auth.lyceumalabang.edu.ph | lyceumalabang_auth_db (local: `loa_auth`) | JWT service, users, admin dashboard |
-| Consult | aces-api.lyceumalabang.edu.ph | loa_consult | Booking + evaluation (spec program **ACTIVE** 2026-09-22) |
+| Consult | aces-api.lyceumalabang.edu.ph | loa_consult | Booking + evaluation (spec program **ACTIVE** 2026-09-23) |
 | Cert API | cert-api.lyceumalabang.edu.ph | lyceumalabang_e_cert (local: `loa_cert`) | Issuance, verification, PDF/QR/email |
 | e-cert UI | e-cert.vercel.app | — (Vercel) | Next.js consumer of Auth + Cert APIs |
 
@@ -75,25 +75,21 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 - **Known gaps:** local seed has no organization → FK 1452 on template/certificate writes (needs seeder); certificate owner-rule check missing on show/pdf/download (only `MeController` scopes); QR route shape code-vs-spec drift (`/{n}/qr` vs `?certificate_number=`); `test-suite.md` still Draft (says SQLite, actual MySQL `loa_cert_test`).
 - **Next:** auth/cert deploy; cert org seeder.
 
-### Consult — `assemblies/loa-consult-platform/` (spec program **ACTIVE** 2026-09-22)
+### Consult — `assemblies/loa-consult-platform/` (spec program **ACTIVE** 2026-09-23)
 
-- **Status:** scaffold done + auth-layer port COMPLETE (§11 Steps 1–7 green 2026-09-22) + slices B/C COMPLETE (B1–B5 academic/appointments, C1–C4 evaluations green 2026-09-22) + Phase D link-reads + import-domain + data/audit green 2026-09-23 (`UserLinkTest` 8/8, `ImportTest` 7/7, `DataAuditTest` 8/8 user) + URL-flattening F1+F2 green (flat 113+5, scoped results). Stopped — re-versioning (api-endpoints v2.0) needs user yes.
-- **Specs:** `api-endpoints.md` Final v1.0, `auth-integration.md` Final v1.4 (§11 Steps 1–7 landed: config · services trio · JwtMiddleware · catalog 118+5 · EndpointPolicy · auth trio · gate routes — suite green 2026-09-22, port COMPLETE), 3 endpoint modules Final v1.0–v1.1 (academic/evaluations v1.1 flat green), `api-endpoints.md` Final v2.0 (flat 104+5 green), `endpoints-admin-import.md` Final v1.0 (Auth-owned users via aces-*, domain imports), `url-flattening.md` Final v1.0 (flat 100+5, implementation next), `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.3 (shape contract + §3 Status gate 6/3/17); `test-suite.md` Final v1.1; `consult-readiness.md` Final v1.5; runbooks still Draft.
+- **Status:** scaffold done + auth-layer port COMPLETE (§11 Steps 1–7 green 2026-09-22) + slices B/C COMPLETE (B1–B5 academic/appointments, C1–C4 evaluations green 2026-09-22) + Phase D link-reads + import-domain + data/audit green 2026-09-23 (`UserLinkTest` 8/8, `ImportTest` 7/7, `DataAuditTest` 8/8 user) + URL-flattening F1+F2 green (flat 104+5 normative, scoped results). Stopped — implementation phase planning needs user yes.
+- **Specs:** `api-endpoints.md` Final v2.0 (flat 104+5 green), `auth-integration.md` Final v1.4 (§11 Steps 1–7 landed: config · services trio · JwtMiddleware · catalog 104+5 flattened current, 118+5 was v1.0 history · EndpointPolicy · auth trio · gate routes — suite green 2026-09-22, port COMPLETE), 3 endpoint modules Final v1.0–v1.1 (academic/evaluations v1.1 flat green), `endpoints-admin-import.md` Final v1.1 (Phase D baselines green 2026-09-23; DEC-5 proxy OPEN), `url-flattening.md` Final v1.1 (flat 104+5 per ACC-2; 113+5 was F2 intermediate), `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.3 (shape contract + §3 Status gate 6/3/17); `test-suite.md` Final v1.1; `consult-readiness.md` Final v1.5 (104+5 pointer); runbooks still Draft.
 - **Next:** implementation phase planning (scaffold, domain slices, C-Auth, cutover) — gated; see TODO AFTER FINAL SPECS. Auth JSON deferred to deploy-time.
 
 ---
 
 ## Last Session Notes
 
-### Date: 2026-09-22
+### Date: 2026-09-23
 
 ### Completed
-- **Governance lean merge:** `AGENTS.md` rewritten as sole entry (SDD+TDD loop, Rule 0/0.5, No Auto-Pilot, testing, Laravel gotchas); detail migrated to `principles.md` §2b + `platform.md` §15b; `PROJECT.md` references updated.
-- **Scope change (earlier same day):** Consult deferred; focus is Auth + Cert alignment — **superseded:** Consult spec program resumed 2026-09-22 (see TODO ACTIVE banner).
-- **Last Session Notes (2026-09-22):** `data-model.md` → **Final v1.3**. Steps 1–7 landed (gating + 5 RouteGating tests) — **suite green 2026-09-22, §11 auth-layer port COMPLETE**. Routes gated: `auth/*` public + throttle, health + count-active public, rest under JWT. `AuditLogger` reshaped to L119 (no table yet — gate holds). Auth JSON deferred to deploy-time. Stopped — next phase needs user yes.
-- **Consult readiness/identity fix pass:** `consult-readiness.md` v1.0 → v1.2 (false deferred-claim removed; Laravel assembly active; §9/§10 no `app_users`); `auth-integration.md` Final v1.2 → v1.3 (students/employees first-class; Auth Platform = sole identity authority per user decision); trackers reconciled.
-- **This file consolidated:** startup prompt updated (no AI-RULES/AI-GUIDE); per-platform sections cut to Status/Done/Next; verbose history + session log dropped (git history is the archive).
+- **Tracker reconciliation (user-approved):** `TODO.md` header → ACTIVE 2026-09-23; Phase D deferred markers → SUPERSEDED (Final v1.1 + baselines green); counts → 104+5 normative (`api-endpoints.md` v2.0 §5 Total + `url-flattening.md` ACC-2 + `consult-readiness.md` CON-2 + `config/consult-endpoints.php` 104 gated); 118+5 = v1.0 history, 113+5 = F2 intermediate. `PROJECT.md` Phase 2 synced (auth catalog, admin-import, url-flattening, F1+F2, results 20→15, academic flat). This file synced (ACTIVE date, Status, Specs).
+- **Open drift (spec-owned, not edited):** assembly `AGENTS.md` §4 url-flattening 113+5; `url-flattening.md` Document Control 113+5; `endpoints-admin-import.md` Refs config 118; `config/consult-endpoints.php` L131-132 `/admin/audit-logs` unflattened.
 
 ### Next Action
-- [x] Merge done 2026-09-22: `TODO.md`, `README.md`, `build-your-own-app.md`, auth `SESSION-PROMPT.md` reading lists updated; `AI-RULES.md` + `AI-GUIDE.md` deleted. Remaining `AI-RULES/AI-GUIDE` mentions are historical (assembly Final specs) — rule now lives in `AGENTS.md`.
-- [ ] Auth + Cert spec-vs-code alignment (read-only audit findings → Type A/B/C classification per SDD+TDD)
+- [ ] Implementation phase planning (scaffold, domain slices, C-Auth, cutover) — gated; see TODO AFTER FINAL SPECS. Spec-owned drift fixes need separate yes per Rule 0.

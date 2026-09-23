@@ -159,14 +159,14 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
 | `api-endpoints.md` spec | ✅ Final v2.0 | Flat 104+5 root spec (F1/F2 green) |
-| `auth-integration.md` spec | ✅ Final v1.4 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed (config · services · JwtMiddleware · catalog 118+5 · EndpointPolicy · auth trio · gate routes + tests) — suite green 2026-09-22, port COMPLETE |
+| `auth-integration.md` spec | ✅ Final v1.4 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed (config · services · JwtMiddleware · catalog 104+5 flattened current, 118+5 was v1.0 pre-flatten history · EndpointPolicy · auth trio · gate routes + tests) — suite green 2026-09-22, port COMPLETE |
 | `data-model.md` spec | ✅ Final v1.3 | Shape contract (M17/M19/M21/M26/M27/M30/M31); §3 Status gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
 | `endpoints-academic.md` spec | ✅ Final v1.1 | Flat paths (green) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
 | `endpoints-evaluations.md` spec | ✅ Final v1.1 | Flat paths + scoped results (green) |
-| `endpoints-admin-import.md` spec | ✅ Final v1.1 | Phase D (v2.0 pointers) |
-| `url-flattening.md` spec | ✅ Final v1.1 | Flat URL scheme (113+5, single scoped results, in-place v1 rename; F2 green) |
-| URL flattening (F1+F2) | ✅ Done 2026-09-23 | Flat routes + scoped results + catalog/JSON regen + ResultsTest scoping; suite green (user) |
+| `endpoints-admin-import.md` spec | ✅ Final v1.1 | Phase D contract (v2.0 pointers); baselines green 2026-09-23 (link-reads / import-domain / data-audit); DEC-5 `/service/*` proxy still OPEN |
+| `url-flattening.md` spec | ✅ Final v1.1 | Flat URL scheme (104+5 actual per ACC-2 + `api-endpoints.md` v2.0 §5 Total; 113+5 was F2 intermediate; single scoped results, in-place v1 rename; F2 green) |
+| URL flattening (F1+F2) | ✅ Done 2026-09-23 | Flat routes + scoped results + catalog/JSON regen (104+5 normative; 113+5 reported at F2 was intermediate) + ResultsTest scoping; suite green (user) |
 | `test-suite.md` spec | ✅ Final v1.1 | Test contract (v2.0 pointers); MySQL `loa_consult_test`, JWT helper, user-run sequential |
 | `docker-compose-spec.md` spec | ✅ Final v1.0 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |
@@ -187,9 +187,9 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Rubric models + migrations | ✅ Done 2026-09-22 | C1 `000014` rubric tables + C2 periods/rubric-groups endpoints + `PeriodsRubricsTest` green pasted |
 | Evaluation model + migrations | ✅ Done 2026-09-22 | C1 `000014` 10 evaluation tables + 10 thin models + `EvaluationTablesTest` 4/4 green pasted |
 | Evaluation endpoints | ✅ Done 2026-09-22 | C3 evaluations lifecycle + `EvaluationFlowTest` green pasted |
-| Evaluation result computation | ✅ Done 2026-09-22 | C4 ResultsService + 20 routes + `ResultsTest` green pasted; slice C COMPLETE |
+| Evaluation result computation | ✅ Done 2026-09-22 | C4 ResultsService + results surface (20 pre-flatten → 15 scoped flat per v2.0/F2) + `ResultsTest` green pasted; slice C COMPLETE |
 | Subject/Section/Enrollment models | ✅ Done 2026-09-22 | 9 models + `000001-000009` + B1 `000011` baseline delta + B5 hardening; slice B COMPLETE |
-| Academic infrastructure endpoints | ✅ Done 2026-09-22 | `AcademicController` + gated `admin/*` routes + B5 hardening (`AcademicHardeningTest`) + `000013`; slice B COMPLETE |
+| Academic infrastructure endpoints | ✅ Done 2026-09-22 | `AcademicController` + gated flat routes (was `admin/*`, flattened F1) + B5 hardening (`AcademicHardeningTest`) + `000013`; slice B COMPLETE |
 | User link reads (Phase D) | ✅ Done 2026-09-23 | `UserLinkController` (primary/attendees/related-data via email link) + 3 gated reads + `UserLinkTest` 8/8 green (user); writes absent per DEC-1 |
 | Import domain (Phase D) | ✅ Done 2026-09-23 | `ImportController` (preview + references + idempotent writes) + 10 gated routes + `ImportTest` 7/7 green (user); users/reference absent per DEC-2 |
 | Data/audit (Phase D) | ✅ Done 2026-09-23 | `DataController` (delete-students/reset-db/export/mappings) + 4 gated routes + `DataAuditTest` 8/8 green (user); per-resource DELETE on owners; audit-logs absent by gate |
