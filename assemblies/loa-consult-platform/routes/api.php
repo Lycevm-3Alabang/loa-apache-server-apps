@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AcademicController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\EvaluationPeriodController;
+use App\Http\Controllers\EvaluationResultController;
 use App\Http\Controllers\AuthCallbackController;
 use App\Http\Controllers\AuthLogoutController;
 use App\Http\Controllers\AuthRefreshController;
@@ -71,6 +73,48 @@ Route::prefix('v1')->group(function () {
         Route::get('/rubric-groups/{id}/snapshot', [RubricGroupController::class, 'snapshot']);
         Route::post('/rubric-groups/{id}/categories', [RubricGroupController::class, 'storeCategory']);
         Route::delete('/rubric-groups/{id}/categories', [RubricGroupController::class, 'destroyCategory']);
+
+        // Evaluations (static paths before {id})
+        Route::get('/evaluations/pending', [EvaluationController::class, 'pending']);
+        Route::get('/evaluations', [EvaluationController::class, 'index']);
+        Route::post('/evaluations', [EvaluationController::class, 'store']);
+        Route::post('/evaluations/dispute', [EvaluationController::class, 'dispute']);
+        Route::get('/evaluations/{id}', [EvaluationController::class, 'show']);
+        Route::get('/evaluations/{id}/ratings', [EvaluationController::class, 'ratings']);
+        Route::put('/evaluations/{id}/ratings', [EvaluationController::class, 'saveRatings']);
+        Route::get('/evaluations/{id}/comments', [EvaluationController::class, 'comment']);
+        Route::post('/evaluations/{id}/comments', [EvaluationController::class, 'storeComment']);
+        Route::post('/evaluations/{id}/submit', [EvaluationController::class, 'submit']);
+        Route::get('/evaluation-comments', [EvaluationController::class, 'allComments']);
+        Route::get('/student/evaluations/bootstrap', [EvaluationController::class, 'bootstrap']);
+
+        // Evaluation results — admin (static before params)
+        Route::get('/admin/evaluation-results', [EvaluationResultController::class, 'index']);
+        Route::post('/admin/evaluation-results/invalidate', [EvaluationResultController::class, 'invalidate']);
+        Route::post('/admin/evaluation-results/visibility', [EvaluationResultController::class, 'visibility']);
+        Route::get('/admin/evaluation-results/departments/{departmentId}', [EvaluationResultController::class, 'department']);
+        Route::get('/admin/evaluation-results/faculty/{facultyId}', [EvaluationResultController::class, 'faculty']);
+        Route::get('/admin/evaluation-results/groups/{facultySubjectId}', [EvaluationResultController::class, 'group']);
+
+        // Evaluation admin set (disabled before {evaluationId})
+        Route::get('/admin/evaluations/disabled', [EvaluationResultController::class, 'disabled']);
+        Route::delete('/admin/evaluations/disabled', [EvaluationResultController::class, 'deleteDisabled']);
+        Route::post('/admin/evaluations/disabled/restore', [EvaluationResultController::class, 'restore']);
+        Route::get('/admin/evaluations/{evaluationId}/details', [EvaluationResultController::class, 'details']);
+        Route::post('/admin/evaluations/{evaluationId}/invalidate', [EvaluationResultController::class, 'invalidateOne']);
+
+        // Evaluation results — dean
+        Route::get('/dean/evaluation-results', [EvaluationResultController::class, 'deanIndex']);
+        Route::get('/dean/evaluation-results/department', [EvaluationResultController::class, 'deanDepartment']);
+        Route::get('/dean/evaluation-results/details', [EvaluationResultController::class, 'deanDetails']);
+        Route::get('/dean/evaluation-results/departments/{departmentId}', [EvaluationResultController::class, 'deanDeptShow']);
+        Route::get('/dean/evaluation-results/departments/{departmentId}/faculty/{facultyId}', [EvaluationResultController::class, 'deanFacultyShow']);
+        Route::get('/dean/evaluation-results/departments/{departmentId}/groups/{facultySubjectId}', [EvaluationResultController::class, 'deanGroupShow']);
+
+        // Evaluation results — faculty
+        Route::get('/faculty/evaluation-results', [EvaluationResultController::class, 'facultyIndex']);
+        Route::get('/faculty/evaluation-results/subjects', [EvaluationResultController::class, 'facultySubjects']);
+        Route::get('/faculty/evaluation-results/subjects/{facultySubjectId}', [EvaluationResultController::class, 'facultySubjectShow']);
 
         // Semesters
         Route::get('/semesters', [SemesterController::class, 'index']);

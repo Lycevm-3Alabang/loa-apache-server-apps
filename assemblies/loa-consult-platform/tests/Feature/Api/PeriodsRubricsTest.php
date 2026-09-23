@@ -188,7 +188,7 @@ class PeriodsRubricsTest extends TestCase
             ->assertJson(['error' => 'This is the original rubric group and cannot be edited. Duplicate it to create your own version.']);
         $this->deleteJson('/api/v1/rubric-groups/' . $seed->id, [], $h)
             ->assertStatus(409)
-            ->assertJson(['error' => 'This is the original rubric group and cannot be deleted.']);
+            ->assertJson(['error' => 'This is the original rubric group and cannot be deleted. Duplicate it to create your own version.']);
 
         $sem = $this->semester();
         EvaluationPeriod::create([

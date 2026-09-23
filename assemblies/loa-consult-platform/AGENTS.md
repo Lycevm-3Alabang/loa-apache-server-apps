@@ -189,6 +189,12 @@ envelope migration without a spec.
 - **Current status (2026-09-22) — C1 green pasted.** `000014` (10 evaluation tables per §3.3/§7 order) + 10 thin
   models + 4 structure tests. Trackers updated.
   **Stopped — C2 (periods/rubrics endpoints) needs user yes.**
+- **Current status (2026-09-22) — C2 green pasted.** Periods (CRUD + activate/reset/snapshot/items-quirk) +
+  rubric groups (seed/lock 409s, duplicate, snapshot, categories) + 16 tests. Trackers updated.
+  **Stopped — C3 (evaluations lifecycle) needs user yes.**
+- **Current status (2026-09-22) — C3 green pasted.** Evaluations lifecycle (masking, get-or-create, pending,
+  bootstrap, dispute, comments) + flow tests. Trackers updated.
+  **Stopped — C4 (results/computeAll) needs user yes.**
 
 ---
 

@@ -417,6 +417,17 @@ class AcademicController extends Controller
         $mapping->faculty_id = $request->input('newFacultyId');
         $mapping->save();
 
+        // Slice-C side effect: invalidate + recompute (evaluations tables land in C1).
+        try {
+            $email = $request->attributes->get('jwt_claims', [])['email'] ?? 'admin';
+            app(\App\Services\ResultsService::class)->invalidateMapping(
+                $mapping->id,
+                "Reassigned by {$email}"
+            );
+        } catch (\Throwable $e) {
+            \Log::warning('Reassign recompute failed: ' . $e->getMessage(), ['exception' => $e]);
+        }
+
         $this->audit($request, 'REASSIGN_FACULTY_SUBJECT', ['id' => $mapping->id]);
 
         return response()->json(['success' => true]);
@@ -481,7 +492,23 @@ class AcademicController extends Controller
         if ($enrollment === null) {
             return response()->json(['error' => 'Enrollment not found'], 404);
         }
+        $studentId = $enrollment->student_id;
+        $mappingId = $enrollment->faculty_subject_id;
         $enrollment->delete();
+
+        // Slice-C side effect: invalidate that student's mapping evaluations + recompute.
+        if ($mappingId) {
+            try {
+                $email = $request->attributes->get('jwt_claims', [])['email'] ?? 'admin';
+                app(\App\Services\ResultsService::class)->invalidateStudentMapping(
+                    $studentId,
+                    $mappingId,
+                    "Enrollment removed by {$email}"
+                );
+            } catch (\Throwable $e) {
+                \Log::warning('Enrollment recompute failed: ' . $e->getMessage(), ['exception' => $e]);
+            }
+        }
 
         $this->audit($request, 'DELETE_ENROLLMENT', ['id' => $id]);
 
