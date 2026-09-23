@@ -22,7 +22,7 @@
 
 - [ ] Domain slice B — appointments/academic/semesters — **COMPLETE green pasted** (B1 deltas + B2 tables + B3 availability + B4 appointments + B5 academic hardening)
 
-- [ ] Domain slice C — evaluations/periods/rubrics/results
+- [ ] Domain slice C — evaluations/periods/rubrics/results — C1 landed (awaiting suite green): `000014` 10 evaluation tables + 10 thin models + `EvaluationTablesTest` 4/4
 
 - [ ] Implementation phase planning (scaffold, domain slices, C-Auth, cutover) — flush out when all specs are Final
 
