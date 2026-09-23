@@ -2,7 +2,7 @@
 ## Product Assembly Component Specification
 
 **Version:** 1.1
-**Status:** Draft (flat paths + scoped results; pending Final)
+**Status:** Final (user-approved 2026-09-23; green)
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -140,7 +140,7 @@ Body `{evaluationPeriodId|semesterId, facultyIds[] (non-empty), visible}`. `setV
 
 ## Document Control
 
-- **Status:** Draft v1.1 (flat paths + scoped results; pending Final)
+- **Status:** Final v1.1 (green 2026-09-23)
 - **Created:** 2026-09-18
 - **Updated:** 2026-09-19 — Promoted v0.1 → Final v1.0: verified against data-model v1.0 + `api-endpoints.md` Final v1.0 §5.6–§5.9 (levels match; periods/rubrics mutations `admin`, rubric-copy `read`).
 - **Updated:** 2026-09-23 — v1.1 Draft: flat resources + single scoped results surface per `url-flattening.md` (bootstrap relocated, disabled set flat, dean/faculty variants collapsed with group guards); methods/levels/holder language unchanged.

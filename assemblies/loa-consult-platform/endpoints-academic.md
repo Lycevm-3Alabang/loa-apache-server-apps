@@ -2,7 +2,7 @@
 ## Product Assembly Component Specification
 
 **Version:** 1.1
-**Status:** Draft (path-only flattening; pending Final)
+**Status:** Final (user-approved 2026-09-23; green)
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -111,7 +111,7 @@ Returns `{count}` (used by the frontend lock gate). No auth in code or Laravel.
 
 ## Document Control
 
-- **Status:** Draft v1.1 (path-only flattening; pending Final)
+- **Status:** Final v1.1 (green 2026-09-23)
 - **Created:** 2026-09-18
 - **Updated:** 2026-09-19 — Promoted v0.1 → Final v1.0: verified against data-model v1.0 + `api-endpoints.md` Final v1.0 §5.4/§5.5 (levels match; academic POST/PATCH + impacts `admin`, dept-courses POST `write`, semesters GET hardened `read`).
 - **Updated:** 2026-09-23 — v1.1 Draft: `/admin/*` prefixes removed (flat resources per `url-flattening.md`); methods/levels/holder language unchanged.

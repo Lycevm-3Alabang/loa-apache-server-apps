@@ -2,7 +2,7 @@
 ## Product Assembly Component Specification
 
 **Version:** 2.0
-**Status:** Draft (flat URL scheme per `url-flattening.md` v1.1; pending Final)
+**Status:** Final (user-approved 2026-09-23; F1/F2 green)
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -401,8 +401,8 @@ Auth SSO group (`POST /auth/callback|refresh|logout`, public throttled) specifie
 
 ## Document Control
 
-- **Status:** Draft v2.0 (flat URL scheme per `url-flattening.md` v1.1; pending Final)
+- **Status:** Final v2.0 (flat 104+5, F1/F2 green 2026-09-23)
 - **Created:** 2026-09-18
 - **Source:** route.ts scan (`D:\loa\e-consultation\app\api`, 112 files) + 50 handlers read verbatim + frontend usage scan
 - **v2.0:** flat resources (104+5), aces-* groups, single scoped results, Auth-owned drops documented; code implemented + green (F1/F2)
-- **Next:** user review → Final v2.0; then modules v1.1 + pointer refresh
+- **Next:** modules v1.1 + pointer refresh (test-suite, readiness, admin-import)

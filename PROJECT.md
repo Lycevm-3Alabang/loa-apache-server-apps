@@ -158,19 +158,19 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Consult endpoint inventory (scan-only savepoint) | ✅ Done | 2026-09-18: 112 route files scanned (~142 combos; 118 migrating to Laravel); drift vs `endpoint-catalog.md` recorded; frontend untouched |
 | Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
-| `api-endpoints.md` spec | ✅ Final v1.0 / Draft v2.0 | Root spec + flat 104+5 re-version (in flight) |
+| `api-endpoints.md` spec | ✅ Final v2.0 | Flat 104+5 root spec (F1/F2 green) |
 | `auth-integration.md` spec | ✅ Final v1.4 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed (config · services · JwtMiddleware · catalog 118+5 · EndpointPolicy · auth trio · gate routes + tests) — suite green 2026-09-22, port COMPLETE |
 | `data-model.md` spec | ✅ Final v1.3 | Shape contract (M17/M19/M21/M26/M27/M30/M31); §3 Status gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
-| `endpoints-academic.md` spec | ✅ Final v1.0 / Draft v1.1 | Flat paths re-version (in flight) |
+| `endpoints-academic.md` spec | ✅ Final v1.1 | Flat paths (green) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
-| `endpoints-evaluations.md` spec | ✅ Final v1.0 / Draft v1.1 | Flat paths + scoped results re-version (in flight) |
-| `endpoints-admin-import.md` spec | ✅ Final v1.0 | Phase D: Auth-owned users (aces-*, link reads only), domain imports, double-guard destructives, proxy decision open |
+| `endpoints-evaluations.md` spec | ✅ Final v1.1 | Flat paths + scoped results (green) |
+| `endpoints-admin-import.md` spec | ✅ Final v1.1 | Phase D (v2.0 pointers) |
 | `url-flattening.md` spec | ✅ Final v1.1 | Flat URL scheme (113+5, single scoped results, in-place v1 rename; F2 green) |
 | URL flattening (F1+F2) | ✅ Done 2026-09-23 | Flat routes + scoped results + catalog/JSON regen + ResultsTest scoping; suite green (user) |
-| `test-suite.md` spec | ✅ Final v1.0 | Test contract for auth-layer + B/C (CON/DEC/ACC/D); MySQL `loa_consult_test`, JWT helper, user-run sequential |
+| `test-suite.md` spec | ✅ Final v1.1 | Test contract (v2.0 pointers); MySQL `loa_consult_test`, JWT helper, user-run sequential |
 | `docker-compose-spec.md` spec | ✅ Final v1.0 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |
-| `consult-readiness.md` spec | ✅ Final v1.4 | Provisioning checklist (aces-admin/dean/faculty/user + Auth↔students/employees link, 118+5 pointer) |
+| `consult-readiness.md` spec | ✅ Final v1.5 | Provisioning checklist (aces-* + linkage, 104+5 pointer, v2.0 pointers) |
 | First migration(s) + baseline deltas | ✅ Done 2026-09-22 | `000001-000010` academic + `000011` academic baseline + `000012` appointment-family + `000013` section-link + `000014` evaluation tables; per data-model Final v1.3 §3/§7 |
 | JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa`, `consult_user`; Unit tests green. **Gated in Step 7** |
 | Permission middleware | ✅ Step 5 done | Cert port verbatim (`consult-endpoints` re-point only, `jwt_claims` confirmed); Unit tests green (public/403/level/catalog-count). **Gates all domain routes since Step 7** |

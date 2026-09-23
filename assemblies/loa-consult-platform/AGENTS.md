@@ -211,16 +211,16 @@ envelope migration without a spec.
 
 | Spec | Status |
 |---|---|
-| `api-endpoints.md` v1.0 / v2.0 | FINAL v1.0 + DRAFT v2.0 (flat 104+5, in flight) |
+| `api-endpoints.md` v2.0 | FINAL — flat 104+5, ground truth |
 | `auth-integration.md` v1.4 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Steps 1–7 ✓ suite green 2026-09-22, port COMPLETE) |
-| `endpoints-academic/appointments/evaluations.md` v1.0 (+v1.1 Draft academic/evaluations) | FINAL v1.0 — module contracts; v1.1 Draft flat paths |
+| `endpoints-academic/appointments/evaluations.md` v1.0–v1.1 | FINAL — module contracts (academic/evaluations v1.1 flat) |
 | `docker-compose-spec.md` v1.0 | FINAL — root-stack wiring `:9002` |
 | `data-model.md` v1.3 | FINAL — shape contract (source-verified M17/M19/M21/M26/M27/M30/M31); §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
-| `test-suite.md` v1.0 | FINAL — auth + B/C contract (CON/ACC/D), user-run sequential |
+| `test-suite.md` v1.1 | FINAL — auth + B/C contract (CON/ACC/D), user-run sequential, v2.0 pointers |
 | `LOCAL-DEV-RUNBOOK.md` v0.1 | DRAFT — local dev setup |
 | `DEPLOY.md` v0.1 | DRAFT — deployment skeleton |
 | `FRONTEND-INTEGRATION.md` v0.1 | DRAFT — cutover checklist skeleton |
-| `consult-readiness.md` v1.4 | FINAL — provisioning checklist (aces-* + linkage, 118+5 pointer) |
-| `endpoints-admin-import.md` v1.0 | FINAL — Phase D (Auth-owned users, domain imports, double-guard, proxy open) |
+| `consult-readiness.md` v1.5 | FINAL — provisioning checklist (aces-* + linkage, 104+5 pointer, v2.0 pointers) |
+| `endpoints-admin-import.md` v1.1 | FINAL — Phase D (v2.0 pointers) |
 | `url-flattening.md` v1.1 | FINAL — flat scheme (113+5, scoped results, F2 green) |
 | `README.md` v1.0 | DRAFT — assembly composition (see §2) |

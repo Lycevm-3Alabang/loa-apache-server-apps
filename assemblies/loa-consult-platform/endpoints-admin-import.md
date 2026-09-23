@@ -4,11 +4,11 @@
 |-------|-------|
 | ID | CONSULT-ADMIN-001 |
 | Title | Phase D Admin + Import + Data-Audit |
-| Status | Final v1.0 (user-approved 2026-09-23) |
+| Status | Final v1.1 (pointer refresh to api-endpoints v2.0, user-approved 2026-09-23) |
 | Owner | Consult Platform assembly |
-| Version | 1.0 Final |
+| Version | 1.1 Final |
 | Scope | Consult-local admin surface + `import/*`, data/audit, `access-config`, `user-permissions`, plus `/service/*` proxy decision; identity (users/groups/grants) owned by Auth — consult holds Auth↔domain link only; all under `/api/v1/` + `jwt.auth`/`jwt.endpoint` |
-| Non-goals | Redefining levels/paths (owned by `api-endpoints.md` Final v1.0); auth flow (owned by `auth-integration.md`); shapes/migrations (owned by `data-model.md`); reports (Phase E) |
+| Non-goals | Redefining levels/paths (owned by `api-endpoints.md` Final v2.0); auth flow (owned by `auth-integration.md`); shapes/migrations (owned by `data-model.md`); reports (Phase E) |
 | Layer | Product Assembly (`assemblies/loa-consult-platform/`) |
 
 ## RFC 2119 terminology
@@ -17,11 +17,11 @@ The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RE
 
 ## Context
 
-Slices B/C + auth-layer are COMPLETE (routes in `routes/api.php`, 13 controllers, green pastes). Missing per `api-endpoints.md` Final v1.0 §5 + `config/consult-endpoints.php` gap vs routes file: admin-users family, import family, data/audit, access-config, user-permissions. TODO defers these as Admin+import module (enforcement, Auth-owned) with contract at implementation phase; Phase D covers the contract. Ownership (user decision 2026-09-23): admin-users are actual Auth tenant app users for the consultation app under groups `aces-admin` / `aces-dean` / `aces-faculty` / `aces-user` (student); Auth users link to consult `students`/`employees` by email. Consult MUST NOT own user CRUD — identity writes live in `loa-auth-platform` (tenant member endpoints); consult exposes link-derived reads only. Enforcement note: destructive/sensitive ops are `admin`-level; local admin/role MUST NOT be introduced — groups come from JWT `groups` claim only.
+Slices B/C + auth-layer are COMPLETE (routes in `routes/api.php`, 13 controllers, green pastes). Missing per `api-endpoints.md` Final v2.0 §5 + `config/consult-endpoints.php` gap vs routes file: admin-users family, import family, data/audit, access-config, user-permissions. TODO defers these as Admin+import module (enforcement, Auth-owned) with contract at implementation phase; Phase D covers the contract. Ownership (user decision 2026-09-23): admin-users are actual Auth tenant app users for the consultation app under groups `aces-admin` / `aces-dean` / `aces-faculty` / `aces-user` (student); Auth users link to consult `students`/`employees` by email. Consult MUST NOT own user CRUD — identity writes live in `loa-auth-platform` (tenant member endpoints); consult exposes link-derived reads only. Enforcement note: destructive/sensitive ops are `admin`-level; local admin/role MUST NOT be introduced — groups come from JWT `groups` claim only.
 
 ## Constraints
 
-- **CON-1** — Paths/levels MUST match `api-endpoints.md` Final v1.0 §5 + `config/consult-endpoints.php`. On conflict those win; this doc MUST NOT duplicate the catalog (reference by ID).
+- **CON-1** — Paths/levels MUST match `api-endpoints.md` Final v2.0 §5 + `config/consult-endpoints.php`. On conflict those win; this doc MUST NOT duplicate the catalog (reference by ID).
 - **CON-2** — All Phase D routes MUST sit under `/api/v1/` behind `['jwt.auth','jwt.endpoint']`; bare shapes only (no envelope).
 - **CON-3** — Destructive ops (`DELETE`, `soft-delete`/`bulk-soft-delete`/`restore`, `reset-db`, `delete-students`, `import/*` writes, `access-config` writes, `visibility`/`invalidate`) MUST require `admin` level. Read/reference/preview MUST require at least `read`.
 - **CON-4** — No local users/roles/groups tables. Identity (users, membership, grants) is Auth-owned (`loa-auth-platform` tenant member endpoints); consult MUST read levels from `jwt_endpoint_level` + groups (`aces-*`) from JWT claims only, and MUST resolve person identity via the Auth↔domain email link to `students`/`employees`.
@@ -72,7 +72,7 @@ Slices B/C + auth-layer are COMPLETE (routes in `routes/api.php`, 13 controllers
 
 ## References
 
-- `api-endpoints.md` Final v1.0 §5 (paths/levels source)
+- `api-endpoints.md` Final v2.0 §5 (paths/levels source)
 - `config/consult-endpoints.php` (public 5 + 118; Phase D delta source)
 - `auth-integration.md` Final v1.4 (JWT/policy/gating, §8 provisioning)
 - `data-model.md` Final v1.3 §3/§7 (shape + implementability gate)
@@ -83,6 +83,6 @@ Slices B/C + auth-layer are COMPLETE (routes in `routes/api.php`, 13 controllers
 
 ## Document Control
 
-- **Status:** Final v1.0 (user-approved 2026-09-23)
+- **Status:** Final v1.1 (pointer refresh to api-endpoints v2.0, user-approved 2026-09-23)
 - **Created:** 2026-09-23 from endpoint gap (routes file ~90 gated vs catalog 118); refined v0.2 2026-09-23 (Auth-owned users + aces-* + linkage, no consult user CRUD); promoted Final v1.0 2026-09-23
 - **Next:** implementation per ACC-*/D-* after data-model gate check; DEC-5 proxy decision recorded before proxy code; on change follow Classification C (spec-first)
