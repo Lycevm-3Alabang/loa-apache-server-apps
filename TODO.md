@@ -51,7 +51,7 @@
 | `endpoints-appointments.md` | v1.0 | **Final** | — (build-time carry-forward: actor-ownership, Teams sync) |
 | `endpoints-evaluations.md` | v1.0 | **Final** | — (build-time carry-forward: service rules, nested keys) |
 | `endpoints-admin-import.md` | v1.0 | **Final** | Phase D contract (Auth-owned users via aces-*, domain-only imports, double-guard destructives, DEC-5 proxy open) |
-| `url-flattening.md` | v1.1 | **Draft** | Flat URL scheme (113+5 actual; re-Final after F2 green) |
+| `url-flattening.md` | v1.1 | **Final** | Flat URL scheme (113+5 actual, single scoped results, cert/auth deny, in-place v1 rename) |
 | `test-suite.md` | v1.0 | **Final** | test contract for auth-layer + B/C (CON/DEC/ACC/D); user-run sequential |
 | `docker-compose-spec.md` | v1.0 | **Final** | — (root stack wiring: §2 blocks + §3 init + §4 secrets + §7 scripts) |
 | `LOCAL-DEV-RUNBOOK.md` | v0.1 | **Draft** | local dev setup |
@@ -70,6 +70,7 @@
 - [x] 2026-09-23 — Phase D data/audit baseline **green (user)**: `DataController` (delete-students + reset-db double-guarded, export-consultations, evaluation-mappings) + 4 gated routes + `DataAuditTest` 8/8; per-resource DELETE stays on owner controllers, bulk multi-entity only in `DataController` (kept per user); `audit-logs` absent by gate (no table)
 - [x] 2026-09-23 — Auth-side consult catalog **authored (user-requested)**: `assemblies/loa-auth-platform/database/json/consult-endpoints-catalog.json` v1.0 (118 entries, transcribed from consult `api-endpoints.md` Final v1.0 §5) as bulk-import path for deploy-time provisioning; unserved paths included verbatim (grants decide; 404/closed-by-default until served)
 - [x] 2026-09-23 — URL flattening F1 **green (user)**: non-results paths flat (academic 15, related-data, data 3, disabled/details/invalidate 5, bootstrap relocated above `{id}`); catalog + 5 test files updated path-only; results collapse deferred to F2
+- [x] 2026-09-23 — URL flattening F2 **green (user)**: results 20 → 15 single scoped surface (group-switch index, own-dept/self guards, aces-* checks, 6 dean methods removed) + `ResultsTest` rewrite with scoping test + catalog/JSON regen (113+5) + url note re-Final v1.1; red-triage: disabled-set route shadowing (`{id}` registered first — statics moved above), policy count 118→113
 - [x] 2026-09-22 — Red-suite triage (AuthTrio 15 red, suite otherwise green): (A) 000010 sections block dropped never-existing `is_disabled` + re-added existing cols — Type A, fixed to `created_by`/`updated_by` only incl. down(); (B) suite ran against `loa_consult` app DB — phpunit `force` loses to container `$_SERVER` (Type B test-infra, fixed via `tests/bootstrap.php` auth-precedent + phpunit bootstrap rewire). Dev `loa_consult` wiped by RefreshDatabase — user recovery + rerun pending
 - [x] 2026-09-22 — B1 **green pasted**: `000011` academic baseline delta + model convergence + `AcademicDeltaTest`; repairs en route: sections FK-drop, guarded idempotence (information_schema checks — DDL builds on closure close), FK-before-unique order + student relink, short trio unique `enr_stu_map_sem_unique` (74-char conventional > MySQL 64)
 - [x] 2026-09-22 — B3 **green pasted**: `AvailabilityRuleController` + gated routes + `AvailabilityTest` 10/10

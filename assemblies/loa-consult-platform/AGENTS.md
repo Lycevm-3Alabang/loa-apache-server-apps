@@ -222,5 +222,5 @@ envelope migration without a spec.
 | `FRONTEND-INTEGRATION.md` v0.1 | DRAFT — cutover checklist skeleton |
 | `consult-readiness.md` v1.4 | FINAL — provisioning checklist (aces-* + linkage, 118+5 pointer) |
 | `endpoints-admin-import.md` v1.0 | FINAL — Phase D (Auth-owned users, domain imports, double-guard, proxy open) |
-| `url-flattening.md` v1.1 | DRAFT — flat scheme (113+5 actual; re-Final after F2 green) |
+| `url-flattening.md` v1.1 | FINAL — flat scheme (113+5, scoped results, F2 green) |
 | `README.md` v1.0 | DRAFT — assembly composition (see §2) |

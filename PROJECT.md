@@ -165,7 +165,8 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
 | `endpoints-evaluations.md` spec | ✅ Final v1.0 | 24 handlers: lifecycle/masking, periods, rubrics, results, dispute mail |
 | `endpoints-admin-import.md` spec | ✅ Final v1.0 | Phase D: Auth-owned users (aces-*, link reads only), domain imports, double-guard destructives, proxy decision open |
-| `url-flattening.md` spec | ✅ Draft v1.1 | Flat URL scheme (113+5 actual; re-Final after F2 green) |
+| `url-flattening.md` spec | ✅ Final v1.1 | Flat URL scheme (113+5, single scoped results, in-place v1 rename; F2 green) |
+| URL flattening (F1+F2) | ✅ Done 2026-09-23 | Flat routes + scoped results + catalog/JSON regen + ResultsTest scoping; suite green (user) |
 | `test-suite.md` spec | ✅ Final v1.0 | Test contract for auth-layer + B/C (CON/DEC/ACC/D); MySQL `loa_consult_test`, JWT helper, user-run sequential |
 | `docker-compose-spec.md` spec | ✅ Final v1.0 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |

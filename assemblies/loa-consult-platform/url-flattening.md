@@ -4,9 +4,9 @@
 |-------|-------|
 | ID | CONSULT-URL-001 |
 | Title | Flat URL scheme |
-| Status | Draft v1.1 (count/mapping corrections from F2 implementation; pending re-Final) |
+| Status | Final v1.1 (user-approved 2026-09-23; F2 green) |
 | Owner | Consult Platform assembly |
-| Version | 1.1 Draft |
+| Version | 1.1 Final |
 | Scope | Replace role-prefixed paths (`admin/*`, `dean/*`, `faculty/*`, `student/*`) with flat resources under `/api/v1/`; access decided solely by per-group grants (`aces-*` × read/write/deny/admin); single scoped results endpoint; in-place rename; catalog 118 → 113 gated (results 20 → 15; Auth-owned + gate-blocked entries retained verbatim) |
 | Non-goals | Changing levels semantics (owned by Auth grants specs); auth flow; shapes/migrations; frontend cutover (Phase E) |
 | Layer | Product Assembly (`assemblies/loa-consult-platform/`) |
@@ -103,6 +103,6 @@ Roles baked into URLs (`admin/`, `dean/`, `faculty/`) contradict the group-grant
 
 ## Document Control
 
-- **Status:** Draft v1.1 (count 100→113 + mapping refinements from F2 build; pending re-Final)
-- **Created:** 2026-09-23 from role-prefix gap + scheme answers; reviewed; promoted Final v1.0 2026-09-23; refined v1.1 during F2 (actual flat set 113+5)
-- **Next:** F2 green, then re-promotion to Final v1.1
+- **Status:** Final v1.1 (F2 green 2026-09-23)
+- **Created:** 2026-09-23 from role-prefix gap + scheme answers; reviewed; promoted Final v1.0 2026-09-23; refined v1.1 during F2 (actual flat set 113+5); re-promoted Final v1.1 2026-09-23
+- **Next:** re-version affected Finals per DEC-4 (api-endpoints v2.0, modules v1.1) + pointer refresh
