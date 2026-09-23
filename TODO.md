@@ -55,7 +55,7 @@
 | `LOCAL-DEV-RUNBOOK.md` | v0.1 | **Draft** | local dev setup |
 | `DEPLOY.md` | v0.1 | **Draft** | deployment |
 | `FRONTEND-INTEGRATION.md` | v0.1 | **Draft** | cutover phase |
-| `consult-readiness.md` | v1.2 | **Draft** | auth provisioning checklist + historical notes (v1.1: Laravel assembly active; v1.2: §9 students/employees no `app_users`, §13 no cross-repo sync — normative = assembly; normative auth = `auth-integration.md` Final v1.4) |
+| `consult-readiness.md` | v1.3 | **Final** | provisioning checklist (CON/DEC/ACC/D, pointer-only 118+5); v1.2 tables superseded; normative auth = `auth-integration.md` Final v1.4 |
 | `AGENTS.md` (assembly contract) | v1.0 | **Final** | — (working agreements, scaffold, status, spec pointers) |
 | `student.md` / `faculty.md` / `faculty-loading.md` (education domains) | v1.1 | **Final** | — (first-class cache via SSO upsert, FK to domain IDs; unblock data-model Final) |
 

@@ -35,8 +35,8 @@
 7. **Keep HealthTest green.** Nothing may break `GET /api/v1/health → {status:ok, service:loa-consult-platform}`.
    Suites run sequentially only (shared `loa_consult_test` DB deadlocks on concurrent runs). No change is
    complete until the user pastes green results.
-8. **Document after approved changes.** Update root `TODO.md` (program tracker) + `PROJECT.md` (Phase 2 rows) +
-   `PROJECT_UPDATES.md` (Consult section + Last Session Notes) and append a `Current status` entry in Section 3 below.
+8. **Document after approved changes.** Update root `TODO.md` (program tracker — sole change journal alongside `PROJECT_UPDATES.md`) + `PROJECT.md` (Phase 2 rows) +
+   `PROJECT_UPDATES.md` (Consult section + Last Session Notes). Do NOT append `Current status` entries in Section 3 — §3 is frozen historical (2026-09-23); history lives in `TODO.md` + git.
 9. **Spec format standard (all future specs).** Every normative spec MUST live
    as its own file under `assemblies/loa-consult-platform/` (never inline in `AGENTS.md` — §4 is a
    pointer only) and MUST follow the consult template: metadata table
@@ -101,7 +101,7 @@ envelope migration without a spec.
 
 ---
 
-## 3. Current status (historical tracking — append newest at bottom)
+## 3. Current status (historical — frozen 2026-09-23; journal is `TODO.md` + git, not this section)
 
 - **2026-09-18 — Scaffold + specs.** Laravel 12.12 via composer (PHP 8.3 pinned), swagger + phpunit 12,
   `HealthTest` green in Docker. Endpoint inventory: 112 `route.ts` files (~142 combos; 118 migrating + 5 public/SSO).
@@ -200,6 +200,8 @@ envelope migration without a spec.
   updated. **Stopped — next phase needs user yes.**
 - **Current status (2026-09-23) — trackers reconciled + test-suite Final v1.0.** TODO boxes (Auth/B/C) ticked COMPLETE, auth row Steps 1–7, PROJECT Phase 2 B/C Done, UPDATES Consult Status/Next current. `test-suite.md` Draft v0.1 → Final v1.0 (§1.9 template, CON/ACC/D, user-approved). Trackers updated.
   **Stopped — next spec or phase needs user yes.**
+- **Current status (2026-09-23) — consult-readiness Final v1.3.** Draft v1.2 → Final v1.3 (§1.9 template, pointer-only 118+5, CON/ACC/D, user-approved; v1.2 tables superseded). Trackers updated.
+  **Stopped — next spec or phase needs user yes.**
 
 ---
 
@@ -218,5 +220,5 @@ envelope migration without a spec.
 | `LOCAL-DEV-RUNBOOK.md` v0.1 | DRAFT — local dev setup |
 | `DEPLOY.md` v0.1 | DRAFT — deployment skeleton |
 | `FRONTEND-INTEGRATION.md` v0.1 | DRAFT — cutover checklist skeleton |
-| `consult-readiness.md` v1.2 | DRAFT — historical Next.js SSO notes; Auth-provisioning checklist only |
+| `consult-readiness.md` v1.3 | FINAL — provisioning checklist (CON/ACC/D, 118+5 pointer) |
 | `README.md` v1.0 | DRAFT — assembly composition (see §2) |
