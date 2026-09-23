@@ -164,10 +164,11 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | `endpoints-academic.md` spec | ✅ Final v1.0 | 14 handlers; parent levels corrected (POST/PATCH + impacts → admin) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
 | `endpoints-evaluations.md` spec | ✅ Final v1.0 | 24 handlers: lifecycle/masking, periods, rubrics, results, dispute mail |
+| `endpoints-admin-import.md` spec | ✅ Final v1.0 | Phase D: Auth-owned users (aces-*, link reads only), domain imports, double-guard destructives, proxy decision open |
 | `test-suite.md` spec | ✅ Final v1.0 | Test contract for auth-layer + B/C (CON/DEC/ACC/D); MySQL `loa_consult_test`, JWT helper, user-run sequential |
 | `docker-compose-spec.md` spec | ✅ Final v1.0 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |
-| `consult-readiness.md` spec | ✅ Final v1.3 | Provisioning checklist (CON/DEC/ACC/D, 118+5 pointer); no `app_users`; normative = assembly + `auth-integration.md` |
+| `consult-readiness.md` spec | ✅ Final v1.4 | Provisioning checklist (aces-admin/dean/faculty/user + Auth↔students/employees link, 118+5 pointer) |
 | First migration(s) + baseline deltas | ✅ Done 2026-09-22 | `000001-000010` academic + `000011` academic baseline + `000012` appointment-family + `000013` section-link + `000014` evaluation tables; per data-model Final v1.3 §3/§7 |
 | JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa`, `consult_user`; Unit tests green. **Gated in Step 7** |
 | Permission middleware | ✅ Step 5 done | Cert port verbatim (`consult-endpoints` re-point only, `jwt_claims` confirmed); Unit tests green (public/403/level/catalog-count). **Gates all domain routes since Step 7** |

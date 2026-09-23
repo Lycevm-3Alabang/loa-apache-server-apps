@@ -50,12 +50,13 @@
 | `endpoints-academic.md` | v1.0 | **Final** | — (build-time carry-forward: repo-only fields, join paths) |
 | `endpoints-appointments.md` | v1.0 | **Final** | — (build-time carry-forward: actor-ownership, Teams sync) |
 | `endpoints-evaluations.md` | v1.0 | **Final** | — (build-time carry-forward: service rules, nested keys) |
+| `endpoints-admin-import.md` | v1.0 | **Final** | Phase D contract (Auth-owned users via aces-*, domain-only imports, double-guard destructives, DEC-5 proxy open) |
 | `test-suite.md` | v1.0 | **Final** | test contract for auth-layer + B/C (CON/DEC/ACC/D); user-run sequential |
 | `docker-compose-spec.md` | v1.0 | **Final** | — (root stack wiring: §2 blocks + §3 init + §4 secrets + §7 scripts) |
 | `LOCAL-DEV-RUNBOOK.md` | v0.1 | **Draft** | local dev setup |
 | `DEPLOY.md` | v0.1 | **Draft** | deployment |
 | `FRONTEND-INTEGRATION.md` | v0.1 | **Draft** | cutover phase |
-| `consult-readiness.md` | v1.3 | **Final** | provisioning checklist (CON/DEC/ACC/D, pointer-only 118+5); v1.2 tables superseded; normative auth = `auth-integration.md` Final v1.4 |
+| `consult-readiness.md` | v1.4 | **Final** | provisioning checklist (aces-admin/dean/faculty/user + Auth↔students/employees link, pointer-only 118+5); normative auth = `auth-integration.md` Final v1.4 |
 | `AGENTS.md` (assembly contract) | v1.0 | **Final** | — (working agreements, scaffold, status, spec pointers) |
 | `student.md` / `faculty.md` / `faculty-loading.md` (education domains) | v1.1 | **Final** | — (first-class cache via SSO upsert, FK to domain IDs; unblock data-model Final) |
 

@@ -4,9 +4,9 @@
 |-------|-------|
 | ID | CONSULT-ADMIN-001 |
 | Title | Phase D Admin + Import + Data-Audit |
-| Status | Draft v0.2 (user decision 2026-09-23: admin-users are Auth tenant users; pending review) |
+| Status | Final v1.0 (user-approved 2026-09-23) |
 | Owner | Consult Platform assembly |
-| Version | 0.2 Draft |
+| Version | 1.0 Final |
 | Scope | Consult-local admin surface + `import/*`, data/audit, `access-config`, `user-permissions`, plus `/service/*` proxy decision; identity (users/groups/grants) owned by Auth — consult holds Auth↔domain link only; all under `/api/v1/` + `jwt.auth`/`jwt.endpoint` |
 | Non-goals | Redefining levels/paths (owned by `api-endpoints.md` Final v1.0); auth flow (owned by `auth-integration.md`); shapes/migrations (owned by `data-model.md`); reports (Phase E) |
 | Layer | Product Assembly (`assemblies/loa-consult-platform/`) |
@@ -83,6 +83,6 @@ Slices B/C + auth-layer are COMPLETE (routes in `routes/api.php`, 13 controllers
 
 ## Document Control
 
-- **Status:** Draft v0.2 (user decision 2026-09-23: Auth-owned users + aces-* + linkage)
-- **Created:** 2026-09-23 from endpoint gap (routes file ~90 gated vs catalog 118; missing = admin/import/data/config/permissions); refined v0.2 2026-09-23 (no consult user CRUD; Auth `tenant-member*` by reference)
-- **Next:** user review; DEC-5 proxy decision; promotion to Final requires explicit approval; on Final update `TODO.md` + `PROJECT.md` + `PROJECT_UPDATES.md` + assembly `AGENTS.md` §4
+- **Status:** Final v1.0 (user-approved 2026-09-23)
+- **Created:** 2026-09-23 from endpoint gap (routes file ~90 gated vs catalog 118); refined v0.2 2026-09-23 (Auth-owned users + aces-* + linkage, no consult user CRUD); promoted Final v1.0 2026-09-23
+- **Next:** implementation per ACC-*/D-* after data-model gate check; DEC-5 proxy decision recorded before proxy code; on change follow Classification C (spec-first)

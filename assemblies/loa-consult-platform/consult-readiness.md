@@ -4,9 +4,9 @@
 |-------|-------|
 | ID | CONSULT-READY-001 |
 | Title | Consult Auth Provisioning Readiness |
-| Status | Draft v1.4 (user decision 2026-09-23: aces-* groups + Auth↔domain linkage; pending re-Final) |
+| Status | Final v1.4 (user-approved 2026-09-23) |
 | Owner | Consult Platform assembly |
-| Version | 1.4 Draft |
+| Version | 1.4 Final |
 | Scope | Deploy-time Auth provisioning checklist for consult (tenant, groups, catalog import, grants, secrets) + historical Next.js notes; normative auth = `auth-integration.md` Final v1.4 |
 | Non-goals | Redefining SSO/JWT/levels/shapes (owned by `auth-integration.md`, `api-endpoints.md`, `data-model.md`); duplicating the endpoint catalog; Auth-side specs |
 | Layer | Product Assembly (`assemblies/loa-consult-platform/`) |
@@ -94,7 +94,7 @@ Source reconciliation for v1.3: `api-endpoints.md` Final v1.0 §5 + `config/cons
 
 ## Document Control
 
-- **Status:** Draft v1.4 (user decision 2026-09-23: aces-* groups + Auth↔domain linkage; pending re-Final)
-- **Created:** 2026-08-24 as v1.0; v1.1 Laravel-active correction; v1.2 identity fix (2026-09-22); rewritten 2026-09-23 to §1.9 template with count/path reconciliation (pointer-only catalog); promoted Final v1.3 2026-09-23; refined to Draft v1.4 2026-09-23 (aces-* + linkage)
-- **Next:** user review; re-promotion to Final requires explicit approval; on Final update `TODO.md` + `PROJECT.md` + `PROJECT_UPDATES.md` + assembly `AGENTS.md` §4
+- **Status:** Final v1.4 (user-approved 2026-09-23)
+- **Created:** 2026-08-24 as v1.0; v1.1 Laravel-active correction; v1.2 identity fix (2026-09-22); rewritten 2026-09-23 to §1.9 template with count/path reconciliation (pointer-only catalog); promoted Final v1.3 2026-09-23; refined to v1.4 2026-09-23 (aces-admin/dean/faculty/user + Auth↔students/employees link) and re-promoted Final 2026-09-23
+- **Next:** deploy-time provisioning per ACC-*/D-*; catalog counts follow `api-endpoints.md` + `config/consult-endpoints.php`
 - **Supersedes:** v1.2 full-table catalog/paths/counts (git history only)

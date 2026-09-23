@@ -220,5 +220,6 @@ envelope migration without a spec.
 | `LOCAL-DEV-RUNBOOK.md` v0.1 | DRAFT — local dev setup |
 | `DEPLOY.md` v0.1 | DRAFT — deployment skeleton |
 | `FRONTEND-INTEGRATION.md` v0.1 | DRAFT — cutover checklist skeleton |
-| `consult-readiness.md` v1.3 | FINAL — provisioning checklist (CON/ACC/D, 118+5 pointer) |
+| `consult-readiness.md` v1.4 | FINAL — provisioning checklist (aces-* + linkage, 118+5 pointer) |
+| `endpoints-admin-import.md` v1.0 | FINAL — Phase D (Auth-owned users, domain imports, double-guard, proxy open) |
 | `README.md` v1.0 | DRAFT — assembly composition (see §2) |
