@@ -79,7 +79,7 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 
 - **Status:** scaffold done + auth-layer port COMPLETE (§11 Steps 1–7 green 2026-09-22) + slices B/C COMPLETE (B1–B5 academic/appointments, C1–C4 evaluations green 2026-09-22) + Phase D link-reads + import-domain + data/audit green 2026-09-23 (`UserLinkTest` 8/8, `ImportTest` 7/7, `DataAuditTest` 8/8 user) + URL-flattening F1+F2 green (flat 104+5 normative, scoped results). Stopped — implementation phase planning needs user yes.
 - **Specs:** `api-endpoints.md` Final v2.0 (flat 104+5 green), `auth-integration.md` Final v1.4 (§11 Steps 1–7 landed: config · services trio · JwtMiddleware · catalog 104+5 flattened current, 118+5 was v1.0 history · EndpointPolicy · auth trio · gate routes — suite green 2026-09-22, port COMPLETE), 3 endpoint modules Final v1.0–v1.1 (academic/evaluations v1.1 flat green), `endpoints-admin-import.md` Final v1.1 (Phase D baselines green 2026-09-23; DEC-5 proxy OPEN), `url-flattening.md` Final v1.1 (flat 104+5 per ACC-2; 113+5 was F2 intermediate), `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.3 (shape contract + §3 Status gate 6/3/17); `test-suite.md` Final v1.1; `consult-readiness.md` Final v1.5 (104+5 pointer); runbooks still Draft.
-- **Next:** implementation phase planning (scaffold, domain slices, C-Auth, cutover) — gated; see TODO AFTER FINAL SPECS. Auth JSON deferred to deploy-time.
+- **Next:** P6 cutover/Phase E BLOCKED (runbooks Draft v0.1, frontend decision, reports 7 types, §8 provisioning); DEC-5 proxy OPEN; spec drift fixes need yes. Auth JSON deferred to deploy-time. See TODO AFTER FINAL (planning FLUSHED 2026-09-23).
 
 ---
 
@@ -90,6 +90,7 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 ### Completed
 - **Tracker reconciliation (user-approved):** `TODO.md` header → ACTIVE 2026-09-23; Phase D deferred markers → SUPERSEDED (Final v1.1 + baselines green); counts → 104+5 normative (`api-endpoints.md` v2.0 §5 Total + `url-flattening.md` ACC-2 + `consult-readiness.md` CON-2 + `config/consult-endpoints.php` 104 gated); 118+5 = v1.0 history, 113+5 = F2 intermediate. `PROJECT.md` Phase 2 synced (auth catalog, admin-import, url-flattening, F1+F2, results 20→15, academic flat). This file synced (ACTIVE date, Status, Specs).
 - **Open drift (spec-owned, not edited):** assembly `AGENTS.md` §4 url-flattening 113+5; `url-flattening.md` Document Control 113+5; `endpoints-admin-import.md` Refs config 118; `config/consult-endpoints.php` L131-132 `/admin/audit-logs` unflattened.
+- **Phase planning FLUSHED 2026-09-23 (user-approved):** TODO AFTER FINAL + `PROJECT.md` Phase 2 rows synced (P0-P5 done, P6 blocked).
 
 ### Next Action
 - [ ] Implementation phase planning (scaffold, domain slices, C-Auth, cutover) — gated; see TODO AFTER FINAL SPECS. Spec-owned drift fixes need separate yes per Rule 0.

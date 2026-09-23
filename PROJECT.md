@@ -157,6 +157,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 |------|--------|-------|
 | Consult endpoint inventory (scan-only savepoint) | ✅ Done | 2026-09-18: 112 route files scanned (~142 combos; 118 migrating to Laravel); drift vs `endpoint-catalog.md` recorded; frontend untouched |
 | Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
+| Implementation phase planning | ✅ Flushed 2026-09-23 | P0 scaffold + P1 C-Auth (§11) + P2 Slice B + P3 Slice C + P4 Slice D baselines + P5 flatten 104+5 done; P6 cutover/Phase E BLOCKED (runbooks Draft, frontend decision, reports, §8 provisioning); see TODO AFTER FINAL |
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
 | `api-endpoints.md` spec | ✅ Final v2.0 | Flat 104+5 root spec (F1/F2 green) |
 | `auth-integration.md` spec | ✅ Final v1.4 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed (config · services · JwtMiddleware · catalog 104+5 flattened current, 118+5 was v1.0 pre-flatten history · EndpointPolicy · auth trio · gate routes + tests) — suite green 2026-09-22, port COMPLETE |

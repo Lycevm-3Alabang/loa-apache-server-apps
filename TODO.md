@@ -24,7 +24,7 @@
 
 - [x] Domain slice C — evaluations/periods/rubrics/results — **COMPLETE green pasted** (C1 tables + C2 periods/rubrics + C3 lifecycle + C4 results/compute)
 
-- [ ] Implementation phase planning (scaffold, domain slices, C-Auth, cutover) — flush out when all specs are Final
+- [x] 2026-09-23 — Implementation phase planning **FLUSHED (user-approved draft)**: P0 scaffold done (`docker-compose-spec.md` Final v1.0) · P1 C-Auth done (`auth-integration.md` Final v1.4 §11 Steps 1–7: Jwt 6 + Policy 5 + Trio 16 + Gating 5 green) · P2 Slice B done (B1 `000011` + B2 `000012` 5 models + B3 2 routes 10/10 + B4 10 routes 12/12 + B5 `000013` hardening; semesters 7+1) · P3 Slice C done (C1 `000014` 10 tables/models 4/4 + C2 periods 12 + rubrics 12 + C3 lifecycle 12 + C4 `ResultsService` + 15 scoped results; C2 7 methods vs 16-claim drift open) · P4 Slice D baselines green (link-reads 3 + import 10 + data 4 served, audit-logs 2 pending by gate; DEC-5 proxy OPEN; config L131-132 unflattened) · P5 Flatten F1/F2 done (104+5 normative) · **P6 Cutover/Phase E BLOCKED**: runbooks Draft v0.1 (LOCAL-DEV/DEPLOY/FRONTEND) + frontend decision + reports + §8 provisioning. Cross-gates: `TENANT_SLUG=loa`, secrets identical, `.htaccess` Authorization, bare shapes, no local roles, sequential `loa_consult_test`, HealthTest green + user paste
 
 ---
 
