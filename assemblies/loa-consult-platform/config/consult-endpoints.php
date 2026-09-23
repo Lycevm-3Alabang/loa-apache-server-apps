@@ -128,8 +128,8 @@ return [
         ['method' => 'GET',    'path' => '/api/v1/import/sections/reference',                 'required_level' => 'read'],
 
         // 5.11 Data & audit (6)
-        ['method' => 'GET',    'path' => '/api/v1/admin/audit-logs',                          'required_level' => 'read'],
-        ['method' => 'DELETE', 'path' => '/api/v1/admin/audit-logs',                          'required_level' => 'admin'],
+        ['method' => 'GET',    'path' => '/api/v1/audit-logs',                          'required_level' => 'read'],
+        ['method' => 'DELETE', 'path' => '/api/v1/audit-logs',                          'required_level' => 'admin'],
         ['method' => 'POST',   'path' => '/api/v1/data/delete-students',                'required_level' => 'admin'],
         ['method' => 'POST',   'path' => '/api/v1/data/export-consultations',           'required_level' => 'admin'],
         ['method' => 'POST',   'path' => '/api/v1/data/reset-db',                       'required_level' => 'admin'],

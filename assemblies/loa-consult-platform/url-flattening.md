@@ -104,5 +104,5 @@ Roles baked into URLs (`admin/`, `dean/`, `faculty/`) contradict the group-grant
 ## Document Control
 
 - **Status:** Final v1.1 (F2 green 2026-09-23)
-- **Created:** 2026-09-23 from role-prefix gap + scheme answers; reviewed; promoted Final v1.0 2026-09-23; refined v1.1 during F2 (actual flat set 113+5); re-promoted Final v1.1 2026-09-23
+- **Created:** 2026-09-23 from role-prefix gap + scheme answers; reviewed; promoted Final v1.0 2026-09-23; refined v1.1 during F2 (104+5 actual per ACC-2; 113+5 was F2 intermediate); re-promoted Final v1.1 2026-09-23
 - **Next:** re-version affected Finals per DEC-4 (api-endpoints v2.0, modules v1.1) + pointer refresh

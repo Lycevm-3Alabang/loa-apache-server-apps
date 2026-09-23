@@ -91,6 +91,7 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 - **Tracker reconciliation (user-approved):** `TODO.md` header → ACTIVE 2026-09-23; Phase D deferred markers → SUPERSEDED (Final v1.1 + baselines green); counts → 104+5 normative (`api-endpoints.md` v2.0 §5 Total + `url-flattening.md` ACC-2 + `consult-readiness.md` CON-2 + `config/consult-endpoints.php` 104 gated); 118+5 = v1.0 history, 113+5 = F2 intermediate. `PROJECT.md` Phase 2 synced (auth catalog, admin-import, url-flattening, F1+F2, results 20→15, academic flat). This file synced (ACTIVE date, Status, Specs).
 - **Open drift (spec-owned, not edited):** assembly `AGENTS.md` §4 url-flattening 113+5; `url-flattening.md` Document Control 113+5; `endpoints-admin-import.md` Refs config 118; `config/consult-endpoints.php` L131-132 `/admin/audit-logs` unflattened.
 - **Phase planning FLUSHED 2026-09-23 (user-approved):** TODO AFTER FINAL + `PROJECT.md` Phase 2 rows synced (P0-P5 done, P6 blocked).
+- **Drift fix green pasted 2026-09-23:** 4 spec-owned drifts fixed (AGENTS §4, url-flattening Doc Control, admin-import Refs, config audit-logs flat) — full suite **120 passed (594 assertions)** incl Policy 104+5; migrations 000001–000014 DONE.
 
 ### Next Action
 - [ ] Implementation phase planning (scaffold, domain slices, C-Auth, cutover) — gated; see TODO AFTER FINAL SPECS. Spec-owned drift fixes need separate yes per Rule 0.

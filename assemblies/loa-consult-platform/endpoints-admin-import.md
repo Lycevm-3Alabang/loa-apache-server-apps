@@ -73,7 +73,7 @@ Slices B/C + auth-layer are COMPLETE (routes in `routes/api.php`, 13 controllers
 ## References
 
 - `api-endpoints.md` Final v2.0 §5 (paths/levels source)
-- `config/consult-endpoints.php` (public 5 + 118; Phase D delta source)
+- `config/consult-endpoints.php` (public 5 + 104 gated flattened current; Phase D delta source)
 - `auth-integration.md` Final v1.4 (JWT/policy/gating, §8 provisioning)
 - `data-model.md` Final v1.3 §3/§7 (shape + implementability gate)
 - `test-suite.md` Final v1.0 (CON/ACC/D test contract)
