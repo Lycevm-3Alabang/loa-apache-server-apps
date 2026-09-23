@@ -4,9 +4,9 @@
 |-------|-------|
 | ID | CONSULT-READY-001 |
 | Title | Consult Auth Provisioning Readiness |
-| Status | Final v1.3 (user-approved 2026-09-23) |
+| Status | Draft v1.4 (user decision 2026-09-23: aces-* groups + Auth↔domain linkage; pending re-Final) |
 | Owner | Consult Platform assembly |
-| Version | 1.3 Final |
+| Version | 1.4 Draft |
 | Scope | Deploy-time Auth provisioning checklist for consult (tenant, groups, catalog import, grants, secrets) + historical Next.js notes; normative auth = `auth-integration.md` Final v1.4 |
 | Non-goals | Redefining SSO/JWT/levels/shapes (owned by `auth-integration.md`, `api-endpoints.md`, `data-model.md`); duplicating the endpoint catalog; Auth-side specs |
 | Layer | Product Assembly (`assemblies/loa-consult-platform/`) |
@@ -25,9 +25,9 @@ Source reconciliation for v1.3: `api-endpoints.md` Final v1.0 §5 + `config/cons
 
 - **CON-1** — Normative auth MUST be `auth-integration.md` Final v1.4. On conflict this doc loses.
 - **CON-2** — Paths/levels MUST match `api-endpoints.md` Final v1.0 §5 + `config/consult-endpoints.php` (public 5 + 118). This doc MUST NOT duplicate the catalog.
-- **CON-3** — Tenant MUST be slug `loa`, `active`, with `redirect_origins` including the consult frontend (`https://aces.lyceumalabang.edu.ph`). Groups MUST come from JWT `groups` claim only; never add local roles.
+- **CON-3** — Tenant MUST be slug `loa`, `active`, with `redirect_origins` including the consult frontend (`https://aces.lyceumalabang.edu.ph`). Groups MUST be `aces-admin` / `aces-dean` / `aces-faculty` / `aces-user` (student), tenant-scoped to `loa`, and MUST come from JWT `groups` claim only; never add local roles.
 - **CON-4** — `JWT_SECRET`/`ENCRYPTION_KEY` MUST be byte-identical with Auth. Secrets MUST NOT be committed.
-- **CON-5** — No `app_users` mirror. Post-SSO upsert MUST target first-class `students`/`employees` by email per `data-model.md` Final v1.3 §3.1.1–§3.1.2; groups/permissions MUST NOT be stored locally.
+- **CON-5** — No `app_users` mirror. Auth tenant users (consultation app) link to consult domain by email: post-SSO upsert MUST target first-class `students`/`employees` per `data-model.md` Final v1.3 §3.1.1–§3.1.2; groups/permissions MUST NOT be stored locally.
 - **CON-6** — Provisioning MUST run at deploy time per `auth-integration.md` §8 (TODO PLANNED). No Auth spec/files are created now.
 - **CON-7** — Legacy e-consultation specs (`D:\loa\e-consultation\specs/`) are historical with no sync duty; updates land in the assembly only.
 
@@ -35,7 +35,7 @@ Source reconciliation for v1.3: `api-endpoints.md` Final v1.0 §5 + `config/cons
 
 ### Decisions
 
-- **DEC-1** — Groups (tenant-scoped to `loa`): `ADMIN` full; `DEAN` read breadth + `write` on activate/visibility; `FACULTY` availability + own results; `STUDENT` booking + evaluations. Multi-role users hold multiple groups (replaces pipe-delimited legacy roles; `GUEST` removed).
+- **DEC-1** — Groups (tenant-scoped to `loa`): `aces-admin` full; `aces-dean` read breadth + `write` on activate/visibility; `aces-faculty` availability + own results; `aces-user` (student) booking + evaluations. Multi-role users hold multiple groups (replaces pipe-delimited legacy roles; `GUEST` removed).
 - **DEC-2** — Catalog import generated from `api-endpoints.md` §5 (118 + 5); grant matrix §2.4 intent kept as deploy-adjustable recommendation; bulk setup ≈500+ grant records.
 - **DEC-3** — SSO redirect pattern = cert pattern; Laravel `/api/v1/auth/*` (decrypt + `loa_connect_refresh` cookie); `throttle:10,1` on callback/refresh.
 - **DEC-4** — Verification reuses `test-suite.md` Final v1.0 ACCs plus manual browser checks below.
@@ -43,7 +43,7 @@ Source reconciliation for v1.3: `api-endpoints.md` Final v1.0 §5 + `config/cons
 ### Acceptance — Objective (machine-checkable)
 
 - **ACC-1** — Tenant `loa` active; `redirect_origins` contains consult frontend URL.
-- **ACC-2** — Groups `ADMIN/DEAN/FACULTY/STUDENT` exist scoped to `loa`.
+- **ACC-2** — Groups `aces-admin`/`aces-dean`/`aces-faculty`/`aces-user` exist scoped to `loa`.
 - **ACC-3** — Imported catalog count equals `config/consult-endpoints.php` (118 gated + 5 public).
 - **ACC-4** — Grants seeded per matrix; closed-by-default holds (verified via `test-suite.md` ACC-3/ACC-5: unknown → 403).
 - **ACC-5** — Secrets identical across Auth/Consult; JWT + tenant scoping green (`test-suite.md` ACC-2/ACC-3).
@@ -58,9 +58,9 @@ Source reconciliation for v1.3: `api-endpoints.md` Final v1.0 §5 + `config/cons
 ## Deliverables
 
 - **D-1** — Tenant create/update (`loa`, active, `redirect_origins` += consult URL).
-- **D-2** — Group seed (`ADMIN/DEAN/FACULTY/STUDENT` scoped to `loa`).
+- **D-2** — Group seed (`aces-admin`/`aces-dean`/`aces-faculty`/`aces-user` scoped to `loa`).
 - **D-3** — Catalog import from `api-endpoints.md` §5 / `config/consult-endpoints.php` (118+5 count-checked).
-- **D-4** — Grant seed per matrix (ADMIN full; DEAN/FACULTY/STUDENT scoped as decided).
+- **D-4** — Grant seed per matrix (`aces-admin` full; `aces-dean`/`aces-faculty`/`aces-user` scoped as decided).
 - **D-5** — Secrets handoff (`JWT_SECRET`, `ENCRYPTION_KEY` 64-hex or `base64:`) + consult `.env` (`AUTH_BASE_URL`, `TENANT_SLUG=loa`, `REFRESH_COOKIE=loa_connect_refresh`, `REFRESH_COOKIE_TTL=10080`) — deploy-time only.
 - **D-6** — SSO redirect config (`/sso/login?redirect=` accepted for consult origin).
 - **D-7** — Provisioning run log + verification pastes (ACC-1–ACC-6, ACC-S1–S3).
@@ -79,6 +79,7 @@ Source reconciliation for v1.3: `api-endpoints.md` Final v1.0 §5 + `config/cons
 | Provisioning | Deploy-time Auth DB writes (tenant, groups, catalog, grants) + secrets handoff; no code change |
 | Closed-by-default | Unknown endpoint → 403 via `jwt.endpoint` (verified in test-suite) |
 | First-class upsert | Post-SSO insert/update of `students`/`employees` by email; Auth stays sole identity authority |
+| Auth↔domain link | Auth tenant user (consultation app) ↔ consult `students`/`employees` row via email; groups are `aces-*`, never stored locally |
 
 ## References
 
@@ -93,7 +94,7 @@ Source reconciliation for v1.3: `api-endpoints.md` Final v1.0 §5 + `config/cons
 
 ## Document Control
 
-- **Status:** Final v1.3 (user-approved 2026-09-23)
-- **Created:** 2026-08-24 as v1.0; v1.1 Laravel-active correction; v1.2 identity fix (2026-09-22); rewritten 2026-09-23 to §1.9 template with count/path reconciliation (pointer-only catalog); promoted Final 2026-09-23
-- **Next:** deploy-time provisioning per ACC-*/D-*; catalog counts follow `api-endpoints.md` + `config/consult-endpoints.php`
+- **Status:** Draft v1.4 (user decision 2026-09-23: aces-* groups + Auth↔domain linkage; pending re-Final)
+- **Created:** 2026-08-24 as v1.0; v1.1 Laravel-active correction; v1.2 identity fix (2026-09-22); rewritten 2026-09-23 to §1.9 template with count/path reconciliation (pointer-only catalog); promoted Final v1.3 2026-09-23; refined to Draft v1.4 2026-09-23 (aces-* + linkage)
+- **Next:** user review; re-promotion to Final requires explicit approval; on Final update `TODO.md` + `PROJECT.md` + `PROJECT_UPDATES.md` + assembly `AGENTS.md` §4
 - **Supersedes:** v1.2 full-table catalog/paths/counts (git history only)
