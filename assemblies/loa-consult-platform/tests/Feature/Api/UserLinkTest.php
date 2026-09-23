@@ -116,7 +116,7 @@ class UserLinkTest extends TestCase
     {
         $s = $this->student('self@lyceumalabang.edu.ph');
 
-        $response = $this->getJson('/api/v1/admin/users/user-9/related-data', $this->auth('self@lyceumalabang.edu.ph', ['aces-admin'], 'read', '/api/v1/admin/users/{id}/related-data', 'user-9'));
+        $response = $this->getJson('/api/v1/users/user-9/related-data', $this->auth('self@lyceumalabang.edu.ph', ['aces-admin'], 'read', '/api/v1/users/{id}/related-data', 'user-9'));
 
         $response->assertOk()
             ->assertJsonPath('data.auth.sub', 'user-9')
@@ -126,15 +126,15 @@ class UserLinkTest extends TestCase
 
     public function test_related_data_unknown_id_is_404(): void
     {
-        $response = $this->getJson('/api/v1/admin/users/nope/related-data', $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'read', '/api/v1/admin/users/{id}/related-data'));
+        $response = $this->getJson('/api/v1/users/nope/related-data', $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'read', '/api/v1/users/{id}/related-data'));
 
         $response->assertNotFound()->assertJsonPath('error', 'User not found');
     }
 
     public function test_admin_users_writes_not_implemented(): void
     {
-        $headers = $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/admin/users');
+        $headers = $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/users');
 
-        $this->postJson('/api/v1/admin/users', [], $headers)->assertNotFound();
+        $this->postJson('/api/v1/users', [], $headers)->assertNotFound();
     }
 }

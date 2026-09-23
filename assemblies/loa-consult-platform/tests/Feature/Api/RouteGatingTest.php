@@ -29,7 +29,7 @@ class RouteGatingTest extends TestCase
 
     public function test_admin_gated_tokenless(): void
     {
-        $this->getJson('/api/v1/admin/departments')->assertUnauthorized();
+        $this->getJson('/api/v1/departments')->assertUnauthorized();
     }
 
     public function test_auth_callback_reachable_tokenless(): void

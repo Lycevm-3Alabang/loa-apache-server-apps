@@ -21,10 +21,28 @@ class EvaluationResultController extends Controller
     {
     }
 
-    // ── Admin reads ──────────────────────────────────────────────
+    // ── Scoped reads (flat surface — URL flattening Final v1.0) ──
+    // Admin sees all; dean sees own department; faculty sees own results.
 
-    /** `GET /api/v1/admin/evaluation-results` — read. `{departments[]}`. */
+    /** `GET /api/v1/evaluation-results` — read, group-scoped. */
     public function index(Request $request): JsonResponse
+    {
+        $groups = $this->groups($request);
+        if (in_array('ACES-ADMIN', $groups, true)) {
+            return $this->adminIndex($request);
+        }
+        if (in_array('ACES-DEAN', $groups, true)) {
+            return $this->scopedIndex($request);
+        }
+        if (in_array('ACES-FACULTY', $groups, true)) {
+            return $this->facultyIndex($request);
+        }
+
+        return response()->json(['message' => 'Forbidden'], 403);
+    }
+
+    /** Full-department index (admin audience). */
+    private function adminIndex(Request $request): JsonResponse
     {
         $periodId = $this->periodParam($request);
         if (!$periodId) {
@@ -39,9 +57,38 @@ class EvaluationResultController extends Controller
         return response()->json(['departments' => $departments]);
     }
 
-    /** `GET /api/v1/admin/evaluation-results/departments/{id}` — read. */
+    /** Dean slice of the scoped index (own department only). */
+    private function scopedIndex(Request $request): JsonResponse
+    {
+        $periodId = $this->periodParam($request);
+        if (!$periodId) {
+            return response()->json(['error' => 'evaluationPeriodId is required'], 400);
+        }
+
+        $deptId = $this->ownDepartmentId($request);
+        if ($deptId === null) {
+            return response()->json(['departments' => []]);
+        }
+
+        $all = $this->results->departmentAggregates($periodId);
+
+        return response()->json(['departments' => array_values(array_filter(
+            $all,
+            fn ($d) => (string) $d['departmentId'] === (string) $deptId
+        ))]);
+    }
+
+    /** `GET /api/v1/evaluation-results/departments/{id}` — read; dean own-only. */
     public function department(Request $request, string $departmentId): JsonResponse
     {
+        $groups = $this->groups($request);
+        if (!in_array('ACES-ADMIN', $groups, true)) {
+            if (!in_array('ACES-DEAN', $groups, true)
+                || (string) $this->ownDepartmentId($request) !== (string) $departmentId) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+        }
+
         $periodId = $this->periodParam($request);
         if (!$periodId) {
             return response()->json(['error' => 'evaluationPeriodId is required'], 400);
@@ -58,17 +105,31 @@ class EvaluationResultController extends Controller
         ]);
     }
 
-    /** `GET /api/v1/admin/evaluation-results/faculty/{id}` — read. */
+    /** `GET /api/v1/evaluation-results/faculty/{id}` — read; dean own-dept, faculty self-only. */
     public function faculty(Request $request, string $facultyId): JsonResponse
     {
-        $periodId = $this->periodParam($request);
-        if (!$periodId) {
-            return response()->json(['error' => 'evaluationPeriodId is required'], 400);
-        }
-
         $faculty = Employee::find($facultyId);
         if ($faculty === null) {
             return response()->json(['error' => 'Faculty not found'], 404);
+        }
+
+        $groups = $this->groups($request);
+        if (!in_array('ACES-ADMIN', $groups, true)) {
+            if (in_array('ACES-DEAN', $groups, true)) {
+                if ((string) $this->ownDepartmentId($request) !== (string) $faculty->department_id) {
+                    return response()->json(['message' => 'Forbidden'], 403);
+                }
+            } else {
+                $self = $this->selfEmployee($request);
+                if ($self === null || (string) $self->id !== (string) $facultyId) {
+                    return response()->json(['message' => 'Forbidden'], 403);
+                }
+            }
+        }
+
+        $periodId = $this->periodParam($request);
+        if (!$periodId) {
+            return response()->json(['error' => 'evaluationPeriodId is required'], 400);
         }
 
         return response()->json([
@@ -77,17 +138,32 @@ class EvaluationResultController extends Controller
         ]);
     }
 
-    /** `GET /api/v1/admin/evaluation-results/groups/{id}` — read + comments. */
+    /** `GET /api/v1/evaluation-results/groups/{id}` — read + comments; dean own-dept, faculty own-mapping. */
     public function group(Request $request, string $facultySubjectId): JsonResponse
     {
-        $periodId = $this->periodParam($request);
-        if (!$periodId) {
-            return response()->json(['error' => 'evaluationPeriodId is required'], 400);
-        }
-
         $mapping = FacultySubject::find($facultySubjectId);
         if ($mapping === null) {
             return response()->json(['error' => 'Faculty-subject mapping not found'], 404);
+        }
+
+        $groups = $this->groups($request);
+        if (!in_array('ACES-ADMIN', $groups, true)) {
+            if (in_array('ACES-DEAN', $groups, true)) {
+                $fac = Employee::find($mapping->faculty_id);
+                if ($fac === null || (string) $this->ownDepartmentId($request) !== (string) $fac->department_id) {
+                    return response()->json(['message' => 'Forbidden'], 403);
+                }
+            } else {
+                $self = $this->selfEmployee($request);
+                if ($self === null || (string) $self->id !== (string) $mapping->faculty_id) {
+                    return response()->json(['message' => 'Forbidden'], 403);
+                }
+            }
+        }
+
+        $periodId = $this->periodParam($request);
+        if (!$periodId) {
+            return response()->json(['error' => 'evaluationPeriodId is required'], 400);
         }
 
         $splits = $this->results->subjectSplits($periodId, $mapping->faculty_id);
@@ -113,7 +189,7 @@ class EvaluationResultController extends Controller
 
     // ── Admin mutations ──────────────────────────────────────────
 
-    /** `POST /api/v1/admin/evaluation-results/invalidate` — admin. */
+    /** `POST /api/v1/evaluation-results/invalidate` — admin. */
     public function invalidate(Request $request): JsonResponse
     {
         $periodId = $this->periodParam($request);
@@ -138,7 +214,7 @@ class EvaluationResultController extends Controller
         return response()->json(['success' => true]);
     }
 
-    /** `POST /api/v1/admin/evaluation-results/visibility` — admin. */
+    /** `POST /api/v1/evaluation-results/visibility` — admin. */
     public function visibility(Request $request): JsonResponse
     {
         $periodIds = $this->periodIds($request);
@@ -161,7 +237,7 @@ class EvaluationResultController extends Controller
         return response()->json(['success' => true]);
     }
 
-    /** `GET /api/v1/admin/evaluations/disabled` — read. */
+    /** `GET /api/v1/evaluations/disabled` — read. */
     public function disabled(): JsonResponse
     {
         $rows = Evaluation::with(['evaluator', 'evaluatee', 'mapping.subject', 'mapping.section'])
@@ -172,7 +248,7 @@ class EvaluationResultController extends Controller
         return response()->json(['evaluations' => $rows]);
     }
 
-    /** `DELETE /api/v1/admin/evaluations/disabled` — admin. */
+    /** `DELETE /api/v1/evaluations/disabled` — admin. */
     public function deleteDisabled(Request $request): JsonResponse
     {
         if ($request->input('all') === true) {
@@ -191,7 +267,7 @@ class EvaluationResultController extends Controller
         return response()->json(['success' => true]);
     }
 
-    /** `POST /api/v1/admin/evaluations/disabled/restore` — admin. */
+    /** `POST /api/v1/evaluations/disabled/restore` — admin. */
     public function restore(Request $request): JsonResponse
     {
         $ids = $request->input('ids', []);
@@ -205,7 +281,7 @@ class EvaluationResultController extends Controller
         return response()->json(['success' => true]);
     }
 
-    /** `GET /api/v1/admin/evaluations/{id}/details` — read. Full assembly. */
+    /** `GET /api/v1/evaluations/{id}/details` — read. Full assembly. */
     public function details(string $evaluationId): JsonResponse
     {
         $details = $this->results->evaluationDetails($evaluationId);
@@ -216,7 +292,7 @@ class EvaluationResultController extends Controller
         return response()->json($details);
     }
 
-    /** `POST /api/v1/admin/evaluations/{id}/invalidate` — admin. */
+    /** `POST /api/v1/evaluations/{id}/invalidate` — admin. */
     public function invalidateOne(Request $request, string $evaluationId): JsonResponse
     {
         $periodId = $this->periodParam($request);
@@ -243,70 +319,17 @@ class EvaluationResultController extends Controller
         return response()->json(['success' => true]);
     }
 
-    // ── Dean reads ───────────────────────────────────────────────
-
-    /** `GET /api/v1/dean/evaluation-results` — read, own department. */
-    public function deanIndex(Request $request): JsonResponse
-    {
-        $periodId = $this->periodParam($request);
-        if (!$periodId) {
-            return response()->json(['error' => 'evaluationPeriodId is required'], 400);
-        }
-
-        $deptId = $this->ownDepartmentId($request);
-        if ($deptId === null) {
-            return response()->json(['departments' => []]);
-        }
-
-        $all = $this->results->departmentAggregates($periodId);
-
-        return response()->json(['departments' => array_values(array_filter(
-            $all,
-            fn ($d) => (string) $d['departmentId'] === (string) $deptId
-        ))]);
-    }
-
-    /** `GET /api/v1/dean/evaluation-results/department` — read. */
+    /** `GET /api/v1/evaluation-results/department` — read. Own department id (dean linkage). */
     public function deanDepartment(Request $request): JsonResponse
     {
         return response()->json(['departmentId' => $this->ownDepartmentId($request)]);
     }
 
-    /** `GET /api/v1/dean/evaluation-results/departments/{id}` — read, own only. */
-    public function deanDeptShow(Request $request, string $departmentId): JsonResponse
-    {
-        if ((string) $this->ownDepartmentId($request) !== (string) $departmentId) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
-
-        return $this->department($request, $departmentId);
-    }
-
-    /** `GET .../departments/{id}/faculty/{fid}` — read, own only. */
-    public function deanFacultyShow(Request $request, string $departmentId, string $facultyId): JsonResponse
-    {
-        if ((string) $this->ownDepartmentId($request) !== (string) $departmentId) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
-
-        return $this->faculty($request, $facultyId);
-    }
-
-    /** `GET .../departments/{id}/groups/{fsid}` — read, own only. */
-    public function deanGroupShow(Request $request, string $departmentId, string $facultySubjectId): JsonResponse
-    {
-        if ((string) $this->ownDepartmentId($request) !== (string) $departmentId) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
-
-        return $this->group($request, $facultySubjectId);
-    }
-
     /**
-     * `GET /api/v1/dean/evaluation-results/details` — read.
-     * DEAN/ADMIN any faculty; others own-only; dean without dept → empty.
+     * `GET /api/v1/evaluation-results/details` — read.
+     * ACES-ADMIN any faculty; others own-only; dean without dept → empty.
      */
-    public function deanDetails(Request $request): JsonResponse
+    public function breakdowns(Request $request): JsonResponse
     {
         $periodId = $request->query('evaluationPeriodId', $request->query('periodId'));
         $facultyId = $request->query('facultyId');
@@ -315,13 +338,13 @@ class EvaluationResultController extends Controller
         }
 
         $groups = $this->groups($request);
-        $isPrivileged = count(array_intersect(['DEAN', 'ADMIN'], $groups)) > 0;
+        $isPrivileged = count(array_intersect(['ACES-DEAN', 'ACES-ADMIN'], $groups)) > 0;
         if (!$isPrivileged) {
             $self = $this->selfEmployee($request);
             if ($self === null || (string) $self->id !== (string) $facultyId) {
                 return response()->json(['message' => 'Forbidden'], 403);
             }
-        } elseif (in_array('DEAN', $groups, true) && $this->ownDepartmentId($request) === null) {
+        } elseif (in_array('ACES-DEAN', $groups, true) && $this->ownDepartmentId($request) === null) {
             return response()->json(['students' => []]);
         }
 
@@ -332,7 +355,7 @@ class EvaluationResultController extends Controller
 
     // ── Faculty reads ────────────────────────────────────────────
 
-    /** `GET /api/v1/faculty/evaluation-results` — read + visibility gate. */
+    /** `GET /api/v1/evaluation-results` faculty audience — read + visibility gate (see index()). */
     public function facultyIndex(Request $request): JsonResponse
     {
         $periodId = $request->query('evaluationPeriodId', $request->query('periodId'));
@@ -368,7 +391,7 @@ class EvaluationResultController extends Controller
         ]);
     }
 
-    /** `GET /api/v1/faculty/evaluation-results/subjects` — read + gate. */
+    /** `GET /api/v1/evaluation-results/subjects` — read + gate (self view). */
     public function facultySubjects(Request $request): JsonResponse
     {
         $periodId = $request->query(
@@ -387,7 +410,7 @@ class EvaluationResultController extends Controller
         return response()->json(['subjects' => $this->results->subjectSplits($periodId, $self->id)]);
     }
 
-    /** `GET /api/v1/faculty/evaluation-results/subjects/{id}` — single group. */
+    /** `GET /api/v1/evaluation-results/subjects/{id}` — single group (self view). */
     public function facultySubjectShow(Request $request, string $facultySubjectId): JsonResponse
     {
         $periodId = $request->query(

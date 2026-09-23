@@ -20,19 +20,19 @@ class AcademicHardeningTest extends TestCase
     use RefreshDatabase;
 
     private const PATTERNS = [
-        '/api/v1/admin/departments',
-        '/api/v1/admin/departments/{id}',
-        '/api/v1/admin/department-courses',
-        '/api/v1/admin/department-courses/{id}',
-        '/api/v1/admin/subjects',
-        '/api/v1/admin/subjects/{id}',
-        '/api/v1/admin/sections',
-        '/api/v1/admin/sections/{id}',
-        '/api/v1/admin/sections/fix-names',
-        '/api/v1/admin/faculty-subjects',
-        '/api/v1/admin/faculty-subjects/reassign',
-        '/api/v1/admin/student-enrollments',
-        '/api/v1/admin/student-enrollments/{id}',
+        '/api/v1/departments',
+        '/api/v1/departments/{id}',
+        '/api/v1/department-courses',
+        '/api/v1/department-courses/{id}',
+        '/api/v1/subjects',
+        '/api/v1/subjects/{id}',
+        '/api/v1/sections',
+        '/api/v1/sections/{id}',
+        '/api/v1/sections/fix-names',
+        '/api/v1/faculty-subjects',
+        '/api/v1/faculty-subjects/reassign',
+        '/api/v1/student-enrollments',
+        '/api/v1/student-enrollments/{id}',
         '/api/v1/semesters',
         '/api/v1/semesters/{id}',
         '/api/v1/semesters/{id}/impacts',
@@ -72,19 +72,19 @@ class AcademicHardeningTest extends TestCase
     public function test_departments_crud_guards(): void
     {
         $h = $this->auth();
-        $this->postJson('/api/v1/admin/departments', ['name' => 'Tech', 'code' => 'cite'], $h)
+        $this->postJson('/api/v1/departments', ['name' => 'Tech', 'code' => 'cite'], $h)
             ->assertCreated()
             ->assertJsonPath('code', 'CITE');
-        $this->postJson('/api/v1/admin/departments', ['name' => 'Dup', 'code' => 'CITE'], $h)
+        $this->postJson('/api/v1/departments', ['name' => 'Dup', 'code' => 'CITE'], $h)
             ->assertStatus(409)
             ->assertJson(['error' => 'Department code already exists']);
-        $this->postJson('/api/v1/admin/departments', ['name' => 'NoCode'], $h)->assertStatus(400);
+        $this->postJson('/api/v1/departments', ['name' => 'NoCode'], $h)->assertStatus(400);
 
         $id = Department::where('code', 'CITE')->first()->id;
-        $this->patchJson('/api/v1/admin/departments/999999', ['name' => 'X'], $h)
+        $this->patchJson('/api/v1/departments/999999', ['name' => 'X'], $h)
             ->assertNotFound()
             ->assertJson(['error' => 'Department not found']);
-        $this->patchJson('/api/v1/admin/departments/' . $id, [], $h)
+        $this->patchJson('/api/v1/departments/' . $id, [], $h)
             ->assertStatus(400)
             ->assertJson(['error' => 'No changes provided']);
     }
@@ -95,22 +95,22 @@ class AcademicHardeningTest extends TestCase
         $dept = $this->department();
 
         // 200, not 201 — preserved quirk, with embedded department.
-        $this->postJson('/api/v1/admin/department-courses', [
+        $this->postJson('/api/v1/department-courses', [
             'departmentId' => $dept->id, 'name' => 'IT', 'code' => 'BSIT',
         ], $h)
             ->assertOk()
             ->assertJsonStructure(['department' => ['name', 'code']]);
 
         // Bad parent → 500 via FK (preserved quirk, never 422/404).
-        $this->postJson('/api/v1/admin/department-courses', [
+        $this->postJson('/api/v1/department-courses', [
             'departmentId' => 999999, 'name' => 'X', 'code' => 'XXX',
         ], $h)->assertStatus(500);
 
-        $this->postJson('/api/v1/admin/department-courses', [
+        $this->postJson('/api/v1/department-courses', [
             'departmentId' => $dept->id, 'name' => 'Dup', 'code' => 'BSIT',
         ], $h)->assertStatus(409);
 
-        $this->deleteJson('/api/v1/admin/department-courses/999999', [], $h)
+        $this->deleteJson('/api/v1/department-courses/999999', [], $h)
             ->assertNotFound()
             ->assertJson(['error' => 'Course not found']);
     }
@@ -118,14 +118,14 @@ class AcademicHardeningTest extends TestCase
     public function test_subjects_guards(): void
     {
         $h = $this->auth();
-        $this->postJson('/api/v1/admin/subjects', ['code' => 'it101', 'name' => 'Intro'], $h)
+        $this->postJson('/api/v1/subjects', ['code' => 'it101', 'name' => 'Intro'], $h)
             ->assertCreated()
             ->assertJsonPath('code', 'IT101');
-        $this->postJson('/api/v1/admin/subjects', ['code' => 'IT101', 'name' => 'Dup'], $h)->assertStatus(409);
+        $this->postJson('/api/v1/subjects', ['code' => 'IT101', 'name' => 'Dup'], $h)->assertStatus(409);
 
         $id = Subject::where('code', 'IT101')->first()->id;
-        $this->patchJson('/api/v1/admin/subjects/999999', ['name' => 'X'], $h)->assertNotFound();
-        $this->patchJson('/api/v1/admin/subjects/' . $id, [], $h)
+        $this->patchJson('/api/v1/subjects/999999', ['name' => 'X'], $h)->assertNotFound();
+        $this->patchJson('/api/v1/subjects/' . $id, [], $h)
             ->assertStatus(400)
             ->assertJson(['error' => 'No changes provided']);
     }
@@ -135,18 +135,18 @@ class AcademicHardeningTest extends TestCase
         $h = $this->auth();
         $course = $this->course($this->department());
 
-        $this->postJson('/api/v1/admin/sections', ['name' => '  Block A ', 'departmentCourseId' => $course->id], $h)
+        $this->postJson('/api/v1/sections', ['name' => '  Block A ', 'departmentCourseId' => $course->id], $h)
             ->assertCreated()
             ->assertJson(['name' => 'BLOCK A', 'program' => 'BSIT']);
-        $this->postJson('/api/v1/admin/sections', ['name' => 'Nope', 'departmentCourseId' => 999999], $h)
+        $this->postJson('/api/v1/sections', ['name' => 'Nope', 'departmentCourseId' => 999999], $h)
             ->assertStatus(400)
             ->assertJson(['error' => 'Invalid department course']);
-        $this->postJson('/api/v1/admin/sections', ['name' => 'block a', 'departmentCourseId' => $course->id], $h)
+        $this->postJson('/api/v1/sections', ['name' => 'block a', 'departmentCourseId' => $course->id], $h)
             ->assertStatus(409);
 
         $id = Section::first()->id;
-        $this->patchJson('/api/v1/admin/sections/999999', ['name' => 'X'], $h)->assertNotFound();
-        $this->patchJson('/api/v1/admin/sections/' . $id, [], $h)
+        $this->patchJson('/api/v1/sections/999999', ['name' => 'X'], $h)->assertNotFound();
+        $this->patchJson('/api/v1/sections/' . $id, [], $h)
             ->assertStatus(400)
             ->assertJson(['error' => 'No changes']);
     }
@@ -157,7 +157,7 @@ class AcademicHardeningTest extends TestCase
         $course = $this->course($this->department());
         Section::create(['name' => 'BSIT-Block B', 'program' => 'BSIT', 'department_course_id' => $course->id]);
 
-        $this->postJson('/api/v1/admin/sections/fix-names', [], $h)
+        $this->postJson('/api/v1/sections/fix-names', [], $h)
             ->assertOk()
             ->assertJson(['fixed' => 1])
             ->assertJsonStructure(['fixes' => [['id', 'oldName', 'newName', 'program']]]);
@@ -172,22 +172,22 @@ class AcademicHardeningTest extends TestCase
         $e1 = $this->employee('f1@lyceumalabang.edu.ph', 'F One');
         $e2 = $this->employee('f2@lyceumalabang.edu.ph', 'F Two');
 
-        $response = $this->postJson('/api/v1/admin/faculty-subjects', [
+        $response = $this->postJson('/api/v1/faculty-subjects', [
             'faculty_id' => $e1->id, 'subject_id' => $subject->id, 'section_id' => $section->id,
         ], $h);
         $response->assertCreated()->assertJsonStructure(['data']);
-        $this->postJson('/api/v1/admin/faculty-subjects', [
+        $this->postJson('/api/v1/faculty-subjects', [
             'faculty_id' => $e2->id, 'subject_id' => $subject->id, 'section_id' => $section->id,
         ], $h)->assertStatus(409);
 
         $mapId = $response->json('data.id');
-        $this->postJson('/api/v1/admin/faculty-subjects/reassign', [
+        $this->postJson('/api/v1/faculty-subjects/reassign', [
             'oldFacultySubjectId' => $mapId, 'newFacultyId' => $e1->id,
         ], $h)->assertStatus(400);
-        $this->postJson('/api/v1/admin/faculty-subjects/reassign', [
+        $this->postJson('/api/v1/faculty-subjects/reassign', [
             'oldFacultySubjectId' => 999999, 'newFacultyId' => $e2->id,
         ], $h)->assertNotFound();
-        $this->postJson('/api/v1/admin/faculty-subjects/reassign', [
+        $this->postJson('/api/v1/faculty-subjects/reassign', [
             'oldFacultySubjectId' => $mapId, 'newFacultyId' => $e2->id,
         ], $h)->assertOk()->assertJson(['success' => true]);
     }
@@ -199,13 +199,13 @@ class AcademicHardeningTest extends TestCase
         $section = Section::create(['name' => 'A', 'program' => 'BSIT', 'department_course_id' => $course->id]);
         $student = $this->student('s@itmlyceumalabang.onmicrosoft.com');
 
-        $response = $this->postJson('/api/v1/admin/student-enrollments', [
+        $response = $this->postJson('/api/v1/student-enrollments', [
             'student_id' => $student->id, 'section_id' => $section->id,
         ], $h);
         $response->assertCreated()->assertJsonStructure(['data']);
 
-        $this->deleteJson('/api/v1/admin/student-enrollments/999999', [], $h)->assertNotFound();
-        $this->deleteJson('/api/v1/admin/student-enrollments/' . $response->json('data.id'), [], $h)
+        $this->deleteJson('/api/v1/student-enrollments/999999', [], $h)->assertNotFound();
+        $this->deleteJson('/api/v1/student-enrollments/' . $response->json('data.id'), [], $h)
             ->assertOk()
             ->assertJson(['success' => true]);
     }

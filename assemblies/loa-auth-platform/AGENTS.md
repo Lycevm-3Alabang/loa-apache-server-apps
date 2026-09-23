@@ -108,6 +108,7 @@ fragment; direct → reject + revoke). Consumers validate locally — no per-req
   No hard Type-B. Next: user runs tests + lint, then commit + push, then `user-account-activation.md` v1.0 implementation.
 - **2026-09-22 — Assembly contract created.** This `AGENTS.md` (wise_wallet format); referenced from root `AGENTS.md`.
 - **2026-09-22 — Spec-mirror pass (auth).** Specs rewritten to match working code, improvements filed DEFERRED: admin-top ordinals, wrapped catalog shape, auto-attach (no 422), deny-deletes + `none` dead path, NOT NULL platform-wide block, tie first-wins, tenant-create `group_id` + 48h/24h token split, empty-string placeholder, unimplemented toggle/invalidate/register-cleanup marked, web-ui supersession pointers, §15 inventory closed.
+- **2026-09-23 — Consult endpoints catalog JSON.** `database/json/consult-endpoints-catalog.json` v1.0 (118 entries, faithful to consult `api-endpoints.md` Final v1.0 §5) for deploy-time TenantAppEndpoint provisioning. SESSION-PROMPT + PROJECT_UPDATES updated.
 
 ---
 

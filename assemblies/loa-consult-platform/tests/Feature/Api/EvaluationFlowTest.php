@@ -33,7 +33,7 @@ class EvaluationFlowTest extends TestCase
         '/api/v1/evaluations/{id}/comments',
         '/api/v1/evaluations/{id}/submit',
         '/api/v1/evaluation-comments',
-        '/api/v1/student/evaluations/bootstrap',
+        '/api/v1/evaluations/bootstrap',
     ];
 
     private function auth(string $email, array $groups): array
@@ -237,7 +237,7 @@ class EvaluationFlowTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'pending')
             ->assertJsonPath('pending.0.evaluateeName', 'Prof');
 
-        $this->getJson('/api/v1/student/evaluations/bootstrap', $h)
+        $this->getJson('/api/v1/evaluations/bootstrap', $h)
             ->assertOk()
             ->assertJsonStructure(['periods', 'activePeriodId', 'activePeriodName', 'pending', 'evaluations', 'rubric'])
             ->assertJsonPath('activePeriodName', 'P1');

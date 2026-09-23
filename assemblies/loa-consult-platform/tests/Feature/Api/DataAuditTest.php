@@ -63,14 +63,14 @@ class DataAuditTest extends TestCase
 
     public function test_delete_students_tokenless_is_401(): void
     {
-        $this->postJson('/api/v1/admin/data/delete-students', ['confirm' => true])->assertUnauthorized();
+        $this->postJson('/api/v1/data/delete-students', ['confirm' => true])->assertUnauthorized();
     }
 
     public function test_delete_students_without_confirm_is_422(): void
     {
         $this->student('s@lyceumalabang.edu.ph');
 
-        $response = $this->postJson('/api/v1/admin/data/delete-students', [], $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/admin/data/delete-students'));
+        $response = $this->postJson('/api/v1/data/delete-students', [], $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/data/delete-students'));
 
         $response->assertStatus(422);
         $this->assertSame(1, Student::count());
@@ -81,7 +81,7 @@ class DataAuditTest extends TestCase
         $this->student('s@lyceumalabang.edu.ph');
         $this->employee('f@lyceumalabang.edu.ph');
 
-        $response = $this->postJson('/api/v1/admin/data/delete-students', ['confirm' => true], $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/admin/data/delete-students'));
+        $response = $this->postJson('/api/v1/data/delete-students', ['confirm' => true], $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/data/delete-students'));
 
         $response->assertOk()->assertJsonPath('data.deleted', 1);
         $this->assertSame(0, Student::count());
@@ -90,7 +90,7 @@ class DataAuditTest extends TestCase
 
     public function test_reset_db_without_confirm_is_422(): void
     {
-        $response = $this->postJson('/api/v1/admin/data/reset-db', [], $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/admin/data/reset-db'));
+        $response = $this->postJson('/api/v1/data/reset-db', [], $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/data/reset-db'));
 
         $response->assertStatus(422);
     }
@@ -100,7 +100,7 @@ class DataAuditTest extends TestCase
         $this->student('s@lyceumalabang.edu.ph');
         $this->employee('f@lyceumalabang.edu.ph');
 
-        $response = $this->postJson('/api/v1/admin/data/reset-db', ['confirm' => true], $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/admin/data/reset-db'));
+        $response = $this->postJson('/api/v1/data/reset-db', ['confirm' => true], $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/data/reset-db'));
 
         $response->assertOk()->assertJsonPath('data.reset', true);
         $this->assertSame(0, Student::count());
@@ -110,7 +110,7 @@ class DataAuditTest extends TestCase
 
     public function test_export_consultations_returns_count_and_rows(): void
     {
-        $response = $this->postJson('/api/v1/admin/data/export-consultations', [], $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/admin/data/export-consultations'));
+        $response = $this->postJson('/api/v1/data/export-consultations', [], $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'admin', '/api/v1/data/export-consultations'));
 
         $response->assertOk()->assertJsonPath('data.count', 0);
     }
@@ -124,8 +124,8 @@ class DataAuditTest extends TestCase
 
     public function test_audit_logs_absent_by_gate(): void
     {
-        $headers = $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'read', '/api/v1/admin/audit-logs');
+        $headers = $this->auth('me@lyceumalabang.edu.ph', ['aces-admin'], 'read', '/api/v1/audit-logs');
 
-        $this->getJson('/api/v1/admin/audit-logs', $headers)->assertNotFound();
+        $this->getJson('/api/v1/audit-logs', $headers)->assertNotFound();
     }
 }

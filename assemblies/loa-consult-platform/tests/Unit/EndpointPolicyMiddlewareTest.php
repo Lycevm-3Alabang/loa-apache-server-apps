@@ -95,12 +95,12 @@ class EndpointPolicyMiddlewareTest extends TestCase
         $this->assertEquals('read', $request->attributes->get('jwt_endpoint_level'));
     }
 
-    public function test_real_catalog_has_118_gated_plus_5_public(): void
+    public function test_real_catalog_has_113_gated_plus_5_public(): void
     {
         $catalog = config('consult-endpoints.catalog', []);
         $public = config('consult-endpoints.public', []);
 
-        $this->assertCount(118, $catalog);
+        $this->assertCount(113, $catalog);
         $this->assertCount(5, $public);
     }
 }
