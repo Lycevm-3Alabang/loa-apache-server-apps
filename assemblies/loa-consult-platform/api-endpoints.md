@@ -1,8 +1,8 @@
 # LOA Consult Platform — API Endpoints
 ## Product Assembly Component Specification
 
-**Version:** 1.0
-**Status:** Final
+**Version:** 2.0
+**Status:** Draft (flat URL scheme per `url-flattening.md` v1.1; pending Final)
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -38,15 +38,15 @@ The API is **API-first and level-gated**. Authentication is delegated to the LOA
 | Auth (SSO) | callback, refresh, logout | public (SSO payload / cookie) |
 | Appointments | CRUD-lite + batch + faculty-booked + action + files + retry-sync + student-cancel + teams-link | `read` (get/list), `write` (all mutations) |
 | Availability | list + create | `read` / `write` |
-| Admin users | list/create/update + soft-delete/restore/bulk/deleted/related-data | `read` (list/views), `write` (update), `admin` (create/delete/destructive) |
-| Academic | departments, department-courses, subjects, sections, faculty-subjects, enrollments | `read` (lists) / `write` (department-courses POST only) / `admin` (all other mutations, per module spec) |
+| Admin users | link reads only (`/users/primary`, `/users/attendees`, `/users/{id}/related-data`); all user writes Auth-owned | `read` |
+| Academic | departments, department-courses, subjects, sections, faculty-subjects, enrollments (flat resources) | `read` (lists) / `write` (department-courses POST only) / `admin` (all other mutations, per module spec) |
 | Semesters | CRUD + impacts + count-active | `read` / `admin` (code gates ALL mutations to ADMIN-group holders); count-active public |
 | Evaluations | CRUD-lite + ratings + comments + submit + pending + dispute + bootstrap | `read` / `write` |
 | Evaluation periods | CRUD + activate/reset + rubric copy + rubric items | `read` / `write` / `admin` (delete/reset) |
-| Evaluation results | group-split reads (`/admin`, `/dean`, `/faculty` namespaces) + invalidate + visibility + disabled set | `read` (all reads), `admin` (invalidate/visibility/restore) |
+| Evaluation results | single scoped surface (`/evaluation-results*`, group-driven per `url-flattening.md`) + invalidate + visibility + disabled set | `read` (all reads), `admin` (invalidate/visibility/restore) |
 | Rubric groups | CRUD + items + duplicate + snapshot + categories | `read` / `write` / `admin` (delete) |
-| Import | preview + per-domain reference + domain imports | `read` (reference), `admin` (preview/import) |
-| Data & audit | audit-logs + delete-students + export-consultations + reset-db + evaluation-mappings | `read` / `admin` (destructive) |
+| Import | preview + per-domain reference + domain imports (users/reference Auth-owned, absent) | `read` (reference), `admin` (preview/import) |
+| Data & audit | audit-logs (pending table — unserved) + delete-students + export-consultations + reset-db + evaluation-mappings | `read` / `admin` (destructive) |
 | User lookup | primary + attendees | `read` |
 | Health | health check | public |
 
@@ -126,13 +126,13 @@ https://aces-api.lyceumalabang.edu.ph/api/v1
 
 ## 4.0 No Local Roles (binding rule)
 
-`ADMIN`, `DEAN`, `FACULTY`, `STUDENT` (and legacy `GUEST`) exist **only as auth-app tenant groups**. Consult owns, stores, and defines none of them. Consequences:
+`aces-admin`, `aces-dean`, `aces-faculty`, `aces-user` (student) exist **only as auth-app tenant groups**. Consult owns, stores, and defines none of them. Consequences:
 
 - No role column on any table; no pipe-delimited role parsing; no `hasRole()`/`requireAdmin()`-style local checks — those are Next.js legacy being retired.
 - Group membership is read-only input: the JWT `groups` claim (Auth vocabulary). Laravel evaluates "caller holds tenant group X" only.
 - Endpoint access always resolves through §4.1 levels + §4.5 group-membership scoping — never through a local role.
-- URL prefixes (`/admin`, `/dean`, `/faculty`, `/student`) are legacy namespaces kept for frontend compatibility (§5); they authorize nothing. No new role-prefixed routes.
-- Backend endpoints are domain-unified (e.g. evaluation results served from one surface scoped by caller); role-split presentation (`/faculty/...`, `/student/...` pages) lives in the frontend, which is untouched.
+- Paths are flat resources and authorize nothing (§5; `url-flattening.md` Final v1.1 removed the legacy `/admin`, `/dean`, `/faculty`, `/student` namespaces in v2.0). No role-prefixed routes.
+- Backend endpoints are domain-unified (evaluation results served from one surface scoped by caller); role-split presentation (`/faculty/...`, `/student/...` pages) lives in the frontend, which is untouched.
 - New groups, if ever needed, are created in Auth — never in Consult.
 
 ## 4.1 Level-Based Enforcement
@@ -157,12 +157,12 @@ Higher covers lower (`admin` satisfies `read`-required). `admin` is operational:
 
 ## 4.4 Group → Grant Mapping (Auth-owned)
 
-Tenant groups (`ADMIN`, `DEAN`, `FACULTY`, `STUDENT`) are created, assigned, and granted **in Auth only** (provisioning: `auth-integration.md` §8). This spec declares no grants. Capability needs per group, for Auth provisioning:
+Tenant groups (`aces-admin`, `aces-dean`, `aces-faculty`, `aces-user`) are created, assigned, and granted **in Auth only** (provisioning: `auth-integration.md` §8, `consult-readiness.md` Final v1.4). This spec declares no grants. Capability needs per group, for Auth provisioning:
 
-- `ADMIN` group: `admin` on every cataloged path.
-- `DEAN` group: `read` across academic/users/semesters/periods/results/appointments/import/data; `write` on department-courses POST. `admin`-grants needed on: visibility (§7 #10), period-activate, department-courses DELETE, import-preview. No destructive.
-- `FACULTY` group: `read` on appointments/results/periods/rubrics/semesters/lookups; `write` on appointment-actions, teams-link, availability-rules.
-- `STUDENT` group: `write` on own appointments/evaluations/bootstrap; `read` on own views plus rubric/period/semester reads.
+- `aces-admin` group: `admin` on every cataloged path.
+- `aces-dean` group: `read` across academic/users/semesters/periods/results/appointments/import/data; `write` on department-courses POST. `admin`-grants needed on: visibility (§7 #10), period-activate, department-courses DELETE, import-preview. No destructive.
+- `aces-faculty` group: `read` on appointments/results/periods/rubrics/semesters/lookups; `write` on appointment-actions, teams-link, availability-rules.
+- `aces-user` group (student): `write` on own appointments/evaluations/bootstrap; `read` on own views plus rubric/period/semester reads.
 
 Authoritative matrix: Auth provisioning records (stale copy in e-consultation `specs/endpoint-catalog.md` §5 — levels stand, methods do not).
 
@@ -173,10 +173,10 @@ Code gates below name Auth tenant groups; Laravel evaluates them as JWT `groups`
 - **Booking owner** — callers holding STUDENT book as themselves; holders of FACULTY/DEAN may book on behalf (`body.studentId`) or create internal meetings (`studentId` null); creator ≠ student participant (400).
 - **Files owner** — upload requires FACULTY/DEAN-group membership and `appointment.facultyId === caller id` (403 otherwise).
 - **Evaluation owner** — list/create require STUDENT-group membership; create enforces enrollment unless `source === "unenrolled"`; per-id access enforces `evaluatorId === caller id` (403).
-- **User admin** — POST/PATCH require ADMIN-group membership; duplicate email → 200 existing user.
-- **Import preview** — ADMIN- or DEAN-group membership (preserve DEAN via grant, §5.10).
+- **User admin** — Auth-owned (v2.0): user writes live in the Auth API; consult exposes link reads only (`/users/primary`, `/users/attendees`, `/users/{id}/related-data` via email link).
+- **Import preview** — `aces-admin`- or `aces-dean`-group membership (preserve DEAN via grant, §5.10).
 - Provisional (confirm in module specs): availability-rule ownership (`created_by`); appointment `{action}` faculty-match; dean department-scope.
-- **Results group-split** — separate `/admin/*`, `/dean/*`, `/faculty/*` paths keep grants path-separated (cert `/me/*` pattern); unified domain endpoints designed at module-spec time (§4.0).
+- **Results scoped surface** — one flat surface (`/evaluation-results*`); admin sees all, dean own department, faculty own results (visibility-gated); explicit `deny` reserved for exceptions, absence denies otherwise.
 
 ---
 
@@ -206,39 +206,33 @@ Next path → Laravel `/api/v1` path (prefix swap only). `required_level` per me
 | GET | `/availability-rules` | `read` |
 | POST | `/availability-rules` | `write` |
 
-## 5.3 Admin users → `AdminUserController`
+## 5.3 Users link reads → `UserLinkController` (v2.0: user writes Auth-owned, absent here)
 
 | Method | Path | Level |
 |--------|------|-------|
-| GET | `/admin/users` | `read` |
-| POST | `/admin/users` | `admin` |
-| PATCH | `/admin/users` | `write` |
-| DELETE | `/admin/users/{id}` | `admin` |
-| GET | `/admin/users/{id}/related-data` | `read` |
-| POST | `/admin/users/{id}/soft-delete` | `admin` |
-| POST | `/admin/users/{id}/restore` | `admin` |
-| POST | `/admin/users/bulk-soft-delete` | `admin` |
-| GET | `/admin/users/deleted` | `read` |
+| GET | `/users/primary` | `read` |
+| GET | `/users/attendees` | `read` |
+| GET | `/users/{id}/related-data` | `read` |
 
 ## 5.4 Academic → `AcademicController`
 
 | Method | Path | Level |
 |--------|------|-------|
-| GET | `/admin/departments` | `read` |
-| POST | `/admin/departments` | `admin` |
-| PATCH | `/admin/departments/{id}` | `admin` |
-| GET | `/admin/department-courses` | `read` |
-| POST | `/admin/department-courses` | `write` |
-| DELETE | `/admin/department-courses/{id}` | `admin` |
-| POST | `/admin/subjects` | `admin` |
-| PATCH | `/admin/subjects/{id}` | `admin` |
-| POST | `/admin/sections` | `admin` |
-| PATCH | `/admin/sections/{id}` | `admin` |
-| POST | `/admin/sections/fix-names` | `admin` |
-| POST | `/admin/faculty-subjects` | `admin` |
-| POST | `/admin/faculty-subjects/reassign` | `admin` |
-| POST | `/admin/student-enrollments` | `admin` |
-| DELETE | `/admin/student-enrollments/{id}` | `admin` |
+| GET | `/departments` | `read` |
+| POST | `/departments` | `admin` |
+| PATCH | `/departments/{id}` | `admin` |
+| GET | `/department-courses` | `read` |
+| POST | `/department-courses` | `write` |
+| DELETE | `/department-courses/{id}` | `admin` |
+| POST | `/subjects` | `admin` |
+| PATCH | `/subjects/{id}` | `admin` |
+| POST | `/sections` | `admin` |
+| PATCH | `/sections/{id}` | `admin` |
+| POST | `/sections/fix-names` | `admin` |
+| POST | `/faculty-subjects` | `admin` |
+| POST | `/faculty-subjects/reassign` | `admin` |
+| POST | `/student-enrollments` | `admin` |
+| DELETE | `/student-enrollments/{id}` | `admin` |
 
 ## 5.5 Semesters → `SemesterController`
 
@@ -268,7 +262,7 @@ Next path → Laravel `/api/v1` path (prefix swap only). `required_level` per me
 | GET | `/evaluations/pending` | `read` |
 | POST | `/evaluations/dispute` | `write` |
 | GET | `/evaluation-comments` | `read` |
-| GET | `/student/evaluations/bootstrap` | `write` (method-correction candidate: POST; see §7) |
+| GET | `/evaluations/bootstrap` | `write` (method-correction candidate: POST; see §7) |
 
 ## 5.7 Evaluation periods → `EvaluationPeriodController`
 
@@ -287,12 +281,25 @@ Next path → Laravel `/api/v1` path (prefix swap only). `required_level` per me
 | PATCH | `/evaluation-periods/{id}/rubrics/items/{itemId}` | `admin` |
 | DELETE | `/evaluation-periods/{id}/rubrics/items/{itemId}` | `admin` |
 
-## 5.8 Evaluation results → `EvaluationResultController`
+## 5.8 Evaluation results → `EvaluationResultController` (v2.0: single scoped surface)
 
-Admin (`read`, except noted): `GET /admin/evaluation-results`, `GET /admin/evaluation-results/departments/{departmentId}`, `GET .../faculty/{facultyId}`, `GET .../groups/{facultySubjectId}`, `POST /admin/evaluation-results/invalidate` (`admin`), `POST /admin/evaluation-results/visibility` (`admin`).
-Disabled (`admin` mutations): `GET,DELETE /admin/evaluations/disabled` (DELETE level provisional `admin`), `POST /admin/evaluations/disabled/restore` (`admin`), `GET /admin/evaluations/{evaluationId}/details` (`read`), `POST /admin/evaluations/{evaluationId}/invalidate` (`admin`).
-Dean (all `read`): `GET /dean/evaluation-results`, `/department`, `/departments/{departmentId}`, `/departments/{departmentId}/faculty/{facultyId}`, `/departments/{departmentId}/groups/{facultySubjectId}`, `/details`.
-Faculty (all `read`): `GET /faculty/evaluation-results`, `/subjects`, `/subjects/{facultySubjectId}`.
+| Method | Path | Level |
+|--------|------|-------|
+| GET | `/evaluation-results` | `read` (admin all / dean own-dept / faculty own) |
+| GET | `/evaluation-results/department` | `read` |
+| GET | `/evaluation-results/details` | `read` |
+| GET | `/evaluation-results/subjects` | `read` |
+| GET | `/evaluation-results/subjects/{facultySubjectId}` | `read` |
+| GET | `/evaluation-results/departments/{departmentId}` | `read` |
+| GET | `/evaluation-results/faculty/{facultyId}` | `read` |
+| GET | `/evaluation-results/groups/{facultySubjectId}` | `read` |
+| POST | `/evaluation-results/invalidate` | `admin` |
+| POST | `/evaluation-results/visibility` | `admin` |
+| GET | `/evaluations/disabled` | `read` |
+| DELETE | `/evaluations/disabled` | `admin` |
+| POST | `/evaluations/disabled/restore` | `admin` |
+| GET | `/evaluations/{evaluationId}/details` | `read` |
+| POST | `/evaluations/{evaluationId}/invalidate` | `admin` |
 
 ## 5.9 Rubric groups → `RubricGroupController`
 
@@ -316,7 +323,6 @@ Faculty (all `read`): `GET /faculty/evaluation-results`, `/subjects`, `/subjects
 | Method | Path | Level |
 |--------|------|-------|
 | POST | `/import/preview` | `admin` |
-| GET | `/import/users/reference` | `read` |
 | GET | `/import/departments-courses/reference` | `read` |
 | POST | `/import/departments-courses` | `admin` |
 | GET | `/import/faculties/reference` | `read` |
@@ -327,27 +333,22 @@ Faculty (all `read`): `GET /faculty/evaluation-results`, `/subjects`, `/subjects
 | GET | `/import/subjects/reference` | `read` |
 | GET | `/import/sections/reference` | `read` |
 
-Code permits ADMIN- and DEAN-group holders on preview — preserve via DEAN grant (module spec).
+Code permits `aces-admin`- and `aces-dean`-group holders on preview — preserve via DEAN grant (module spec). `GET /import/users/reference` is Auth-owned (tenant-member endpoints); no consult equivalent.
 
 ## 5.11 Data & audit → `DataAuditController`
 
 | Method | Path | Level |
 |--------|------|-------|
-| GET | `/admin/audit-logs` | `read` |
-| DELETE | `/admin/audit-logs` | `admin` (provisional; no catalog entry — see §7) |
-| POST | `/admin/data/delete-students` | `admin` |
-| POST | `/admin/data/export-consultations` | `admin` |
-| POST | `/admin/data/reset-db` | `admin` |
+| GET | `/audit-logs` | `read` (pending table — unserved until `audit_logs` migrates) |
+| DELETE | `/audit-logs` | `admin` (pending table — unserved until `audit_logs` migrates) |
+| POST | `/data/delete-students` | `admin` |
+| POST | `/data/export-consultations` | `admin` |
+| POST | `/data/reset-db` | `admin` |
 | GET | `/data/evaluation-mappings` | `read` |
 
 ## 5.12 User lookup
 
-| Method | Path | Level |
-|--------|------|-------|
-| GET | `/users/primary` | `read` |
-| GET | `/users/attendees` | `read` |
-
-Both accept `?department=` filter (booking flows). Placement (AdminUserController vs `/service/*` proxy) decided in the admin module spec.
+Moved to §5.3 in v2.0 (single users-link family). Both accept `?department=` filter (booking flows).
 
 ## 5.13 Health (public)
 
@@ -357,7 +358,7 @@ Both accept `?department=` filter (booking flows). Placement (AdminUserControlle
 
 Auth SSO group (`POST /auth/callback|refresh|logout`, public throttled) specified in `auth-integration.md`.
 
-**Total: 118 JWT-gated combos + 5 public (health, count-active, callback, refresh, logout).**
+**Total: 104 JWT-gated combos + 5 public (health, count-active, callback, refresh, logout).** Gated = 10 appointments + 2 availability + 3 users-link + 15 academic + 7 semesters + 12 evaluations + 12 periods + 15 results + 12 rubrics + 10 import + 6 data (incl. 2 pending-table audit-logs).
 
 ---
 
@@ -392,6 +393,7 @@ Auth SSO group (`POST /auth/callback|refresh|logout`, public throttled) specifie
 | 19 | Frontend 403-contract (app scan, 2026-09-18) | UI locks per-endpoint on 403 (`setLockedEndpoint`, `LockedTab`) and reports via `POST /api/audit/forbidden` (`lib/api/client.ts`). Laravel must return JSON 403 — never redirects or login pages — on every gated API route |
 | 20 | Dormant watchlist (app scan, 2026-09-18) | No fetch callers observed for: `GET /api/evaluations/pending`, `POST /api/import/preview`, period `rubric` GET / `rubric/copy`, rubric `duplicate`/`snapshot`, `GET /api/faculty/evaluation-results/subjects/{id}`. Routes exist → retained in catalog; usage to confirm at cutover (server-driven or dormant). Dead ref only: commented-out `/api/faculty/search` (no such route — ignore) |
 | 21 | Redundancy audit (2026-09-18) | Exact duplicates (one impl, unify at module time): period `rubric` GET ≡ `rubric/copy` POST (identical fetch — alias then drop at cutover); period `rubrics/items*` ≡ group `items*` (same repo calls, but period variants skip the seed/lock guard — unify on the stronger guard). Cutover drops (frontend migrates first): `rubric/copy`, POST-evaluations-with-`{id}` branch (≡ GET-by-id), `pending` if bootstrap covers all callers. Overlaps kept with distinct scope: single vs bulk invalidates, result reads per prefix, bootstrap composite, activate vs PATCH-isActive. Unread handler: `DELETE /api/admin/audit-logs` (verify at build) |
+| 22 | URL flattening (2026-09-23, `url-flattening.md` v1.1) | Role prefixes removed in place under `/api/v1`: single scoped results surface (group-driven), Auth-owned paths dropped (users writes, users/reference), gate-blocked paths retained pending (audit-logs). Catalog 118 → 104 gated; methods/levels otherwise unchanged |
 | 13 | Users final shape (lib/db + migrations, 2026-09-18) | `evaluationPeriodId` renamed to `semester_id` (Step 9); `deleted_at` backs soft-delete endpoints; no `evaluation_eligible` (README-only, never migrated). data-model §4 corrected |
 | 14 | Query shapes for module specs (lib/db/common.ts) | Appointment detail = appointment + student/faculty brief + attendees(+user brief) + timeSlots; history variant drops student join + attendees. PostgREST embeds pin FK names (`users!appointments_studentId_fkey`) — replace with Eloquent relationships. Ratings fan-out (ratings→items→categories + in-memory maps) becomes JOINs. `toUserWithRole` pipe-join retired by §4.0 |
 
@@ -399,7 +401,8 @@ Auth SSO group (`POST /auth/callback|refresh|logout`, public throttled) specifie
 
 ## Document Control
 
-- **Status:** Final v1.0 (promoted 2026-09-18; academic/appointments/evaluations modules contracted, §7 #9–#12/#15–#17 resolved, admin+import deferred per #18, redundancy per #21)
+- **Status:** Draft v2.0 (flat URL scheme per `url-flattening.md` v1.1; pending Final)
 - **Created:** 2026-09-18
 - **Source:** route.ts scan (`D:\loa\e-consultation\app\api`, 112 files) + 50 handlers read verbatim + frontend usage scan
-- **Next:** implementation phase (scaffold → domain slices → C-Auth → cutover); admin+import contracts at implementation time
+- **v2.0:** flat resources (104+5), aces-* groups, single scoped results, Auth-owned drops documented; code implemented + green (F1/F2)
+- **Next:** user review → Final v2.0; then modules v1.1 + pointer refresh

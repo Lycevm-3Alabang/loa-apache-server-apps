@@ -158,12 +158,12 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Consult endpoint inventory (scan-only savepoint) | ✅ Done | 2026-09-18: 112 route files scanned (~142 combos; 118 migrating to Laravel); drift vs `endpoint-catalog.md` recorded; frontend untouched |
 | Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
-| `api-endpoints.md` spec | ✅ Final v1.0 | Root spec: conventions, 118-route summary, levels, design decisions |
+| `api-endpoints.md` spec | ✅ Final v1.0 / Draft v2.0 | Root spec + flat 104+5 re-version (in flight) |
 | `auth-integration.md` spec | ✅ Final v1.4 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed (config · services · JwtMiddleware · catalog 118+5 · EndpointPolicy · auth trio · gate routes + tests) — suite green 2026-09-22, port COMPLETE |
 | `data-model.md` spec | ✅ Final v1.3 | Shape contract (M17/M19/M21/M26/M27/M30/M31); §3 Status gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
-| `endpoints-academic.md` spec | ✅ Final v1.0 | 14 handlers; parent levels corrected (POST/PATCH + impacts → admin) |
+| `endpoints-academic.md` spec | ✅ Final v1.0 / Draft v1.1 | Flat paths re-version (in flight) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
-| `endpoints-evaluations.md` spec | ✅ Final v1.0 | 24 handlers: lifecycle/masking, periods, rubrics, results, dispute mail |
+| `endpoints-evaluations.md` spec | ✅ Final v1.0 / Draft v1.1 | Flat paths + scoped results re-version (in flight) |
 | `endpoints-admin-import.md` spec | ✅ Final v1.0 | Phase D: Auth-owned users (aces-*, link reads only), domain imports, double-guard destructives, proxy decision open |
 | `url-flattening.md` spec | ✅ Final v1.1 | Flat URL scheme (113+5, single scoped results, in-place v1 rename; F2 green) |
 | URL flattening (F1+F2) | ✅ Done 2026-09-23 | Flat routes + scoped results + catalog/JSON regen + ResultsTest scoping; suite green (user) |

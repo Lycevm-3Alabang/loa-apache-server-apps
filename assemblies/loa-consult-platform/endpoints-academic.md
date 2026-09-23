@@ -1,8 +1,8 @@
 # LOA Consult Platform — Academic Module
 ## Product Assembly Component Specification
 
-**Version:** 1.0
-**Status:** Final
+**Version:** 1.1
+**Status:** Draft (path-only flattening; pending Final)
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -26,59 +26,59 @@ Semesters → Departments → Department courses → Subjects → Sections → F
 
 # 3. Departments
 
-## `GET /api/v1/admin/departments` — read, ADMIN-or-DEAN holders
+## `GET /api/v1/departments` — read, ADMIN-or-DEAN holders
 Returns bare array of departments (with dean linkage). 500 `{error}`.
 
-## `POST /api/v1/admin/departments` — admin, ADMIN holders
+## `POST /api/v1/departments` — admin, ADMIN holders
 Body `{name, code, deanId?}` (name+code required). `code` uppercased, `deanId` null if empty. 201 created directly. 409 "Department code already exists". Audit `CREATE_DEPARTMENT`.
 
-## `PATCH /api/v1/admin/departments/{id}` — admin, ADMIN holders
+## `PATCH /api/v1/departments/{id}` — admin, ADMIN holders
 Partial `{name?, code?→upper, deanId? (empty clears), isDisabled?}`. 404 "Department not found". 400 "No changes provided". 409 on code clash. Returns updated directly. Audit `UPDATE_DEPARTMENT` with field list.
 
 # 4. Department Courses
 
-## `GET /api/v1/admin/department-courses` — read, ADMIN-or-DEAN holders
+## `GET /api/v1/department-courses` — read, ADMIN-or-DEAN holders
 Bare array, each course with embedded `department` (joined in handler via departments map — Laravel: `with('department)`).
 
-## `POST /api/v1/admin/department-courses` — write, ADMIN-or-DEAN holders
+## `POST /api/v1/department-courses` — write, ADMIN-or-DEAN holders
 Body `{departmentId, name, code}` all required. Parent NOT verified (FK enforces; bad id → 500 — preserved quirk, do not "fix" without frontend sign-off). Response = created + `department:{name,code}` (null if parent missing). 409 "Course code already exists for this department". Audit `CREATE_DEPARTMENT_COURSE`. No 201 (200 default) — preserved.
 
-## `DELETE /api/v1/admin/department-courses/{id}` — admin (+ DEAN grant to preserve code), ADMIN-or-DEAN holders
+## `DELETE /api/v1/department-courses/{id}` — admin (+ DEAN grant to preserve code), ADMIN-or-DEAN holders
 404 "Course not found". Hard delete (CASCADE to sections). Returns `{success:true}`. Audit `DELETE_DEPARTMENT_COURSE`.
 
 # 5. Subjects
 
-## `POST /api/v1/admin/subjects` — admin, ADMIN holders
+## `POST /api/v1/subjects` — admin, ADMIN holders
 Body `{code→upper, name}` required. 201 data directly. 409 "Subject code already exists". Audit `CREATE_SUBJECT`.
 
-## `PATCH /api/v1/admin/subjects/{id}` — admin, ADMIN holders
+## `PATCH /api/v1/subjects/{id}` — admin, ADMIN holders
 Partial `{code?→upper, name?, isDisabled?}`. 404 "Subject not found". 400 "No changes provided". 409 on clash. Returns data directly. Audit `UPDATE_SUBJECT`.
 
 # 6. Sections
 
-## `POST /api/v1/admin/sections` — admin, ADMIN holders
+## `POST /api/v1/sections` — admin, ADMIN holders
 Body `{name, departmentCourseId}` required. Parent verified — 400 "Invalid department course". Name upper+trim; `program` derived from `course.code`. 201 data. 409 `"${code}-${name}" already exists`. Audit `CREATE_SECTION`.
 
-## `PATCH /api/v1/admin/sections/{id}` — admin, ADMIN holders
+## `PATCH /api/v1/sections/{id}` — admin, ADMIN holders
 Partial `{name?→upper/trim, departmentCourseId? (revalidates + re-derives program), isDisabled?}`. 404 "Section not found". 400 "No changes" / "Invalid department course". 409 "Section with this name and program already exists". Audit `UPDATE_SECTION`.
 
-## `POST /api/v1/admin/sections/fix-names` — admin, ADMIN holders
+## `POST /api/v1/sections/fix-names` — admin, ADMIN holders
 Batch normalization: strips a leading `"<program>-"` / `"<program> "` prefix (only when the course code still matches `program`, non-empty remainder). Returns `{fixed, fixes:[{id,oldName,newName,program}]}`. Audits `UPDATE_SECTION` only when fixes > 0.
 
 # 7. Faculty-Subject Mappings
 
-## `POST /api/v1/admin/faculty-subjects` — admin, ADMIN holders
+## `POST /api/v1/faculty-subjects` — admin, ADMIN holders
 Body `{faculty_id, subject_id, section_id}` (snake_case as implemented) + optional `semesterId` (repo-layer field — DDL lacks it; verify at build, do not drop silently). 201 `{data}`. 409 "This mapping already exists" (UNIQUE subject+section). Audit `CREATE_FACULTY_SUBJECT`.
 
-## `POST /api/v1/admin/faculty-subjects/reassign` — admin, ADMIN holders
+## `POST /api/v1/faculty-subjects/reassign` — admin, ADMIN holders
 Body `{oldFacultySubjectId, newFacultyId}`. 404 "Faculty-subject mapping not found". 400 same-faculty. 409 "already assigned to another faculty". Side effects in order: update mapping → `invalidateByFacultySubject` evaluations (remarks cite acting admin + reason) → recompute results for all periods of the mapping's semester (if present). Returns `{success:true}`. Audit `REASSIGN_FACULTY_SUBJECT`.
 
 # 8. Enrollments
 
-## `POST /api/v1/admin/student-enrollments` — admin, ADMIN holders
+## `POST /api/v1/student-enrollments` — admin, ADMIN holders
 Body passed to `createEnrollment(body, actorId)`; validation lives in the service — `EnrollmentError` carries its own `{message, status}`. 201 `{data}`. (Repo rows carry `faculty_subject_id` + `semesterId` beyond the DDL — verify at build.)
 
-## `DELETE /api/v1/admin/student-enrollments/{id}` — admin, ADMIN holders
+## `DELETE /api/v1/student-enrollments/{id}` — admin, ADMIN holders
 404 "Enrollment not found". Side effects when `faculty_subject_id` present: invalidate that student's evaluations for the mapping (remarks cite admin + removal) → recompute results for all periods of the enrollment's semester (if present). Then delete. Returns `{success:true}`. Audit `DELETE_ENROLLMENT`.
 
 # 9. Semesters
@@ -111,9 +111,10 @@ Returns `{count}` (used by the frontend lock gate). No auth in code or Laravel.
 
 ## Document Control
 
-- **Status:** Final v1.0
+- **Status:** Draft v1.1 (path-only flattening; pending Final)
 - **Created:** 2026-09-18
 - **Updated:** 2026-09-19 — Promoted v0.1 → Final v1.0: verified against data-model v1.0 + `api-endpoints.md` Final v1.0 §5.4/§5.5 (levels match; academic POST/PATCH + impacts `admin`, dept-courses POST `write`, semesters GET hardened `read`).
+- **Updated:** 2026-09-23 — v1.1 Draft: `/admin/*` prefixes removed (flat resources per `url-flattening.md`); methods/levels/holder language unchanged.
 - **Source:** 14 academic route handlers read verbatim
 - **Corrects parent spec:** academic POST/PATCH levels `write`→`admin` (code gates ADMIN); impacts `read`→`admin`; dept-courses DELETE carries DEAN grant; semesters GET hardened `read`
 - **Build-time carry-forward:** faculty-subjects/enrollments repo-only fields (`semesterId`, `faculty_subject_id`); `countBySemesterId` join paths; `createEnrollment` service rules (`EnrollmentError` vocabulary) — resolve at domain slice B build, do not invent columns.

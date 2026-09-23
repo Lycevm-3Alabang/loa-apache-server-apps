@@ -27,16 +27,8 @@ return [
         ['method' => 'GET',    'path' => '/api/v1/availability-rules',                        'required_level' => 'read'],
         ['method' => 'POST',   'path' => '/api/v1/availability-rules',                        'required_level' => 'write'],
 
-        // 5.3 Admin users (9)
-        ['method' => 'GET',    'path' => '/api/v1/admin/users',                               'required_level' => 'read'],
-        ['method' => 'POST',   'path' => '/api/v1/admin/users',                               'required_level' => 'admin'],
-        ['method' => 'PATCH',  'path' => '/api/v1/admin/users',                               'required_level' => 'write'],
-        ['method' => 'GET',    'path' => '/api/v1/admin/users/deleted',                       'required_level' => 'read'],
-        ['method' => 'POST',   'path' => '/api/v1/admin/users/bulk-soft-delete',              'required_level' => 'admin'],
+        // 5.3 Users link reads (user writes Auth-owned — no consult rows)
         ['method' => 'GET',    'path' => '/api/v1/users/{id}/related-data',             'required_level' => 'read'],
-        ['method' => 'DELETE', 'path' => '/api/v1/admin/users/{id}',                          'required_level' => 'admin'],
-        ['method' => 'POST',   'path' => '/api/v1/admin/users/{id}/soft-delete',              'required_level' => 'admin'],
-        ['method' => 'POST',   'path' => '/api/v1/admin/users/{id}/restore',                  'required_level' => 'admin'],
 
         // 5.4 Academic (15)
         ['method' => 'GET',    'path' => '/api/v1/departments',                         'required_level' => 'read'],
@@ -125,7 +117,6 @@ return [
 
         // 5.10 Import (11)
         ['method' => 'POST',   'path' => '/api/v1/import/preview',                            'required_level' => 'admin'],
-        ['method' => 'GET',    'path' => '/api/v1/import/users/reference',                    'required_level' => 'read'],
         ['method' => 'GET',    'path' => '/api/v1/import/departments-courses/reference',      'required_level' => 'read'],
         ['method' => 'POST',   'path' => '/api/v1/import/departments-courses',                'required_level' => 'admin'],
         ['method' => 'GET',    'path' => '/api/v1/import/faculties/reference',                'required_level' => 'read'],

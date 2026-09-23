@@ -44,12 +44,12 @@
 
 | Spec | Version | Status | Blocks |
 |------|---------|--------|--------|
-| `api-endpoints.md` | v1.0 | **Final** | — (root spec) |
+| `api-endpoints.md` | v1.0 / v2.0 | **Final / Draft** | v1.0 root spec; v2.0 Draft flat 104+5 (re-versioning in flight, code green) |
 | `auth-integration.md` | v1.4 | **Final** | §11 port plan; Steps 1–7 landed (config · services trio · JwtMiddleware · catalog 118+5 · EndpointPolicy · auth trio · gate routes) — full suite green 2026-09-22, port COMPLETE |
 | `data-model.md` | v1.3 | **Final** | — (shape contract; §3 Status gates implementability: 6 Implemented / 3 Delta pending / 17 Specified—not migrated; source-verified M17/M19/M21/M26/M27/M30/M31) |
-| `endpoints-academic.md` | v1.0 | **Final** | — (build-time carry-forward: repo-only fields, join paths) |
+| `endpoints-academic.md` | v1.0 / v1.1 | **Final / Draft** | v1.0 build-time carry-forward; v1.1 Draft flat paths |
 | `endpoints-appointments.md` | v1.0 | **Final** | — (build-time carry-forward: actor-ownership, Teams sync) |
-| `endpoints-evaluations.md` | v1.0 | **Final** | — (build-time carry-forward: service rules, nested keys) |
+| `endpoints-evaluations.md` | v1.0 / v1.1 | **Final / Draft** | v1.0 build-time carry-forward; v1.1 Draft flat paths + scoped results |
 | `endpoints-admin-import.md` | v1.0 | **Final** | Phase D contract (Auth-owned users via aces-*, domain-only imports, double-guard destructives, DEC-5 proxy open) |
 | `url-flattening.md` | v1.1 | **Final** | Flat URL scheme (113+5 actual, single scoped results, cert/auth deny, in-place v1 rename) |
 | `test-suite.md` | v1.0 | **Final** | test contract for auth-layer + B/C (CON/DEC/ACC/D); user-run sequential |

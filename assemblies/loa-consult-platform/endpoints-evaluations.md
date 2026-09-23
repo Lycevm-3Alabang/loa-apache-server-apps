@@ -1,8 +1,8 @@
 # LOA Consult Platform — Evaluations Module
 ## Product Assembly Component Specification
 
-**Version:** 1.0
-**Status:** Final
+**Version:** 1.1
+**Status:** Draft (flat paths + scoped results; pending Final)
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -50,7 +50,7 @@ Body `{comment}` → created (201). Sentiment analysis fires **fire-and-forget**
 ## `GET /api/v1/evaluations/pending` — read, STUDENT holders
 Active period required. Pending items enriched (faculty name/email, subject code/name). Empty → `{pending: []}`.
 
-## `GET /api/v1/student/evaluations/bootstrap` — write, STUDENT holders
+## `GET /api/v1/evaluations/bootstrap` — write, STUDENT holders
 Read-only aggregate (level `write` per catalog — conservative, preserved): `{periods, activePeriodId, activePeriodName, pending (enriched), evaluations (enriched), rubric (snapshot rows|null)}`.
 
 ## `POST /api/v1/evaluations/dispute` — write, STUDENT holders
@@ -114,35 +114,36 @@ Seed/lock rule (`assertEditable`, all mutating paths): missing → 404; `seed` g
 ## `POST /api/v1/rubric-groups/{id}/categories` — admin, ADMIN holders + editable → `{name, displayOrder?}` → 201 `{category}`
 ## `DELETE /api/v1/rubric-groups/{id}/categories` — admin, ADMIN holders + editable → body `{categoryId}` (400 if missing) → `{success:true}`
 
-# 5. Results Reads (aggregation family)
+# 5. Results Reads (single scoped surface — v1.1 flat, group-driven)
 
-Shared computation: submitted evaluations → ratings/comments fan-out → category averages → general rating → remarks → sentiment averaging (2-decimal rounding throughout) → remark. Lazy `computeAll` when stored rows lack category data. `evaluationPeriodId` (plus `semesterId`/`periodId` aliases) required everywhere (400 otherwise).
+Shared computation: submitted evaluations → ratings/comments fan-out → category averages → general rating → remarks → sentiment averaging (2-decimal rounding throughout) → remark. Lazy `computeAll` when stored rows lack category data. `evaluationPeriodId` (plus `semesterId`/`periodId` aliases) required everywhere (400 otherwise). One flat surface serves all audiences; scoping is code, not paths:
 
-- **Admin** (`requireAdmin` ≈ ADMIN holders): base aggregates `{departments[]}` (with `__unknown__`→"Unassigned" bucket); `departments/{id}` (faculty-user scope, `{department, subjects}` family); `departments/{id}/faculty/{fid}` (404s per entity, `{faculty, subjects/c Malformed}` family); `departments/{id}/groups/{fsid}` (mapping scope + full comments). Nested drill-downs follow the base computation with path-param scoping — exact response keys verified at build per endpoint.
-- **Dean** (DEAN holders; own-department scope via `findByDeanId`, empty → empty shape): base `{departments:[own]}`; `department` → `{departmentId|null}`; `departments/{id}`, `/faculty/{fid}`, `/groups/{fsid}` drill-downs mirror admin shapes scoped to own department (verify keys at build); `details` shared breakdown (DEAN/ADMIN any faculty; others own-only; DEAN without department → `{students:[]}`; students anonymized `S1..Sn`).
-- **Faculty** (any session + visibility gate): base computes own result `{results:[...], facultyNames}` — 403 unless `is_results_visible`; `subjects` groups own evaluations per mapping (`{subjects}`); `subjects/{id}` single-group variant (same pattern, verify keys at build).
+- **Admin** (`requireAdmin` ≈ ADMIN holders): base aggregates `{departments[]}` (with `__unknown__`→"Unassigned" bucket); `departments/{id}`; `faculty/{fid}` (404s per entity); `groups/{fsid}` (mapping scope + full comments). Nested drill-downs follow the base computation with path-param scoping — exact response keys verified at build per endpoint.
+- **Dean** (DEAN holders; own-department scope via `findByDeanId`, empty → empty shape): same shapes as admin scoped to own department (cross-department → 403); `department` → `{departmentId|null}`; `details` shared breakdown (DEAN/ADMIN any faculty; others own-only; DEAN without department → `{students:[]}`; students anonymized `S1..Sn`).
+- **Faculty** (any session + visibility gate): scoped index computes own result `{results:[...], facultyNames}` — 403 unless `is_results_visible`; `subjects` groups own evaluations per mapping (`{subjects}`); `subjects/{id}` single-group variant (same pattern, verify keys at build).
 
 # 6. Results Mutations + Disabled Set
 
-## `POST /api/v1/admin/evaluation-results/invalidate` — admin, ADMIN holders
+## `POST /api/v1/evaluation-results/invalidate` — admin, ADMIN holders
 Body `{evaluationPeriodId|periodId, facultyId?|facultySubjectId?}` (one target required). `bulkDisableByPeriod` + `computeAll` + audit `invalidate_evaluations` (fail-open audit). `{success:true}`.
 
-## `POST /api/v1/admin/evaluation-results/visibility` — admin, ADMIN holders
+## `POST /api/v1/evaluation-results/visibility` — admin, ADMIN holders
 Body `{evaluationPeriodId|semesterId, facultyIds[] (non-empty), visible}`. `setVisibility`. `{success:true}`. (DEAN access = Auth grant, §7 #10.)
 
-## `GET /api/v1/admin/evaluations/disabled` — read, ADMIN holders → `{evaluations}` (disabled list)
-## `DELETE /api/v1/admin/evaluations/disabled` — admin, ADMIN holders → body `{all:true}` (all) or `{ids[]}` (subset) → `{success:true}`
-## `POST /api/v1/admin/evaluations/disabled/restore` — admin, ADMIN holders → body `{ids[]}` (non-empty) → `restoreByIds` + audit `restore_evaluations` → `{success:true}`
-## `GET /api/v1/admin/evaluations/{evaluationId}/details` — read, ADMIN holders → full assembly `{evaluationId, submittedAt, evaluatorName, categories:[{categoryName, items:[{text, rating}]}], comment, sentimentLabel, sentimentScore, isDisabled}`
-## `POST /api/v1/admin/evaluations/{evaluationId}/invalidate` — admin, ADMIN holders → body `{evaluationPeriodId, reason?}` → `invalidateById` + `computeAll` + audit `invalidate_evaluation` → `{success:true}`
+## `GET /api/v1/evaluations/disabled` — read, ADMIN holders → `{evaluations}` (disabled list)
+## `DELETE /api/v1/evaluations/disabled` — admin, ADMIN holders → body `{all:true}` (all) or `{ids[]}` (subset) → `{success:true}`
+## `POST /api/v1/evaluations/disabled/restore` — admin, ADMIN holders → body `{ids[]}` (non-empty) → `restoreByIds` + audit `restore_evaluations` → `{success:true}`
+## `GET /api/v1/evaluations/{evaluationId}/details` — read, ADMIN holders → full assembly `{evaluationId, submittedAt, evaluatorName, categories:[{categoryName, items:[{text, rating}]}], comment, sentimentLabel, sentimentScore, isDisabled}`
+## `POST /api/v1/evaluations/{evaluationId}/invalidate` — admin, ADMIN holders → body `{evaluationPeriodId, reason?}` → `invalidateById` + `computeAll` + audit `invalidate_evaluation` → `{success:true}`
 
 ---
 
 ## Document Control
 
-- **Status:** Final v1.0
+- **Status:** Draft v1.1 (flat paths + scoped results; pending Final)
 - **Created:** 2026-09-18
 - **Updated:** 2026-09-19 — Promoted v0.1 → Final v1.0: verified against data-model v1.0 + `api-endpoints.md` Final v1.0 §5.6–§5.9 (levels match; periods/rubrics mutations `admin`, rubric-copy `read`).
+- **Updated:** 2026-09-23 — v1.1 Draft: flat resources + single scoped results surface per `url-flattening.md` (bootstrap relocated, disabled set flat, dean/faculty variants collapsed with group guards); methods/levels/holder language unchanged.
 - **Source:** 24 evaluation route handlers read verbatim; 8 nested drill-downs pattern-applied (gates + scope + shape-family verified, exact keys flagged per endpoint)
 - **Corrects parent spec:** periods POST/PUT/activate + period-items POST/PATCH + rubric-groups POST/PATCH/items/duplicate `write`→`admin`; rubric-copy `write`→`read` (fetch misnomer); evaluation-comments gate ADMIN-or-DEAN holders
 - **Build-time carry-forward:** actor-ownership inside accept/decline/complete/cancel; `createEvaluationPeriod`/`updateEvaluationPeriod`/`activateEvaluationPeriod` service rules; `createEnrollment`-adjacent `getOrCreateEvaluation` edge cases; nested drill-down exact keys; `listByRole("ADMIN")` → tenant-group query — resolve at domain slice C build.

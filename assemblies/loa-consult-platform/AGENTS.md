@@ -211,9 +211,9 @@ envelope migration without a spec.
 
 | Spec | Status |
 |---|---|
-| `api-endpoints.md` v1.0 | FINAL — 118 routes, levels, ground truth |
+| `api-endpoints.md` v1.0 / v2.0 | FINAL v1.0 + DRAFT v2.0 (flat 104+5, in flight) |
 | `auth-integration.md` v1.4 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Steps 1–7 ✓ suite green 2026-09-22, port COMPLETE) |
-| `endpoints-academic/appointments/evaluations.md` v1.0 | FINAL — module contracts |
+| `endpoints-academic/appointments/evaluations.md` v1.0 (+v1.1 Draft academic/evaluations) | FINAL v1.0 — module contracts; v1.1 Draft flat paths |
 | `docker-compose-spec.md` v1.0 | FINAL — root-stack wiring `:9002` |
 | `data-model.md` v1.3 | FINAL — shape contract (source-verified M17/M19/M21/M26/M27/M30/M31); §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
 | `test-suite.md` v1.0 | FINAL — auth + B/C contract (CON/ACC/D), user-run sequential |

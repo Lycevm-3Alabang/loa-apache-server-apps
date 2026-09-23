@@ -7,7 +7,7 @@
 | Status | Final v1.1 (user-approved 2026-09-23; F2 green) |
 | Owner | Consult Platform assembly |
 | Version | 1.1 Final |
-| Scope | Replace role-prefixed paths (`admin/*`, `dean/*`, `faculty/*`, `student/*`) with flat resources under `/api/v1/`; access decided solely by per-group grants (`aces-*` × read/write/deny/admin); single scoped results endpoint; in-place rename; catalog 118 → 113 gated (results 20 → 15; Auth-owned + gate-blocked entries retained verbatim) |
+| Scope | Replace role-prefixed paths (`admin/*`, `dean/*`, `faculty/*`, `student/*`) with flat resources under `/api/v1/`; access decided solely by per-group grants (`aces-*` × read/write/deny/admin); single scoped results endpoint; in-place rename; catalog 118 → 104 gated (results 20 → 15; Auth-owned users writes + users/reference dropped; gate-blocked audit-logs retained pending) |
 | Non-goals | Changing levels semantics (owned by Auth grants specs); auth flow; shapes/migrations; frontend cutover (Phase E) |
 | Layer | Product Assembly (`assemblies/loa-consult-platform/`) |
 
@@ -40,7 +40,7 @@ Roles baked into URLs (`admin/`, `dean/`, `faculty/`) contradict the group-grant
 ### Acceptance — Objective (machine-checkable)
 
 - **ACC-1** — No route path under `/api/v1/` contains `admin/`, `dean/`, `faculty/`, or `student/` segments.
-- **ACC-2** — Catalog count = 113 gated + 5 public (public trio/health/count-active untouched; results 20 → 15; Auth-owned and gate-blocked entries retained verbatim); every served catalog entry has a matching route and vice versa.
+- **ACC-2** — Catalog count = 104 gated + 5 public (public trio/health/count-active untouched; results 20 → 15; Auth-owned users writes + users/reference dropped; gate-blocked audit-logs retained pending); every served catalog entry has a matching route and vice versa.
 - **ACC-3** — Old prefixed paths → 404 (no silent redirects); `RouteGatingTest`-style coverage asserts a sample of old paths 404 + new paths gated 401-tokenless/403-level.
 - **ACC-4** — Results scoping: faculty JWT sees own subjects only; dean sees department; admin sees all (group-driven, path-identical).
 - **ACC-5** — Full suite green pasted by USER.
