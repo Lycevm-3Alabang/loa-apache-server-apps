@@ -183,6 +183,9 @@ envelope migration without a spec.
   conflicts/slots/rules, retry-sync stubbed) + 12 tests. Repairs: route order, single-level perms, staff-only
   creator rule, employees-only attendees. Trackers updated.
   **Stopped — B5 (academic hardening) needs user yes.**
+- **Current status (2026-09-22) — B5 green pasted, slice B COMPLETE.** Academic hardening (409s, quirks,
+  camelCase, no-change 400s, fail-soft audit) + `000013` + per-semester impacts + hardening tests. Trackers updated.
+  **Stopped — slice C (evaluations) needs user yes.**
 
 ---
 

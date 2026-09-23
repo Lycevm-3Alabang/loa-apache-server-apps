@@ -20,7 +20,7 @@
 
 ## AFTER FINAL SPECS (implementation gates)
 
-- [ ] Domain slice B — appointments/academic/semesters — B1+B2+B3+B4 **green pasted** (deltas + tables + availability + appointments)
+- [ ] Domain slice B — appointments/academic/semesters — **COMPLETE green pasted** (B1 deltas + B2 tables + B3 availability + B4 appointments + B5 academic hardening)
 
 - [ ] Domain slice C — evaluations/periods/rubrics/results
 
@@ -67,6 +67,7 @@
 - [x] 2026-09-22 — B1 **green pasted**: `000011` academic baseline delta + model convergence + `AcademicDeltaTest`; repairs en route: sections FK-drop, guarded idempotence (information_schema checks — DDL builds on closure close), FK-before-unique order + student relink, short trio unique `enr_stu_map_sem_unique` (74-char conventional > MySQL 64)
 - [x] 2026-09-22 — B3 **green pasted**: `AvailabilityRuleController` + gated routes + `AvailabilityTest` 10/10
 - [x] 2026-09-22 — B4 **green pasted**: `AppointmentController` (10 routes, legacy-verified conflicts/slots/rules) + `AppointmentTest` 12/12; repairs: route order (specific before `{action}`), single-level test perms, creator≠student staff-only, employees-only attendees
+- [x] 2026-09-22 — B5 **green pasted**: academic hardening to module Final + `000013` section-link carry-forward + per-semester impacts + `AcademicHardeningTest`
 
 - [x] 2026-09-22 — **Step 7** gate routes **full suite green pasted — §11 auth-layer port COMPLETE**: `auth/*` public + `throttle:10,1` on callback/refresh (cert pattern) · health + count-active public · semesters/admin under `['jwt.auth','jwt.endpoint']` (removed duplicate public `GET /semesters`) · `tests/Feature/Api/RouteGatingTest.php` 5 tests (public stays public · gated 401 tokenless · callback reachable)
 - [x] 2026-09-22 — **Step 6** auth trio landed **full suite green pasted** (`AuthCallbackController` + email-domain upsert + `SSO-` placeholder ≤10 chars + fail-soft audit · refresh/logout · `AuditLogger` L119 reshape · public `auth/*` trio · `AuthTrioTest` 16 tests; red-triage fixes: `000010` guarded, `tests/bootstrap.php` test-DB pin)

@@ -14,6 +14,7 @@ class FacultySubject extends Model
     protected $fillable = [
         'faculty_id',
         'subject_id',
+        'section_id',
         'semester_id',
         'is_active',
     ];
@@ -33,6 +34,11 @@ class FacultySubject extends Model
     public function subject(): BelongsTo
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function section(): BelongsTo
+    {
+        return $this->belongsTo(Section::class);
     }
 
     public function semester(): BelongsTo
