@@ -186,6 +186,9 @@ envelope migration without a spec.
 - **Current status (2026-09-22) — B5 green pasted, slice B COMPLETE.** Academic hardening (409s, quirks,
   camelCase, no-change 400s, fail-soft audit) + `000013` + per-semester impacts + hardening tests. Trackers updated.
   **Stopped — slice C (evaluations) needs user yes.**
+- **Current status (2026-09-22) — C1 green pasted.** `000014` (10 evaluation tables per §3.3/§7 order) + 10 thin
+  models + 4 structure tests. Trackers updated.
+  **Stopped — C2 (periods/rubrics endpoints) needs user yes.**
 
 ---
 

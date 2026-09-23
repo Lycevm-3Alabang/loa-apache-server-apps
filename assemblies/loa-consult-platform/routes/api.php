@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\AcademicController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\EvaluationPeriodController;
 use App\Http\Controllers\AuthCallbackController;
 use App\Http\Controllers\AuthLogoutController;
 use App\Http\Controllers\AuthRefreshController;
 use App\Http\Controllers\AvailabilityRuleController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\RubricGroupController;
 use App\Http\Controllers\SemesterController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,6 +43,34 @@ Route::prefix('v1')->group(function () {
         Route::post('/appointments/{id}/student-cancel', [AppointmentController::class, 'studentCancel']);
         Route::post('/appointments/{id}/{action}', [AppointmentController::class, 'action']);
         Route::post('/appointments/slots/{slotId}/teams-link', [AppointmentController::class, 'slotTeamsLink']);
+
+        // Evaluation periods
+        Route::get('/evaluation-periods', [EvaluationPeriodController::class, 'index']);
+        Route::post('/evaluation-periods', [EvaluationPeriodController::class, 'store']);
+        Route::get('/evaluation-periods/{id}', [EvaluationPeriodController::class, 'show']);
+        Route::put('/evaluation-periods/{id}', [EvaluationPeriodController::class, 'update']);
+        Route::delete('/evaluation-periods/{id}', [EvaluationPeriodController::class, 'destroy']);
+        Route::post('/evaluation-periods/{id}/activate', [EvaluationPeriodController::class, 'activate']);
+        Route::post('/evaluation-periods/{id}/reset', [EvaluationPeriodController::class, 'reset']);
+        Route::get('/evaluation-periods/{id}/rubric', [EvaluationPeriodController::class, 'rubric']);
+        Route::post('/evaluation-periods/{id}/rubric/copy', [EvaluationPeriodController::class, 'rubricCopy']);
+        Route::post('/evaluation-periods/{id}/rubrics/items', [EvaluationPeriodController::class, 'storeItem']);
+        Route::patch('/evaluation-periods/{id}/rubrics/items/{itemId}', [EvaluationPeriodController::class, 'updateItem']);
+        Route::delete('/evaluation-periods/{id}/rubrics/items/{itemId}', [EvaluationPeriodController::class, 'destroyItem']);
+
+        // Rubric groups
+        Route::get('/rubric-groups', [RubricGroupController::class, 'index']);
+        Route::post('/rubric-groups', [RubricGroupController::class, 'store']);
+        Route::get('/rubric-groups/{id}', [RubricGroupController::class, 'show']);
+        Route::patch('/rubric-groups/{id}', [RubricGroupController::class, 'update']);
+        Route::delete('/rubric-groups/{id}', [RubricGroupController::class, 'destroy']);
+        Route::post('/rubric-groups/{id}/items', [RubricGroupController::class, 'storeItem']);
+        Route::patch('/rubric-groups/{id}/items/{itemId}', [RubricGroupController::class, 'updateItem']);
+        Route::delete('/rubric-groups/{id}/items/{itemId}', [RubricGroupController::class, 'destroyItem']);
+        Route::post('/rubric-groups/{id}/duplicate', [RubricGroupController::class, 'duplicate']);
+        Route::get('/rubric-groups/{id}/snapshot', [RubricGroupController::class, 'snapshot']);
+        Route::post('/rubric-groups/{id}/categories', [RubricGroupController::class, 'storeCategory']);
+        Route::delete('/rubric-groups/{id}/categories', [RubricGroupController::class, 'destroyCategory']);
 
         // Semesters
         Route::get('/semesters', [SemesterController::class, 'index']);
