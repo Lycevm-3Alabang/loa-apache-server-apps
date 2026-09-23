@@ -64,6 +64,9 @@
 
 ## DONE
 
+- [x] 2026-09-23 — Phase D link-reads baseline **green (user)**: `UserLinkController` (primary/attendees/related-data via email link, no Auth fetch) + 3 gated read routes + `UserLinkTest` 8/8; writes absent by design (DEC-1); catalog §5.3 writes drift open (Type C)
+- [x] 2026-09-23 — Phase D import-domain baseline **green (user)**: `ImportController` (preview dry-run + natural-key idempotent upserts + references) + 10 gated routes + `ImportTest` 7/7; red-triage fixes (Type A): explicit UUID for students/employees (no HasUuids), `student_number` required on create; `import/users/reference` absent by design (Auth duty)
+- [x] 2026-09-23 — Phase D data/audit baseline **green (user)**: `DataController` (delete-students + reset-db double-guarded, export-consultations, evaluation-mappings) + 4 gated routes + `DataAuditTest` 8/8; per-resource DELETE stays on owner controllers, bulk multi-entity only in `DataController` (kept per user); `audit-logs` absent by gate (no table)
 - [x] 2026-09-22 — Red-suite triage (AuthTrio 15 red, suite otherwise green): (A) 000010 sections block dropped never-existing `is_disabled` + re-added existing cols — Type A, fixed to `created_by`/`updated_by` only incl. down(); (B) suite ran against `loa_consult` app DB — phpunit `force` loses to container `$_SERVER` (Type B test-infra, fixed via `tests/bootstrap.php` auth-precedent + phpunit bootstrap rewire). Dev `loa_consult` wiped by RefreshDatabase — user recovery + rerun pending
 - [x] 2026-09-22 — B1 **green pasted**: `000011` academic baseline delta + model convergence + `AcademicDeltaTest`; repairs en route: sections FK-drop, guarded idempotence (information_schema checks — DDL builds on closure close), FK-before-unique order + student relink, short trio unique `enr_stu_map_sem_unique` (74-char conventional > MySQL 64)
 - [x] 2026-09-22 — B3 **green pasted**: `AvailabilityRuleController` + gated routes + `AvailabilityTest` 10/10

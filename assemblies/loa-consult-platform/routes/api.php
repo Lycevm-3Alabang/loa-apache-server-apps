@@ -9,9 +9,12 @@ use App\Http\Controllers\AuthCallbackController;
 use App\Http\Controllers\AuthLogoutController;
 use App\Http\Controllers\AuthRefreshController;
 use App\Http\Controllers\AvailabilityRuleController;
+use App\Http\Controllers\DataController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\RubricGroupController;
 use App\Http\Controllers\SemesterController;
+use App\Http\Controllers\UserLinkController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -116,6 +119,28 @@ Route::prefix('v1')->group(function () {
         Route::get('/faculty/evaluation-results/subjects', [EvaluationResultController::class, 'facultySubjects']);
         Route::get('/faculty/evaluation-results/subjects/{facultySubjectId}', [EvaluationResultController::class, 'facultySubjectShow']);
 
+        // User link reads (Phase D DEC-1: Auth-owned users, consult link only)
+        Route::get('/users/primary', [UserLinkController::class, 'primary']);
+        Route::get('/users/attendees', [UserLinkController::class, 'attendees']);
+
+        // Import domain-only (Phase D DEC-2: users/reference lives in Auth, absent here)
+        Route::post('/import/preview', [ImportController::class, 'preview']);
+        Route::get('/import/departments-courses/reference', [ImportController::class, 'referenceCourses']);
+        Route::get('/import/faculties/reference', [ImportController::class, 'referenceFaculties']);
+        Route::get('/import/students/reference', [ImportController::class, 'referenceStudents']);
+        Route::get('/import/students', [ImportController::class, 'listStudents']);
+        Route::get('/import/subjects/reference', [ImportController::class, 'referenceSubjects']);
+        Route::get('/import/sections/reference', [ImportController::class, 'referenceSections']);
+        Route::post('/import/departments-courses', [ImportController::class, 'importDomain'])->defaults('domain', 'departments-courses');
+        Route::post('/import/faculties', [ImportController::class, 'importDomain'])->defaults('domain', 'faculties');
+        Route::post('/import/students', [ImportController::class, 'importDomain'])->defaults('domain', 'students');
+
+        // Data & audit (Phase D DEC-3: audit-logs absent — no table yet, data-model gate holds)
+        Route::post('/admin/data/delete-students', [DataController::class, 'deleteStudents']);
+        Route::post('/admin/data/export-consultations', [DataController::class, 'exportConsultations']);
+        Route::post('/admin/data/reset-db', [DataController::class, 'resetDb']);
+        Route::get('/data/evaluation-mappings', [DataController::class, 'evaluationMappings']);
+
         // Semesters
         Route::get('/semesters', [SemesterController::class, 'index']);
         Route::post('/semesters', [SemesterController::class, 'store']);
@@ -127,6 +152,9 @@ Route::prefix('v1')->group(function () {
 
         // Academic admin
         Route::prefix('admin')->group(function () {
+            // User link read (Phase D DEC-1: related-data only, no user writes)
+            Route::get('/users/{id}/related-data', [UserLinkController::class, 'relatedData']);
+
             // Departments
             Route::get('/departments', [AcademicController::class, 'index']);
             Route::post('/departments', [AcademicController::class, 'store']);

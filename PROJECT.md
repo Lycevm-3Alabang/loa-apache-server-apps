@@ -188,6 +188,9 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Evaluation result computation | ✅ Done 2026-09-22 | C4 ResultsService + 20 routes + `ResultsTest` green pasted; slice C COMPLETE |
 | Subject/Section/Enrollment models | ✅ Done 2026-09-22 | 9 models + `000001-000009` + B1 `000011` baseline delta + B5 hardening; slice B COMPLETE |
 | Academic infrastructure endpoints | ✅ Done 2026-09-22 | `AcademicController` + gated `admin/*` routes + B5 hardening (`AcademicHardeningTest`) + `000013`; slice B COMPLETE |
+| User link reads (Phase D) | ✅ Done 2026-09-23 | `UserLinkController` (primary/attendees/related-data via email link) + 3 gated reads + `UserLinkTest` 8/8 green (user); writes absent per DEC-1 |
+| Import domain (Phase D) | ✅ Done 2026-09-23 | `ImportController` (preview + references + idempotent writes) + 10 gated routes + `ImportTest` 7/7 green (user); users/reference absent per DEC-2 |
+| Data/audit (Phase D) | ✅ Done 2026-09-23 | `DataController` (delete-students/reset-db/export/mappings) + 4 gated routes + `DataAuditTest` 8/8 green (user); per-resource DELETE on owners; audit-logs absent by gate |
 | Report endpoints (7 types) | ⬜ Deferred to Phase E | No REST routes exist; Server Components compute directly |
 | CSV import | ⬜ Not started | |
 | Email notifications | ⬜ Not started | |
