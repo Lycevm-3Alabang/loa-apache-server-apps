@@ -179,6 +179,10 @@ envelope migration without a spec.
 - **Current status (2026-09-22) — B3 green pasted.** `AvailabilityRuleController` (groups-claim ownership, forced
   self, ADMIN-other + fail-soft audit, 400 validation) + gated routes + 10 tests. Trackers updated.
   **Stopped — B4 (appointments endpoints) needs user yes.**
+- **Current status (2026-09-22) — B4 green pasted.** `AppointmentController` (10 routes, legacy-verified
+  conflicts/slots/rules, retry-sync stubbed) + 12 tests. Repairs: route order, single-level perms, staff-only
+  creator rule, employees-only attendees. Trackers updated.
+  **Stopped — B5 (academic hardening) needs user yes.**
 
 ---
 

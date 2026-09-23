@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcademicController;
+use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AuthCallbackController;
 use App\Http\Controllers\AuthLogoutController;
 use App\Http\Controllers\AuthRefreshController;
@@ -28,6 +29,18 @@ Route::prefix('v1')->group(function () {
         // Availability
         Route::get('/availability-rules', [AvailabilityRuleController::class, 'index']);
         Route::post('/availability-rules', [AvailabilityRuleController::class, 'store']);
+
+        // Appointments (static paths before {id})
+        Route::get('/appointments/faculty-booked', [AppointmentController::class, 'facultyBooked']);
+        Route::get('/appointments', [AppointmentController::class, 'index']);
+        Route::post('/appointments', [AppointmentController::class, 'store']);
+        Route::post('/appointments/batch', [AppointmentController::class, 'batch']);
+        Route::get('/appointments/{id}', [AppointmentController::class, 'show']);
+        Route::post('/appointments/{id}/files', [AppointmentController::class, 'files']);
+        Route::post('/appointments/{id}/retry-sync', [AppointmentController::class, 'retrySync']);
+        Route::post('/appointments/{id}/student-cancel', [AppointmentController::class, 'studentCancel']);
+        Route::post('/appointments/{id}/{action}', [AppointmentController::class, 'action']);
+        Route::post('/appointments/slots/{slotId}/teams-link', [AppointmentController::class, 'slotTeamsLink']);
 
         // Semesters
         Route::get('/semesters', [SemesterController::class, 'index']);
