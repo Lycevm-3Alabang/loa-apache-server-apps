@@ -21,7 +21,7 @@ class ImportTest extends TestCase
             'email' => $email,
             'name' => 'Test User',
             'type' => 'access',
-            'tenant' => ['id' => 'tenant-1', 'slug' => 'loa'],
+            'tenant' => ['id' => 'tenant-1', 'slug' => 'loa-consultation'],
             'groups' => $groups,
             'permissions' => $permissions,
             'iat' => time(),

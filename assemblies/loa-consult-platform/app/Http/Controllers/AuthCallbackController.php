@@ -49,7 +49,7 @@ class AuthCallbackController extends Controller
             return response()->json(['message' => 'Invalid access token'], 401);
         }
 
-        $tenantSlug = config('consult-platform.tenant_slug', 'loa');
+        $tenantSlug = config('consult-platform.tenant_slug', 'loa-consultation');
 
         if (($claims['tenant']['slug'] ?? '') !== $tenantSlug) {
             return response()->json([

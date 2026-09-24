@@ -25,6 +25,8 @@ Detail: `principles.md` (loop, phases, verification gate). Map: `platform.md`. S
 
 **NEVER write code until the spec exists.** Search `kernels/`, `domains/`, `business-contexts/`, `services/`, `assemblies/`, `integration/specs/` → read it → Draft/missing means spec-first, Final means code exactly to it → owned elsewhere means reference by contract/ID. No spec + no prior discussion → ask first. **Spec authorship is not code** — a user request to create, edit, or promote a spec is always honored, never blocked.
 
+**Addendum (user-confirmed):** No code unless spec'd OR explicitly told to do so — and even then, must ask for confirmation first. No spec + no explicit tell → ask, do not code.
+
 ## ⛔ MANDATORY: No CLI Without Permission (Rule 0.5)
 
 No terminal commands of any kind without explicit current-session permission — even read-only ones. Report, don't run.

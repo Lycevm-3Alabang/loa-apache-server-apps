@@ -24,7 +24,7 @@ $forced = [
     'QUEUE_CONNECTION' => 'sync',
     'JWT_SECRET' => 'test-jwt-secret-do-not-use-prod',
     'ENCRYPTION_KEY' => 'base64:aQ0GFg4Sb84QdlaGQc5wiS17VFPCWOvKQZJ+/bUCRYE=',
-    'TENANT_SLUG' => 'loa',
+    'TENANT_SLUG' => 'loa-consultation',
     'REFRESH_COOKIE' => 'loa_connect_refresh',
     'REFRESH_COOKIE_SECURE' => 'false',
 ];

@@ -1,8 +1,8 @@
 # TODO — Consult Platform Spec Program
 
-> **ACTIVE 2026-09-23** — Consult spec program resumed (spec-first); Auth + Cert deferred (working, no changes). Reconciled 2026-09-23: SPEC STATUS matches assembly Finals (104+5); Phase D deferred markers superseded by Final v1.1 + baselines green. Boundary decision: ONE assembly, two contexts (Consultation + Evaluation, no split).
+> **ACTIVE 2026-09-24** — Consult spec program resumed (spec-first); Auth + Cert deferred (working, no changes). Reconciled 2026-09-24: SPEC STATUS matches assembly Finals (104+5, tenant `loa-consultation`); Phase D deferred markers superseded by Final v1.1 + baselines green. Boundary decision: ONE assembly, two contexts (Consultation + Evaluation, no split).
 
-**Updated:** 2026-09-23
+**Updated:** 2026-09-24
 **Scope:** `assemblies/loa-consult-platform/` specs, with Auth + Cert as reference/basis.
 **Rule:** No implementation code until the relevant spec `.md` file is Final (AGENTS.md Rule 0).
 
@@ -38,7 +38,7 @@
 
 - [ ] PARKED 2026-09-23 — get back later — Auth provisioning per `auth-integration.md` §8 at deploy time (tenant, groups, catalog import, grants, secrets)
 
-- [ ] PARKED 2026-09-23 — get back later — Runbook promotions to Final (`LOCAL-DEV-RUNBOOK.md` / `DEPLOY.md` / `FRONTEND-INTEGRATION.md` v0.1 Draft → Final)
+- [x] COMPLETE 2026-09-24 — Runbook promotions to Final (`LOCAL-DEV-RUNBOOK.md` / `DEPLOY.md` / `FRONTEND-INTEGRATION.md` v0.1 Draft → Final v1.0)
 
 - [ ] PARKED 2026-09-23 — get back later — DEC-5 `/service/*` proxy decision (record before any proxy code)
 
@@ -48,26 +48,30 @@
 
 | Spec | Version | Status | Blocks |
 |------|---------|--------|--------|
-| `api-endpoints.md` | v2.0 | **Final** | flat 104+5 root spec (F1/F2 green); v1.0 118+5 in git history |
-| `auth-integration.md` | v1.4 | **Final** | §11 port plan; Steps 1–7 landed (config · services trio · JwtMiddleware · catalog 104+5 flattened current, 118+5 was v1.0 pre-flatten history · EndpointPolicy · auth trio · gate routes) — full suite green 2026-09-22, port COMPLETE |
+| `api-endpoints.md` | v2.1 | **Final** | flat 104+5 root spec (F1/F2 green); tenant `loa-consultation` (own-tenant cert pattern, user-approved 2026-09-24); v2.0 `loa` in git history |
+| `auth-integration.md` | v1.5 | **Final** | §11 port plan; Steps 1–7 landed — full suite green 2026-09-22, port COMPLETE; tenant `loa-consultation` (user-approved 2026-09-24) |
 | `data-model.md` | v1.3 | **Final** | — (shape contract; §3 Status gates implementability: 6 Implemented / 3 Delta pending / 17 Specified—not migrated; source-verified M17/M19/M21/M26/M27/M30/M31) |
 | `endpoints-academic.md` | v1.1 | **Final** | flat paths (green) |
 | `endpoints-appointments.md` | v1.0 | **Final** | — (build-time carry-forward: actor-ownership, Teams sync) |
 | `endpoints-evaluations.md` | v1.1 | **Final** | flat paths + scoped results (green) |
 | `endpoints-admin-import.md` | v1.1 | **Final** | Phase D contract (v2.0 pointers); baselines green 2026-09-23 (link-reads / import-domain / data-audit); DEC-5 `/service/*` proxy still OPEN |
 | `url-flattening.md` | v1.1 | **Final** | Flat URL scheme (104+5 actual per ACC-2 + `api-endpoints.md` v2.0 §5 Total; 113+5 was F2 intermediate, superseded; single scoped results, cert/auth deny, in-place v1 rename) |
-| `test-suite.md` | v1.1 | **Final** | test contract for auth-layer + B/C (CON/DEC/ACC/D); user-run sequential; v2.0 pointers |
-| `docker-compose-spec.md` | v1.0 | **Final** | — (root stack wiring: §2 blocks + §3 init + §4 secrets + §7 scripts) |
-| `LOCAL-DEV-RUNBOOK.md` | v0.1 | **Draft** | local dev setup |
-| `DEPLOY.md` | v0.1 | **Draft** | deployment |
-| `FRONTEND-INTEGRATION.md` | v0.1 | **Draft** | cutover phase |
-| `consult-readiness.md` | v1.5 | **Final** | provisioning checklist (aces-* + linkage, pointer-only 104+5, v2.0 pointers) |
+| `test-suite.md` | v1.2 | **Final** | test contract for auth-layer + B/C (CON/DEC/ACC/D); user-run sequential; v2.1 pointers; tenant `loa-consultation` |
+| `docker-compose-spec.md` | v1.1 | **Final** | — (root stack wiring: §2 blocks + §3 init + §4 secrets + §7 scripts; tenant `loa-consultation`) |
+| `LOCAL-DEV-RUNBOOK.md` | v1.0 | **Final** | local dev setup (wired + green 2026-09-23) |
+| `DEPLOY.md` | v1.0 | **Final** | deployment (cert-patterned, deploys on approval) |
+| `FRONTEND-INTEGRATION.md` | v1.0 | **Final** | cutover phase (backend green; topology OPEN until cutover) |
+| `consult-readiness.md` | v1.6 | **Final** | provisioning checklist (aces-* + linkage, pointer-only 104+5, v2.1 pointers, tenant `loa-consultation`) |
 | `AGENTS.md` (assembly contract) | v1.0 | **Final** | — (working agreements, scaffold, status, spec pointers) |
 | `student.md` / `faculty.md` / `faculty-loading.md` (education domains) | v1.1 | **Final** | — (first-class cache via SSO upsert, FK to domain IDs; unblock data-model Final) |
 
 ---
 
 ## DONE
+
+- [x] 2026-09-24 — Runbook promotions to Final (user-approved): `LOCAL-DEV-RUNBOOK.md` v0.1 → **v1.0** (wiring gate MET, no-seed, test-DB pin), `DEPLOY.md` v0.1 → **v1.0** (cert-patterned cPanel guide: PHP 8.3, dist, no-seed migrate, slug checklist, cron), `FRONTEND-INTEGRATION.md` v0.1 → **v1.0** (backend-done state, topology OPEN until cutover); consult spec program now 100% Final (P6 left: DEC-5 + Phase E + §8)
+
+- [x] 2026-09-24 — Tenant rename `loa` → `loa-consultation` (user-approved, own-tenant cert pattern): `api-endpoints.md` Final v2.0 → **v2.1**, `auth-integration.md` Final v1.4 → **v1.5**, `consult-readiness.md` Final v1.5 → **v1.6**, `test-suite.md` Final v1.1 → **v1.2**, `docker-compose-spec.md` Final v1.0 → **v1.1**; code/config/tests/runbooks/AGENTS updated (3 middleware-config defaults, phpunit+bootstrap, 11 test files, `.env.example`, DEPLOY/FRONTEND-INTEGRATION); pending (user runs): real `.env` slug, Auth re-provisioning (`loa-consultation` tenant + aces-* + catalog/grants), suite re-green paste
 
 - [x] 2026-09-23 — `mega.ps1` re-run green (user-reported): tests green → dumps in progress (auth zipped, cert in progress, consult queued) → **all 3 zipped successfully**.
 
@@ -176,6 +180,7 @@
 - [ ] Random hashed placeholder instead of empty-string (`auth-tenant.md` §5.4)
 - [ ] Rewrite `web-ui.md` §§3/4.1 against unified pipeline
 - [ ] Cross-platform ordinal review (admin-top adopted 2026-09-22)
+- [ ] Tests on sqlite `:memory:` — consider docker MySQL (`loa_auth_test`) for cert/consult parity; NOT now (working, do not touch — noted 2026-09-24)
 
 ### Consult + shared
 - [x] SUPERSEDED 2026-09-23 — Slices B/C + auth port + `test-suite.md` promotion: all COMPLETE (B/C green, §11 port COMPLETE, `test-suite.md` Final v1.1)

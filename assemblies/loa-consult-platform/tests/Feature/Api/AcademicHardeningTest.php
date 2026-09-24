@@ -48,7 +48,7 @@ class AcademicHardeningTest extends TestCase
             'email' => 'admin@lyceumalabang.edu.ph',
             'name' => 'Admin',
             'type' => 'access',
-            'tenant' => ['id' => 'tenant-1', 'slug' => 'loa'],
+            'tenant' => ['id' => 'tenant-1', 'slug' => 'loa-consultation'],
             'groups' => ['ADMIN'],
             'permissions' => $permissions,
             'iat' => time(),

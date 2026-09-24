@@ -1,5 +1,5 @@
 {
-    "version": "2.0",
+    "version": "2.1",
     "endpoints": [
         { "method": "GET",    "path": "/api/v1/appointments",                              "label": "List appointments",                     "required_level": "read" },
         { "method": "POST",   "path": "/api/v1/appointments",                              "label": "Book appointment",                     "required_level": "write" },
@@ -97,8 +97,8 @@
         { "method": "POST",   "path": "/api/v1/import/students",                           "label": "Import students",                      "required_level": "admin" },
         { "method": "GET",    "path": "/api/v1/import/subjects/reference",                 "label": "Subject import reference",             "required_level": "read" },
         { "method": "GET",    "path": "/api/v1/import/sections/reference",                 "label": "Section import reference",             "required_level": "read" },
-        { "method": "GET",    "path": "/api/v1/admin/audit-logs",                          "label": "Query audit logs",                     "required_level": "read" },
-        { "method": "DELETE", "path": "/api/v1/admin/audit-logs",                          "label": "Delete audit logs",                    "required_level": "admin" },
+        { "method": "GET",    "path": "/api/v1/audit-logs",                          "label": "Query audit logs",                     "required_level": "read" },
+        { "method": "DELETE", "path": "/api/v1/audit-logs",                          "label": "Delete audit logs",                    "required_level": "admin" },
         { "method": "POST",   "path": "/api/v1/data/delete-students",                "label": "Delete students data",                 "required_level": "admin" },
         { "method": "POST",   "path": "/api/v1/data/export-consultations",           "label": "Export consultations",                 "required_level": "admin" },
         { "method": "POST",   "path": "/api/v1/data/reset-db",                       "label": "Reset database",                       "required_level": "admin" },

@@ -1,8 +1,8 @@
 # LOA Consult Platform — API Endpoints
 ## Product Assembly Component Specification
 
-**Version:** 2.0
-**Status:** Final (user-approved 2026-09-23; F1/F2 green)
+**Version:** 2.1
+**Status:** Final (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24)
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -87,9 +87,9 @@ https://aces-api.lyceumalabang.edu.ph/api/v1
 
 ## 3.3 Tenant Scoping
 
-- LOA runs a **single tenant** (`TENANT_SLUG=loa`, distinct from cert's `loa-e-cert`). Clients never send tenant identifiers.
+- LOA Consult runs its own tenant (`TENANT_SLUG=loa-consultation`, cert pattern like cert's `loa-e-cert`). Clients never send tenant identifiers.
 - Identity (users, groups, membership) is sourced from Auth-issued JWT claims, with member management via the Auth API (`tenant-app-api.md`); all consult domain data lives in the Consult MySQL database. No cross-database reads.
-- Token `tenant.slug` ≠ `loa` → `403`.
+- Token `tenant.slug` ≠ `loa-consultation` → `403`.
 
 ## 3.4 Response Shapes (as implemented)
 
@@ -401,8 +401,8 @@ Auth SSO group (`POST /auth/callback|refresh|logout`, public throttled) specifie
 
 ## Document Control
 
-- **Status:** Final v2.0 (flat 104+5, F1/F2 green 2026-09-23)
+- **Status:** Final v2.1 (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24)
 - **Created:** 2026-09-18
 - **Source:** route.ts scan (`D:\loa\e-consultation\app\api`, 112 files) + 50 handlers read verbatim + frontend usage scan
 - **v2.0:** flat resources (104+5), aces-* groups, single scoped results, Auth-owned drops documented; code implemented + green (F1/F2)
-- **Next:** modules v1.1 + pointer refresh (test-suite, readiness, admin-import)
+- **Next:** code/config/test slug updates + Auth re-provisioning (`loa-consultation`); modules pointer refresh (test-suite, admin-import)

@@ -19,7 +19,7 @@ class JwtMiddlewareTest extends TestCase
             'email' => 'test@example.com',
             'name' => 'Test User',
             'type' => 'access',
-            'tenant' => ['id' => 'tenant-1', 'slug' => 'loa'],
+            'tenant' => ['id' => 'tenant-1', 'slug' => 'loa-consultation'],
             'groups' => ['student'],
             'permissions' => ['read:/api/v1/semesters'],
             'iat' => time(),
@@ -32,7 +32,7 @@ class JwtMiddlewareTest extends TestCase
 
     private function middleware(): JwtMiddleware
     {
-        config(['consult-platform.tenant_slug' => 'loa']);
+        config(['consult-platform.tenant_slug' => 'loa-consultation']);
         return new JwtMiddleware(new JWTService($this->secret));
     }
 
@@ -55,7 +55,7 @@ class JwtMiddlewareTest extends TestCase
         $this->assertEquals('user-123', $claims['sub']);
         $this->assertNotNull($consultUser);
         $this->assertEquals('test@example.com', $consultUser['email']);
-        $this->assertEquals('loa', $consultUser['tenant']['slug']);
+        $this->assertEquals('loa-consultation', $consultUser['tenant']['slug']);
     }
 
     public function test_rejects_missing_token_with_401(): void

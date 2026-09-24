@@ -43,7 +43,7 @@ class PeriodsRubricsTest extends TestCase
         $permissions = array_map(fn ($p) => "admin:$p", self::PATTERNS);
         $payload = [
             'sub' => 'admin-1', 'email' => 'a@lyceumalabang.edu.ph', 'name' => 'Admin',
-            'type' => 'access', 'tenant' => ['id' => 't-1', 'slug' => 'loa'],
+            'type' => 'access', 'tenant' => ['id' => 't-1', 'slug' => 'loa-consultation'],
             'groups' => ['ADMIN'], 'permissions' => $permissions,
             'iat' => time(), 'exp' => time() + 900,
         ];

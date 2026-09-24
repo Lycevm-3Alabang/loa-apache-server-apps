@@ -43,7 +43,7 @@ class EvaluationFlowTest extends TestCase
         $permissions = array_map(fn ($p) => "write:$p", self::PATTERNS);
         $payload = [
             'sub' => 'u-1', 'email' => $email, 'name' => 'Test User',
-            'type' => 'access', 'tenant' => ['id' => 't-1', 'slug' => 'loa'],
+            'type' => 'access', 'tenant' => ['id' => 't-1', 'slug' => 'loa-consultation'],
             'groups' => $groups, 'permissions' => $permissions,
             'iat' => time(), 'exp' => time() + 900,
         ];

@@ -1,8 +1,8 @@
 # LOA Consult Platform — Auth Integration
 ## Product Assembly Component Specification
 
-**Version:** 1.4
-**Status:** Final
+**Version:** 1.5
+**Status:** Final (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24)
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -54,7 +54,7 @@ The frontend team chooses at cutover; the Laravel contract (callback sets httpOn
 | Field | Value |
 |-------|-------|
 | Request | `{ "payload": "<base64url AES-256-GCM blob>" }` |
-| Steps | decode → decrypt (`ENCRYPTION_KEY`, rotation via `_PREVIOUS`) → reject stale `exp` → validate JWT (`JWT_SECRET`, HS256, `type=access`, `tenant.slug=loa`) → require `refresh_token` in payload → upsert local user by email → set httpOnly cookie (path `/api/v1/auth`, `SameSite=Lax`, `Secure` env-driven) → audit `auth.sso_callback` |
+| Steps | decode → decrypt (`ENCRYPTION_KEY`, rotation via `_PREVIOUS`) → reject stale `exp` → validate JWT (`JWT_SECRET`, HS256, `type=access`, `tenant.slug=loa-consultation`) → require `refresh_token` in payload → upsert local user by email → set httpOnly cookie (path `/api/v1/auth`, `SameSite=Lax`, `Secure` env-driven) → audit `auth.sso_callback` |
 | Response 200 | `{ "status": "success", "data": { "access_token", "refresh_token", "token_type": "Bearer", "expires_in", "user": {id,email,name}, "tenant": {id,slug} } }` — user carries NO groups/permissions; those come from JWT claims + `GET /api/v1/auth/access` |
 | Errors | 400 missing/tampered/stale payload or missing tokens · 401 invalid access token · 403 `{message: Forbidden, reason: tenant_mismatch}` |
 
@@ -70,7 +70,7 @@ Token from body or cookie → best-effort `POST {AUTH_BASE_URL}/api/v1/auth/logo
 
 # 4. JWT Validation (local, no HTTP per request)
 
-- `jwt.auth`: HS256 signature (`JWT_SECRET`), `type=access`, `exp`, `tenant.slug === "loa"` (shared `loa` tenant — distinct from cert's `loa-e-cert`).
+- `jwt.auth`: HS256 signature (`JWT_SECRET`), `type=access`, `exp`, `tenant.slug === "loa-consultation"` (own `loa-consultation` tenant, cert pattern — distinct from cert's `loa-e-cert`).
 - `jwt.endpoint`: match `(method, path)` against local catalog mirror (`config/consult-endpoints.php`, `{param}`-aware, closed-by-default) → compare JWT `permissions` `<level>:<path>` ordinal ≥ required.
 - Claims: `{ sub, email, name, groups[], permissions[], tenant:{id,slug}, type, iat, exp }` (15-min access, 7-day refresh).
 
@@ -79,7 +79,7 @@ Token from body or cookie → best-effort `POST {AUTH_BASE_URL}/api/v1/auth/logo
 # 5. Middleware & Config (build time)
 
 - `app/Http/Middleware/JwtMiddleware.php` + `EndpointPolicyMiddleware.php` (copy cert, re-point tenant config).
-- `config/jwt.php` (secret, TTLs), `config/auth-platform.php` (base_url, timeout, encryption key + previous for rotation, api key), `config/consult-platform.php` (`tenant_slug=loa`, `refresh_cookie=loa_connect_refresh`, `refresh_cookie_secure=true`, `refresh_cookie_ttl=10080`).
+- `config/jwt.php` (secret, TTLs), `config/auth-platform.php` (base_url, timeout, encryption key + previous for rotation, api key), `config/consult-platform.php` (`tenant_slug=loa-consultation`, `refresh_cookie=loa_connect_refresh`, `refresh_cookie_secure=true`, `refresh_cookie_ttl=10080`).
 - `config/consult-endpoints.php` — `public[]` + `catalog[]` generated from `api-endpoints.md` §5 (the Auth bulk-import payload).
 - `routes/api.php` — `auth/*` public; everything else in `['jwt.auth','jwt.endpoint']`.
 - `/service/*` Auth proxy (users/groups/members) deferred: need decided in the admin module spec; if needed, mirrors cert `auth-proxy.md` with `AUTH_API_KEY` (`X-Api-Key`).
@@ -94,7 +94,7 @@ Token from body or cookie → best-effort `POST {AUTH_BASE_URL}/api/v1/auth/logo
 | `ENCRYPTION_KEY` (+ `_PREVIOUS` for rotation) | Byte-identical (AES-256-GCM payload). |
 | `AUTH_BASE_URL` | Auth origin for refresh/logout proxy. |
 | `AUTH_API_KEY` | Server-side only; only if `/service/*` proxy is built (admin module spec decides). |
-| `TENANT_SLUG=loa` | Must match Auth `tenants.slug`. Distinct from cert's `loa-e-cert` — do not copy cert `.env` verbatim. |
+| `TENANT_SLUG=loa-consultation` | Must match Auth `tenants.slug`. Own tenant like cert's `loa-e-cert` — do not copy cert `.env` verbatim. |
 | `REFRESH_COOKIE=loa_connect_refresh`, `REFRESH_COOKIE_TTL=10080` | Cookie name/TTL (httpOnly, `SameSite=Lax`, path `/api/v1/auth`; `Secure` env-driven — off for plain-http local dev). |
 
 ---
@@ -107,7 +107,7 @@ On callback, upsert first-class domain entities by `email` from JWT claims per `
 
 # 8. Auth Platform Provisioning (deploy-time, manual — cert-readiness pattern)
 
-1. Tenant `loa` exists; `redirect_origins` includes `https://aces.lyceumalabang.edu.ph`.
+1. Tenant `loa-consultation` exists; `redirect_origins` includes `https://aces.lyceumalabang.edu.ph`.
 2. Groups `ADMIN`, `DEAN`, `FACULTY`, `STUDENT` — created and assigned in Auth only (tenant-scoped; pipe-roles → multi-group). Consult stores no membership.
 3. Catalog import from §5 payload (118 gated rows).
 4. Grants per `api-endpoints.md` §4.4 (+ e-consultation `endpoint-catalog.md` §5 levels).
@@ -127,7 +127,7 @@ Auth surface only. Controllers/services copy 1:1; only config keys, cookie names
 
 | # | Cert source | Consult target | Delta |
 |---|-------------|----------------|-------|
-| 1 | `app/Http/Middleware/JwtMiddleware.php` | same path | `tenant_slug` → `consult-platform`/`loa`; `cert_user` attr → `consult_user`; error shapes verbatim (401 missing/invalid, 403 tenant_mismatch) |
+| 1 | `app/Http/Middleware/JwtMiddleware.php` | same path | `tenant_slug` → `consult-platform`/`loa-consultation`; `cert_user` attr → `consult_user`; error shapes verbatim (401 missing/invalid, 403 tenant_mismatch) |
 | 2 | `app/Http/Middleware/EndpointPolicyMiddleware.php` | same path | catalog `cert-endpoints.php` → `consult-endpoints.php`; confirm request-attr names (`jwt_claims`) at port time; else verbatim |
 | 3 | `app/Http/Controllers/AuthCallbackController.php` | same path | config re-point; **ADD first-class upsert by email** (`students`/`employees` per `data-model.md` §3.1.1–§3.1.2; no `app_users`); audit event under consult naming |
 | 4 | `app/Http/Controllers/AuthRefreshController.php` | same path | cookie/config names only |
@@ -137,7 +137,7 @@ Auth surface only. Controllers/services copy 1:1; only config keys, cookie names
 | 8 | `app/Services/AuditLogger.php` | same path | verbatim (writes consult `audit_logs`) |
 | 9 | `config/jwt.php` | same path | verbatim |
 | 10 | `config/auth-platform.php` | same path | verbatim (base_url, timeout, encryption keys, api_key) |
-| 11 | `config/cert-platform.php` | `config/consult-platform.php` | `tenant_slug=loa`, `refresh_cookie=loa_connect_refresh` (+secure/TTL); DROP `organization_id`, `log_viewer_secret`, `use_metadata_serving` (cert-only) |
+| 11 | `config/cert-platform.php` | `config/consult-platform.php` | `tenant_slug=loa-consultation`, `refresh_cookie=loa_connect_refresh` (+secure/TTL); DROP `organization_id`, `log_viewer_secret`, `use_metadata_serving` (cert-only) |
 | 12 | `routes/api.php` auth group | same | `auth/*` public, `throttle:10,1` on callback/refresh |
 | 13 | `bootstrap/app.php` aliases | same | `jwt.auth` + `jwt.endpoint` |
 | 14 | `public/.htaccess` | same | Authorization-forward rule (AI-GUIDE cPanel gotcha) |
@@ -154,7 +154,7 @@ DO NOT PORT: `AuthProxyController.php` (deferred with the `/service/*` decision,
 
 | Step | Files | Delta | Tests (user-run, `php artisan test`) |
 |------|-------|-------|--------------------------------------|
-| 1. Config trio | `config/jwt.php`, `config/auth-platform.php` (verbatim) · `config/consult-platform.php` (from cert's: `tenant_slug=loa`, `loa_connect_refresh`, drop cert-only keys) | None — no behavior change | `HealthTest` green |
+| 1. Config trio | `config/jwt.php`, `config/auth-platform.php` (verbatim) · `config/consult-platform.php` (from cert's: `tenant_slug=loa-consultation`, `loa_connect_refresh`, drop cert-only keys) | None — no behavior change | `HealthTest` green |
 | 2. Services trio | `app/Services/{JWTService,EncryptionService,AuditLogger}.php` | Verbatim; Audit writes consult `audit_logs` | Indirect (exercised via steps 3–6) |
 | 3. `JwtMiddleware` | Replace stub | Tenant/attr re-point; error shapes verbatim | 401 missing · 401 invalid/expired/wrong-type · 403 tenant mismatch · valid passes |
 | 4. Catalog | `config/consult-endpoints.php` | Generated from `api-endpoints.md` §5: `public[]` + 118 gated rows | Validated via step 5 |
@@ -170,6 +170,6 @@ DO NOT PORT: `AuthProxyController.php` (deferred with the `/service/*` decision,
 
 ## Document Control
 
-- **Status:** Final v1.4 (history: v1.0 promoted 2026-09-18; v1.1 §10 port inventory; v1.2 group-wording; v1.3 §7/§10 #3 no-`app_users`; v1.4 §11 port plan — user-approved Final 2026-09-22, gates Step 1+)
+- **Status:** Final v1.5 (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24; gates code/config/test slug updates + Auth re-provisioning)
 - **Created:** 2026-09-18
 - **Next:** auth-layer port per §10–§11 (Steps 1–3 ✓ suite green; Step 4 `config/consult-endpoints.php` catalog next — awaiting user yes)

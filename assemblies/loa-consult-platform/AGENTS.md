@@ -26,8 +26,8 @@
    `/api/v1/*`, the `loa_consult` schema, and Auth tenant catalog/grant entries must stay compatible. Any
    migration must be in the spec with rollback noted.
 5. **Auth invariant.** Every change must keep JWT local validation working (shared HMAC-SHA256 secret,
-   `type=access`, local validation — no HTTP per request) + tenant scoping (`TENANT_SLUG=loa`,
-   token `tenant.slug ≠ loa → 403`) + bare shapes until cutover. Never add local roles; groups come
+   `type=access`, local validation — no HTTP per request) + tenant scoping (`TENANT_SLUG=loa-consultation`,
+   token `tenant.slug ≠ loa-consultation → 403`) + bare shapes until cutover. Never add local roles; groups come
    only from the JWT `groups` claim (Auth-owned).
 6. **Keep it cPanel-deployable.** `public/` docroot; `public/.htaccess` MUST forward `Authorization`
    before the front-controller rule (else gated endpoints 401 in prod while passing locally on nginx);
@@ -211,16 +211,16 @@ envelope migration without a spec.
 
 | Spec | Status |
 |---|---|
-| `api-endpoints.md` v2.0 | FINAL — flat 104+5, ground truth |
-| `auth-integration.md` v1.4 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Steps 1–7 ✓ suite green 2026-09-22, port COMPLETE) |
+| `api-endpoints.md` v2.1 | FINAL — flat 104+5, ground truth (tenant `loa-consultation`) |
+| `auth-integration.md` v1.5 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Steps 1–7 ✓ suite green 2026-09-22, port COMPLETE; tenant `loa-consultation`) |
 | `endpoints-academic/appointments/evaluations.md` v1.0–v1.1 | FINAL — module contracts (academic/evaluations v1.1 flat) |
-| `docker-compose-spec.md` v1.0 | FINAL — root-stack wiring `:9002` |
+| `docker-compose-spec.md` v1.1 | FINAL — root-stack wiring `:9002` (tenant `loa-consultation`) |
 | `data-model.md` v1.3 | FINAL — shape contract (source-verified M17/M19/M21/M26/M27/M30/M31); §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
-| `test-suite.md` v1.1 | FINAL — auth + B/C contract (CON/ACC/D), user-run sequential, v2.0 pointers |
-| `LOCAL-DEV-RUNBOOK.md` v0.1 | DRAFT — local dev setup |
-| `DEPLOY.md` v0.1 | DRAFT — deployment skeleton |
-| `FRONTEND-INTEGRATION.md` v0.1 | DRAFT — cutover checklist skeleton |
-| `consult-readiness.md` v1.5 | FINAL — provisioning checklist (aces-* + linkage, 104+5 pointer, v2.0 pointers) |
+| `test-suite.md` v1.2 | FINAL — auth + B/C contract (CON/ACC/D), user-run sequential, v2.1 pointers (tenant `loa-consultation`) |
+| `LOCAL-DEV-RUNBOOK.md` v1.0 | FINAL — local dev setup (wired + green) |
+| `DEPLOY.md` v1.0 | FINAL — deployment guide (cert-patterned) |
+| `FRONTEND-INTEGRATION.md` v1.0 | FINAL — cutover checklist (backend green; topology OPEN) |
+| `consult-readiness.md` v1.6 | FINAL — provisioning checklist (aces-* + linkage, 104+5 pointer, v2.1 pointers, tenant `loa-consultation`) |
 | `endpoints-admin-import.md` v1.1 | FINAL — Phase D (v2.0 pointers) |
 | `url-flattening.md` v1.1 | FINAL — flat scheme (104+5 per ACC-2, scoped results, F2 green) |
 | `README.md` v1.0 | DRAFT — assembly composition (see §2) |

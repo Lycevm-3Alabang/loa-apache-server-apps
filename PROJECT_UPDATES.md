@@ -75,11 +75,11 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 - **Known gaps:** local seed has no organization → FK 1452 on template/certificate writes (needs seeder); certificate owner-rule check missing on show/pdf/download (only `MeController` scopes); QR route shape code-vs-spec drift (`/{n}/qr` vs `?certificate_number=`); `test-suite.md` still Draft (says SQLite, actual MySQL `loa_cert_test`).
 - **Next:** auth/cert deploy; cert org seeder.
 
-### Consult — `assemblies/loa-consult-platform/` (spec program **ACTIVE** 2026-09-23)
+### Consult — `assemblies/loa-consult-platform/` (spec program **ACTIVE** 2026-09-24)
 
 - **Status:** scaffold done + auth-layer port COMPLETE (§11 Steps 1–7 green 2026-09-22) + slices B/C COMPLETE (B1–B5 academic/appointments, C1–C4 evaluations green 2026-09-22) + Phase D link-reads + import-domain + data/audit green 2026-09-23 (`UserLinkTest` 8/8, `ImportTest` 7/7, `DataAuditTest` 8/8 user) + URL-flattening F1+F2 green (flat 104+5 normative, scoped results). Planning FLUSHED 2026-09-23 (P0–P5 done, P6 parked — see TODO AFTER FINAL).
-- **Specs:** `api-endpoints.md` Final v2.0 (flat 104+5 green), `auth-integration.md` Final v1.4 (§11 Steps 1–7 landed: config · services trio · JwtMiddleware · catalog 104+5 flattened current, 118+5 was v1.0 history · EndpointPolicy · auth trio · gate routes — suite green 2026-09-22, port COMPLETE), 3 endpoint modules Final v1.0–v1.1 (academic/evaluations v1.1 flat green), `endpoints-admin-import.md` Final v1.1 (Phase D baselines green 2026-09-23; DEC-5 proxy OPEN), `url-flattening.md` Final v1.1 (flat 104+5 per ACC-2; 113+5 was F2 intermediate), `docker-compose-spec.md` Final v1.0, `data-model.md` Final v1.3 (shape contract + §3 Status gate 6/3/17); `test-suite.md` Final v1.1; `consult-readiness.md` Final v1.5 (104+5 pointer); runbooks still Draft.
-- **Next:** P6 cutover/Phase E BLOCKED (runbooks Draft v0.1, frontend decision, reports 7 types, §8 provisioning); DEC-5 proxy OPEN; drift fixes done green 2026-09-23 (120 passed). Auth JSON deferred to deploy-time. See TODO AFTER FINAL (planning FLUSHED 2026-09-23).
+- **Specs:** `api-endpoints.md` Final v2.1 (flat 104+5 green, tenant `loa-consultation`), `auth-integration.md` Final v1.5 (§11 Steps 1–7 landed, port COMPLETE; tenant `loa-consultation`), 3 endpoint modules Final v1.0–v1.1 (academic/evaluations v1.1 flat green), `endpoints-admin-import.md` Final v1.1 (Phase D baselines green 2026-09-23; DEC-5 proxy OPEN), `url-flattening.md` Final v1.1 (flat 104+5 per ACC-2), `docker-compose-spec.md` Final v1.1 (tenant `loa-consultation`), `data-model.md` Final v1.3 (shape contract + §3 Status gate 6/3/17); `test-suite.md` Final v1.2; `consult-readiness.md` Final v1.6 (104+5 pointer, tenant `loa-consultation`); runbooks Final v1.0.
+- **Next:** P6 cutover/Phase E BLOCKED (frontend decision, reports 7 types, §8 provisioning under new `loa-consultation` tenant); DEC-5 proxy OPEN; runbooks Final v1.0 (promotion complete); tenant code rollout done, suite re-green + Auth re-provisioning pending (user runs). Auth JSON regen 118→104+5 deferred to deploy-time. See TODO AFTER FINAL (planning FLUSHED 2026-09-23).
 
 ---
 
@@ -96,5 +96,12 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 - **Cert PDF 500 fixed 2026-09-23:** `PdfService::streamCertificatePdf()` used non-existent `$pdf->inline()` → `$pdf->stream()` (one line); full cert suite **249 passed (738 assertions)**.
 - **`mega.ps1` re-run green 2026-09-23 (user-reported):** tests green → dumps (auth zipped, cert in progress, consult queued) → **all 3 zipped successfully**.
 
+### Date: 2026-09-24
+
+### Completed
+- **Tenant rename `loa` → `loa-consultation` (user-approved, own-tenant cert pattern):** 5 specs to Final (`api-endpoints.md` v2.1, `auth-integration.md` v1.5, `consult-readiness.md` v1.6, `test-suite.md` v1.2, `docker-compose-spec.md` v1.1); code/config/tests/runbooks/AGENTS updated (3 defaults, phpunit+bootstrap, 11 test files, `.env.example`, DEPLOY/FRONTEND-INTEGRATION); trackers reconciled (TODO/PROJECT/this file). Pending (user runs): real `.env` slug, Auth re-provisioning, suite re-green paste.
+- **Runbook promotions 2026-09-24 (user-approved):** `LOCAL-DEV-RUNBOOK.md`/`DEPLOY.md`/`FRONTEND-INTEGRATION.md` v0.1 → **Final v1.0** (stale sections refreshed, DEPLOY cert-patterned, topology OPEN until cutover); consult spec program 100% Final.
+
 ### Next Action
-- [ ] P6 PARKED items only (runbook promotions + DEC-5 + Phase E + §8 provisioning — see TODO PLANNED). Planning FLUSHED 2026-09-23; drift fixes done green (120 passed).
+- [ ] Tenant rollout finish (user runs): real `.env` `TENANT_SLUG=loa-consultation` → Auth re-provisioning (tenant + aces-* + 104+5 catalog/grants) → consult suite re-green paste → Auth JSON regen 118→104+5 at deploy time
+- [ ] P6 PARKED items only (DEC-5 + Phase E + §8 provisioning — see TODO PLANNED). Planning FLUSHED 2026-09-23; runbooks Final v1.0 2026-09-24; drift fixes done green (120 passed).

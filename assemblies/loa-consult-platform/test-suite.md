@@ -4,9 +4,9 @@
 |-------|-------|
 | ID | CONSULT-TEST-001 |
 | Title | Consult Platform Test Suite |
-| Status | Final v1.1 (user-approved 2026-09-23) |
+| Status | Final v1.2 (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24) |
 | Owner | Consult Platform assembly |
-| Version | 1.1 Final |
+| Version | 1.2 Final |
 | Scope | Automated + manual verification for auth-layer §11 Steps 1–7 + domain slices B/C against Final specs; MySQL `loa_consult_test`; USER-run only |
 | Non-goals | Admin+import contracts (deferred), Phase E reports, cutover frontend, prod data, cross-app deploys |
 | Layer | Product Assembly (`assemblies/loa-consult-platform/`) |
@@ -17,7 +17,7 @@ The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RE
 
 ## Context
 
-Consult assembly is Laravel 12 + PHP 8.3 + MySQL 8 (`loa_consult`), thin product assembly owning routing/middleware/JWT-validation/RBAC only. Normative behavior lives in `api-endpoints.md` Final v2.0 (104 gated + 5 public), `auth-integration.md` Final v1.4 §11 (Steps 1–7), `data-model.md` Final v1.3 (shape contract; §3 Status gates implementability), `endpoints-academic/appointments/evaluations.md` Final v1.0–v1.1, `docker-compose-spec.md` Final v1.0 (root-stack `:9002`).
+Consult assembly is Laravel 12 + PHP 8.3 + MySQL 8 (`loa_consult`), thin product assembly owning routing/middleware/JWT-validation/RBAC only. Normative behavior lives in `api-endpoints.md` Final v2.1 (104 gated + 5 public), `auth-integration.md` Final v1.5 §11 (Steps 1–7), `data-model.md` Final v1.3 (shape contract; §3 Status gates implementability), `endpoints-academic/appointments/evaluations.md` Final v1.0–v1.1, `docker-compose-spec.md` Final v1.1 (root-stack `:9002`).
 
 Slices B (appointments/academic) and C (evaluations) plus auth-layer port are landed with green pastes 2026-09-22 (Jwt 6, Policy 5, AuthTrio 16, RouteGating 5, Availability 10/10, Appointment 12/12, EvaluationTables 4/4, PeriodsRubrics 16, Flow + Results). This spec codifies the test contract so TDD can interrogate those Final specs without inventing behavior. Per assembly `AGENTS.md` §1.3/§1.7: agent NEVER runs tests; USER runs sequentially from repo root; nothing breaks HealthTest; no change complete until green pasted.
 
@@ -26,12 +26,12 @@ Slices B (appointments/academic) and C (evaluations) plus auth-layer port are la
 - **CON-1** — Test database MUST be dedicated MySQL `loa_consult_test`, pinned via `tests/bootstrap.php` (phpunit `force` loses to container `$_SERVER`). Tests MUST NOT touch `loa_consult` app DB.
 - **CON-2** — Suites MUST run sequentially only. Concurrent runs against the shared test DB cause deadlocks.
 - **CON-3** — Every DB-touching test MUST use `RefreshDatabase` with minimal explicit seed data per test.
-- **CON-4** — Auth in tests MUST use a JWT claims helper (HS256, `type=access`, `tenant.slug=loa`, chosen `sub/groups/permissions`). Tests MUST NOT use hardcoded tokens, production `.env`, live DB, Auth service, or network.
+- **CON-4** — Auth in tests MUST use a JWT claims helper (HS256, `type=access`, `tenant.slug=loa-consultation`, chosen `sub/groups/permissions`). Tests MUST NOT use hardcoded tokens, production `.env`, live DB, Auth service, or network.
 - **CON-5** — Tests MUST prefer request-level (`getJson/postJson/json`) over mocks and MUST assert observable status + bare shapes only (`{appointments}`, `{data}`, `{success:true}`, `{error}` — no envelope).
 - **CON-6** — One behavior per test; Arrange/Act/Assert; descriptive names; `phpunit.xml.dist` sets `testing` env + test secrets.
 - **CON-7** — Agent MUST NOT execute test commands. USER runs from repo root (`loa-platform` project) only; never an assembly-level compose file.
 - **CON-8** — Nothing MUST break `GET /api/v1/health → {status:ok, service:loa-consult-platform}`.
-- **CON-9** — Level gates MUST match `api-endpoints.md` Final v2.0 §5 + `config/consult-endpoints.php` (public 5 + catalog 104); `jwt.auth` before `jwt.endpoint`; `throttle:10,1` on callback/refresh.
+- **CON-9** — Level gates MUST match `api-endpoints.md` Final v2.1 §5 + `config/consult-endpoints.php` (public 5 + catalog 104); `jwt.auth` before `jwt.endpoint`; `throttle:10,1` on callback/refresh.
 - **CON-10** — Tests MUST NOT assert internals (method calls) or invent envelopes/levels the specs forbid.
 
 ## Goal
@@ -109,6 +109,6 @@ docker compose exec consult-app php artisan test --filter testName
 
 ## Document Control
 
-- **Status:** Final v1.1 (pointer refresh to api-endpoints v2.0, user-approved 2026-09-23)
+- **Status:** Final v1.2 (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24)
 - **Created:** 2026-09-18 as v0.1; rewritten 2026-09-23 to §1.9 template (metadata + RFC 2119 + CON/DEC/ACC/D); promoted Final v1.0 2026-09-23; pointer refresh v1.1 2026-09-23
 - **Next:** implementation per ACC-*; admin+import coverage expands §5 when its contract lands

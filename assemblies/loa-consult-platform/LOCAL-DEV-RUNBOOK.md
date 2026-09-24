@@ -25,36 +25,40 @@ Port plan avoids collisions: auth `8080`, cert `9001`, consult **`9002`**.
 
 ---
 
-## 1. Current Status (2026-09-18)
+## 1. Current Status (2026-09-24 — WIRED + GREEN)
 
-Specs only — **no Laravel code, no compose entries yet.** Do not add `consult-*` services to the root compose until the §2 gate is met.
+Assembly built (13 controllers, migrations 000001–000014, 104+5 flat routes) and root-stack wired (`consult-app`/`consult-nginx`/`consult-scheduler`, `:9002`). `init.sql` carries `loa_consult` + `loa_consult_test`. Pipelines green (`reset-all`/`run-tests`/`mega.ps1` end-to-end 2026-09-23; full suite 120 passed). Tenant `loa-consultation` (own-tenant cert pattern). §2 gate MET 2026-09-23 — kept below as record.
 
 ## 2. Wiring Gate (do not skip)
 
 Add compose wiring **only** when ALL of these exist and pass:
 
-- [ ] Minimal Laravel 12 skeleton (`artisan`, `bootstrap/app.php`, `routes/api.php`, `public/index.php` + `.htaccess` Authorization rule, `.env`/`.env.example`, `composer.json`) per AI-GUIDE scaffolding checklist
-- [ ] `GET /api/v1/health` live (public)
-- [ ] First migration + passing phpunit test via `docker compose exec consult-app php artisan test`
-- [ ] `docker/mysql/init.sql` extended with `loa_consult` DB + grant (see §3)
+Gate MET 2026-09-23 (record — all boxes were checked at wiring time):
 
-Wiring checklist at that moment:
+- [x] Minimal Laravel 12 skeleton (`artisan`, `bootstrap/app.php`, `routes/api.php`, `public/index.php` + `.htaccess` Authorization rule, `.env`/`.env.example`, `composer.json`) per AI-GUIDE scaffolding checklist
+- [x] `GET /api/v1/health` live (public)
+- [x] First migration + passing phpunit test via `docker compose exec consult-app php artisan test`
+- [x] `docker/mysql/init.sql` extended with `loa_consult` DB + grant (see §3)
 
-- [ ] `consult-app` block in root `docker-compose.yml` (build context `./assemblies/loa-consult-platform`, `DB_DATABASE: loa_consult`, `SEQ_URL: http://seq:5341`, same `loa` network)
-- [ ] `consult-nginx` block (port `9002:80`, assembly bind-mount + nginx conf)
-- [ ] `consult-scheduler` block (`schedule:work`)
-- [ ] `init.sql` creates `loa_consult` + grant (fresh volumes pick it up; existing volumes need manual `CREATE DATABASE`)
-- [ ] `docker compose up -d --build consult-app consult-nginx consult-scheduler` starts clean
-- [ ] Migrate + seed + test green inside the container (§4)
+Wiring checklist (done 2026-09-23):
+
+- [x] `consult-app` block in root `docker-compose.yml` (build context `./assemblies/loa-consult-platform`, `DB_DATABASE: loa_consult`, `SEQ_URL: http://seq:5341`, same `loa` network)
+- [x] `consult-nginx` block (port `9002:80`, assembly bind-mount + nginx conf)
+- [x] `consult-scheduler` block (`schedule:work`)
+- [x] `init.sql` creates `loa_consult` + `loa_consult_test` + grants (fresh volumes pick it up; existing volumes need manual `CREATE DATABASE`)
+- [x] `docker compose up -d --build consult-app consult-nginx consult-scheduler` starts clean
+- [x] Migrate + test green inside the container (§4; NO seed — consult ships no seeders per `docker-compose-spec.md` §7)
 
 ## 3. MySQL Sharing
 
 One server, separate databases (multi-app spec: shared infrastructure, NOT shared database):
 
 ```sql
--- docker/mysql/init.sql additions (at wiring time):
+-- docker/mysql/init.sql (landed 2026-09-23; fresh volumes pick it up automatically):
 CREATE DATABASE IF NOT EXISTS loa_consult CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 GRANT ALL PRIVILEGES ON loa_consult.* TO 'loa'@'%';
+CREATE DATABASE IF NOT EXISTS loa_consult_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON loa_consult_test.* TO 'loa'@'%';
 FLUSH PRIVILEGES;
 ```
 
@@ -72,16 +76,15 @@ From the repo root (`loa-apache-server-apps/`):
 # Start consult only (shared infra comes up as dependency)
 docker compose up -d --build consult-app consult-nginx consult-scheduler
 
-# Migrate / seed / test inside the container
+# Migrate / test inside the container (NO seed — consult ships no seeders per `docker-compose-spec.md` §7)
 docker compose exec consult-app php artisan migrate --force
-docker compose exec consult-app php artisan db:seed --force
 docker compose exec consult-app php artisan test
 
 # Single test file / method
 docker compose exec consult-app php artisan test tests/Feature/Api/HealthTest.php
 docker compose exec consult-app php artisan test --filter testName
 
-# Swagger docs
+# Swagger docs (best-effort: app/ carries no OpenApi attributes, so generation warns + continues per `reset-all.ps1`)
 docker compose exec consult-app php artisan l5-swagger:generate
 
 # Shell / logs
@@ -93,7 +96,7 @@ Verify: API `http://localhost:9002` · Swagger `http://localhost:9002/api/docs` 
 
 ## 5. Test Database
 
-Follow the cert pattern: dedicated `loa_consult_test` database for phpunit (never the app database). Details land here with the first test.
+Dedicated `loa_consult_test` (never the app database). `tests/bootstrap.php` pins all test-critical env (phpunit `force` loses to container `$_SERVER` — same precedent as auth) including `TENANT_SLUG=loa-consultation`. Suites run sequentially only (shared test DB deadlocks on concurrent runs). Contract: `test-suite.md` Final v1.2.
 
 ## 6. Troubleshooting
 
@@ -111,4 +114,10 @@ Follow the cert pattern: dedicated `loa_consult_test` database for phpunit (neve
 - [Multi-app spec](../../docs/local-dev-multi-app-spec.md) (shared-infra rules + acceptance criteria)
 - [MySQL init](../../docker/mysql/init.sql) (`loa_consult` lines added at wiring time)
 - [Auth runbook](../loa-auth-platform/LOCAL-DEV-RUNBOOK.md) · [Cert runbook](../loa-cert-platform/LOCAL-DEV-RUNBOOK.md)
-- [API Endpoints](api-endpoints.md) (Final v1.0) · [Auth Integration](auth-integration.md) (Final v1.4) · [Data Model](data-model.md) (Final v1.3)
+- [API Endpoints](api-endpoints.md) (Final v2.1) · [Auth Integration](auth-integration.md) (Final v1.5) · [Data Model](data-model.md) (Final v1.3)
+
+---
+
+## Document Control
+
+- **Status:** Final v1.0 (user-approved 2026-09-24; wired + green 2026-09-23)

@@ -58,7 +58,7 @@ Consult adds three services + one DB init line. No new infrastructure.
       DB_PASSWORD: loa-secret
       JWT_SECRET: dev-only-secret-change-before-production
       JWT_ACCESS_TTL: 15
-      TENANT_SLUG: loa
+      TENANT_SLUG: loa-consultation
       AUTH_BASE_URL: http://auth-nginx
       ENCRYPTION_KEY: base64:aQ0GFg4Sb84QdlaGQc5wiS17VFPCWOvKQZJ+/bUCRYE=
       SEQ_URL: "http://seq:5341"
@@ -161,7 +161,7 @@ Three values must be **byte-identical** across auth + cert + consult `.env` file
 |----------|-------------------|----------------|
 | `JWT_SECRET` | `dev-only-secret-change-before-production` | Already matching (dev). Production: share same secret. |
 | `ENCRYPTION_KEY` | `base64:aQ0GFg4Sb84QdlaGQc5wiS17VFPCWOvKQZJ+/bUCRYE=` | **MUST be added** to consult `.env` — currently empty. |
-| `TENANT_SLUG` | `loa` | Already `loa` in consult `.env`. |
+| `TENANT_SLUG` | `loa-consultation` | Own tenant (cert pattern); update consult `.env`. |
 
 The root compose `environment:` block overrides `.env` at runtime (§2 includes `ENCRYPTION_KEY`). The assembly-local `.env` is used only for local `php artisan` commands outside Docker.
 
@@ -236,7 +236,7 @@ No port conflicts. Each app gets its own nginx with a unique host port.
 
 ## Document Control
 
-- **Status:** Final v1.0
+- **Status:** Final v1.1 (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24)
 - **Created:** 2026-09-18
 - **Updated:** 2026-09-19 — Promoted to Final: verified root stack (auth+cert wired), corrected init.sql, added §4 shared secrets sync, §5 port map, §7 scripts update. Dockerfile identical to cert (GD/mbstring/intl). nginx identical to cert (50MB upload, fastcgi_pass consult-app:9000).
 - **Blocked on:** first migration (compose edits land together with migratable code)

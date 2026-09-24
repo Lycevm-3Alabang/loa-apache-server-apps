@@ -22,7 +22,7 @@ class AuthTrioTest extends TestCase
             'email' => 'juan@itmlyceumalabang.onmicrosoft.com',
             'name' => 'Juan Cruz',
             'type' => 'access',
-            'tenant' => ['id' => 'tenant-1', 'slug' => 'loa'],
+            'tenant' => ['id' => 'tenant-1', 'slug' => 'loa-consultation'],
             'groups' => ['STUDENT'],
             'permissions' => [],
             'iat' => time(),

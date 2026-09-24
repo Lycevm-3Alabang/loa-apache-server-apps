@@ -159,23 +159,23 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
 | Implementation phase planning | ✅ Flushed 2026-09-23 | P0 scaffold + P1 C-Auth (§11) + P2 Slice B + P3 Slice C + P4 Slice D baselines + P5 flatten 104+5 done; P6 cutover/Phase E BLOCKED (runbooks Draft, frontend decision, reports, §8 provisioning); see TODO AFTER FINAL |
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
-| `api-endpoints.md` spec | ✅ Final v2.0 | Flat 104+5 root spec (F1/F2 green) |
-| `auth-integration.md` spec | ✅ Final v1.4 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed (config · services · JwtMiddleware · catalog 104+5 flattened current, 118+5 was v1.0 pre-flatten history · EndpointPolicy · auth trio · gate routes + tests) — suite green 2026-09-22, port COMPLETE |
+| `api-endpoints.md` spec | ✅ Final v2.1 | Flat 104+5 root spec (F1/F2 green); tenant `loa-consultation` (own-tenant cert pattern, 2026-09-24) |
+| `auth-integration.md` spec | ✅ Final v1.5 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed — suite green 2026-09-22, port COMPLETE; tenant `loa-consultation` (2026-09-24) |
 | `data-model.md` spec | ✅ Final v1.3 | Shape contract (M17/M19/M21/M26/M27/M30/M31); §3 Status gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
 | `endpoints-academic.md` spec | ✅ Final v1.1 | Flat paths (green) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
 | `endpoints-evaluations.md` spec | ✅ Final v1.1 | Flat paths + scoped results (green) |
-| `endpoints-admin-import.md` spec | ✅ Final v1.1 | Phase D contract (v2.0 pointers); baselines green 2026-09-23 (link-reads / import-domain / data-audit); DEC-5 `/service/*` proxy still OPEN |
-| `url-flattening.md` spec | ✅ Final v1.1 | Flat URL scheme (104+5 actual per ACC-2 + `api-endpoints.md` v2.0 §5 Total; 113+5 was F2 intermediate; single scoped results, in-place v1 rename; F2 green) |
+| `endpoints-admin-import.md` spec | ✅ Final v1.1 | Phase D contract (v2.1 pointers); baselines green 2026-09-23 (link-reads / import-domain / data-audit); DEC-5 `/service/*` proxy still OPEN |
+| `url-flattening.md` spec | ✅ Final v1.1 | Flat URL scheme (104+5 actual per ACC-2 + `api-endpoints.md` v2.1 §5 Total; 113+5 was F2 intermediate; single scoped results, in-place v1 rename; F2 green) |
 | URL flattening (F1+F2) | ✅ Done 2026-09-23 | Flat routes + scoped results + catalog/JSON regen (104+5 normative; 113+5 reported at F2 was intermediate) + ResultsTest scoping; suite green (user) |
-| `test-suite.md` spec | ✅ Final v1.1 | Test contract (v2.0 pointers); MySQL `loa_consult_test`, JWT helper, user-run sequential |
-| `docker-compose-spec.md` spec | ✅ Final v1.0 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
-| `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |
-| `DEPLOY.md` spec | ✅ Draft v0.1 | Deployment (per TODO SPEC STATUS; promotion PARKED) |
-| `FRONTEND-INTEGRATION.md` spec | ✅ Draft v0.1 | Cutover phase (per TODO SPEC STATUS; promotion PARKED) |
-| `consult-readiness.md` spec | ✅ Final v1.5 | Provisioning checklist (aces-* + linkage, 104+5 pointer, v2.0 pointers) |
+| `test-suite.md` spec | ✅ Final v1.2 | Test contract (v2.1 pointers, tenant `loa-consultation`); MySQL `loa_consult_test`, JWT helper, user-run sequential |
+| `docker-compose-spec.md` spec | ✅ Final v1.1 | Root-stack `consult-*` blocks port 9002, `loa_consult` init, tenant `loa-consultation` |
+| `LOCAL-DEV-RUNBOOK.md` spec | ✅ Final v1.0 | Shared root-stack pattern, wiring gate MET, no-seed, test-DB pin |
+| `DEPLOY.md` spec | ✅ Final v1.0 | Cert-patterned cPanel deploy (PHP 8.3, dist, no-seed, slug checklist, cron) |
+| `FRONTEND-INTEGRATION.md` spec | ✅ Final v1.0 | Backend-done cutover handoff (topology OPEN until cutover) |
+| `consult-readiness.md` spec | ✅ Final v1.6 | Provisioning checklist (aces-* + linkage, 104+5 pointer, v2.1 pointers, tenant `loa-consultation`) |
 | First migration(s) + baseline deltas | ✅ Done 2026-09-22 | `000001-000010` academic + `000011` academic baseline + `000012` appointment-family + `000013` section-link + `000014` evaluation tables; per data-model Final v1.3 §3/§7 |
-| JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa`, `consult_user`; Unit tests green. **Gated in Step 7** |
+| JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa-consultation`, `consult_user`; Unit tests green. **Gated in Step 7** |
 | Permission middleware | ✅ Step 5 done | Cert port verbatim (`consult-endpoints` re-point only, `jwt_claims` confirmed); Unit tests green (public/403/level/catalog-count). **Gates all domain routes since Step 7** |
 | Route gating | ✅ Step 7 done | `auth/*` public + `throttle:10,1` on callback/refresh; health + count-active public; semesters/admin under `jwt.auth`+`jwt.endpoint`; RouteGatingTest green 2026-09-22 |
 | Appointment model + migrations | ✅ Done 2026-09-22 | B2 `000012`: appointments table + thin model; slice B COMPLETE green pasted |
@@ -373,3 +373,4 @@ loa-apache-server-apps/
 | 2026-09-23 | Consult: Docker pipelines wired | `generate-dist.ps1` + build-all/reset-all/run-tests/dump/mega consult blocks; `loa_consult_test` added to init.sql; `mega.ps1` end-to-end green (user-reported) |
 | 2026-09-23 | Consult: planning FLUSHED, P6 PARKED | P0–P5 done; P6 = runbooks + DEC-5 + Phase E + §8 provisioning (see TODO PLANNED) |
 | 2026-09-23 | Cert: PDF 500 fixed | `PdfService::streamCertificatePdf()` `$pdf->inline()` → `$pdf->stream()`; suite 249 passed (738 assertions) |
+| 2026-09-24 | Consult: tenant rename `loa` → `loa-consultation` | User decision (own-tenant cert pattern, like `loa-e-cert`): 5 specs re-versioned to Final (api-endpoints v2.1, auth-integration v1.5, readiness v1.6, test-suite v1.2, docker-compose v1.1); code/config/tests/runbooks updated; Auth re-provisioning + suite re-green pending (user runs) |

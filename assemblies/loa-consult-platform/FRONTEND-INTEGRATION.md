@@ -1,20 +1,19 @@
 # LOA Consult Platform — Frontend Integration Guide (cutover)
 
-**Version:** 0.1
-**Status:** Draft (skeleton — cutover-gated; frontend untouched until then)
+**Version:** 1.0
+**Status:** Final (user-approved 2026-09-24; backend built + green — activates at cutover; frontend untouched until then)
 **Layer:** Product Assembly (`loa-consult-platform`)
 
 > Follows `../loa-cert-platform/FRONTEND-INTEGRATION.md` as pattern. This is a handoff doc for the cutover phase. The Next.js frontend changes NOTHING until cutover.
 
 ---
 
-## What's Done (backend — nothing yet)
+## What's Done (backend — built + green 2026-09-23)
 
-- [ ] Auth endpoints (`POST /api/v1/auth/callback|refresh|logout`) — spec Final (`auth-integration.md`), not built
-- [ ] Domain endpoints (`api-endpoints.md` Final v1.0) — not built
-- [x] `jwt.auth` middleware — Step 3 done (unit-tested; routes gated at Step 7)
-- [ ] `jwt.endpoint` middleware — not built (Step 5)
-- [ ] Config (`jwt.php`, `auth-platform.php`, `consult-platform.php`, `consult-endpoints.php`) — not built
+- [x] Auth endpoints (`POST /api/v1/auth/callback|refresh|logout`) — built per `auth-integration.md` Final v1.5 §11, `AuthTrioTest` 16/16 green
+- [x] Domain endpoints (`api-endpoints.md` Final v2.1, 104+5 flat) — slices B/C/D green, full suite 120 passed
+- [x] `jwt.auth` + `jwt.endpoint` middleware — Steps 3/5 done, routes gated since Step 7
+- [x] Config (`jwt.php`, `auth-platform.php`, `consult-platform.php` with `tenant_slug=loa-consultation`, `consult-endpoints.php` 104+5)
 
 ## What the Frontend Builds at Cutover (TODO each)
 
@@ -37,7 +36,7 @@
 ```env
 NEXT_PUBLIC_CONSULT_API_URL=https://aces-api.lyceumalabang.edu.ph
 NEXT_PUBLIC_AUTH_URL=https://auth.lyceumalabang.edu.ph
-NEXT_PUBLIC_CONSULT_TENANT_SLUG=loa
+NEXT_PUBLIC_CONSULT_TENANT_SLUG=loa-consultation
 ```
 
 ## Decommission at Cutover (TODO — mirrors consult-readiness §11)
@@ -59,14 +58,15 @@ NEXT_PUBLIC_CONSULT_TENANT_SLUG=loa
 
 | Doc | Status |
 |-----|--------|
-| `api-endpoints.md` | Final v1.0 |
-| `auth-integration.md` | Final v1.4 |
+| `api-endpoints.md` | Final v2.1 |
+| `auth-integration.md` | Final v1.5 |
 | `data-model.md` | Final v1.3 |
-| `endpoints-academic.md`, `endpoints-appointments.md`, `endpoints-evaluations.md` | Final v1.0 |
-| `test-suite.md`, `LOCAL-DEV-RUNBOOK.md`, `DEPLOY.md` | Draft v0.1 |
+| `endpoints-academic.md`, `endpoints-appointments.md`, `endpoints-evaluations.md` | Final v1.0–v1.1 |
+| `test-suite.md` | Final v1.2 |
+| `LOCAL-DEV-RUNBOOK.md`, `DEPLOY.md` | Final v1.0 |
 
 ---
 
 ## Document Control
 
-- **Status:** Draft v0.1 skeleton (2026-09-18) — activates at cutover; frontend untouched until then
+- **Status:** Final v1.0 (user-approved 2026-09-24; backend green — topology decision stays OPEN until cutover; frontend untouched until then)
