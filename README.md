@@ -284,24 +284,23 @@ This is **not a code repository**. It is a reference that code repositories use.
 
 Start with:
 
-- `AI-GUIDE.md` — Architecture and code generation guide
+- `AGENTS.md` — Sole agent entry (SDD+TDD, rules, gotchas)
 - `dependency-rules.md` — Dependency matrix
 - `glossary.md` — Architectural terms
-- `principles.md` — Design principles
+- `principles.md` — Design principles + coding detail
 
 ## For Developers
 
 Start with:
 
-- `AI-RULES.md` — Coding conventions
-- `build-your-own-app.md` — Step-by-step assembly guide
+- `principles.md` — Coding conventions + SDD+TDD detail
 - `examples/` — Worked examples with Mermaid diagrams
 
 ## For AI Agents
 
 Start with:
 
-- `AI-GUIDE.md` — Contains the code generation decision tree and placement guide
+- `AGENTS.md` — Contains the SDD+TDD loop, rules, and placement guide
 
 ---
 
@@ -448,11 +447,10 @@ application-template/
 ├── business-contexts/          # Business Contexts (specs)
 ├── services/                   # Platform Services (specs)
 ├── assemblies/                 # Product Assemblies (specs)
+├── integration/specs/           # Cross-platform specs (cert-activation + delta)
 ├── examples/                   # Worked examples with diagrams
 ├── decisions/                  # Architecture Decision Records
-├── AI-GUIDE.md                 # Architecture + code generation guide
-├── AI-RULES.md                 # Coding conventions
-├── build-your-own-app.md       # Step-by-step assembly guide
+├── AGENTS.md                    # Sole agent entry (rules + SDD+TDD + gotchas)
 ├── dependency-rules.md         # Dependency matrix
 ├── glossary.md                 # Architectural terms
 ├── platform.md                 # Platform overview
@@ -466,9 +464,9 @@ application-template/
 
 | Document | Purpose |
 |---|---|
-| `AI-GUIDE.md` | Architecture + code generation guide |
-| `AI-RULES.md` | Coding conventions |
-| `build-your-own-app.md` | Step-by-step assembly guide |
+| `AGENTS.md` | Sole agent entry: SDD+TDD, rules, code generation guide |
+| `integration/specs/` | Cross-platform specs (cert activation + invite delta) |
+| `principles.md` | Design principles + coding conventions |
 | `dependency-rules.md` | Dependency matrix |
 | `glossary.md` | Architectural terms |
 | `principles.md` | Design principles |

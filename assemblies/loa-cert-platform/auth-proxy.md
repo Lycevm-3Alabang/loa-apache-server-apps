@@ -86,6 +86,7 @@ All routes are under `/api/v1/service` and protected by `jwt.auth` + `jwt.endpoi
 | Method | Cert-API Route | Upstream (Auth) | Required Level | Description |
 |--------|---------------|-----------------|----------------|-------------|
 | `GET` | `/api/v1/service/users` | `GET /api/v1/users` | `read` | List users (tenant-scoped via JWT) |
+| `GET` | `/api/v1/service/users/{id}` | `GET /api/v1/users/{id}` | `read` | Get user detail |
 | `PATCH` | `/api/v1/service/users/{id}/status` | `PATCH /api/v1/users/{id}/status` | `admin` | Enable/disable user |
 
 ### 5.2 Groups (JWT pass-through to auth-platform)
@@ -93,6 +94,9 @@ All routes are under `/api/v1/service` and protected by `jwt.auth` + `jwt.endpoi
 | Method | Cert-API Route | Upstream (Auth) | Required Level | Description |
 |--------|---------------|-----------------|----------------|-------------|
 | `GET` | `/api/v1/service/groups` | `GET /api/v1/groups` | `read` | List groups |
+| `GET` | `/api/v1/service/users/{id}/groups` | `GET /api/v1/users/{id}/groups` | `read` | List user groups |
+| `POST` | `/api/v1/service/users/{id}/groups` | `POST /api/v1/users/{id}/groups` | `admin` | Add user to group |
+| `DELETE` | `/api/v1/service/users/{id}/groups/{groupId}` | `DELETE /api/v1/users/{id}/groups/{groupId}` | `admin` | Remove user from group |
 
 ### 5.3 Tenant Members (API key to auth-platform)
 
@@ -217,9 +221,9 @@ proxy to auth-platform.  No additional authentication setup needed.
 
 - [x] Add `AUTH_API_KEY` to `config/auth-platform.php`
 - [x] Add `AUTH_API_KEY` to `.env.example` and `.env.cpanel`
-- [x] Create `AuthProxyController` with all 7 proxy methods
-- [ ] Add routes to `routes/api.php` under `service` prefix
-- [ ] Add endpoints to `config/cert-endpoints.php` catalog
+- [x] Create `AuthProxyController` with all 11 proxy methods
+- [x] Add routes to `routes/api.php` under `service` prefix (11 routes live)
+- [x] Add endpoints to `config/cert-endpoints.php` catalog
 - [ ] Update frontend `users-admin.ts` base URL
 - [ ] Remove `/auth-api/v1` rewrite from `next.config.ts`
 - [ ] Run cert-api test suite

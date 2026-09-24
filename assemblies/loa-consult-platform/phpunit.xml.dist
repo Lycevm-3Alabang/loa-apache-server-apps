@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+          bootstrap="tests/bootstrap.php"
+         colors="true">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="DB_CONNECTION" value="mysql" force="true"/>
+        <env name="DB_HOST" value="mysql" force="true"/>
+        <env name="DB_PORT" value="3306" force="true"/>
+        <env name="DB_DATABASE" value="loa_consult_test" force="true"/>
+        <env name="DB_USERNAME" value="loa" force="true"/>
+        <env name="DB_PASSWORD" value="loa-secret" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="JWT_SECRET" value="test-jwt-secret-do-not-use-prod" force="true"/>
+        <env name="ENCRYPTION_KEY" value="base64:aQ0GFg4Sb84QdlaGQc5wiS17VFPCWOvKQZJ+/bUCRYE=" force="true"/>
+        <env name="TENANT_SLUG" value="loa-consultation" force="true"/>
+        <env name="REFRESH_COOKIE" value="loa_connect_refresh" force="true"/>
+        <env name="REFRESH_COOKIE_SECURE" value="false" force="true"/>
+    </php>
+</phpunit>

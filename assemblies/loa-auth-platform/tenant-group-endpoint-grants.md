@@ -49,16 +49,16 @@ A platform admin (or tenant app via `permissions.json` import) registers a tenan
 
 | Level | Ordinal | Meaning | Covers |
 |-------|---------|---------|--------|
-| `none` | 0 | No access (default for uncategorized endpoints) | — |
 | `read` | 1 | Safe `GET` view operations | list / view |
 | `write` | 2 | Create / update / delete | `POST`, `PUT`, `PATCH`, `DELETE` |
-| `admin` | 98 | Reserved label for destructive/admin endpoints | create / update / delete / admin ops |
-| `deny` | — | Explicit denial; overrides any group-level grant for this endpoint | blocks all access |
+| `admin` | 3 | Reserved label for destructive/admin endpoints | create / update / delete / admin ops |
+| `deny` | -1 | Explicit denial; overrides any group-level grant for this endpoint | blocks all access |
 
-**Semantics:**
-- `deny` < `admin` < `write` < `read` (by ordinal: -1, 98, 99, 100). Any higher level covers lower levels (e.g., `admin` satisfies a `read`-required endpoint).
+**Semantics (as implemented in `PermissionPolicyService::levelOrdinal`):**
+- Ordinals `deny=-1, read=1, write=2, admin=3`; `admin` is top. ALLOW iff granted ≥ required (a caller granted `admin` satisfies any required level; `read` satisfies `read`-required only).
 - `deny` is a signal, not a level. Within the winning priority tier a `deny` grant wins; across priority tiers the higher-precedence group decides (§3.3).
 - A user-level override **replaces** the group-resolution result entirely for that endpoint. A user override of `deny` can re-enable an endpoint that groups denied.
+- DEFERRED review: v1.1 specified read-top ordinals (`-1, 98, 99, 100`, read covers all); the implementation and both consumers (auth, cert middleware) use admin-top. Adopting admin-top here; revisit only with a cross-platform decision.
 
 ### 3.2 Scope of a Grant
 
@@ -80,7 +80,7 @@ Each group carries an integer `priority` (`user_groups.priority`, default `10`; 
 
 - The grant from the group with the **highest precedence (lowest `priority` value)** decides the effective level for an endpoint.
 - **Different priorities:** the higher-precedence (lower value) group wins. A lower-precedence group's `deny` does **not** beat a higher-precedence group's grant.
-- **Same priority:** `deny` wins, otherwise the highest level among the tied groups (`read` > `write` > `admin`).
+- **Same priority:** as implemented — `deny` wins only when 2+ groups grant at the tier; otherwise the first group in priority order decides (level is NOT maximized). DEFERRED: maximize level on ties.
 - A group with no grant on the endpoint contributes nothing, regardless of its priority (`deny`).
 - The claims-based model (`data-driven-permission-policy.md`) is unaffected — it keeps union/OR resolution (`permission-resolution.md`).
 
@@ -135,7 +135,7 @@ Given `(userId, tenantId, method, path)`:
 - `paramMatch(path)` uses `{param}`-aware matching (see `tenant-endpoint-catalog.md` §8: `/api/v1/appointments/{id}` matches `/api/v1/appointments/123`).
 - `levelOrdinal`: `deny`=-1, `admin`=98, `write`=99, `read`=100.
 - Group `priority` (`user_groups.priority`, **1 = highest**, lower value wins) decides which group's grant applies when multiple groups conflict. A lower-precedence `deny` does not beat a higher-precedence grant.
-- On a `priority` tie, `deny` wins, otherwise `read` > `write` > `admin`. Priority is irrelevant when no grant exists (`deny`).
+- On a `priority` tie, `deny` wins with 2+ granting groups, otherwise the first group in priority order decides (see §3.3 mirror note; DEFERRED: maximize level).
 - A user-level override of `deny` can re-enable; a user-level override of any level replaces the group result.
 
 ### 4.1 JWT `permissions` Claim Payload
@@ -208,9 +208,9 @@ tenant_endpoint_grant (
 
 **Invariants:**
 1. `group_id` + `tenant_id` (grant scope) + `method` + `path` is unique.
-2. `tenant_id` NULL means the grant applies in every tenant (platform-wide group on a platform-wide endpoint, or a platform-global group on a tenant endpoint that exists in all tenants).
+2. `tenant_id` NULL means the grant applies in every tenant (platform-wide group on a platform-wide endpoint, or a platform-global group on a tenant endpoint that exists in all tenants). As implemented, migrations enforce `tenant_id NOT NULL` — platform-wide grant rows are not yet persistable (DEFERRED migration to nullable).
 3. If `tenant_id` is set, it must reference a tenant whose catalog contains an entry for `(method, path)` in that tenant's scope — enforced at write-time.
-4. `level` ∈ {`read`, `write`, `admin`, `deny`}.
+4. `level` ∈ {`read`, `write`, `admin`, `deny`} is storable; the import path deletes rows on `deny` instead of storing (see `access-config-import-export.md` §5.4; DEFERRED unify).
 
 ### Table: `tenant_endpoint_override`
 
@@ -540,7 +540,7 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 
 1. Every grant/override references a cataloged endpoint that exists in the catalog for the same tenant scope (or platform-wide, `tenant_id NULL`) — enforced at write-time.
 2. Group grants are implicitly scoped by both the group's tenant and the grant's `tenant_id`; a tenant group cannot be granted levels on endpoints outside its tenant (except platform-wide `tenant_id NULL` endpoints).
-3. `deny` in any applicable group grant → `deny` for group resolution (short-circuits ordinal comparison).
+3. `deny` in the winning priority tier (2+ granting groups) → `deny` for group resolution (see §3.3 mirror note; DEFERRED full review).
 4. User-level override **replaces** (does not merge with) the group-resolution result for that endpoint.
 5. User overrides are tenant-scoped — a `tenant_id NULL` override applies in every tenant; a set `tenant_id` override applies only in that tenant.
 6. Platform-wide grants/overrides (`tenant_id NULL`) are creatable/modifiable by platform-admin (`loa-auth-admin`) only.
@@ -595,16 +595,16 @@ The JWT `permissions` claim (produced at login via §4.1) carries the resolved s
 | Kernel | `kernels/identity/entities/data-driven-permission-policy.md` (claims model) | Final, implemented (parallel model) |
 | Kernel | `kernels/identity/rules/permission-resolution.md` (deny-wins, override-last; endpoint model specializes with priority-wins) | Final, implemented |
 | Kernel | `kernels/identity/entities/user-group.md` (group entity + `tenant_id` + `priority`) | Draft, implemented |
-| Assembly (spec) | `tenant-endpoint-catalog.md` (catalog table + routes) | Final v3.1, **spec only — not implemented** |
-| Assembly (spec) | `group-permission-management.md` (group CRUD + claims grants) | Draft, **implemented** |
+| Assembly (spec) | `tenant-endpoint-catalog.md` (catalog table + routes) | Final v3.2, implemented (`EndpointGrantController`, routes + blade) |
+| Assembly (spec) | `group-permission-management.md` (group CRUD + claims grants) | Final v3.0, implemented |
 | Assembly (spec) | `tenant-group-endpoint-grants.md` | **Final v1.1** (Admin UI §8 added; **§3.3 group priority** added) |
-| Assembly (code) | Migration: `tenant_endpoint_grant`, `tenant_endpoint_override` tables + `user_groups.priority` column (1 = highest) | To implement |
-| Assembly (code) | Model: `TenantEndpointGrant`, `TenantEndpointOverride` | To implement |
-| Assembly (code) | Controller: extends `PermissionPolicyController` or new `EndpointGrantController` | To implement |
-| Assembly (code) | Middleware: extend `ClaimPolicyMiddleware` for level-based enforcement | To implement |
-| Assembly (code) | Controller: `AuthController::access()` — `GET /api/v1/auth/access` | To implement |
-| Assembly (routes) | `routes/web.php` — group endpoint grant routes under `/admin/tenants/{tenant}/groups/{group}/endpoints` | To add |
-| Assembly (routes) | `routes/api.php` — `GET /api/v1/auth/access` + admin API for grants/overrides | To add |
+| Assembly (code) | Migration: `tenant_endpoint_grant`, `tenant_endpoint_override` tables + `user_groups.priority` column (1 = highest) | Implemented (000021/000022) |
+| Assembly (code) | Model: `TenantEndpointGrant`, `TenantEndpointOverride` | Implemented |
+| Assembly (code) | Controller: `EndpointGrantController` (catalog + grants + overrides) | Implemented |
+| Assembly (code) | Middleware: level-based enforcement | Implemented (`PermissionPolicyService`, ordinals deny-1/read1/write2/admin3) |
+| Assembly (code) | Controller: `AuthController::access()` — `GET /api/v1/auth/access` | Implemented |
+| Assembly (routes) | `routes/web.php` — group endpoint grant routes under `/admin/tenants/{tenant}/groups/{group}/endpoints` | Added |
+| Assembly (routes) | `routes/api.php` — `GET /api/v1/auth/access` + admin API for grants/overrides | Added |
 
 ---
 

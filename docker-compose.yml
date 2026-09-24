@@ -164,6 +164,74 @@ services:
     networks:
       - loa
 
+  consult-app:
+    build:
+      context: ./assemblies/loa-consult-platform
+      dockerfile: docker/php/Dockerfile
+    image: loa-consult-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./assemblies/loa-consult-platform:/var/www/html
+    environment:
+      APP_ENV: local
+      APP_DEBUG: true
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: loa_consult
+      DB_USERNAME: loa
+      DB_PASSWORD: loa-secret
+      JWT_SECRET: dev-only-secret-change-before-production
+      JWT_ACCESS_TTL: 15
+      TENANT_SLUG: loa
+      AUTH_BASE_URL: http://auth-nginx
+      ENCRYPTION_KEY: base64:aQ0GFg4Sb84QdlaGQc5wiS17VFPCWOvKQZJ+/bUCRYE=
+      SEQ_URL: "http://seq:5341"
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - loa
+
+  consult-nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "9002:80"
+    volumes:
+      - ./assemblies/loa-consult-platform:/var/www/html
+      - ./assemblies/loa-consult-platform/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - consult-app
+    networks:
+      - loa
+
+  consult-scheduler:
+    image: loa-consult-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: ["php", "artisan", "schedule:work"]
+    volumes:
+      - ./assemblies/loa-consult-platform:/var/www/html
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: loa_consult
+      DB_USERNAME: loa
+      DB_PASSWORD: loa-secret
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - loa
+
   mysql:
     image: mysql:8.0
     restart: unless-stopped

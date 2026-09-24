@@ -293,7 +293,7 @@ if ($user && $user->status === 'pending') {
 
 **File:** `app/Http/Controllers/WebAuthController.php`
 
-### Remove
+### Remove (NOT YET REMOVED — methods remain, unrouted; DEFERRED delete)
 
 - `showRegister()` method
 - `register()` method
@@ -348,7 +348,7 @@ New behavior:
 
 **File:** `app/Http/Controllers/AuthController.php`
 
-### Remove
+### Remove (DEFERRED with WebAuthController cleanup — verify before closing)
 
 - `register()` method and its OpenAPI annotation
 
@@ -405,7 +405,7 @@ Schema::create('activations', function (Blueprint $table) {
 
 **File:** `resources/views/admin/users/create.blade.php`
 
-Changes:
+Specified changes (NOT YET IMPLEMENTED — as implemented, the form still collects `password` + `status` but the controller silently ignores both and forces `pending`; DEFERRED: strip the fields):
 - **Remove** the `status` dropdown (always `pending` for new users)
 - **Remove** the `password` field (user sets password during activation)
 - Keep `email` and `name` fields

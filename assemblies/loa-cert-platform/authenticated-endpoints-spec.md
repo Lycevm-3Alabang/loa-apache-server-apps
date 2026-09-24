@@ -1,6 +1,6 @@
 # LOA Cert Platform — Authenticated Endpoints Specification
 
-**Version:** 1.1 (Updated 2026-08-11 — C-Auth implemented)
+**Version:** 1.2 (Updated 2026-09-18 — code alignment: +lookup, +certificate-count, +public download, +11 service routes; 61 catalog entries)
 
 All API endpoints require authentication unless listed as "Public". Authentication uses JWT Bearer tokens validated locally via shared HMAC-SHA256 secret.
 
@@ -35,6 +35,7 @@ https://cert-api.lyceumalabang.edu.ph/api/v1
 |--------|------|-------------|
 | `GET` | `/verify/{certificate_number}` | Verify certificate by number |
 | `GET` | `/view/{id}` | Public read-only certificate viewer data |
+| `GET` | `/public/certificates/{id}/download` | Public PDF download (attachment) |
 
 ---
 
@@ -72,6 +73,7 @@ https://cert-api.lyceumalabang.edu.ph/api/v1
 
 | Method | Path | Required Level | Description |
 |--------|------|----------------|-------------|
+| `GET` | `/attendees/lookup` | `read` | Lookup attendee (literal route precedes `{id}` wildcards) |
 | `PATCH` | `/attendees/{id}` | `write` | Update an attendee |
 | `DELETE` | `/attendees/{id}` | `write` | Remove an attendee |
 | `DELETE` | `/attendees/{id}/with-cert` | `admin` | Delete attendee and their certificate |
@@ -86,6 +88,7 @@ https://cert-api.lyceumalabang.edu.ph/api/v1
 |--------|------|----------------|-------------|
 | `GET` | `/templates` | `read` | List templates |
 | `POST` | `/templates` | `write` | Create a template |
+| `GET` | `/templates/{id}/certificate-count` | `read` | Count certificates using a template |
 | `GET` | `/templates/{id}` | `read` | Get a template |
 | `PATCH` | `/templates/{id}` | `write` | Update a template |
 | `DELETE` | `/templates/{id}` | `write` | Delete a template |
@@ -100,7 +103,7 @@ https://cert-api.lyceumalabang.edu.ph/api/v1
 | `POST` | `/certificates` | `write` | Issue a single certificate |
 | `POST` | `/certificates/bulk` | `write` | Bulk issue certificates |
 | `POST` | `/certificates/upload` | `write` | Upload pre-rendered certificate PDF |
-| `GET` | `/certificates/qr` | `read` | Generate QR code for verification |
+| `GET` | `/certificates/{certificateNumber}/qr` | `read` | Generate QR code for verification |
 | `POST` | `/certificates/expire` | `admin` | Auto-revoke expired certificates |
 | `GET` | `/certificates/{id}` | `read` | Get a single certificate |
 | `GET` | `/certificates/{id}/pdf` | `read` | Stream PDF (inline) |
@@ -110,6 +113,26 @@ https://cert-api.lyceumalabang.edu.ph/api/v1
 | `POST` | `/certificates/{id}/email` | `write` | Send certificate email |
 | `GET` | `/certificates/{id}/email-logs` | `read` | List email delivery logs |
 | `POST` | `/certificates/{id}/reissue` | `admin` | Reissue a certificate |
+
+---
+
+## Service Proxy — Auth Platform (`/service/*`)
+
+Server-side proxy to the Auth Platform (see `auth-proxy.md`). JWT pass-through for users/groups; `X-Api-Key` injection for tenant members.
+
+| Method | Path | Required Level | Description |
+|--------|------|----------------|-------------|
+| `GET` | `/service/users` | `read` | List users (tenant-scoped via JWT) |
+| `GET` | `/service/users/{id}` | `read` | Get user detail |
+| `PATCH` | `/service/users/{id}/status` | `admin` | Enable/disable user |
+| `GET` | `/service/users/{id}/groups` | `read` | List user groups |
+| `POST` | `/service/users/{id}/groups` | `admin` | Add user to group |
+| `DELETE` | `/service/users/{id}/groups/{groupId}` | `admin` | Remove user from group |
+| `GET` | `/service/groups` | `read` | List groups |
+| `GET` | `/service/members` | `read` | List tenant members |
+| `POST` | `/service/members` | `admin` | Add existing user to tenant |
+| `DELETE` | `/service/members/{userId}` | `admin` | Revoke membership |
+| `POST` | `/service/members/invite` | `admin` | Invite new user |
 
 ---
 
@@ -135,7 +158,7 @@ All endpoints except those listed as "Public" require:
 1. `Authorization: Bearer <access_token>` header
 2. Valid JWT token issued by LOA Auth Platform
 3. Token validates locally using shared `JWT_SECRET` (HMAC-SHA256)
-4. Token must be of type `access`, not expired, and contain valid tenant claim (`tenant.slug = loa`)
+4. Token must be of type `access`, not expired, and contain valid tenant claim (`tenant.slug = loa-e-cert`)
 5. Caller must have sufficient level for the endpoint (checked against JWT `permissions` claim)
 
 **Middleware (enforced on every request):**
