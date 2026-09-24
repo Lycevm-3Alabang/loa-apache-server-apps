@@ -42,6 +42,8 @@
 
 - [ ] PARKED 2026-09-23 — get back later — DEC-5 `/service/*` proxy decision (record before any proxy code)
 
+- [ ] PARKED 2026-09-24 — get back later — Throttle-fix verification: `test-suite.md` Final v1.3 (CON-11) + base `TestCase` bypass landed; suite re-green paste pending (user runs `php artisan test`, expect 120 passed; 5 red were timing-flake 429s on `throttle:10,1` routes, prod throttle untouched)
+
 ---
 
 ## SPEC STATUS (consult platform)

@@ -4,9 +4,9 @@
 |-------|-------|
 | ID | CONSULT-TEST-001 |
 | Title | Consult Platform Test Suite |
-| Status | Final v1.2 (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24) |
+| Status | Final v1.3 (throttle bypass in tests, user-approved 2026-09-24) |
 | Owner | Consult Platform assembly |
-| Version | 1.2 Final |
+| Version | 1.3 Final |
 | Scope | Automated + manual verification for auth-layer §11 Steps 1–7 + domain slices B/C against Final specs; MySQL `loa_consult_test`; USER-run only |
 | Non-goals | Admin+import contracts (deferred), Phase E reports, cutover frontend, prod data, cross-app deploys |
 | Layer | Product Assembly (`assemblies/loa-consult-platform/`) |
@@ -33,6 +33,7 @@ Slices B (appointments/academic) and C (evaluations) plus auth-layer port are la
 - **CON-8** — Nothing MUST break `GET /api/v1/health → {status:ok, service:loa-consult-platform}`.
 - **CON-9** — Level gates MUST match `api-endpoints.md` Final v2.1 §5 + `config/consult-endpoints.php` (public 5 + catalog 104); `jwt.auth` before `jwt.endpoint`; `throttle:10,1` on callback/refresh.
 - **CON-10** — Tests MUST NOT assert internals (method calls) or invent envelopes/levels the specs forbid.
+- **CON-11** — `ThrottleRequests` MUST be bypassed in tests (base `TestCase::setUp` calls `withoutMiddleware`). Rationale: 16+ AuthTrio/RouteGating hits share the 10/min `throttle:10,1` buckets (counters persist across runs on file cache), so tail tests flake 429 by timing — no test asserts throttle behavior; production throttle stays untouched and is verified manually (single/min burst then 429).
 
 ## Goal
 
@@ -109,6 +110,6 @@ docker compose exec consult-app php artisan test --filter testName
 
 ## Document Control
 
-- **Status:** Final v1.2 (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24)
+- **Status:** Final v1.3 (CON-11 throttle bypass in tests, user-approved 2026-09-24)
 - **Created:** 2026-09-18 as v0.1; rewritten 2026-09-23 to §1.9 template (metadata + RFC 2119 + CON/DEC/ACC/D); promoted Final v1.0 2026-09-23; pointer refresh v1.1 2026-09-23
 - **Next:** implementation per ACC-*; admin+import coverage expands §5 when its contract lands
