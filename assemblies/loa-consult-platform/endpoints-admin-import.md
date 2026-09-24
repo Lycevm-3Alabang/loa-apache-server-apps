@@ -37,7 +37,7 @@ Slices B/C + auth-layer are COMPLETE (routes in `routes/api.php`, 13 controllers
 - **DEC-2** — Import: identity imports (users) live in Auth (`tenant-member-import`/`bulk-user-import`); consult imports domain attributes only via `preview` (dry-run) + per-domain `reference` + domain writes (`departments-courses`, `faculties`, `students` domain rows keyed by email link); `subjects`/`sections` reference-only in this phase.
 - **DEC-3** — Data/audit: `audit-logs` read; `evaluation-mappings` read; `export-consultations` admin export; `delete-students` + `reset-db` admin destructive with double-guard (level + explicit confirm field).
 - **DEC-4** — Access-config + user-permissions: read/export/paths read; writes/import/put admin. Observed frontend usage stays untouched until cutover.
-- **DEC-5** — `/service/*` proxy: OPEN — options are (a) direct Laravel handlers vs (b) thin proxy to legacy service. Decision MUST be recorded here before implementation; default is (a) unless legacy parity proves otherwise.
+- **DEC-5** — `/service/*` proxy: RESOLVED 2026-09-24 as (b) thin proxy to legacy service with `X-Api-Key` (mirroring cert/auth-proxy.md) because no `/service/*` routes found in consult assembly.
 
 ### Acceptance — Objective (machine-checkable)
 
