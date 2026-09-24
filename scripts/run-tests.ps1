@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Runs the full PHPUnit test suite for all three LOA assemblies.
+    Runs the PHPUnit test suite for one or all LOA assemblies.
 
 .DESCRIPTION
     Executes tests inside the Docker containers for the auth-platform,
@@ -9,6 +9,10 @@
     consult-platform require MySQL test databases which this script creates
     if missing (loa_cert_test, loa_consult_test). Suites run sequentially —
     never overlapping — since they share the MySQL server.
+
+.PARAMETER Target
+    Which assembly(s) to test: all | auth | cert | consult | consultation.
+    consultation is an alias for consult. Default: all.
 
 .PARAMETER AuthFilter
     Optional PHPUnit --filter expression for the auth-platform only.
@@ -20,7 +24,7 @@
     Optional --filter expression for the consult-platform only.
 
 .PARAMETER Filter
-    Optional PHPUnit --filter expression applied to ALL assemblies.
+    Optional PHPUnit --filter expression applied to selected assemblies.
 
 .PARAMETER TestDox
     Pass --testdox to PHPUnit for human-readable output.
@@ -28,6 +32,10 @@
 .EXAMPLE
     .\scripts\run-tests.ps1
     # Run all tests for all three assemblies.
+
+.EXAMPLE
+    .\scripts\run-tests.ps1 -Target cert
+    # Run only cert-platform tests.
 
 .EXAMPLE
     .\scripts\run-tests.ps1 -Filter AuthSsoTest
@@ -44,6 +52,9 @@
 
 [CmdletBinding()]
 param(
+    [ValidateSet('all', 'auth', 'cert', 'consult', 'consultation')]
+    [string] $Target = 'all',
+
     [string] $AuthFilter,
     [string] $CertFilter,
     [string] $ConsultFilter,
@@ -55,6 +66,14 @@ $ErrorActionPreference = 'Stop'
 
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
+
+if ($Target -eq 'consultation') { $Target = 'consult' }
+
+$selected = if ($Target -eq 'all') {
+    @('auth', 'cert', 'consult')
+} else {
+    @($Target)
+}
 
 $CertApp   = 'cert-app'
 $AuthApp   = 'auth-app'
@@ -102,52 +121,63 @@ function Ensure-TestDatabase {
 
 Write-Host 'LOA Test Runner' -ForegroundColor Green
 Write-Host "Root: $Root" -ForegroundColor DarkGray
+Write-Host "Target: $Target" -ForegroundColor Cyan
 
-# Ensure cert + consult test databases exist
-Ensure-TestDatabase -DatabaseName 'loa_cert_test'
-Ensure-TestDatabase -DatabaseName 'loa_consult_test'
+# Ensure selected test databases exist
+if ($selected -contains 'cert') {
+    Ensure-TestDatabase -DatabaseName 'loa_cert_test'
+}
+if ($selected -contains 'consult') {
+    Ensure-TestDatabase -DatabaseName 'loa_consult_test'
+}
 
 # ── Auth-platform tests ───────────────────────────────────────────
 
-$authArgs = @('php', 'vendor/bin/phpunit')
-if ($TestDox) { $authArgs += '--testdox' }
-if ($Filter)  { $authArgs += @('--filter', $Filter) }
-if ($AuthFilter) { $authArgs += @('--filter', $AuthFilter) }
+if ($selected -contains 'auth') {
+    $authArgs = @('php', 'vendor/bin/phpunit')
+    if ($TestDox) { $authArgs += '--testdox' }
+    if ($Filter)  { $authArgs += @('--filter', $Filter) }
+    if ($AuthFilter) { $authArgs += @('--filter', $AuthFilter) }
 
-Write-Host "`n============================================" -ForegroundColor Yellow
-Write-Host ' Auth-platform tests' -ForegroundColor Yellow
-Write-Host '============================================' -ForegroundColor Yellow
+    Write-Host "`n============================================" -ForegroundColor Yellow
+    Write-Host ' Auth-platform tests' -ForegroundColor Yellow
+    Write-Host '============================================' -ForegroundColor Yellow
 
-Invoke-Container -Service $AuthApp -Description 'Auth-platform PHPUnit' -Command $authArgs
+    Invoke-Container -Service $AuthApp -Description 'Auth-platform PHPUnit' -Command $authArgs
+}
 
 # ── Cert-platform tests ───────────────────────────────────────────
 
-$certArgs = @('php', 'vendor/bin/phpunit')
-if ($TestDox) { $certArgs += '--testdox' }
-if ($Filter)  { $certArgs += @('--filter', $Filter) }
-if ($CertFilter) { $certArgs += @('--filter', $CertFilter) }
+if ($selected -contains 'cert') {
+    $certArgs = @('php', 'vendor/bin/phpunit')
+    if ($TestDox) { $certArgs += '--testdox' }
+    if ($Filter)  { $certArgs += @('--filter', $Filter) }
+    if ($CertFilter) { $certArgs += @('--filter', $CertFilter) }
 
-Write-Host "`n============================================" -ForegroundColor Yellow
-Write-Host ' Cert-platform tests' -ForegroundColor Yellow
-Write-Host '============================================' -ForegroundColor Yellow
+    Write-Host "`n============================================" -ForegroundColor Yellow
+    Write-Host ' Cert-platform tests' -ForegroundColor Yellow
+    Write-Host '============================================' -ForegroundColor Yellow
 
-Invoke-Container -Service $CertApp -Description 'Cert-platform PHPUnit' -Command $certArgs
+    Invoke-Container -Service $CertApp -Description 'Cert-platform PHPUnit' -Command $certArgs
+}
 
 # ── Consult-platform tests ────────────────────────────────────────
 # Consult runs via `php artisan test` per test-suite.md D-7 (RefreshDatabase
 # against loa_consult_test; bootstrap pins the test DB).
 
-$consultArgs = @('php', 'artisan', 'test')
-if ($TestDox) { $consultArgs += '--testdox' }
-if ($Filter)  { $consultArgs += @('--filter', $Filter) }
-if ($ConsultFilter) { $consultArgs += @('--filter', $ConsultFilter) }
+if ($selected -contains 'consult') {
+    $consultArgs = @('php', 'artisan', 'test')
+    if ($TestDox) { $consultArgs += '--testdox' }
+    if ($Filter)  { $consultArgs += @('--filter', $Filter) }
+    if ($ConsultFilter) { $consultArgs += @('--filter', $ConsultFilter) }
 
-Write-Host "`n============================================" -ForegroundColor Yellow
-Write-Host ' Consult-platform tests' -ForegroundColor Yellow
-Write-Host '============================================' -ForegroundColor Yellow
+    Write-Host "`n============================================" -ForegroundColor Yellow
+    Write-Host ' Consult-platform tests' -ForegroundColor Yellow
+    Write-Host '============================================' -ForegroundColor Yellow
 
-Invoke-Container -Service $ConsultApp -Description 'Consult-platform artisan test' -Command $consultArgs
+    Invoke-Container -Service $ConsultApp -Description 'Consult-platform artisan test' -Command $consultArgs
+}
 
 # ── Done ──────────────────────────────────────────────────────────
 
-Write-Host "`nAll tests passed." -ForegroundColor Green
+Write-Host "`nAll selected tests passed." -ForegroundColor Green

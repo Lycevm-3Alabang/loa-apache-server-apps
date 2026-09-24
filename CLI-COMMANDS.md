@@ -7,7 +7,10 @@ All commands run from repo root `D:\loa\loa-apache-server-apps` unless noted.
 ## Full Reset
 
 ```powershell
-.\scripts\reset-all.ps1                    # Teardown + rebuild + migrate + seed + Swagger
+.\scripts\reset-all.ps1                    # Teardown + rebuild + migrate + seed + Swagger (all apps)
+.\scripts\reset-all.ps1 -Target cert       # Same, but provision only cert (teardown still global)
+.\scripts\reset-all.ps1 -Target auth       # Provision only auth
+.\scripts\reset-all.ps1 -Target consultation  # Provision only consult (alias: consult)
 .\scripts\reset-all.ps1 -SkipProvision     # Infrastructure only (no migrate/seed)
 .\scripts\reset-all.ps1 -SkipUp            # Teardown only (no restart)
 ```
@@ -121,8 +124,12 @@ docker compose exec cert-app php artisan l5-swagger:generate
 ## Mega Pipeline (all-in-one)
 
 ```powershell
-.\mega.ps1                         # Reset → Test → Dump Auth → Dump Cert → Open builds
-.\mega.ps1 -SkipReset              # Skip reset, run tests + dumps
+.\mega.ps1                         # Reset → Test → Dump Auth+Cert+Consult → Open builds
+.\mega.ps1 -Target cert            # Reset+test+dump/zip only for cert
+.\mega.ps1 -Target auth            # Reset+test+dump/zip only for auth
+.\mega.ps1 -Target consultation    # Reset+test+dump/zip only for consult (alias: consult)
+.\mega.ps1 -Target cert -SkipReset # Skip reset; tests + dump/zip cert only
+.\mega.ps1 -SkipReset              # Skip reset, run tests + dumps (all)
 .\mega.ps1 -SkipTests              # Skip tests, run reset + dumps
 .\mega.ps1 -DumpPath E:\custom     # Custom output directory
 ```
