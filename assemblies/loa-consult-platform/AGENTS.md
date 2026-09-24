@@ -216,7 +216,7 @@ envelope migration without a spec.
 | `endpoints-academic/appointments/evaluations.md` v1.0–v1.1 | FINAL — module contracts (academic/evaluations v1.1 flat) |
 | `docker-compose-spec.md` v1.1 | FINAL — root-stack wiring `:9002` (tenant `loa-consultation`) |
 | `data-model.md` v1.3 | FINAL — shape contract (source-verified M17/M19/M21/M26/M27/M30/M31); §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
-| `test-suite.md` v1.2 | FINAL — auth + B/C contract (CON/ACC/D), user-run sequential, v2.1 pointers (tenant `loa-consultation`) |
+| `test-suite.md` v1.3 | FINAL — auth + B/C contract (CON/ACC/D), user-run sequential, v2.1 pointers, tenant `loa-consultation`, CON-11 throttle bypass |
 | `LOCAL-DEV-RUNBOOK.md` v1.0 | FINAL — local dev setup (wired + green) |
 | `DEPLOY.md` v1.0 | FINAL — deployment guide (cert-patterned) |
 | `FRONTEND-INTEGRATION.md` v1.0 | FINAL — cutover checklist (backend green; topology OPEN) |
