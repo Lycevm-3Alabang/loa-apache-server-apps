@@ -1,6 +1,6 @@
 # Certificate Platform Rules — Template Locking, Visibility, File Storage & Issuance Invariants
 
-**Version:** 1.0
+**Version:** 1.1
 **Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Engineers, AI Development Agents
@@ -700,11 +700,23 @@ ALTER TABLE organizations ADD COLUMN website VARCHAR(255) NULL AFTER slug;
 
 **Auth:** None (public endpoint, org-scoped).
 
-**Success 200:** `Content-Type: application/pdf`, `Content-Disposition: attachment`.
+**Success 200:** `Content-Type: application/pdf`, `Content-Disposition: attachment`. Source follows serving priority (§3.5): uploaded `file` mode bytes first (same as email attachment), DomPDF template fallback.
 
 **Error 404:** certificate not found.
 
 **Error 410:** certificate revoked or expired.
+
+### `GET /api/v1/view/{id}` — Public Viewer Data
+
+**Auth:** None (public endpoint, org-scoped).
+
+**Success 200** includes `data.generation_mode` (`template` | `file`) resolved from linked `event_attendees.metadata.generation_mode` (default `template` when no attendee / missing key). Frontend `/view/{id}` uses this flag: `file` → fetch public download bytes for preview; `template` → render HTML template as today.
+
+### `GET /api/v1/verify/{certificate_number}` — Public Verify
+
+**Auth:** None (public endpoint, org-scoped).
+
+**Success 200** includes `data.generation_mode` (`template` | `file`) — same resolution as `/view/{id}`. Frontend `/verify/{number}` **MUST hide** the “Preview Certificate” link when `generation_mode === 'file'` (uploaded source; no system-generated canvas preview). Show the link only for `template`.
 
 ## 7.5 Identified Gaps
 
@@ -740,7 +752,7 @@ Rationale: email recipients do not have JWT tokens. The download link must work 
 3. Filter by `organization_id` — 404 if not found.
 4. Check `status` — 410 if `revoked` or `expired`.
 5. Log audit event: `certificate.downloaded`, channel: `email`.
-6. Return PDF via `PdfService::downloadCertificatePdf()`.
+6. Return PDF via `CertificateStorage::download()` (file mode → same bytes as email attachment; template mode → DomPDF).
 
 **Error responses:**
 

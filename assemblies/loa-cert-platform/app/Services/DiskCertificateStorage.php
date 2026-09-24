@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Interfaces\CertificateStorage;
 use App\Models\Certificate;
+use App\Models\EventAttendee;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 
@@ -48,20 +49,48 @@ class DiskCertificateStorage implements CertificateStorage
 
     public function pdf(Certificate $certificate): Response
     {
+        $binary = $this->emailAttachment($certificate);
+
+        if ($binary !== null) {
+            return response($binary, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $certificate->certificate_number . '.pdf"',
+            ]);
+        }
+
         return $this->pdfService->streamCertificatePdf($certificate);
     }
 
     public function download(Certificate $certificate): Response
     {
+        $binary = $this->emailAttachment($certificate);
+
+        if ($binary !== null) {
+            return response($binary, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $certificate->certificate_number . '.pdf"',
+            ]);
+        }
+
         return $this->pdfService->downloadCertificatePdf($certificate);
     }
 
     public function emailAttachment(Certificate $certificate): ?string
     {
-        if ($certificate->file_path && Storage::disk('local')->exists($certificate->file_path)) {
+        $metadata = $this->attendeeMetadata($certificate);
+        $mode = $metadata['generation_mode'] ?? 'template';
+
+        if ($mode === 'file' && $certificate->file_path && Storage::disk('local')->exists($certificate->file_path)) {
             return Storage::disk('local')->get($certificate->file_path);
         }
 
         return null;
+    }
+
+    private function attendeeMetadata(Certificate $certificate): array
+    {
+        $attendee = EventAttendee::where('certificate_id', $certificate->id)->first();
+
+        return $attendee?->metadata ?? [];
     }
 }

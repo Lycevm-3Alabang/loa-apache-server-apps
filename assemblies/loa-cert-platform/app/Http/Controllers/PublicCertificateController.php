@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Interfaces\CertificateStorage;
 use App\Models\AuditLog;
 use App\Models\Certificate;
+use App\Models\EventAttendee;
 use App\Services\QrCodeService;
 use App\Models\Organization;
 use App\Services\AuditLogger;
@@ -24,6 +26,7 @@ use OpenApi\Attributes as OA;
     new OA\Property(property: "status", type: "string", enum: ["active", "revoked", "expired"]),
     new OA\Property(property: "recipient_name", type: "string"),
     new OA\Property(property: "event_name", type: "string", nullable: true),
+    new OA\Property(property: "generation_mode", type: "string", enum: ["template", "file"]),
     new OA\Property(property: "organization", ref: "#/components/schemas/PublicOrganization"),
 ])]
 class PublicCertificateController extends Controller
@@ -31,6 +34,7 @@ class PublicCertificateController extends Controller
     public function __construct(
         private readonly AuditLogger $auditLogger,
         private readonly QrCodeService $qrCodeService,
+        private readonly CertificateStorage $certificateStorage,
     ) {
     }
 
@@ -83,6 +87,7 @@ class PublicCertificateController extends Controller
                 'recipient_name' => $certificate->recipient_name,
                 'recipient_email' => $certificate->recipient_email,
                 'event_name' => $certificate->event?->name,
+                'generation_mode' => $this->resolveGenerationMode($certificate),
                 'organization' => [
                     'name' => $this->resolveOrganizationName(),
                 ],
@@ -98,7 +103,11 @@ class PublicCertificateController extends Controller
             new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "string", format: "uuid")),
         ],
         responses: [
-            new OA\Response(response: 200, description: "Viewer data"),
+            new OA\Response(response: 200, description: "Viewer data", content: new OA\JsonContent(properties: [
+                new OA\Property(property: "data", type: "object", properties: [
+                    new OA\Property(property: "generation_mode", type: "string", enum: ["template", "file"]),
+                ]),
+            ])),
             new OA\Response(response: 404, description: "Not found"),
             new OA\Response(response: 410, description: "Revoked"),
         ]
@@ -144,6 +153,7 @@ class PublicCertificateController extends Controller
                     'expires_at' => $certificate->expires_at?->toIso8601String(),
                     'revoked_at' => $certificate->revoked_at?->toIso8601String(),
                 ],
+                'generation_mode' => $this->resolveGenerationMode($certificate),
                 'template' => $certificate->template ? [
                     'name' => $certificate->template->name,
                     'html_content' => $certificate->template->html_content,
@@ -208,7 +218,7 @@ class PublicCertificateController extends Controller
         );
 
         try {
-            return app(\App\Services\PdfService::class)->downloadCertificatePdf($certificate);
+            return $this->certificateStorage->download($certificate);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -220,6 +230,15 @@ class PublicCertificateController extends Controller
     private function resolveOrganizationId(): string
     {
         return config('cert-platform.organization_id', '00000000-0000-0000-0000-000000000001');
+    }
+
+    private function resolveGenerationMode(Certificate $certificate): string
+    {
+        $attendee = EventAttendee::where('certificate_id', $certificate->id)->first();
+        $metadata = $attendee?->metadata ?? [];
+        $mode = $metadata['generation_mode'] ?? 'template';
+
+        return in_array($mode, ['template', 'file'], true) ? $mode : 'template';
     }
 
     private function resolveOrganizationName(): string

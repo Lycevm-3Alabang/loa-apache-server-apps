@@ -1,7 +1,7 @@
 # LOA Cert Platform — API Endpoints
 ## Product Assembly Component Specification
 
-**Version:** 1.8
+**Version:** 1.9
 **Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -977,12 +977,14 @@ Verify a certificate by its public number.
     "status": "active",
     "recipient_name": "Maria Santos",
     "event_name": "SPARK Bootcamp 2026",
+    "generation_mode": "template",
     "organization": { "name": "Lyceum of Alabang" }
   }
 }
 ```
 
 - `valid` is `false` when status is `revoked` or `expired` (still returns 200 with status).
+- `generation_mode` is `file` when the linked attendee has `metadata.generation_mode=file` (uploaded); otherwise `template`. Frontend may hide `/view` preview for `file` mode.
 - **404** when the number does not exist (cached 60s).
 - **Cache:** `Cache-Control: public, s-maxage=300, stale-while-revalidate=600`.
 - **Audit:** logs `certificate.viewed`.
@@ -1008,6 +1010,7 @@ Public read-only certificate viewer data.
       "expires_at": "2026-09-15T23:59:59Z",
       "revoked_at": null
     },
+    "generation_mode": "template",
     "template": { "name": "SPARK Bootcamp Certificate", "html_content": "...", "css_content": "..." },
     "event": { "id": "uuid", "name": "SPARK Bootcamp 2026", "event_date": "2026-08-15", "location": "Multipurpose Hall" },
     "qr_data_url": "data:image/png;base64,...",
@@ -1016,10 +1019,12 @@ Public read-only certificate viewer data.
 }
 ```
 
+`generation_mode` is `file` when the linked attendee has `metadata.generation_mode=file` (uploaded PDF — same source as email attachment); otherwise `template`.
+
 **Errors:** 404 (not found), 410 (revoked).
 
 ### `GET /api/v1/public/certificates/{id}/download`
-Public PDF download (attachment, no auth).
+Public PDF download (attachment, no auth). Serves via `CertificateStorage::download()` — uploaded file bytes when `generation_mode=file`, DomPDF template otherwise.
 
 **Response 200:** PDF binary, `Content-Disposition: attachment; filename="<certificate_number>.pdf"`. **Errors:** 404 (not found), 410 (revoked).
 
@@ -1683,4 +1688,4 @@ The import payload for Auth `POST /api/v1/admin/tenants/{tenant}/endpoints/bulk`
 
 ## Document Control
 
-- **Status:** Final v1.7 — 2026-09-07: **Certificate rules spec** (`certificate-rules-spec.md` Final v1.0): template lock check on issuance (Gap 1), upload disk unification (Gap 5), file cleanup on delete (Gap 7). Endpoint catalog expanded from 48 to 57 entries (added `templates/{id}/certificate-count`, `attendees/lookup`, 7 `service/*` routes). v1.6 (2026-08-24): **Template visibility** (governing spec: e-cert repo `specs/components/template-visibility.md` Final v1.1). Templates gain `visibility` (`public`|`private`, default private on API create) + `updated_by`; list/show masked to owners/cert-admin (404 masking); PATCH `visibility` gated owner-or-admin (403); clone endpoints return 404 for non-visible sources and attribute clones to the cloner; event template references validated (422). Implementation commit `9904746`. v1.5 (2026-08-11): **C-Auth implemented** (§13 items marked done). Auth endpoints (callback/refresh/logout) live; `jwt.auth` + `jwt.endpoint` middleware enforced on all non-public routes; 126 tests green. v1.4 (2026-08-06): decision #20 — auth deferred. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`. v1.8 (2026-09-18): **Code-alignment audit** — ordinals corrected to middleware (`read=1`, `write=2`, `admin=3`); tenant slug fixed to `loa-e-cert`; added `GET /public/certificates/{id}/download` (§5.6, §6); §6 completed (lookup, certificate-count, dashboard, audit-logs, 11 `service/*`); Appendix A fixed to 61 entries (service status/members/invite `write`→`admin` per config; added `service/users/{id}` + `service/users/{id}/groups` trio); totals corrected to 64 domain (61 gated + 3 public).
+- **Status:** Final v1.9 — 2026-09-24: public `GET /verify/{n}` and `GET /view/{id}` return `generation_mode`; public download serves uploaded file bytes via `CertificateStorage` (file mode = email attachment source); e-cert hides Preview Certificate on verify for `file` mode. v1.7 — 2026-09-07: **Certificate rules spec** (`certificate-rules-spec.md` Final v1.0): template lock check on issuance (Gap 1), upload disk unification (Gap 5), file cleanup on delete (Gap 7). Endpoint catalog expanded from 48 to 57 entries (added `templates/{id}/certificate-count`, `attendees/lookup`, 7 `service/*` routes). v1.6 (2026-08-24): **Template visibility** (governing spec: e-cert repo `specs/components/template-visibility.md` Final v1.1). Templates gain `visibility` (`public`|`private`, default private on API create) + `updated_by`; list/show masked to owners/cert-admin (404 masking); PATCH `visibility` gated owner-or-admin (403); clone endpoints return 404 for non-visible sources and attribute clones to the cloner; event template references validated (422). Implementation commit `9904746`. v1.5 (2026-08-11): **C-Auth implemented** (§13 items marked done). Auth endpoints (callback/refresh/logout) live; `jwt.auth` + `jwt.endpoint` middleware enforced on all non-public routes; 126 tests green. v1.4 (2026-08-06): decision #20 — auth deferred. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`. v1.8 (2026-09-18): **Code-alignment audit** — ordinals corrected to middleware (`read=1`, `write=2`, `admin=3`); tenant slug fixed to `loa-e-cert`; added `GET /public/certificates/{id}/download` (§5.6, §6); §6 completed (lookup, certificate-count, dashboard, audit-logs, 11 `service/*`); Appendix A fixed to 61 entries (service status/members/invite `write`→`admin` per config; added `service/users/{id}` + `service/users/{id}/groups` trio); totals corrected to 64 domain (61 gated + 3 public).

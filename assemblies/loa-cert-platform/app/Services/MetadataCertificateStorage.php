@@ -6,6 +6,7 @@ use App\Interfaces\CertificateStorage;
 use App\Models\Certificate;
 use App\Models\EventAttendee;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 
 class MetadataCertificateStorage implements CertificateStorage
 {
@@ -43,7 +44,7 @@ class MetadataCertificateStorage implements CertificateStorage
 
     public function pdf(Certificate $certificate): Response
     {
-        $binary = $this->resolvePdfBinary($certificate);
+        $binary = $this->resolveServeBinary($certificate);
 
         if ($binary === null) {
             return $this->pdfService->streamCertificatePdf($certificate);
@@ -57,7 +58,7 @@ class MetadataCertificateStorage implements CertificateStorage
 
     public function download(Certificate $certificate): Response
     {
-        $binary = $this->resolvePdfBinary($certificate);
+        $binary = $this->resolveServeBinary($certificate);
 
         if ($binary === null) {
             return $this->pdfService->downloadCertificatePdf($certificate);
@@ -71,7 +72,25 @@ class MetadataCertificateStorage implements CertificateStorage
 
     public function emailAttachment(Certificate $certificate): ?string
     {
-        return $this->resolvePdfBinary($certificate);
+        return $this->resolveServeBinary($certificate);
+    }
+
+    private function resolveServeBinary(Certificate $certificate): ?string
+    {
+        $metadataBinary = $this->resolvePdfBinary($certificate);
+        if ($metadataBinary !== null) {
+            return $metadataBinary;
+        }
+
+        $attendee = EventAttendee::where('certificate_id', $certificate->id)->first();
+        $metadata = $attendee?->metadata ?? [];
+        $mode = $metadata['generation_mode'] ?? 'template';
+
+        if ($mode === 'file') {
+            return $this->readFromDisk($certificate);
+        }
+
+        return null;
     }
 
     private function resolvePdfBinary(Certificate $certificate): ?string
@@ -87,11 +106,23 @@ class MetadataCertificateStorage implements CertificateStorage
 
         if ($mode === 'file' && !empty($metadata['file_data'])) {
             $raw = $metadata['file_data'];
+            if (str_starts_with($raw, 'data:')) {
+                $raw = substr($raw, strpos($raw, ',') + 1);
+            }
             $decoded = base64_decode($raw, true);
 
             if ($decoded !== false) {
                 return $decoded;
             }
+        }
+
+        return null;
+    }
+
+    private function readFromDisk(Certificate $certificate): ?string
+    {
+        if ($certificate->file_path && Storage::disk('local')->exists($certificate->file_path)) {
+            return Storage::disk('local')->get($certificate->file_path);
         }
 
         return null;

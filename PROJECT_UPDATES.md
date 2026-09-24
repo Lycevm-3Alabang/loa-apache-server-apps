@@ -70,10 +70,11 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 ### Cert — `assemblies/loa-cert-platform/`
 
 - **Status:** C-Auth complete (2026-08-11). All endpoints behind `jwt.auth` + `jwt.endpoint`; SSO trio live. Retrofit phases A–H COMPLETE (e-cert SPA: auth swap, data swap, cleanup, decommission, JWT/audit tests, OpenAPI).
-- **Source of truth:** `api-endpoints.md` Final v1.8 (61 gated + 3 domain-public + 3 SSO = 64 domain rows), `legacy-e-cert-integration.md` Final v2.2, `authenticated-endpoints-spec.md` v1.2.
+- **Source of truth:** `api-endpoints.md` Final v1.9 (61 gated + 3 domain-public + 3 SSO = 64 domain rows), `legacy-e-cert-integration.md` Final v2.2, `authenticated-endpoints-spec.md` v1.2.
 - **Done (latest):** template visibility (commit `9904746`, 23 tests); post-reset redirect (`28f152e`, log-viewer routes); refresh-cookie crash fix (`Cookie::queue()`); 413 JSON handler (419-CSRF handling unevidenced — claim corrected); parametrized dist builds.
+- **2026-09-24 — Public view/download file mode:** `GET /view/{id}` returns `data.generation_mode`; `publicDownload` + storage `pdf`/`download` serve uploaded bytes first (same as email attachment) with disk fallback in file mode; e-cert `/view/[id]` loads public download blob when mode is `file` (no JWT attendee calls). Specs: `certificate-rules-spec.md` §7.4/§8.3, `api-endpoints.md` v1.9. Tests: `PublicCertificateTest` +2 (mode + upload bytes).
 - **Known gaps:** local seed has no organization → FK 1452 on template/certificate writes (needs seeder); certificate owner-rule check missing on show/pdf/download (only `MeController` scopes); QR route shape code-vs-spec drift (`/{n}/qr` vs `?certificate_number=`); `test-suite.md` still Draft (says SQLite, actual MySQL `loa_cert_test`).
-- **Next:** auth/cert deploy; cert org seeder.
+- **Next:** auth/cert deploy; cert org seeder; user-run cert tests after public view change.
 
 ### Consult — `assemblies/loa-consult-platform/` (spec program **ACTIVE** 2026-09-24)
 
@@ -101,7 +102,9 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 ### Completed
 - **Tenant rename `loa` → `loa-consultation` (user-approved, own-tenant cert pattern):** 5 specs to Final (`api-endpoints.md` v2.1, `auth-integration.md` v1.5, `consult-readiness.md` v1.6, `test-suite.md` v1.2, `docker-compose-spec.md` v1.1); code/config/tests/runbooks/AGENTS updated (3 defaults, phpunit+bootstrap, 11 test files, `.env.example`, DEPLOY/FRONTEND-INTEGRATION); trackers reconciled (TODO/PROJECT/this file). Pending (user runs): real `.env` slug, Auth re-provisioning, suite re-green paste.
 - **Runbook promotions 2026-09-24 (user-approved):** `LOCAL-DEV-RUNBOOK.md`/`DEPLOY.md`/`FRONTEND-INTEGRATION.md` v0.1 → **Final v1.0** (stale sections refreshed, DEPLOY cert-patterned, topology OPEN until cutover); consult spec program 100% Final.
+- **Cert public view/upload preview (user-requested):** `/view/{id}` + `/verify/{n}` return `generation_mode`; public download uses `CertificateStorage` (upload bytes = email attachment); e-cert `/view/[id]` loads public PDF blob when `file` (no JWT); e-cert `/verify/{n}` hides “Preview Certificate” when `generation_mode=file`. Specs: `certificate-rules-spec.md` v1.1, `api-endpoints.md` v1.9. Tests added in `PublicCertificateTest` (user-run).
 
 ### Next Action
+- [ ] Cert: user runs `docker compose exec cert-app php artisan test tests/Feature/Api/PublicCertificateTest.php` → paste green; e-cert `npm run lint` / `npm run test`; verify `/view/{id}` for uploaded cert matches email attachment
 - [ ] Tenant rollout finish (user runs): real `.env` `TENANT_SLUG=loa-consultation` → Auth re-provisioning (tenant + aces-* + 104+5 catalog/grants) → consult suite re-green paste → Auth JSON regen 118→104+5 at deploy time
 - [ ] P6 PARKED items only (DEC-5 + Phase E + §8 provisioning — see TODO PLANNED). Planning FLUSHED 2026-09-23; runbooks Final v1.0 2026-09-24; drift fixes done green (120 passed).
