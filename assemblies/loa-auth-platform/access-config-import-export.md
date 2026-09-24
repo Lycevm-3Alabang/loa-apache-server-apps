@@ -313,13 +313,17 @@ For each override in `user_overrides[]`:
 3. Upsert `TenantEndpointOverride` matching on `(user_id, tenant_id, method, path)`.
 4. Overrides not present in the JSON are **left untouched**.
 
-### 5.4 "none" Level Handling
+### 5.4 "none" Level Handling (DEAD PATH — validator accepts `read,write,admin,deny` only)
+
+If a grant or override has `"level": "none"` (fails validation as implemented — documented for round-trip intent):
 
 If a grant or override has `"level": "none"`:
 - **Grants:** delete the `TenantEndpointGrant` row if it exists (revert to default resolution). If the row does not exist, this is a silent no-op.
 - **Overrides:** delete the `TenantEndpointOverride` row if it exists (revert to group resolution). If the row does not exist, this is a silent no-op.
 
 This allows the JSON to explicitly revoke access. The response reports `"skipped": 0` for no-op deletions (the row was already absent).
+
+Live path as implemented: `"level": "deny"` deletes the row (§10.1 validator; §6 design rules). DEFERRED: either accept `"none"` in the validator or remove this section.
 
 ### 5.5 Platform-Wide Groups
 

@@ -5,8 +5,8 @@
 .DESCRIPTION
     Tears down EVERY Docker Compose stack defined in this repo (root + auth + cert
     assemblies), removes their volumes, prunes dangling Docker resources, then
-    rebuilds and starts the root stack and provisions both apps
-    (migrate -> seed -> Swagger).
+    rebuilds and starts the root stack and provisions all three apps
+    (migrate -> seed -> Swagger; consult has no seeds per docker-compose-spec §7).
 
     This clears the *whole* Docker resource surface, not just the root 'loa-platform'
     project. The assembly-local stacks ('loa-auth', 'loa-cert') share host ports
@@ -15,6 +15,7 @@
         "Bind for 0.0.0.0:<port> failed: port is already allocated"
     leaving services in 'Created' and `docker compose exec ...` failing with
     'service "<name>" is not running'. This script tears them all down first.
+    (Consult has no assembly-local stack — it runs in the root stack only.)
 
 .PARAMETER SkipProvision
     Only reset infrastructure (down -v + prune + up --build).
@@ -25,7 +26,7 @@
 
 .EXAMPLE
     .\scripts\reset-all.ps1
-    # Full teardown, rebuild, and provisioning of both apps.
+    # Full teardown, rebuild, and provisioning of all three apps.
 
 .EXAMPLE
     .\scripts\reset-all.ps1 -SkipProvision
@@ -68,6 +69,8 @@ docker compose exec auth-app mkdir -p /var/www/html/storage/framework/cache/data
 docker compose exec auth-app chown -R www-data:www-data /var/www/html/storage/framework/cache
 docker compose exec cert-app mkdir -p /var/www/html/storage/framework/cache/data
 docker compose exec cert-app chown -R www-data:www-data /var/www/html/storage/framework/cache
+docker compose exec consult-app mkdir -p /var/www/html/storage/framework/cache/data
+docker compose exec consult-app chown -R www-data:www-data /var/www/html/storage/framework/cache
 
 if ($SkipProvision) {
     Write-Host 'SkipProvision set: skipping migrate/seed/Swagger. Once the apps are healthy, run:'
@@ -77,6 +80,9 @@ if ($SkipProvision) {
     Write-Host '  docker compose exec cert-app php artisan migrate --force'
     Write-Host '  docker compose exec cert-app php artisan db:seed --force'
     Write-Host '  docker compose exec cert-app php artisan l5-swagger:generate'
+    Write-Host '  docker compose exec consult-app php artisan migrate --force'
+    Write-Host '  docker compose exec consult-app php artisan l5-swagger:generate'
+    Write-Host '  (consult has no db:seed — no seeds per docker-compose-spec §7)'
     exit 0
 }
 
@@ -92,4 +98,17 @@ docker compose exec cert-app php artisan migrate --force
 docker compose exec cert-app php artisan db:seed --force
 docker compose exec cert-app php artisan l5-swagger:generate
 
-Write-Host 'Done.  Auth UI: http://localhost:8080  |  Cert UI: http://localhost:9001  |  Seq: http://localhost:5341'
+Write-Host '7) Installing dependencies + migrating the consult app (no seeds per docker-compose-spec §7)...'
+docker compose exec consult-app composer install --no-interaction
+docker compose exec consult-app php artisan migrate --force
+# Swagger is best-effort for consult: app/ has no #[OA\Info] attributes yet,
+# so l5-swagger:generate exits 1. Warn and continue — the API is unaffected.
+docker compose exec consult-app php artisan l5-swagger:generate
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning 'consult l5-swagger:generate skipped (no @OA\Info in app/ yet) — continuing.'
+    # NOTE: must write session-global. A bare `$LASTEXITCODE = 0` only shadows
+    # it in this script's scope and mega.ps1 would still read exit 1.
+    $global:LASTEXITCODE = 0
+}
+
+Write-Host 'Done.  Auth UI: http://localhost:8080  |  Cert UI: http://localhost:9001  |  Consult API: http://localhost:9002  |  Seq: http://localhost:5341'

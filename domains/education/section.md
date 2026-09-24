@@ -1,9 +1,8 @@
-# domains/education/section.md
-
 # Section Domain
-## Domain Specification
 
-**Version:** 1.0
+## Education Domain Specification
+
+**Version:** 1.1
 **Status:** Draft
 **Layer:** Industry Domain
 **Industry Pack:** Education
@@ -11,64 +10,64 @@
 
 ---
 
-# 1. Purpose
+## 1. Purpose
 
-The Section Domain defines the canonical representation of class groupings within a program.
+The Section Domain defines the canonical representation of classroom and schedule assignments within the Education Domain Pack.
 
-It owns section identity, name, program affiliation, and classification.
+It owns section identity, schedule, room, and section status. Section is a **logistical** concept — it groups students for scheduling purposes but is **loosely coupled** from enrollment.
 
 The Section Domain answers:
 
-> **"Which class grouping is this?"**
+> **"When and where does this class meet?"**
 
-It does not determine enrollment, scheduling, or evaluation.
+It does not determine enrollment, faculty loading, evaluation, or consultation.
 
 ---
 
-# 2. Responsibilities
+## 2. Responsibilities
 
 The Section Domain is responsible for:
 
 - section identity
-- section name
-- program affiliation
-- section classification
+- schedule (when classes meet)
+- room assignment (where classes meet)
+- section status (active/inactive)
 - section validation
 - section events
 
 ---
 
-# 3. What the Section Domain Owns
+## 3. What the Section Domain Owns
 
 Examples include:
 
 - Section
 - Section Name
-- Program
-- Department Course
+- Schedule
+- Room
 - Section Status
 
 These concepts belong exclusively to the Section Domain.
 
 ---
 
-# 4. What the Section Domain Does NOT Own
+## 4. What the Section Domain Does NOT Own
 
 The Section Domain does not own:
 
-- Students
-- Faculty
-- Subjects
-- Enrollments
-- Consultations
-- Evaluations
-- Semesters
+- Student enrollment — belongs to Enrollment Domain
+- Faculty loading — belongs to Faculty Loading Domain
+- Student identity — belongs to Student Domain
+- Faculty identity — belongs to Faculty Domain
+- Subject identity — belongs to Subject Domain
+- Consultations — belongs to Consultation Business Context
+- Evaluations — belongs to Evaluation Business Context
 
 Those belong to Platform Kernels, other Domains, or Business Contexts.
 
 ---
 
-# 5. Ownership
+## 5. Ownership
 
 The Section Domain owns:
 
@@ -83,7 +82,7 @@ Business Contexts reference sections but never redefine section identity.
 
 ---
 
-# 6. Core Concepts
+## 6. Core Concepts
 
 The primary aggregate is:
 
@@ -95,30 +94,27 @@ Supporting concepts include:
 
 ```
 Section Name
-Program
-Department Course
+Schedule
+Room
 Section Status
 ```
 
 ---
 
-# 7. Relationships
+## 7. Relationships
 
 The Section Domain may reference:
 
 ```
-Course (program)
-
-↓
-
+Subject (Subject Domain)
+  ↓
 Section
 ```
 
 A section may be associated with:
 
-- Students (via enrollment)
-- Faculty (via faculty-subject)
-- Subjects
+- Students (via Student Section, loosely coupled)
+- Faculty (via Faculty Loading, loosely coupled)
 - Consultations
 - Evaluations
 
@@ -126,109 +122,103 @@ The Section Domain does not own these relationships.
 
 ---
 
-# 8. Business Rules
+## 8. Business Rules
 
-Examples include:
-
-- Every section has a unique name within a program.
-- Sections belong to exactly one department course.
-- A section may exist without enrolled students.
-- Section names are immutable within a program.
+- A section belongs to a subject.
+- A section has a unique name within a subject.
+- A section may have a schedule and room assignment.
+- Being in a section does NOT imply enrollment in all subjects of that section.
+- A student may attend a section without formal enrollment (irregular students).
+- Faculty Loading assigns faculty to a subject, not directly to a section (section is informational).
+- Multiple sections can exist for the same subject (batches).
 
 ---
 
-# 9. Lifecycle
+## 9. Lifecycle
 
 Typical lifecycle:
 
 ```
 Created
-
-↓
-
+  ↓
 Active
-
-↓
-
+  ↓
 Inactive
-
-↓
-
+  ↓
 Archived
 ```
 
 ---
 
-# 10. Domain Events
-
-Examples include:
+## 10. Domain Events
 
 ```
 SectionCreated
-
-SectionUpdated
-
 SectionActivated
-
-SectionArchived
+SectionDeactivated
+SectionScheduleChanged
 ```
 
 ---
 
-# 11. Public Contracts
+## 11. Public Contracts
 
 The Section Domain should expose stable contracts for:
 
 - retrieving sections
 - validating section identity
-- retrieving section details
+- checking section schedule
+- determining section room assignment
 - publishing section events
 
 ---
 
-# 12. Anti-Patterns
+## 12. Anti-Patterns
 
-The following are architectural violations.
-
-## Enrollment Ownership
+### Enrollment Ownership
 
 ```
 Section
-
-manages Student enrollment
+  manages student enrollment
 ```
 
 Enrollment management belongs to the Enrollment Domain.
 
----
-
-## Consultation Ownership
+### Faculty Loading Ownership
 
 ```
-
 Section
-
-creates Consultation slots
+  assigns faculty to subjects
 ```
 
-Consultation scheduling belongs to the Consultation Business Context.
+Faculty assignment belongs to the Faculty Loading Domain.
+
+### Tight Coupling
+
+```
+Enrollment
+  requires section assignment
+```
+
+Section assignment is logistical and loosely coupled. Enrollment is per-subject, not per-section.
 
 ---
 
-# 13. Guiding Principle
+## 13. Guiding Principle
 
 The Section Domain is the canonical source of section information.
 
 It defines:
 
 - what sections exist
-- how sections are identified
-- which program a section belongs to
+- when sections meet (schedule)
+- where sections meet (room)
 
 It does not determine:
 
-- who enrolls in a section
-- what subjects are taught in a section
-- how section students are evaluated
+- who enrolls in subjects (Enrollment Domain)
+- who teaches subjects (Faculty Loading Domain)
+- how students are evaluated
+- what consultations are booked
 
 Those responsibilities belong to other Domains or Business Contexts.

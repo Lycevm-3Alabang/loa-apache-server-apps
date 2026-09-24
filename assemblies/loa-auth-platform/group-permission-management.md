@@ -590,7 +590,7 @@ POST   /admin/users/{id}/permissions/{key}/remove
 | M4 | Invariant I1 | `user ∈ tenant-scoped group ⇒ user ∈ that tenant's pivot`. Enforced in the service layer at every write path — no UI can produce an orphan claim |
 | M5 | Membership cascade | Removing a user from a tenant removes them from **all** of that tenant's groups, in the same transaction as the pivot removal |
 | M6 | Groups console scoping | Member add/remove on `/admin/groups/{id}` is restricted to platform groups (`tenant_id IS NULL`); requests for a tenant-scoped group redirect to that group's tenant members page instead of writing |
-| M7 | API contract preserved, invariant enforced | `/api/v1/users/{id}/groups` POST/DELETE keep their shape; assigning a tenant-scoped group without existing pivot membership → **422** with copy: *"User must be a member of the tenant before being added to one of its groups."* (default — see Q1) |
+| M7 | API contract preserved, invariant enforced | `/api/v1/users/{id}/groups` POST/DELETE keep their shape; as implemented, assigning a tenant-scoped group auto-attaches the `user_tenants` pivot (no 422). DEFERRED: enforce 422 with copy *"User must be a member of the tenant before being added to one of its groups."* (default — see Q1) |
 | M8 | Last-admin lockout guard is global | The "cannot revoke own platform-admin" rule lives in the **service layer**, enforced identically on every write path — web toggle, Groups-console member remove, and API `DELETE /users/{id}/groups` targeting the admin group for self. Never a Blade-only check |
 
 ## 12.3 User detail page after v3.0
@@ -598,10 +598,11 @@ POST   /admin/users/{id}/permissions/{key}/remove
 `GET /admin/users/{id}` sections:
 
 1. **User Info** — unchanged
-2. **Platform permissions** *(new)* — toggle per registry entry (v1: Platform admin).
+2. **Platform permissions** *(specified — NOT IMPLEMENTED in code; user show view renders a read-only list, no toggle route exists)* — toggle per registry entry (v1: Platform admin).
    Zero-JS: each row is its own POST form styled as a switch.
    Route: `POST /admin/users/{id}/platform-permissions`
    (`admin.users.platform-permissions`) with `permission_key` + `granted`.
+   DEFERRED implementation (see §12.8).
    Toggling Platform admin writes/removes `loa-auth-admin` membership and
    audits with the existing `admin_group.granted` / `admin_group.revoked`
    evidence keys. Consequence-bearing copy under the panel title:
@@ -774,7 +775,7 @@ feed's weighting rules keep such bursts from crowding out security signals.
 
 | # | Question | Resolution |
 |---|---|---|
-| Q1 | API behavior for tenant-scoped assignment without membership | 422 reject (M7) |
+| Q1 | API behavior for tenant-scoped assignment without membership | Specified: 422 reject (M7). As implemented: auto-attaches pivot (no 422). DEFERRED: enforce 422 |
 | Q2 | Confirm M5 cascade on tenant-membership removal | Yes, cascade |
 | Q3 | Backfill policy: report-only then manual, or auto-grant missing pivots | **Report-only.** The artisan command (§12.6) lists violations. Admins resolve via "Remove from group" on the dashboard attention item or the tenant group members page. No auto-grant. No inline "Grant tenant access" action in v1. If auto-grant is desired later, it ships as a separate migration + UI change. |
 | Q4 | Should the platform-permission registry live in config/`permissions.json` now? | Later — hardcoded single entry in v1 |
@@ -788,7 +789,7 @@ feed's weighting rules keep such bursts from crowding out security signals.
 | `resources/views/admin/tenants/group-members.blade.php` | Add/remove controls + two-tier search UI per §12.4 |
 | `resources/views/admin/tenants/member-remove-confirm.blade.php` | NEW — cascade confirmation interstitial (§12.4) |
 | `resources/views/admin/groups/show.blade.php` | Tenant-group member controls removed / redirected (M6) |
-| `AuthorizationService` | `addToGroup()`: add I1 guard — if group has `tenant_id`, verify user has pivot in `user_tenants` for that tenant; if not, throw `HttpException(422)` with copy *"User must be a member of the tenant before being added to one of its groups."* (M7). `removeFromGroup()`: unchanged (removes group row only). New transactional helper for secondary-tier add: `addUserToTenant()` + `addToGroup()` in one DB transaction (M4). Global last-admin guard (M8) on all write paths. |
+| `AuthorizationService` | Specified: `addToGroup()`: add I1 guard — if group has `tenant_id`, verify user has pivot in `user_tenants` for that tenant; if not, throw `HttpException(422)` (M7). As implemented: attaches pivot silently (no guard, no 422). DEFERRED: add guard. `removeFromGroup()`: unchanged (removes group row only). New transactional helper for secondary-tier add: `addUserToTenant()` + `addToGroup()` in one DB transaction (M4). Global last-admin guard (M8) on all write paths. |
 | `app/Console/Commands/RepairI1Violations.php` | NEW — `auth:repair-i1-violations` artisan command per §12.6 (report-only, exit 1 if violations) |
 | Tests | Feature coverage for every §12.10 item |
 
@@ -810,7 +811,7 @@ feed's weighting rules keep such bursts from crowding out security signals.
 - [ ] Tenant show page exposes per-group links with member counts; breadcrumbs on members page
 - [ ] Zero-member group renders empty-state copy with add control visible
 - [ ] Tenant group accessed under wrong tenant → 404
-- [ ] API assign tenant-scoped group without membership → 422 (Q1 default)
+- [ ] API assign tenant-scoped group without membership → specified 422 (Q1 default); as implemented auto-attaches (DEFERRED enforcement)
 - [ ] Groups console write to tenant-scoped group redirects, no write occurs (M6)
 - [ ] Repair command reports pre-existing violations accurately
 - [ ] Primary tier search returns tenant members NOT in the group (tier = 'primary')

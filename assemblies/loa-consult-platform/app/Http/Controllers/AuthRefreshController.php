@@ -1,0 +1,89 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+
+class AuthRefreshController extends Controller
+{
+    public function __invoke(Request $request): JsonResponse
+    {
+        $cookieName = config('consult-platform.refresh_cookie', 'loa_connect_refresh');
+        $refreshToken = $request->input('refresh_token')
+            ?? $request->cookies->get($cookieName);
+
+        if (!$refreshToken) {
+            return response()->json(['message' => 'Missing refresh token'], 401);
+        }
+
+        $authBaseUrl = config('auth-platform.base_url', 'https://auth.lyceumalabang.edu.ph');
+        $timeout = config('auth-platform.http_timeout', 5);
+
+        try {
+            $response = Http::timeout($timeout)
+                ->post("{$authBaseUrl}/api/v1/auth/refresh", [
+                    'refresh_token' => $refreshToken,
+                ]);
+        } catch (\Exception $e) {
+            return $this->clearRefreshCookie(
+                response()->json(['message' => 'Auth service unavailable'], 502)
+            );
+        }
+
+        if ($response->failed()) {
+            return $this->clearRefreshCookie(
+                response()->json(['message' => 'Invalid refresh token'], 401)
+            );
+        }
+
+        $data = $response->json();
+        $newRefreshToken = $data['refresh_token'] ?? null;
+        $accessToken = $data['access_token'] ?? null;
+        $expiresIn = $data['expires_in'] ?? 900;
+
+        if (!$accessToken || !$newRefreshToken) {
+            return $this->clearRefreshCookie(
+                response()->json(['message' => 'Incomplete auth response'], 502)
+            );
+        }
+
+        $json = response()->json([
+            'status' => 'success',
+            'data' => [
+                'access_token' => $accessToken,
+                'refresh_token' => $newRefreshToken,
+                'token_type' => 'Bearer',
+                'expires_in' => $expiresIn,
+            ],
+        ]);
+
+        return $json->withCookie(cookie(
+            $cookieName,
+            $newRefreshToken,
+            (int) config('consult-platform.refresh_cookie_ttl', 10080),
+            '/api/v1/auth',
+            null,
+            (bool) config('consult-platform.refresh_cookie_secure', true),
+            true,
+            false,
+            'lax'
+        ));
+    }
+
+    private function clearRefreshCookie(JsonResponse $response): JsonResponse
+    {
+        return $response->withCookie(cookie(
+            config('consult-platform.refresh_cookie', 'loa_connect_refresh'),
+            '',
+            -1,
+            '/api/v1/auth',
+            null,
+            (bool) config('consult-platform.refresh_cookie_secure', true),
+            true,
+            false,
+            'lax'
+        ));
+    }
+}

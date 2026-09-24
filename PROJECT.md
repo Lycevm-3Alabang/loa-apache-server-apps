@@ -2,7 +2,7 @@
 ## Project Tracker
 
 **Started:** 2026-07-30
-**Last Updated:** 2026-08-07
+**Last Updated:** 2026-09-23
 **Target:** cPanel (PHP 8.3+ / MySQL 8 / Laravel 12)
 
 ---
@@ -15,7 +15,7 @@
 - Draft spec → complete it first
 - Final spec → code exactly to it
 
-This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violations are failures.
+This rule is enforced in `AGENTS.md` (sole entry; detail in `principles.md` / `platform.md`). Violations are failures.
 
 ---
 
@@ -69,14 +69,15 @@ This rule is enforced in `AGENT.md`, `AI-GUIDE.md`, and `AI-RULES.md`. Violation
 
 | Layer | Component | Spec | Status |
 |-------|-----------|------|--------|
-| Service | CORS | `services/cors/README.md` | ✅ Final |
-| Service | API Documentation | `services/api-documentation/README.md` | ✅ Final |
+| Service | QR Code | `services/qrcode/README.md` | ✅ Draft (spec behind code: `QrCodeService::toDataUri` implemented in cert) |
+| Pattern (not a service) | CORS | `platform.md` §15b + per-assembly `config/cors.php` | ✅ Implemented (no service spec — config + gotcha, not a reusable capability) |
+| Pattern (not a service) | API Documentation | Controllers' `#[OA]` attributes + `l5-swagger` | ✅ Implemented (no service spec — doc generation, not a capability) |
 | Service | Database Seeder | `assemblies/loa-auth-platform/database/seeders/seeder-spec.md` | ✅ Final |
 | Assembly | LOA Auth Platform | `assemblies/loa-auth-platform/README.md` | ✅ Scaffolded |
 | Assembly | LOA Auth Web UI | `assemblies/loa-auth-platform/web-ui.md` | ✅ Final (v1.2 — destination resolution) — implemented |
 | Assembly | LOA Admin Dashboard | `assemblies/loa-auth-platform/admin-dashboard.md` | ✅ Final (v1 + v2 implemented) |
 | Assembly | Access Config Import/Export | `assemblies/loa-auth-platform/access-config-import-export.md` | ✅ Final v1.0 — implemented |
-| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Draft |
+| Assembly | LOA Consult Platform | `assemblies/loa-consult-platform/README.md` | ✅ Scaffolded (2026-09-18); data-model Final v1.3 status-split, 3 endpoint modules Final v1.0, docker-compose-spec Final v1.0 |
 | Assembly | LOA Cert Platform | `assemblies/loa-cert-platform/README.md` | ✅ Draft |
 
 ---
@@ -154,30 +155,55 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Laravel project scaffold | ⬜ Not started | |
-| JWT middleware | ⬜ Not started | Validate token from auth app |
-| Permission middleware | ⬜ Not started | Check UserGroup permissions |
-| Appointment model + migrations | ⬜ Not started | |
-| TimeSlot model + migrations | ⬜ Not started | |
-| Attendee model + migrations | ⬜ Not started | |
-| AvailabilityRule model + migrations | ⬜ Not started | |
-| Appointment CRUD endpoints | ⬜ Not started | |
-| Batch appointment creation | ⬜ Not started | |
-| Conflict detection service | ⬜ Not started | |
-| Accept/decline/complete endpoints | ⬜ Not started | |
-| Semester model + migrations | ⬜ Not started | |
-| Rubric models + migrations | ⬜ Not started | |
-| Evaluation model + migrations | ⬜ Not started | |
-| Evaluation endpoints | ⬜ Not started | |
-| Evaluation result computation | ⬜ Not started | |
-| Subject/Section/Enrollment models | ⬜ Not started | |
-| Academic infrastructure endpoints | ⬜ Not started | |
-| Report endpoints (7 types) | ⬜ Not started | |
+| Consult endpoint inventory (scan-only savepoint) | ✅ Done | 2026-09-18: 112 route files scanned (~142 combos; 118 migrating to Laravel); drift vs `endpoint-catalog.md` recorded; frontend untouched |
+| Consult modular spec plan | ✅ Done | 2026-09-18: 10-file savepoint (conventions, 5 endpoint modules, auth-integration, data-model, runbooks); reports deferred to Phase E |
+| Implementation phase planning | ✅ Flushed 2026-09-23 | P0 scaffold + P1 C-Auth (§11) + P2 Slice B + P3 Slice C + P4 Slice D baselines + P5 flatten 104+5 done; P6 cutover/Phase E BLOCKED (runbooks Draft, frontend decision, reports, §8 provisioning); see TODO AFTER FINAL |
+| Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
+| `api-endpoints.md` spec | ✅ Final v2.1 | Flat 104+5 root spec (F1/F2 green); tenant `loa-consultation` (own-tenant cert pattern, 2026-09-24) |
+| `auth-integration.md` spec | ✅ Final v1.5 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed — suite green 2026-09-22, port COMPLETE; tenant `loa-consultation` (2026-09-24) |
+| `data-model.md` spec | ✅ Final v1.3 | Shape contract (M17/M19/M21/M26/M27/M30/M31); §3 Status gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
+| `endpoints-academic.md` spec | ✅ Final v1.1 | Flat paths (green) |
+| `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
+| `endpoints-evaluations.md` spec | ✅ Final v1.1 | Flat paths + scoped results (green) |
+| `endpoints-admin-import.md` spec | ✅ Final v1.1 | Phase D contract (v2.1 pointers); baselines green 2026-09-23 (link-reads / import-domain / data-audit); DEC-5 `/service/*` proxy still OPEN |
+| `url-flattening.md` spec | ✅ Final v1.1 | Flat URL scheme (104+5 actual per ACC-2 + `api-endpoints.md` v2.1 §5 Total; 113+5 was F2 intermediate; single scoped results, in-place v1 rename; F2 green) |
+| URL flattening (F1+F2) | ✅ Done 2026-09-23 | Flat routes + scoped results + catalog/JSON regen (104+5 normative; 113+5 reported at F2 was intermediate) + ResultsTest scoping; suite green (user) |
+| `test-suite.md` spec | ✅ Final v1.2 | Test contract (v2.1 pointers, tenant `loa-consultation`); MySQL `loa_consult_test`, JWT helper, user-run sequential |
+| `docker-compose-spec.md` spec | ✅ Final v1.1 | Root-stack `consult-*` blocks port 9002, `loa_consult` init, tenant `loa-consultation` |
+| `LOCAL-DEV-RUNBOOK.md` spec | ✅ Final v1.0 | Shared root-stack pattern, wiring gate MET, no-seed, test-DB pin |
+| `DEPLOY.md` spec | ✅ Final v1.0 | Cert-patterned cPanel deploy (PHP 8.3, dist, no-seed, slug checklist, cron) |
+| `FRONTEND-INTEGRATION.md` spec | ✅ Final v1.0 | Backend-done cutover handoff (topology OPEN until cutover) |
+| `consult-readiness.md` spec | ✅ Final v1.6 | Provisioning checklist (aces-* + linkage, 104+5 pointer, v2.1 pointers, tenant `loa-consultation`) |
+| First migration(s) + baseline deltas | ✅ Done 2026-09-22 | `000001-000010` academic + `000011` academic baseline + `000012` appointment-family + `000013` section-link + `000014` evaluation tables; per data-model Final v1.3 §3/§7 |
+| JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa-consultation`, `consult_user`; Unit tests green. **Gated in Step 7** |
+| Permission middleware | ✅ Step 5 done | Cert port verbatim (`consult-endpoints` re-point only, `jwt_claims` confirmed); Unit tests green (public/403/level/catalog-count). **Gates all domain routes since Step 7** |
+| Route gating | ✅ Step 7 done | `auth/*` public + `throttle:10,1` on callback/refresh; health + count-active public; semesters/admin under `jwt.auth`+`jwt.endpoint`; RouteGatingTest green 2026-09-22 |
+| Appointment model + migrations | ✅ Done 2026-09-22 | B2 `000012`: appointments table + thin model; slice B COMPLETE green pasted |
+| TimeSlot model + migrations | ✅ Done 2026-09-22 | B2 `000012`: slots table + thin model; slice B COMPLETE green pasted |
+| Attendee model + migrations | ✅ Done 2026-09-22 | B2 `000012`: attendees table + thin model; slice B COMPLETE green pasted |
+| AvailabilityRule model + migrations | ✅ Done 2026-09-22 | B2 `000012` table + B3 `AvailabilityRuleController` + `AvailabilityTest` 10/10 green pasted |
+| Appointment CRUD endpoints | ✅ Done 2026-09-22 | B4 `AppointmentController` 10 routes + `AppointmentTest` 12/12 green pasted |
+| Batch appointment creation | ✅ Done 2026-09-22 | B4 batch path in `AppointmentController`; green pasted with B4 |
+| Conflict detection service | ✅ Done 2026-09-22 | B4 legacy-verified conflicts/slots/rules; green pasted with B4 |
+| Accept/decline/complete endpoints | ✅ Done 2026-09-22 | B4 action dispatch; green pasted with B4 |
+| Semester model + migrations | ✅ Done 2026-09-22 | `Semester.php` + `000007` + `SemesterController` gated (`jwt.auth`+`jwt.endpoint`) + B5 per-semester impacts; slice B COMPLETE |
+| Rubric models + migrations | ✅ Done 2026-09-22 | C1 `000014` rubric tables + C2 periods/rubric-groups endpoints + `PeriodsRubricsTest` green pasted |
+| Evaluation model + migrations | ✅ Done 2026-09-22 | C1 `000014` 10 evaluation tables + 10 thin models + `EvaluationTablesTest` 4/4 green pasted |
+| Evaluation endpoints | ✅ Done 2026-09-22 | C3 evaluations lifecycle + `EvaluationFlowTest` green pasted |
+| Evaluation result computation | ✅ Done 2026-09-22 | C4 ResultsService + results surface (20 pre-flatten → 15 scoped flat per v2.0/F2) + `ResultsTest` green pasted; slice C COMPLETE |
+| Subject/Section/Enrollment models | ✅ Done 2026-09-22 | 9 models + `000001-000009` + B1 `000011` baseline delta + B5 hardening; slice B COMPLETE |
+| Academic infrastructure endpoints | ✅ Done 2026-09-22 | `AcademicController` + gated flat routes (was `admin/*`, flattened F1) + B5 hardening (`AcademicHardeningTest`) + `000013`; slice B COMPLETE |
+| User link reads (Phase D) | ✅ Done 2026-09-23 | `UserLinkController` (primary/attendees/related-data via email link) + 3 gated reads + `UserLinkTest` 8/8 green (user); writes absent per DEC-1 |
+| Import domain (Phase D) | ✅ Done 2026-09-23 | `ImportController` (preview + references + idempotent writes) + 10 gated routes + `ImportTest` 7/7 green (user); users/reference absent per DEC-2 |
+| Data/audit (Phase D) | ✅ Done 2026-09-23 | `DataController` (delete-students/reset-db/export/mappings) + 4 gated routes + `DataAuditTest` 8/8 green (user); per-resource DELETE on owners; audit-logs absent by gate |
+| Report endpoints (7 types) | ⬜ Deferred to Phase E | No REST routes exist; Server Components compute directly |
 | CSV import | ⬜ Not started | |
 | Email notifications | ⬜ Not started | |
 | Deploy to aces-api.lyceumalabang.edu.ph | ⬜ Not started | |
 
 ## Phase 3: Cert App
+
+> NOTE 2026-09-23: table below is stale — Cert is working (C-Auth complete, retrofit A–H COMPLETE per PROJECT_UPDATES; suite 249 passed 2026-09-23 per TODO DONE). Full Phase 3 resync deferred (Auth + Cert deferred, consult active).
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -247,9 +273,9 @@ All JWT validation is local (shared HMAC-SHA256 secret). No HTTP call per reques
 ```
 loa-apache-server-apps/
 ├── PROJECT.md                          # This file
-├── AGENT.md                            # AI agent instructions
-├── AI-GUIDE.md                         # Architecture guide
-├── AI-RULES.md                         # Naming & coding rules
+├── AGENTS.md                            # AI agent instructions (sole entry)
+├── principles.md                       # SDD+TDD + coding rules (authoritative detail)
+├── platform.md                         # LOA architecture + Laravel gotchas
 ├── dependency-rules.md                 # Dependency matrix
 ├── kernels/
 │   └── identity/                       # Identity Kernel (v2.0)
@@ -314,7 +340,7 @@ loa-apache-server-apps/
 | 2026-07-31 | UserGroup model (replaces Role) | Flexible grouping, multi-department support |
 | 2026-07-31 | Department in Education Domain | Education-specific, not a canonical kernel |
 | 2026-07-31 | Spec-first development | Design before code, catch issues early |
-| 2026-07-31 | Specs-before-code is MANDATORY | No code without a Final spec — enforced in AGENT.md, AI-GUIDE.md, AI-RULES.md |
+| 2026-07-31 | Specs-before-code is MANDATORY | No code without a Final spec — enforced in AGENTS.md (detail: principles.md / platform.md) |
 | 2026-07-31 | Identity Kernel v2.0 | Universal grouping, not role-based |
 | 2026-07-31 | Event spec files (15) | Per-event spec under kernels/identity/events/ |
 | 2026-07-31 | Business rule spec files (8) | Per-rule spec under kernels/identity/rules/ |
@@ -330,3 +356,21 @@ loa-apache-server-apps/
 | 2026-08-01 | Admin dashboard v2 tenant admin | Platform admins manage tenants, per-tenant groups, per-endpoint grants, membership via `/admin/tenants/*` |
 | 2026-08-01 | Tenancy + admin dashboard implemented (v3.0) | Migrations 000011–000015 applied; TenantService, tenant-scoped AuthorizationService, `tenant` claim + `jwt.tenant`, login destination matrix, WebAdminController + `web.admin` middleware + `/admin/users`; `database.sql` rebuilt from migration schema (verified structural parity) |
 | 2026-08-01 | Admin dashboard v2 implemented | Tenant CRUD (`/admin/tenants/*`), groups + per-group permissions, member add/remove, suspend/activate; `admin-dashboard.md` promoted to Final |
+| 2026-09-18 | Consult: Laravel owns SSO auth (cert pattern) | `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` + `loa_connect_refresh` cookie; mirrors `loa-cert-platform` |
+| 2026-09-18 | Consult: frontend untouched, scan-only inventory | `access-config`/`user-permissions` observed but auth-owned; no frontend changes |
+| 2026-09-18 | Consult: reports deferred to Phase E | No REST report routes exist; Server Components keep computing reports |
+| 2026-09-18 | Consult: modular 10-file spec savepoint | Ground truth = `route.ts` scan (112 files, ~142 combos; 118 migrating), not `endpoint-catalog.md` (drift recorded) |
+| 2026-09-18 | Consult: hybrid users approach | Users cache table with no FK relationships; all consult user-ref columns = opaque Auth sub TEXT; eliminates circular FK; users upserted from JWT on login |
+| 2026-09-18 | Consult: Laravel scaffold done | Real Laravel 12.12 via composer, PHP 8.3 pinned, HealthTest green in Docker |
+| 2026-09-22 | Consult: port plan filed in spec | User decision: §11 sequenced landing lives in `auth-integration.md` (v1.4 Draft); re-promotion to Final gates auth-layer code per Rule 0 |
+| 2026-09-22 | Consult: no `app_users` — students/employees first-class | User decision: `app_users` duplicated Auth + Identity Kernel; `auth-integration.md` v1.3 §7/§10 + `consult-readiness.md` v1.2 §9 aligned to `data-model.md` Final v1.3; Auth Platform = sole identity authority |
+| 2026-09-22 | Consult: `data-model.md` Final = shape ≠ codeable | User decision (Option A): §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); `audit_logs` not codeable until migration lands |
+| 2026-09-22 | Consult: Step 2 services trio landed | `JWTService`/`EncryptionService`/`AuditLogger` verbatim from cert; HealthTest green. `AuditLogger` residual (no model/table, org-FK vs L109) opens at Step 6 |
+| 2026-09-22 | Consult: Step 3 JwtMiddleware landed | Cert port with consult re-points only; 401/403 shapes verbatim; Unit tests green. Routes remain open until Step 7 gate |
+| 2026-09-23 | Consult: URL flattening F1+F2 green 104+5 | Flat routes + single scoped results surface; 113+5 was F2 intermediate; ResultsTest scoping green (user) |
+| 2026-09-23 | Consult: Phase D baselines green | Link-reads 3 + import-domain 10 + data-audit 4 served; audit-logs 2 pending by gate; UserLink/Import/DataAudit tests green (user) |
+| 2026-09-23 | Consult: counts reconciled to 104+5 | `api-endpoints.md` v2.0 §5 Total + ACC-2 normative; 118+5 = v1.0 history; drift fix (AGENTS §4, url-flattening Doc Control, admin-import Refs, config audit-logs flat); suite 120 passed |
+| 2026-09-23 | Consult: Docker pipelines wired | `generate-dist.ps1` + build-all/reset-all/run-tests/dump/mega consult blocks; `loa_consult_test` added to init.sql; `mega.ps1` end-to-end green (user-reported) |
+| 2026-09-23 | Consult: planning FLUSHED, P6 PARKED | P0–P5 done; P6 = runbooks + DEC-5 + Phase E + §8 provisioning (see TODO PLANNED) |
+| 2026-09-23 | Cert: PDF 500 fixed | `PdfService::streamCertificatePdf()` `$pdf->inline()` → `$pdf->stream()`; suite 249 passed (738 assertions) |
+| 2026-09-24 | Consult: tenant rename `loa` → `loa-consultation` | User decision (own-tenant cert pattern, like `loa-e-cert`): 5 specs re-versioned to Final (api-endpoints v2.1, auth-integration v1.5, readiness v1.6, test-suite v1.2, docker-compose v1.1); code/config/tests/runbooks updated; Auth re-provisioning + suite re-green pending (user runs) |

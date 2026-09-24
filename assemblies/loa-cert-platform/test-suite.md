@@ -16,7 +16,7 @@ This document defines the current automated test baseline for the LOA Cert Platf
 | Component | Choice | Notes |
 |---|---|---|
 | Framework | PHPUnit | The project uses Laravel's PHPUnit integration. |
-| Database | SQLite in-memory | Recommended for isolated feature and unit tests. |
+| Database | Dedicated MySQL `loa_cert_test` | Cert actual practice (isolated from app DB); never `loa_cert` app data. |
 | HTTP testing | Laravel test helpers | Use `json()` and `actingAs()` where appropriate. |
 | Environment | `testing` | Set by the PHPUnit config. |
 
@@ -70,8 +70,8 @@ The initial suite should cover:
 ## 6. Test design rules
 
 - Prefer end-to-end request handling over mock-heavy unit tests where practical.
-- Keep seed data minimal and explicit.
-- Use SQLite in-memory for speed and deterministic resets.
+- Keep seed data minimal and explicit (self-seed the org row per `setUp` + `RefreshDatabase`).
+- Use dedicated MySQL `loa_cert_test` (never SQLite — MySQL-only features like generated columns are under test).
 - Avoid depending on the production environment or a live database.
 - Do not test implementation details when the observable behavior is easier to verify.
 

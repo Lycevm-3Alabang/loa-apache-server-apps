@@ -62,7 +62,7 @@ The dashboard is **session-authenticated**, not JWT-authenticated.
 |--------|-----|--------|------------|
 | `GET` | `/admin/users` | list (search + status filter) | `admin.users` |
 | `POST` | `/admin/users/{id}/status` | enable / disable a user | `admin.users.status` |
-| `POST` | `/admin/users/{id}/sessions/invalidate` | revoke all web sessions for a user | `admin.users.sessions.invalidate` |
+| `POST` | `/admin/users/{id}/sessions/invalidate` | revoke all web sessions for a user *(specified — NOT IMPLEMENTED; DEFERRED)* | `admin.users.sessions.invalidate` |
 | `POST` | `/admin/logout` | destroy admin session | `admin.logout` |
 
 All routes require `auth` (web guard) + `web.admin`. All `POST` forms include `@csrf`.
@@ -79,7 +79,7 @@ All routes require `auth` (web guard) + `web.admin`. All `POST` forms include `@
 |--------|----------------|
 | `index(Request $request)` | Paginate users, apply search/status filters, render list |
 | `updateStatus(Request $request, string $id)` | Validate target status, enforce `users.manage`, call `IdentityService::setUserStatus()`, redirect back |
-| `invalidateSessions(Request $request, string $id)` | Validate target user, enforce `users.manage`, call session invalidation, redirect with flash |
+| `invalidateSessions(Request $request, string $id)` *(NOT IMPLEMENTED; DEFERRED)* | Validate target user, enforce `users.manage`, call session invalidation, redirect with flash |
 | `logout(Request $request)` | `Auth::guard('web')->logout()`, invalidate + regenerate session, redirect to `/login` |
 
 ## Views
@@ -279,7 +279,7 @@ When a platform admin's credentials are compromised, the admin can reset their p
 
 | Method | URI | Action | Route name |
 |--------|-----|--------|------------|
-| `POST` | `/admin/users/{id}/sessions/invalidate` | revoke all web sessions for a user | `admin.users.sessions.invalidate` |
+| `POST` | `/admin/users/{id}/sessions/invalidate` | revoke all web sessions for a user *(specified — NOT IMPLEMENTED; DEFERRED)* | `admin.users.sessions.invalidate` |
 
 Requires `auth` (web guard) + `web.admin` + `users.manage` permission.
 
@@ -297,7 +297,7 @@ Add to `WebAdminController`:
 
 | Method | Responsibility |
 |--------|----------------|
-| `invalidateSessions(Request $request, string $id)` | Validate target user, enforce `users.manage`, call session invalidation, redirect with flash |
+| `invalidateSessions(Request $request, string $id)` *(NOT IMPLEMENTED; DEFERRED)* | Validate target user, enforce `users.manage`, call session invalidation, redirect with flash |
 
 ## Implementation Notes
 

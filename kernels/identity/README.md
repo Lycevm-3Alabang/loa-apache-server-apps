@@ -391,3 +391,13 @@ It does not define:
 - What users do after authentication
 - Business workflows
 - Domain-specific logic
+
+---
+
+## 9. Correlation (independent yet correlated)
+
+Independent: nothing above defines this kernel — its meaning derives only from the plans in this folder. The links below point *down* to implementations and are informational only.
+
+- **Composes:** none — foundation layer.
+- **Consumed by:** `assemblies/loa-auth-platform/` (full implementation: users, groups, grants, SSO, admin UI); `assemblies/loa-cert-platform/` + `assemblies/loa-consult-platform/` (JWT local validation + level-based grants only — never user writes); `domains/education/` (references identity for academic actors, never redefines it).
+- **Contracts:** `integration/specs/cert-activation.md` (invite-gated provisioning + token lifecycle — Auth side of the handshake).

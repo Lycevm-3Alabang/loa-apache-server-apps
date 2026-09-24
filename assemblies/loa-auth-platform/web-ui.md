@@ -46,6 +46,8 @@ The Auth Platform remains the single source of truth for identity. This spec add
 
 # 3. Architecture Note: Hybrid Surface
 
+> SUPERSEDED in part by `unified-auth-flow.md` Final v1.0 (unified pipeline, portal sessions): session rules below describe the pre-unification surface. Portal behavior is normative in `unified-auth-flow.md`; reconcile before implementing session changes.
+
 The Auth Platform keeps its stateless JWT API (`/api/v1/*`) for machine consumers (Consult, Cert).
 
 The web UI (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/admin/*`) runs on Laravel web routes:
@@ -74,6 +76,8 @@ Auth forms never surface the raw `419 Page Expired` error page. When a POST arri
 API requests receive `419` JSON instead of HTML.
 
 ## 4.1 Admin Login
+
+> SUPERSEDED in part by `unified-auth-flow.md` D5/D8 (portal session for all + smart router): the matrix below is the pre-unification contract. DEFERRED: rewrite this section against the unified pipeline.
 
 ### Routes
 

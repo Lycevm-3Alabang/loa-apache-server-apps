@@ -5,10 +5,11 @@
 .EXAMPLE
   ./dump.ps1 --target auth
   ./dump.ps1 --target cert
+  ./dump.ps1 --target consult
   ./dump.ps1 -Target auth -Path D:\somewhere-else
 #>
 param(
-    [ValidateSet('auth', 'cert')]
+    [ValidateSet('auth', 'cert', 'consult')]
     [string]$Target = 'auth',
 
     # Default dump destination when not supplied.
@@ -24,6 +25,7 @@ $repoRoot = $PSScriptRoot
 $targets = @{
     auth = @{ App = 'loa-auth-platform'; Container = 'loa-platform-auth-app-1' }
     cert = @{ App = 'loa-cert-platform'; Container = 'loa-platform-cert-app-1' }
+    consult = @{ App = 'loa-consult-platform'; Container = 'loa-platform-consult-app-1' }
 }
 
 $t       = $targets[$Target]
@@ -48,7 +50,7 @@ Get-ChildItem -LiteralPath $appRoot | Where-Object {
     $_.Name -notin @(
         '.git', 'node_modules', 'vendor', 'docker', 'docker-compose.yml',
         '.phpunit.cache', '.phpunit.result.cache', 'tmp', 'loa_auth',
-        '.dist-stage', 'generate-dist.ps1'
+        '.dist-stage', 'generate-dist.ps1', '_stage'
     )
 } | ForEach-Object {
     Copy-Item $_.FullName -Destination $stage -Recurse -Force
@@ -138,9 +140,15 @@ Write-Host "  Zip:    $zip"
 # ── Regenerate cPanel SQL installer from Docker schema ───────────────────
 Write-Host "Regenerating cPanel SQL installer for '$Target'..."
 
-$dockerDb = @{ auth = 'loa_auth'; cert = 'loa_cert' }[$Target]
-$cpanelDb = @{ auth = 'lyceumalabang_auth_db'; cert = 'lyceumalabang_e_cert_db' }[$Target]
+$dockerDb = @{ auth = 'loa_auth'; cert = 'loa_cert'; consult = 'loa_consult' }[$Target]
+$cpanelDb = @{ auth = 'lyceumalabang_auth_db'; cert = 'lyceumalabang_e_cert_db'; consult = 'loa_consult' }[$Target]
 $sqlOut   = Join-Path $appRoot "database\sql\cpanel-$Target-db-install.sql"
+# Consult keeps its Docker DB name in production (per consult DEPLOY.md §3),
+# so the rename above is a no-op for that target.
+$sqlDir = Split-Path -Parent $sqlOut
+if (-not (Test-Path -LiteralPath $sqlDir)) {
+    New-Item -ItemType Directory -Path $sqlDir -Force | Out-Null
+}
 
 # Tenants to REMOVE from the dump (only loa-e-cert and auth are kept).
 $removeTenantSlugs = @('aces-api', 'e-cert')
@@ -234,6 +242,47 @@ if ($dumpExit -ne 0) {
             Write-Host "  Injected $($catalog.endpoints.Count) cert-app endpoints from JSON"
         } else {
             Write-Warning "Endpoint catalog JSON not found: $endpointJson"
+        }
+    }
+
+    # ── Pass 4: inject seed rows (cert target only) ─────────────────────
+    # cpanel-cert-db-seed.sql is hand-maintained; the Docker loa_cert
+    # `organizations` table dumps empty, so embed the seed INSERTs into the
+    # install file to keep single-import working. Seed uses
+    # ON DUPLICATE KEY UPDATE, so re-imports stay safe.
+    if ($Target -eq 'cert') {
+        $seedSql = Join-Path $appRoot 'database\sql\cpanel-cert-db-seed.sql'
+        if (Test-Path -LiteralPath $seedSql) {
+            $seedLines = Get-Content -LiteralPath $seedSql | Where-Object { $_ -notmatch '^\s*--' -and $_ -match '\S' }
+            $firstInsert = -1
+            for ($i = 0; $i -lt $seedLines.Count; $i++) {
+                if ($seedLines[$i] -match '^\s*INSERT INTO') { $firstInsert = $i; break }
+            }
+            if ($firstInsert -ge 0) {
+                $seedInserts = $seedLines[$firstInsert..($seedLines.Count - 1)]
+                $newProcessed = @()
+                $inOrgs = $false
+                $injected = $false
+                foreach ($line in $processed) {
+                    $newProcessed += $line
+                    if (-not $injected) {
+                        if ($line -match 'LOCK TABLES `organizations` WRITE') { $inOrgs = $true }
+                        if ($inOrgs -and $line -match 'ALTER TABLE `organizations` DISABLE KEYS') {
+                            $newProcessed += $seedInserts
+                            $inOrgs = $false
+                            $injected = $true
+                        }
+                    }
+                }
+                # Fallback: append at end if organizations block not found.
+                if (-not $injected) { $newProcessed += ''; $newProcessed += $seedInserts }
+                $processed = $newProcessed
+                Write-Host "  Injected cert seed rows from cpanel-cert-db-seed.sql"
+            } else {
+                Write-Warning "No INSERT found in seed file: $seedSql"
+            }
+        } else {
+            Write-Warning "Seed SQL not found: $seedSql"
         }
     }
 

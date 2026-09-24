@@ -19,7 +19,7 @@ This document is the handoff from the Cert Platform backend to the e-cert fronte
 
 ### Domain Endpoints (JWT-Gated)
 
-**All 57 catalog endpoints are live** and enforce `jwt.auth` + `jwt.endpoint` middleware (verified against `routes/api.php`). See `authenticated-endpoints-spec.md` for the full list with required levels.
+**All 61 catalog endpoints are live** and enforce `jwt.auth` + `jwt.endpoint` middleware (verified against `routes/api.php`). See `authenticated-endpoints-spec.md` for the full list with required levels.
 
 ### Middleware
 
@@ -171,6 +171,8 @@ NEXT_PUBLIC_CERT_TENANT_SLUG=loa-e-cert
 }
 ```
 
+> **Actual (2026-09-18):** e-cert implements no rewrite — its `vercel.json` is `{}` and `next.config.ts` has no `rewrites()`; it calls the API host directly (CORS fallback path). Keep the rewrite above as the recommended topology; the frontend team is to adopt it or formally accept direct mode.
+
 ---
 
 ## Testing
@@ -222,7 +224,7 @@ curl -H "Authorization: Bearer <token>" http://localhost:9001/api/v1/events
 
 - ✅ Backend auth endpoints live (callback, refresh, logout)
 - ✅ `jwt.auth` + `jwt.endpoint` middleware enforced
-- ✅ All 57 catalog endpoints live + 2 public endpoints
+- ✅ All 61 catalog endpoints live + 3 public endpoints
 - ✅ 126 tests, 386 assertions, all green
 - ✅ Auth platform SSO entry (`/sso/login`, `/sso/register`, `/redirect`) — **live and tested**
 - 🚀 **Ready for Phase D — e-cert auth swap (CSR)**

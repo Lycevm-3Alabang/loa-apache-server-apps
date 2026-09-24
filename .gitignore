@@ -28,3 +28,4 @@ assemblies/loa-cert-platform/database/sql/cpanel-cert-db-install.sql
 .vscode/sessions.json
 auth/loa-auth-platform-dist/*
 auth/loa-cert-platform-dist/
+assemblies/loa-consult-platform/_stage/

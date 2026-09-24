@@ -50,7 +50,7 @@ class PdfService
         $pdf->setPaper('letter', 'landscape');
         $pdf->setOption('defaultFont', 'sans-serif');
 
-        return $pdf->inline($certificate->certificate_number . '.pdf');
+        return $pdf->stream($certificate->certificate_number . '.pdf');
     }
 
     public function downloadCertificatePdf(Certificate $certificate): \Symfony\Component\HttpFoundation\Response

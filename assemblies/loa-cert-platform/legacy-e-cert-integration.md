@@ -209,7 +209,7 @@ Locked with the user on 2026-08-05. These are normative for this spec.
      https://e-cert.vercel.app#payload=<base64url_encrypted>
 5. e-cert client-side code detects the fragment (only the client can read #),
    clears it via history.replaceState, and POSTs to the Cert callback
-6. Cert `POST /api/v1/auth/callback` decrypts + validates (exp, tenant.slug=loa),
+6. Cert `POST /api/v1/auth/callback` decrypts + validates (exp, tenant.slug=loa-e-cert),
    sets httpOnly cookie `loa_cert_refresh` (Path=/api/v1/auth), returns the access token
 7. e-cert stores the access token **in memory** (§6.3) and
    redirects to the intended destination
@@ -465,7 +465,7 @@ Legend: `read`/`write`/`admin` = `required_level`; **REMOVE** = feature deleted;
 | `getAllEmailLogsAction` | **GAP** — no global email-logs endpoint in v1.2 |
 | `getMyCertificatesAction` | `GET /api/v1/me/certificates` | read + owner |
 | `getMyCertificateAction` | `GET /api/v1/me/certificates/{id}` | read + owner |
-| `getCertificateQrCodeAction` | `GET /api/v1/certificates/qr` | read |
+| `getCertificateQrCodeAction` | `GET /api/v1/certificates/{certificateNumber}/qr` | read |
 
 ### Features — Templates (server actions deleted)
 
@@ -552,7 +552,7 @@ All client fetches carry `Authorization: Bearer <in-memory access>`; on `401` th
 ## 9.3 Components / Modules
 
 - **Keep:** TipTap editors (certificate/email), base UI components, verify/view renderers (re-sourced from API responses), dashboard/event/certificate components.
-- **Adapt:** PDF preview/download buttons → Cert PDF endpoints; QR display → `/api/v1/certificates/qr`; CSV upload → parse client-side then `POST` JSON to `/attendees/import`; event/certificate detail → envelope-shaped responses.
+- **Adapt:** PDF preview/download buttons → Cert PDF endpoints; QR display → `/api/v1/certificates/{certificateNumber}/qr`; CSV upload → parse client-side then `POST` JSON to `/attendees/import`; event/certificate detail → envelope-shaped responses.
 - **Remove:** `src/lib/pdf/`, `src/lib/email/`, `src/lib/qr/`, `src/lib/supabase/`, `src/lib/storage/`, `src/lib/seed/`, `src/features/auth/` (UI), `src/features/users/`, `src/features/organizations/`, `src/features/demo/`.
 - **Add:** typed Cert API client modules (§8.1), SSO fragment handler, in-memory token store + silent-refresh wiring (§6.3), client-side auth guard (§6.5).
 

@@ -2,10 +2,9 @@
 
 ## How to Use
 
-1. **Starting a new session:** Paste the `## Startup Prompt` block below verbatim into the first message.
-2. **Ending a session:** Update the `## Last Session Notes` section so the next session knows exactly where to pick up.
-3. **Cross-boundary record:** `## PROJECT UPDATES` is the durable cross-platform record — it preserves high-level decisions, design, and changes made across `assemblies/loa-auth-platform/`, `assemblies/loa-cert-platform/`, and `assemblies/loa-consult-platform/`. Keep it updated whenever a decision or design change touches more than one assembly.
-4. **Platform-scoped prompts:** per-assembly session details (Last Session Notes, Session Log, open questions) live in `assemblies/loa-auth-platform/SESSION-PROMPT.md`. Read them for the platform you're working on.
+1. **Starting a new session:** paste the `## Startup Prompt` block below verbatim into the first message.
+2. **Ending a session:** replace `## Last Session Notes` with where we stopped (date, completed, next action). Keep it to one entry — older notes live in git history.
+3. **Cross-boundary record:** `## PROJECT UPDATES` keeps only decisions/design that span assemblies. Per-platform detail lives in each assembly's `SESSION-PROMPT.md`. Delivery is tracked **per platform** — Auth / Cert / Consult ship independently.
 
 ---
 
@@ -16,307 +15,93 @@ Paste this block into the first message of a new session:
 ```
 Read these files IN ORDER and report your understanding of where we left off:
 
-1. AGENT.md        - mandatory spec-first rules
-2. AI-GUIDE.md     - architecture + Step 0 (spec check)
-3. AI-RULES.md     - coding rules + Rule 0 (specs before code)
-4. PROJECT.md      - project tracker: current status of every layer and phase
-5. PROJECT_UPDATES.md - cross-boundary tracker: "PROJECT UPDATES" (per-platform decisions/design/changes) + "Last Session Notes" (where we stopped)
-6. assemblies/loa-auth-platform/README.md    - auth platform scope
-7. assemblies/loa-auth-platform/SESSION-PROMPT.md - auth platform session details (Last Session Notes, open questions)
-8. assemblies/loa-cert-platform/README.md    - cert platform scope + SSO callback contract
-9. assemblies/loa-cert-platform/api-endpoints.md - cert endpoint source of truth (priority spec)
-10. assemblies/loa-consult-platform/README.md - consult platform scope
-11. assemblies/loa-auth-platform/tenant-group-endpoint-grants.md - level-based grants model (authority for consumer apps)
+1. AGENTS.md        - sole agent entry: SDD+TDD loop, Rule 0, Rule 0.5, No Auto-Pilot
+2. principles.md   - SDD+TDD detail + coding rules (authoritative)
+3. platform.md     - LOA architecture + Laravel gotchas
+4. PROJECT.md      - project tracker: status of every layer and phase
+5. PROJECT_UPDATES.md - this file: shared decisions + per-platform Done/Next + Last Session Notes
+6. assemblies/loa-auth-platform/SESSION-PROMPT.md - auth session details (if working on Auth)
+7. assemblies/loa-cert-platform/api-endpoints.md - cert endpoint source of truth (if working on Cert)
 
 Then:
-- Summarize the current state of each layer (kernels, domains, contexts, services, assemblies)
-- Summarize the state of EACH of the three platform assemblies (auth / cert / consult)
-- List what's Done, what's In Progress, what's Backlog per platform
+- Summarize Done / In Progress / Backlog for the platform in scope
 - Identify the NEXT action item from "Last Session Notes"
-- Do NOT write any code until a Final spec exists
+- Do NOT write code until the governing spec is Final (AGENTS.md Rule 0)
 ```
 
 ---
 
 ## PROJECT UPDATES
 
-Durable cross-boundary record: high-level decisions, design, and changes across the three platform assemblies. Each platform keeps its own detailed spec; this section preserves only what must survive across boundaries.
+Durable cross-boundary record only. Detail lives in assembly specs; history lives in git.
 
-### Shared / Cross-Platform
+### Shared decisions
 
-| Decision / Design | Detail |
-|-------------------|--------|
-| App topology | 3 Laravel 12 API apps + 1 Next.js 16 UI (see table below) |
-| Domain naming | All APIs on `*.lyceumalabang.edu.ph` (corrected 2026-08-05; was `*.loa.edu.ph`); example emails lowercase `@lyceumalabang.edu.ph` |
-| Spec-first mandate | No code without a Final spec (AI-RULES.md Rule 0) |
-| JWT model | Shared HMAC-SHA256 secret, HS256, `type=access`, local validation — no HTTP call per request |
-| Cross-app access | JWT local validation + HTTP (Bearer) for user lookup; each app owns its DB — no shared DB reads |
-| Identity authority | Auth Platform is sole source of truth for identity/password; apps are pure consumers (primary state changes via Auth API) |
-| Permission model | Data-driven (`user_permission` DB table); consumer apps use **level-based grants** (`<level>:<path>`, e.g. `read:/api/v1/events`) per `tenant-group-endpoint-grants.md` — not static `cert.*`/`consult.*` keys |
-| Verification endpoint | `GET /api/v1/auth/verify` — public JWT validation for consumers |
-| Consumer allowlist | `AUTH_ALLOWED_REDIRECTS` + `CORS_ALLOWED_ORIGINS` + tenant `redirect_origins` must include every consumer UI origin (currently `https://e-cert.vercel.app`) |
+| Decision | Detail |
+|----------|--------|
+| App topology | 3 Laravel 12 APIs + 1 Next.js 16 UI (table below) |
+| Domains | All APIs on `*.lyceumalabang.edu.ph`; example emails `@lyceumalabang.edu.ph` |
+| Spec-first + TDD | No code without a Final spec (`AGENTS.md` Rule 0); SDD sets the contract, TDD explores/refines it (`principles.md` §2b) |
+| JWT model | Shared HMAC-SHA256, HS256, `type=access`, local validation — no HTTP per request |
+| Cross-app access | JWT local validation + HTTP (Bearer) user lookup; each app owns its DB |
+| Identity authority | Auth is sole source of truth; apps are consumers (state changes via Auth API) |
+| Permission model | Level-based grants (`<level>:<path>`) per `tenant-group-endpoint-grants.md`, not static keys |
+| Consumer allowlist | `AUTH_ALLOWED_REDIRECTS` + `CORS_ALLOWED_ORIGINS` + tenant `redirect_origins` must include every UI origin (currently `https://e-cert.vercel.app`) |
+| Governance (2026-09-22) | `AGENTS.md` is the sole agent entry; `AI-RULES.md`/`AI-GUIDE.md` merged into it (+ `principles.md`/`platform.md`) and removed |
 
-| App | Subdomain | Database | Framework | Purpose |
-|-----|-----------|----------|-----------|---------|
-| Auth | auth.lyceumalabang.edu.ph | lyceumalabang_auth_db (local: `loa_auth`) | Laravel 12 | JWT token service, user management, admin dashboard |
-| Consult | aces-api.lyceumalabang.edu.ph | loa_consult | Laravel 12 | Consultation booking + faculty evaluation (combined) |
-| Cert API | cert-api.lyceumalabang.edu.ph | lyceumalabang_e_cert (local: `loa_cert`) | Laravel 12 | Certificate issuance, verification, PDF/QR/email |
-| e-cert UI | e-cert.vercel.app | — (Vercel) | Next.js 16 | Cert frontend; pure consumer of Auth + Cert APIs |
+| App | Subdomain | Database | Purpose |
+|-----|-----------|----------|---------|
+| Auth | auth.lyceumalabang.edu.ph | lyceumalabang_auth_db (local: `loa_auth`) | JWT service, users, admin dashboard |
+| Consult | aces-api.lyceumalabang.edu.ph | loa_consult | Booking + evaluation (spec program **ACTIVE** 2026-09-23) |
+| Cert API | cert-api.lyceumalabang.edu.ph | lyceumalabang_e_cert (local: `loa_cert`) | Issuance, verification, PDF/QR/email |
+| e-cert UI | e-cert.vercel.app | — (Vercel) | Next.js consumer of Auth + Cert APIs |
 
-> Production DB names/users provisioned in cPanel 2026-08-24: both apps use user `lyceumalabang_auth_admin`; passwords are deploy-time placeholders (never committed). See each platform's `DEPLOY.md` + `.env.cpanel` template.
+Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`; passwords deploy-time only). See each platform's `DEPLOY.md` + `.env.cpanel` template.
 
-### LOA Auth Platform — `assemblies/loa-auth-platform/`
+### Auth — `assemblies/loa-auth-platform/`
 
-- **Scoped session prompt:** `assemblies/loa-auth-platform/SESSION-PROMPT.md`
-- **2026-08-27:** Fixed 413 Content Too Large error — increased nginx `client_max_body_size` from 10m to 50m and PHP `post_max_size`/`upload_max_filesize` from 10M to 50M (both in `assemblies/loa-cert-platform/`). Required for template HTML content up to 2.4MB.
-- **Status:** Scaffolded + largely implemented (Phase 1). **Not yet deployed** to `auth.lyceumalabang.edu.ph`. SSO entry point is live (`/sso/login`, `/sso/register`, `/redirect`).
-- **Kernel:** Identity v3.0 (tenancy) implemented in code; many kernel specs still Draft.
-- **Final specs (implemented):** `web-ui.md` v1.2 (destination resolution), `admin-dashboard.md` (v1 + v2), `tenant-endpoint-catalog.md` v3.2, `tenant-group-endpoint-grants.md` v1.1 (group priority), `access-config-import-export.md` v1.0, data-driven permission policy v1.0, RefreshToken, `admin-dashboard-home.md` v1.0 (platform-admin zone on `/`), `group-permission-management.md` v3.0 (§12 tenant group membership restructure), `auth-tenant.md` v1.0 (auth tenant, search-first Add Member, CSV import, Create User + set-password, Platform Groups shortcut).
-- **Final specs (pending implementation):** `user-account-activation.md` v1.0 (replaces self-registration with backend-provisioned activation flow).
-- **Implemented highlights:** tenants + `user_tenants` (000011–000012), tenant-scoped groups/grants (000013–000015), `tenant` JWT claim + `jwt.tenant` middleware, admin dashboard v1/v2 (tenant CRUD, groups, per-group permissions, members, suspend/activate), group priority resolution (`user_groups.priority`, default 10, 1 = highest), endpoint catalog + bulk import, access config import/export, SSO web auth (login/register/redirect), EncryptionService decrypt bug fix, auth tenant (slug `auth`, read-only, badge), search-first multi-select Add Member on all surfaces, CSV multi-group import, Create User + set-password email flow, Platform Groups dashboard shortcut. **Tests pass.**
-- **2026-08-05 changes:** domain correction across docs/configs/tests/blades; allowlists updated (`config/cors.php`, `config/auth-web.php`, `.env.example`, `DEPLOY.md`, `environment.md`) to include `https://e-cert.vercel.app`.
-- **Phase B (Cert readiness) — DEFERRED 2026-08-06:** user decision — **no Cert data baked into the production Auth seed path** (`DatabaseSeeder` production runs only `AdminSeeder`; `database/seeders/database.sql` untouched — a `CertReadinessSeeder` attempt was created then reverted). Provisioning is **manual at deploy-time** per the runbook **`cert-readiness.md`** (**Final v0.4**, branch `docs/cert-readiness-runbook`): `loa` tenant (`redirect_origins` incl. `https://e-cert.vercel.app`), 48-endpoint Appendix A catalog import, `cert-admin`/`cert-staff`/`cert-user` groups (priorities 2/3/4, created manually), 48-row grant matrix (admin 48 / staff 39 / user 7), verification steps. Payload + matrix parity-checked against `api-endpoints.md` Appendix A. **§8 Local Development (v0.2→v0.4):** local Docker provisioning via the **`LocalCertReadinessSeeder`** (runs automatically on local `db:seed` via `DatabaseSeeder` non-prod guard — creates `cert-app` tenant @ `localhost:9001` + groups; catalog/grants still via local admin UI) plus an optional tinker fast path; local origin/CORS/redirect table.
-- **Next:** Auth deployment **deferred** (user decision 2026-08-06 — focus on Cert platform). Provisioning per `cert-readiness.md` (**Final v0.4**) happens at deploy-time; no action needed until Auth is deployed. Three things lined up for the Cert platform: **(1) Phase C** — Laravel 12 Cert app **scaffold created 2026-08-06** (`cert-app/`: core models + migrations); next is the **unauth domain CRUD slice** (events/attendees/templates/certificates + tests); **(2) C-Auth phase** — SSO `callback`/`refresh`/`logout` + `jwt.auth`/`jwt.endpoint` middleware (deferred from Phase C per decision #20/D9); **(3) Phase D** — `e-cert` auth swap (CSR): in-memory token, silent refresh, SSO fragment handler, parse-only JWT, client auth guard (depends on C-Auth).
-- **2026-08-24 changes:** Admin UI overhaul committed (`4ed2e80`, `8d40f6b`) — breadcrumbs everywhere, link-text table actions, quick-action tiles; password API auth model documented (`37fcbb7`); JWT access TTL briefly 480 then **reverted to 15 min** per `token-lifecycle.md`; cPanel production DB names wired into DEPLOY/env docs (`d031994`); HeidiSQL runbook §14; `.env.cpanel` prod templates (gitignored). Details in `SESSION-PROMPT.md`.
-- **2026-08-26 changes:** Admin dashboard home implemented per `admin-dashboard-home.md` v1.0 Final — platform-admin-only zone on `/` with stat strip, attention queue, activity feed, quick actions. Zero-JS, H4 fail-degrade. `?status=pending` added to user filter. Details in `SESSION-PROMPT.md`.
+- **Status:** Phase 1 largely implemented, **not deployed**. SSO entry live (`/sso/login`, `/sso/register`, `/redirect`).
+- **Final specs (implemented):** `web-ui.md`, `admin-dashboard.md` (v1+v2), `tenant-endpoint-catalog.md` v3.2, `tenant-group-endpoint-grants.md` v1.1, `access-config-import-export.md` v1.0, data-driven permission policy, RefreshToken, `admin-dashboard-home.md`, `group-permission-management.md` v3.0, `auth-tenant.md` v1.0.
+- **Done (latest):** §12 group-permission restructure + auth-tenant 8 items (multi-select Add Member, CSV multi-group, Create User + set-password, Platform badge/shortcut); test fixes + `PasswordSetToken` HasUuids fix; SQL consolidation (`cpanel-auth-db-install.sql`).
+- **Next:** run tests + lint to verify; commit + push; then `user-account-activation.md` v1.0 implementation. Deploy deferred (user decision — focus on Cert).
+- **2026-09-22 — Spec-mirror pass:** Final specs rewritten to match working code (admin-top ordinals, wrapped catalog, auto-attach, deny-deletes, toggle/invalidate/register-cleanup marked unimplemented, web-ui supersession pointers); proper fixes filed DEFERRED in-spec.
+- **2026-09-23 — Consult endpoints catalog:** `database/json/consult-endpoints-catalog.json` v1.0 (118 entries, transcribed from consult `api-endpoints.md` Final v1.0 §5) added as bulk-import path for deploy-time provisioning (cert-file precedent).
 
-### LOA Cert Platform — `assemblies/loa-cert-platform/`
+### Cert — `assemblies/loa-cert-platform/`
 
-- **Status:** **C-Auth complete (2026-08-11).** All endpoints now enforce `jwt.auth` + `jwt.endpoint` middleware. Auth endpoints (callback/refresh/logout) live. Auth platform SSO entry is now live — E2E SSO flow unblocked for Phase D.
-- **2026-09-13:** Fixed `GET /events/{id}/attendees?status=not_issued` **500 error** — ambiguous `event_id` column after `LEFT JOIN certificates` (both tables have `event_id`). Qualified to `event_attendees.event_id`. Also fixed pagination bug: `$query->count()` was called after `skip()`/`take()` were applied, returning a paginated count instead of the true total; moved `count()` before pagination. `api-endpoints.md` updated: `has_certificate` (bool) → `status` (`not_issued`|`issued`|`revoked`|`expired`).
-- **Verified implementation (2026-08-11):** **All 48 domain endpoints + 2 public endpoints fully implemented.** Events (13), Attendees (8), Templates (5), Certificates (14), Me (4), Public (2), Dashboard (2), Audit (2), Auth SSO (3) — all fully implemented with real DB queries, validation, audit logging. **Stubs:** QR code generation (`GET /certificates/qr` and `GET /view/{id}` return hardcoded placeholder). **Missing:** `POST /certificates/{id}/email` (email sending service not built). Deferred to Service Phase: QR code generation, email sending.
-- **Key specs:** `api-endpoints.md` (**Final v1.7** — 59 domain endpoints: 57 JWT-gated + 2 public; C-Auth implemented), `legacy-e-cert-integration.md` (**Final v2.2**; authoritative retrofit spec), `authenticated-endpoints-spec.md` (v1.1, updated 2026-08-11).
-- **2026-08-24:** cPanel DB migration runbook drafted — root **`docs/cpanel-db-migration-runbook.md`** (Draft v0.1): fresh-database drop→create→seed path for `lyceumalabang_auth_db`/`lyceumalabang_e_cert`; documents that auth prod seed = admin only and cert seeder is empty (org-row FK 1452 gap), plus access-config export/import as the sanctioned groups+grants provisioning shortcut. Awaiting review/promotion.
-- **Retrofit decisions D1–D7 (locked) + D8 superseded:** refactor-in-place; fresh start with no migration; archive-then-drop legacy DB; roles via user-groups + level grants; PDF/QR/email owned by Cert; spec synced to `e-cert` repo; ~~D8 SSR access-token cookie~~ **superseded 2026-08-06 — CSR wins**: `e-cert` is a **client-side SPA** (token in memory only, no server actions, no server-side JWT verification, `src/proxy.ts` deleted, no shared secret; refresh stays in the Cert-proxied httpOnly `loa_cert_refresh` cookie; route guard is client-side only).
-- **SSO design (Q-1 resolved: split-origin):** browser hits `e-cert.vercel.app`; Vercel rewrite `/api/v1/:path*` → `https://cert-api.lyceumalabang.edu.ph/api/v1/:path*` keeps httpOnly refresh cookie same-origin; direct cross-origin CORS is fallback only. Flow: `auth.lyceumalabang.edu.ph/sso/login?redirect=https://e-cert.vercel.app` → `https://e-cert.vercel.app#payload=<AES-256-GCM>` → `POST /api/v1/auth/callback` (decrypt, `exp` + tenant-slug validation, httpOnly `SameSite=Lax` refresh cookie) → `jwt.auth` (local HS256, no users table, tenant claim) + `jwt.endpoint` (local catalog mirror, closed-by-default, owner-rule hook). Cert-proxied refresh/logout; `/sso/register`, `/forgot-password`, `/reset-password`.
-- **Auth contract (verified from code):** HS256, `type=access`, TTLs 15/10080 min, claims `{ sub, email, name, groups, permissions, scopes, tenant:{id,slug} }`, `GET /api/v1/auth/access`.
-- **C-Auth implementation (2026-08-11):**
-  - `JWTService` (HS256 validate-only), `EncryptionService` (AES-256-GCM decrypt + key rotation)
-  - `JwtMiddleware` (`jwt.auth`), `EndpointPolicyMiddleware` (`jwt.endpoint`, 48-entry catalog)
-  - `AuthCallbackController`, `AuthRefreshController`, `AuthLogoutController` (throttled 10/min)
-  - Routes: `auth/*` public; everything else behind `['jwt.auth','jwt.endpoint']`
-  - `config/cert-platform.php` (tenant, cookie), `config/jwt.php` (secret, TTL), `config/auth-platform.php` (base_url, encryption keys)
-  - 126 tests, 386 assertions, all green (MySQL `loa_cert_test`)
-- **Retrofit phases A–H COMPLETE** (per `D:\loa\e-cert\whats-next.md`, updated 2026-08-23): D auth swap (2026-08-12 — `src/lib/auth/` token-store/jwt/sso-fragment/auth-guard, legacy Supabase stack deleted), E data swap (`b613c22` — 122 files, typed API client replaces all server actions), F UI cleanup + Playwright parity, G legacy DB decommission, H cross-app JWT/audit tests + OpenAPI completion. Post-H polish: loading UX, role scoping via `/me/*`.
-- **2026-08-24:** **Template visibility spec Final + IMPLEMENTED** — `D:\loa\e-cert\specs\components\template-visibility.md` v1.1: `visibility ENUM(public,private)` + `updated_by` on `certificate_templates`; owner-set model (`created_by`/`updated_by`, never none); private = owners only, admin sees all; enforcement on list/show/**clone endpoints/event references** (side-door audit found unguarded `clone-template`/`clone-email-template`); 404-masking. Implementation commit `9904746`: 23 new visibility tests, full suite **168/557 green**; also fixed latent `jwt_claims.sub` dot-notation bug (`created_by` was never persisted) and corrected an inverted EndpointPolicy unit test. Runtime cache shards untracked.
-- **Known gap:** local cert stack seeds no organizations → template/certificate writes fail with FK 1452 until a row exists for the backend-configured org (`CERT_ORGANIZATION_ID`). Fix candidate: Laravel seeder in cert backend.
+- **Status:** C-Auth complete (2026-08-11). All endpoints behind `jwt.auth` + `jwt.endpoint`; SSO trio live. Retrofit phases A–H COMPLETE (e-cert SPA: auth swap, data swap, cleanup, decommission, JWT/audit tests, OpenAPI).
+- **Source of truth:** `api-endpoints.md` Final v1.8 (61 gated + 3 domain-public + 3 SSO = 64 domain rows), `legacy-e-cert-integration.md` Final v2.2, `authenticated-endpoints-spec.md` v1.2.
+- **Done (latest):** template visibility (commit `9904746`, 23 tests); post-reset redirect (`28f152e`, log-viewer routes); refresh-cookie crash fix (`Cookie::queue()`); 413 JSON handler (419-CSRF handling unevidenced — claim corrected); parametrized dist builds.
+- **Known gaps:** local seed has no organization → FK 1452 on template/certificate writes (needs seeder); certificate owner-rule check missing on show/pdf/download (only `MeController` scopes); QR route shape code-vs-spec drift (`/{n}/qr` vs `?certificate_number=`); `test-suite.md` still Draft (says SQLite, actual MySQL `loa_cert_test`).
+- **Next:** auth/cert deploy; cert org seeder.
 
-### LOA Consult Platform — `assemblies/loa-consult-platform/`
+### Consult — `assemblies/loa-consult-platform/` (spec program **ACTIVE** 2026-09-24)
 
-- **Status:** Draft spec only, no code.
-- **Key spec:** `README.md` v1.0 Draft.
-- **Design:** thin composition layer wiring **Consultation + Evaluation + Academic** business contexts; owns API routing, middleware, JWT validation, request/response transformation, API docs, deployment — owns **no business logic**.
-- **API surface (draft):** appointments (+batch/accept/decline/complete/cancel), availability-rules CRUD, semesters, evaluation-periods, evaluations (ratings/comments/submit/pending), admin departments/subjects/sections, 7 report endpoints.
-- **Deployment:** `aces-api.lyceumalabang.edu.ph`, Laravel 12, cPanel, PHP 8.2+, MySQL 8.
-- **Future:** evaluation → certificate event to Cert Platform.
-- **Next:** needs its own endpoint/auth spec (mirror Cert's `api-endpoints.md`) before implementation; not yet started.
+- **Status:** scaffold done + auth-layer port COMPLETE (§11 Steps 1–7 green 2026-09-22) + slices B/C COMPLETE (B1–B5 academic/appointments, C1–C4 evaluations green 2026-09-22) + Phase D link-reads + import-domain + data/audit green 2026-09-23 (`UserLinkTest` 8/8, `ImportTest` 7/7, `DataAuditTest` 8/8 user) + URL-flattening F1+F2 green (flat 104+5 normative, scoped results). Planning FLUSHED 2026-09-23 (P0–P5 done, P6 parked — see TODO AFTER FINAL).
+- **Specs:** `api-endpoints.md` Final v2.1 (flat 104+5 green, tenant `loa-consultation`), `auth-integration.md` Final v1.5 (§11 Steps 1–7 landed, port COMPLETE; tenant `loa-consultation`), 3 endpoint modules Final v1.0–v1.1 (academic/evaluations v1.1 flat green), `endpoints-admin-import.md` Final v1.1 (Phase D baselines green 2026-09-23; DEC-5 proxy OPEN), `url-flattening.md` Final v1.1 (flat 104+5 per ACC-2), `docker-compose-spec.md` Final v1.1 (tenant `loa-consultation`), `data-model.md` Final v1.3 (shape contract + §3 Status gate 6/3/17); `test-suite.md` Final v1.2; `consult-readiness.md` Final v1.6 (104+5 pointer, tenant `loa-consultation`); runbooks Final v1.0.
+- **Next:** P6 cutover/Phase E BLOCKED (frontend decision, reports 7 types, §8 provisioning under new `loa-consultation` tenant); DEC-5 proxy OPEN; runbooks Final v1.0 (promotion complete); tenant code rollout done, suite re-green + Auth re-provisioning pending (user runs). Auth JSON regen 118→104+5 deferred to deploy-time. See TODO AFTER FINAL (planning FLUSHED 2026-09-23).
 
 ---
 
 ## Last Session Notes
 
-### Date: 2026-08-27
+### Date: 2026-09-23
 
 ### Completed
-- **auth-tenant.md implemented** — all 8 items: LocalAuthTenantSeeder, Tenant.isPlatform(), auth tenant read-only, "Platform" badge, CSV multi-group support, Create User + set-password flow, multi-select search on all 3 surfaces, dashboard shortcut.
-- **SQL scripts** — migration `2026_08_27_000001_add_password_set_tokens_table.sql`, consolidated `cpanel-auth-db-install.sql` (single file, upfront DROP pattern), updated `database.sql` (local dev seed). Fixed auth tenant INSERT (status enum, not is_active).
-- **Test fixes** — 4 failures corrected (AdminAuditLogTest, TenantGroupMembershipTest, TenantMemberImportTest, TenantMemberPickerTest).
-- **PasswordSetToken HasUuids fix** — missing trait caused SQL 1364 on user creation.
-- **User Management improvements** — removed Import Users button, added "Pending" status filter, added Groups column with linked badges, eager-loaded userGroups.
+- **Tracker reconciliation (user-approved):** `TODO.md` header → ACTIVE 2026-09-23; Phase D deferred markers → SUPERSEDED (Final v1.1 + baselines green); counts → 104+5 normative (`api-endpoints.md` v2.0 §5 Total + `url-flattening.md` ACC-2 + `consult-readiness.md` CON-2 + `config/consult-endpoints.php` 104 gated); 118+5 = v1.0 history, 113+5 = F2 intermediate. `PROJECT.md` Phase 2 synced (auth catalog, admin-import, url-flattening, F1+F2, results 20→15, academic flat). This file synced (ACTIVE date, Status, Specs).
+- **Open drift — RESOLVED 2026-09-23 (see drift-fix entry below):** assembly `AGENTS.md` §4 url-flattening 113+5; `url-flattening.md` Document Control 113+5; `endpoints-admin-import.md` Refs config 118; `config/consult-endpoints.php` L131-132 `/admin/audit-logs` unflattened.
+- **Phase planning FLUSHED 2026-09-23 (user-approved):** TODO AFTER FINAL + `PROJECT.md` Phase 2 rows synced (P0-P5 done, P6 blocked).
+- **Drift fix green pasted 2026-09-23:** 4 spec-owned drifts fixed (AGENTS §4, url-flattening Doc Control, admin-import Refs, config audit-logs flat) — full suite **120 passed (594 assertions)** incl Policy 104+5; migrations 000001–000014 DONE.
+- **Docker pipelines wired 2026-09-23 (user-requested):** consult in `reset-all`/`build-all`/`run-tests`/`dump.ps1`/`mega.ps1` (+ new `generate-dist.ps1` twin); auth/cert blocks untouched. **Pipeline COMPLETE green (user-reported): `.\mega.ps1` end-to-end.**
+- **Cert PDF 500 fixed 2026-09-23:** `PdfService::streamCertificatePdf()` used non-existent `$pdf->inline()` → `$pdf->stream()` (one line); full cert suite **249 passed (738 assertions)**.
+- **`mega.ps1` re-run green 2026-09-23 (user-reported):** tests green → dumps (auth zipped, cert in progress, consult queued) → **all 3 zipped successfully**.
 
-### Next Action
-- [ ] Run tests + lint to verify all changes
-- [ ] Commit + push
-
-### Date: 2026-08-24
+### Date: 2026-09-24
 
 ### Completed
-- **Admin UI overhaul (auth)** — breadcrumbs on every admin page incl. roots; 12 "Back to" buttons removed; link-text table actions; tenant/user/group detail quick-action tiles; `.button-ghost` white-text fix; new button variants (`neutral`/`soft-danger`/`soft-success`). Commits `4ed2e80`, `8d40f6b`; Web suite 85/85 green.
-- **Password API documented** — full endpoint/auth table (`forgot`/`reset` public by design; `PUT /password`, `change-request` jwt.auth) in `web-ui.md` §12.3 + `kernels/identity/rules/password-reset-flow.md`.
-- **JWT access TTL reverted to 15 min** (`37fcbb7`) — the 8-hour bump violated `token-lifecycle.md`; code default, compose, env examples all back to 15; containers recreated, verified live.
-- **cPanel production DB wiring** (`d031994`) — auth `lyceumalabang_auth_db`, cert `lyceumalabang_e_cert`, user `lyceumalabang_auth_admin` on both; passwords = placeholders only; fixed `CACHE_STORE=redis` landmine in auth example.
-- **DEPLOY.md hardened** — MAIL_* table, ENCRYPTION_KEY/AUTH_ADMIN_GROUP, data-migration recipe, server prerequisites, permissions, backup/rollback, sync-mail note.
-- **HeidiSQL guide** (root runbook §14) and **`.env.cpanel` prod templates** for both platforms (gitignored, untracked).
-- **Template visibility spec Final** in e-cert repo: `D:\loa\e-cert\specs\components\template-visibility.md` v1.1 — reviewed twice; caught side-doors (`clone-template`, `clone-email-template`, event references) + missing `updated_by`/owner-set model before promotion.
-- **Cert housekeeping** — runtime cache shards untracked; `EventController.organization_id` payload addition verified benign (EventTest 19/19) but left uncommitted.
+- **Tenant rename `loa` → `loa-consultation` (user-approved, own-tenant cert pattern):** 5 specs to Final (`api-endpoints.md` v2.1, `auth-integration.md` v1.5, `consult-readiness.md` v1.6, `test-suite.md` v1.2, `docker-compose-spec.md` v1.1); code/config/tests/runbooks/AGENTS updated (3 defaults, phpunit+bootstrap, 11 test files, `.env.example`, DEPLOY/FRONTEND-INTEGRATION); trackers reconciled (TODO/PROJECT/this file). Pending (user runs): real `.env` slug, Auth re-provisioning, suite re-green paste.
+- **Runbook promotions 2026-09-24 (user-approved):** `LOCAL-DEV-RUNBOOK.md`/`DEPLOY.md`/`FRONTEND-INTEGRATION.md` v0.1 → **Final v1.0** (stale sections refreshed, DEPLOY cert-patterned, topology OPEN until cutover); consult spec program 100% Final.
 
 ### Next Action
-- [x] Implement template visibility in `loa-cert-platform` per the Final spec — **DONE 2026-08-24, commit `9904746`** (23 new tests; suite 168/557 green)
-- [x] Implement post-reset redirect per web-ui.md v1.3 §4.3a — **DONE 2026-08-24, commit `28f152e`** (9 new tests; auth suite 219/528 green)
-- [ ] Corrected 2026-08-24: e-cert retrofit phases D–H were already complete — trackers were stale; see `D:\loa\e-cert\whats-next.md`
-- [ ] Seed a default organization in the cert backend (local FK-1452 gap from e-cert whats-next)
-
-### Date: 2026-08-11
-
-### Completed
-- **Auth platform SSO fully implemented** — `GET /sso/login`, `POST /sso/login`, `GET /sso/register`, `POST /sso/register`, `GET /redirect` (splash page). Login rejects admin users, validates redirect origin against tenant `redirect_origins`, checks tenant membership, creates JWT + refresh token, stores encrypted payload in session, redirects via one-time splash page. Registration restricted to LOA domains.
-- **EncryptionService::decrypt() bug fixed** — padding logic always appended `==`, which only decoded when unpadded base64 length % 4 == 2 (~1/3 of payloads). Fixed to pad to a multiple of 4. Verified with round-trip tests.
-- **SsoAuthTest** — 15 tests, 54 assertions (encrypted + fragment paths, admin rejection, redirect validation, member-only access, one-time splash, registration domain restriction). Full auth suite: **210 tests, 498 assertions, all green**.
-- **FRONTEND-INTEGRATION.md updated** — SSO entry is now live; removed "blocked on auth platform" caveat.
-- **Cert Platform endpoint verification** — Audited all 50 endpoints against `api-endpoints.md` Final v1.5. **48 of 50 fully implemented.** Events (13), Attendees (8), Templates (5), Certificates (12/14), Me (4), Public (1/2), Dashboard (2), Audit (2), Auth SSO (3). Stubs: QR code in `GET /certificates/qr` and `GET /view/{id}`. Missing: `POST /certificates/{id}/email`.
-
-### Next Action
-- [ ] Deploy auth to `auth.lyceumalabang.edu.ph` (provision per `cert-readiness.md` Final v0.4)
-- [ ] Phase D — e-cert auth swap (CSR) — **unblocked**
-
-### Date: 2026-08-10
-
-### Completed
-- **Events & Attendees resource groups COMPLETE** per `api-endpoints.md` v1.4 (Final) — unauth domain CRUD slice done:
-  - **Events (13 endpoints):** CRUD + real `stats()`, clone-template, clone-email-template, bulk-issue, reissue, issue-completed, revoke-expired (GET count + POST action) — OpenAPI-annotated.
-  - **Attendees (8 endpoints):** list, create (upsert by event+email → 201), import (JSON; replace requires `confirm=true`), update (PATCH, event-scoped email conflict), destroy, destroy-with-cert, delete-preview, file-data (template → 200 / 410 / Storage download) — OpenAPI-annotated.
-  - Routes registered in `routes/api.php` (PATCH per spec; nested `events/{eventId}/attendees` group).
-- **Test suite GREEN: 91 tests / 334 assertions** via Docker (`docker compose exec -T cert-app vendor/bin/phpunit`). New feature tests: `tests/Feature/Api/EventTest.php` (13) + `AttendeeTest.php` (8).
-- **Bugs fixed during suite run** (working-tree only, NOT committed): composite-PK sequence increment (`certificate_sequences`); `destroy*()` `Response` vs `: JsonResponse` → `json(null, 204)`; `CertificateController::store` attendee `firstOrCreate` missing `organization_id` + `$event` null scope; `expire()` counted after update (always 0); `PdfService` DomPDF v3 (facade + `loadHtml`); `Organization` missing `HasFactory`; factories (unique org slug, attendee `organization_id`).
-- **Infra:** composer dev deps (`phpunit ^12.5` [13.x needs PHP ≥8.4.1; container 8.3.33], `mockery ^1.6`, `fakerphp/faker ^1.24`), `autoload-dev` `Tests\`; created `bootstrap/cache` + `storage/framework/{cache,sessions,views}` + `storage/logs` (volume shadowing); renamed `database/Migrations` → `database/migrations` (git mv — was only working on Windows via case-insensitive mount; would break cPanel/Linux).
-- **Cleanup:** removed dead duplicate `app/Http/Controllers/Api/CertificateTemplateController.php`; deleted `.tmp_debug.php`.
-- **Caveats:** nothing committed yet; `cert-app/` leftover scaffold dir still present. **Test DB (2026-08-10):** SQLite is a non-goal — `phpunit.xml.dist` now forces MySQL (`force="true"` beats compose shell env) against dedicated **`loa_cert_test`** (created + granted to `loa`); tests no longer touch `loa_cert` app data; `certificates` migration's MySQL-only `storedAs('IF(...)')` is intentional.
-
-### Next Action
-- [ ] Commit completed Events/Attendees work (await explicit instruction)
-- [ ] Remove leftover `cert-app/` dir (confirm first)
-
----
-
-### Date: 2026-08-08
-
-### Completed
-- **Phase C State Verification:** Audited Cert Platform implementation against `api-endpoints.md` v1.4 (Final). Found Events/Attendees groups **partially implemented** — not complete as previously reported.
-- **CertificateTemplateController:** ✅ Complete (5 endpoints, OpenAPI, tests).
-- **CertificateController:** ✅ Complete (14 endpoints, OpenAPI, tests).
-- **PdfService + PlaceholderResolver:** ✅ Complete.
-- **Docker + Swagger Infrastructure:** ✅ Complete.
-- **All Models & Migrations:** ✅ Complete.
-
-### Corrected Status — Events & Attendees
-| Resource Group | Spec Endpoints | Implemented | Missing |
-|----------------|----------------|-------------|---------|
-| **Events** | 13 (§5.1) | 6 (CRUD + stats stub) | 7: clone-template, clone-email-template, bulk-issue, reissue, revoke-expired (count+action), issue-completed |
-| **Attendees** | 8 (§5.2) | 0 | All 8 endpoints |
-
-**EventController** has basic CRUD + stats stub (mock data). No OpenAPI attributes. Routes not registered.
-**AttendeeController** does not exist.
-**Tests:** Only basic Unit tests for Event CRUD. No Feature tests for advanced endpoints, no Attendee tests.
-
-### In Progress
-- **Deferred to Auth Phase:** SSO + `jwt.auth`/`jwt.endpoint` middleware (decision #20/D9)
-- **Deferred to Service Phase:** QR code generation, email sending services
-- **Active Work:** Completing Events & Attendees resource groups per spec
-
-### Next Action
-- [ ] **Complete EventController:** Add 7 missing endpoints + fix `stats()` + OpenAPI on all 13 methods
-- [ ] **Create AttendeeController:** All 8 endpoints with OpenAPI
-- [ ] **Register routes** in `routes/api.php`
-- [ ] **Write Feature tests** for all 21 endpoints
-- [ ] **Run tests** and verify
-
-### Backlog / Known Gaps
-- Previous session notes (2026-08-07) overstated Events/Attendees completion — corrected here.
-
----
-
-### Date: 2026-08-06
-
-### Completed
-- **Resolved Q-2..Q-7 (Cert Phase A gate)** — see Cert Platform section above for outcomes.
-- **Bumped `api-endpoints.md` → Draft v1.3** (Q-6/Q-7 synced): `certificate_number_pattern` is required + user-configurable, must contain `####` (no default); `/events/{id}/attendees/import` accepts a **JSON payload** (CSV is a UI concern).
-- **Bumped `legacy-e-cert-integration.md` → Draft v1.1** (all Qs resolved in §13): D8 reframed (API-enforced JWT-cookie model), seed groups `cert-admin`/`cert-staff`/`cert-user`, `/my/profile` out of scope.
-- **CSR decision (2026-08-06):** checked `D:\loa\e-cert\specs\` v2.0 — supersedes D8 with a **client-side SPA**; user chose **CSR wins**. Rewrote `legacy-e-cert-integration.md` → **Draft v2.0** (D8 superseded in §5; §3 SPA; §6 in-memory session + parse-only client JWT + route guard; §8 server actions deleted → typed client API; §10 no secrets env, adds `NEXT_PUBLIC_CERT_TENANT_SLUG`; §12 phases D/E reworded; §13 Q-2=CSR, R-4=XSS/in-memory risk). Synced to `D:\loa\e-cert\legacy-e-cert-integration.md` (D7). Fixed `e-cert/specs` stale bits (seed groups `cert-admin`/`cert-staff`/`cert-user`, attendee import = JSON payload, CSV parse stays client-side).
-- **Phase A COMPLETE (2026-08-06):** user confirmed decision #17 (Cert-proxied refresh/logout) and dashboard stats at `read` (with ownership note). Promoted `api-endpoints.md` → **Final v1.4** (§9.2 SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example numbers → `CERT-0001`, **#20 auth deferred**) and `legacy-e-cert-integration.md` → **Final v2.1** (§7.2 dashboard ownership note, §12 Phase A complete; **D9 auth deferral**, C-Auth phase; Auth-provisioning sections refactored to side-notes). D7 copy re-synced.
-
-### In Progress
-- **Phase B (next):** Auth readiness — redirect allowlist, cert catalog import (Appendix A), **provision** `cert-admin`/`cert-staff`/`cert-user` groups + grants (per `cert-readiness.md`; production not seeded — local-only `LocalCertReadinessSeeder`)
-
-### Next Action
-- [x] **Phase A — COMPLETE 2026-08-06:** `api-endpoints.md` v1.4 and `legacy-e-cert-integration.md` v2.1 → **Final** (incl. #20 auth deferral, D9, side-note refactor)
-- [ ] **Phase B:** Auth readiness — redirect allowlist incl. `https://e-cert.vercel.app`, cert catalog import (Appendix A), **provision** `cert-admin`/`cert-staff`/`cert-user` groups + grants (per `cert-readiness.md`; production not seeded — local-only `LocalCertReadinessSeeder`)
-- [x] **Phase C scaffold — CREATED 2026-08-06:** Laravel 12 app at `assemblies/loa-cert-platform/cert-app/` (directory structure, composer.json, app config, core models `Organization`/`Event`/`CertificateTemplate`/`Certificate`/`EventAttendee` + migrations). Next: implement the unauth domain CRUD slice (decision #20 / D9: `jwt.auth`/`jwt.endpoint` + SSO callback/refresh/logout deferred to a later auth phase)
-
-### Backlog / Known Gaps
-- Deferred (Q-3): global email logs + audit-log delete/entity/user/by-ids queries dropped from retrofit; future dedicated SMTP API (check reuse of Auth's temporary email tool)
-
----
-
-### Date: 2026-08-05
-
-### Completed
-- **Authored the legacy `e-cert` retrofit spec** — `assemblies/loa-cert-platform/legacy-e-cert-integration.md` (Draft v1.0, augmented with §10.4–10.8 concrete wiring):
-  - Turns the Next.js 16 `e-cert` app into a pure consumer of Auth + Cert: SSO (`/sso/login`, `#payload=` fragment, verify-only `jose` JWT §6.4), roles via user-groups + level-based grants (§7), full server-action/API-route → Cert v1.2 endpoint mapping (§8), env contract (§10.1), decommission plan (§11), file-by-file checklist (§10.8), impl plan (§12)
-  - Locked decisions D1–D8 (refactor-in-place; fresh start; archive-then-drop DB; roles via groups; PDF/QR/email owned by Cert; spec synced to `e-cert` repo; SSR access-token cookie)
-  - Synced working copy in the `e-cert` repo per D7
-- **Corrected all LOA domains across monorepo + `e-cert`** (committed in both repos):
-  - `auth.loa.edu.ph` → `auth.lyceumalabang.edu.ph`
-  - `cert.loa.edu.ph` → `cert-api.lyceumalabang.edu.ph` (API host) + `e-cert.vercel.app` (UI, Vercel) — **Q-1 resolved: split-origin**
-  - `consult.loa.edu.ph` → `aces-api.lyceumalabang.edu.ph` (Consult + Eval combined)
-  - example emails `@loa.edu.ph` → `@lyceumalabang.edu.ph`
-  - Touched docs, `config/cors.php`, `config/auth-web.php`, `.env.example`, tests, blade placeholders; retrofit spec §10.7 rewritten (Vercel rewrites + `cert-api` vhost)
-
-### In Progress
-- `api-endpoints.md` — **Draft v1.2**, awaiting user review
-- `legacy-e-cert-integration.md` — **Draft**, awaiting user review
-
-### Next Action
-- [ ] **Phase A:** review + promote `api-endpoints.md` v1.2 and `legacy-e-cert-integration.md` → **Final**; resolve open questions Q-2..Q-7 (§13 of retrofit spec)
-- [ ] **Phase B:** Auth readiness — redirect allowlist incl. `https://e-cert.vercel.app`, cert catalog import, **provision** groups (per `cert-readiness.md`; **not** seeded)
-- [ ] **Phase C:** scaffold Laravel 12 Cert app — **domain CRUD slice only, unauthenticated** (decision #20 / D9: auth deferred)
-
-### Backlog / Known Gaps
-- **DECISION:** Auth Platform remains the sole source of truth for identity/password changes; apps rely on the Auth API for primary state modification.
-- **CONFIRMATION:** Permission registry is data-driven (`user_permission` DB table), not static JSON — enforced in future dev.
-- No-terminal deploy requires uploading prebuilt `vendor/` (pure-PHP deps; safe cross-platform).
-- Cert API v1.2 gaps (retrofit spec Q-3): audit-log delete/entity queries + global email logs — drop UI or extend the API.
-
----
-
-## Session Log
-
-| Date | Work Done | Next Action |
-|------|-----------|-------------|
-| 2026-07-31 | Identity events/rules specs; auth controllers; middleware; CORS spec+impl; spec-first mandate | Deploy auth or start Phase 2 |
-| 2026-07-31 | RefreshToken entity spec + contract + README/PROJECT updates | Implement RefreshToken or deploy auth or Phase 2 |
-| 2026-07-31 | Auth Web UI spec (login redirect, forgot/change password, email, CSRF) + rule unification | Implement RefreshToken or Auth Web UI or deploy |
-| 2026-07-31 | RefreshToken spec → Final; model + migration + IdentityService wiring | Auth Web UI or deploy auth |
-| 2026-07-31 | Docker local dev (php:8.3, nginx, mysql, mailpit); Rule 7 disable endpoint + Rule 8 pruning; Laravel 12 upgrade; all verified | Auth Web UI or deploy auth |
-| 2026-08-01 | Auth Web UI implemented; deployed CORS/Swagger/seeder issues investigated and deployment safeguards added | Deploy corrected auth release |
-| 2026-08-01 | SQL dump fixed (sessions table + real admin hash); no-terminal DEPLOY.md section; login destination resolution spec'd (web-ui v1.2); Admin Dashboard spec (Draft) | Promote Admin Dashboard to Final + implement, or deploy |
-| 2026-08-01 | Identity Kernel v3.0 tenancy spec (tenants, scoped groups/grants, `jwt.tenant`, claims) + admin-dashboard v2 tenant admin | Review/promote tenancy spec; then implement |
-| 2026-08-01 | Tenancy + admin dashboard v1 implemented and verified (migrations, TenantService, tenant-scoped auth, `jwt.tenant`/`web.admin`, login destination, `/admin/users`); `database.sql` rebuilt from migration schema (parity-checked) | Deploy current auth release, or start admin dashboard v2 |
-| 2026-08-01 | Admin dashboard v2 implemented: tenant CRUD, groups, per-group permissions, members, suspend/activate; `admin-dashboard.md` promoted to Final; dist regenerated | Deploy, or start Phase 2 (Consult App) |
-| 2026-08-02 | Cert Platform SSO spec (README.md §11-12), web-ui.md created, group-permission-management.md created, architecture decisions (SSO-only for LOA, self-hosted for external, permission-based role mapping) | Implement group/permission API + admin UI |
-| 2026-08-02 | Verified group/permission management already implemented (GroupController, UserGroupController, 3 Blade views, routes); verified admin create user v3 already implemented | Add permission registry, or implement Cert Platform SSO |
-| 2026-08-02 | Data-driven permission policy spec finalized (Final v1.0); old registry/claims specs marked SUPERSEDED | Implement permission policy in loa-auth-platform |
-| 2026-08-02 | Auth Platform implementation complete: 4 migrations, 4 models, PermissionPolicyService, ClaimPolicyMiddleware, ImportPermissions command, PermissionPolicyController, JWT claims/scopes, admin API endpoints, middleware registration | Create permissions.json per app; implement Cert SSO; run tests |
-| 2026-08-02 | Tests written: 12 model tests, 9 middleware tests, 20+ controller tests, 12 service tests, 8 command tests; WithJwtClaims trait created | Run tests and verify |
-| 2026-08-02 | Read AGENT.md, AI-GUIDE.md, AI-RULES.md, PROJECT.md, group-permission-management.md, cert web-ui.md, cert README.md, tenant-endpoint-catalog.md, permission-resolution.md, data-driven-permission-policy.md, tenancy.md, README.md, user-group.md, AuthorizationService.php, RoutePolicy.php; summarized all layers + Phase 1-4 status; created `tenant-group-endpoint-grants.md` spec (Draft→Final); updated SESSION-PROMPT.md | Implement tenant-endpoint-catalog.md + tenant-group-endpoint-grants.md in code |
-| 2026-08-02 | Added Admin UI §6 to `tenant-endpoint-catalog.md` (endpoint catalog list, create form, bulk import, validate, delete with force) and Admin UI §8 to `tenant-group-endpoint-grants.md` (group endpoint grants page, user endpoint overrides page); updated Implementation Inventory and Dependency References in both specs; updated SESSION-PROMPT.md | Build Blade views for tenant endpoint catalog + group/user endpoint grants |
-| 2026-08-02 | Implemented tenant endpoint catalog + group endpoint grants: 3 migrations, 3 models, EndpointGrantController, ClaimPolicyMiddleware extension, GET /api/v1/auth/access endpoint, admin web + API routes, 3 Blade views. Fixed ImportPermissionsCommandTest (Artisan::call() to resolve SQLite :memory: isolation). All 143 tests pass. Clarified: permissions.json per app not needed — bulk import API already accepts the JSON format as payload. | Implement Cert Platform SSO |
-| 2026-08-03 | Group priority resolution spec'd: `user_groups.priority` (int, default 10, 1 = highest); `tenant-group-endpoint-grants.md` → Final v1.1 (§3.3 Group Priority + §4 algorithm — highest-precedence wins, `deny` only on priority ties); `user-group.md` + `permission-resolution.md` updated. Endpoint catalog admin UI navigation fixed + `tenant-endpoint-catalog.md` → Final v3.2 (web/API split, entry point). | Implement group priority in code |
-| 2026-08-03 | Implemented group priority: migration, model, resolution logic, admin UI, tests (143 pass); committed + pushed. Wrote `access-config-import-export.md` spec (Draft v1.0) — JSON template download, export, import with preview/confirm for groups+grants+overrides. | Implement access config import/export |
-| 2026-08-03 | Reviewed `access-config-import-export.md` against related specs; fixed 3 P0 issues (export query, platform-wide groups, confirm/dry_run), 3 P1 issues (active check, API routes, invariants), 3 P2 issues (none no-op, * wildcard, validation notes). Spec promoted to **Final v1.0**. | Implement access config import/export |
-| 2026-08-03 | Implemented Access Config Import/Export: `AccessConfigController` (template, export, import), web + API routes, `access-config-import.blade.php` (file upload, paste JSON, preview, confirm), buttons on tenant show + groups pages, 3 factories (composite PK), `HasFactory` on 3 models, 29 tests (all 172 pass). | Deploy auth or start Cert Platform SSO |
-| 2026-08-05 | Retrofit spec + domain correction (see Last Session Notes); root SESSION-PROMPT restructured into cross-boundary **PROJECT UPDATES** record for auth/cert/consult | Phase A: review + promote Cert specs to Final |
-| 2026-08-06 | Resolved Q-2..Q-7; `api-endpoints.md` → Draft v1.3 (cert-number pattern required/user-configurable, attendees/import JSON) + `legacy-e-cert-integration.md` → Draft v1.1 (Qs resolved, seed groups `cert-admin/staff/user`) | Phase A: review + promote v1.3/v1.1 → Final → Phase B (Auth readiness) → Phase C (scaffold) |
-| 2026-08-06 (2) | **CSR decision** (user: CSR wins): checked `D:\loa\e-cert\specs\` v2.0 — supersedes D8; rewrote `legacy-e-cert-integration.md` → Draft v2.0 (D8 superseded §5, SPA §3, in-memory/parse-only/route-guard §6, server actions deleted §8, no-secrets env §10, Q-2=CSR/R-4 §13); synced D7 copy; fixed `e-cert/specs` stale bits (seed groups, JSON import, CSV client-side); updated e-cert SESSION-PROMPT | Phase A: review + promote v1.3 / v2.0 → Final → Phase B → Phase C |
-| 2026-08-06 (3) | **Phase A COMPLETE.** User confirmed decision #17 (Cert-proxied refresh/logout) + dashboard stats `read` with ownership note. Promoted `api-endpoints.md` → **Final v1.3** (SSO URL `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership, decision #17 confirmed, examples `CERT-0001`) and `legacy-e-cert-integration.md` → **Final v2.0** (§7.2 ownership note, §12 A complete); D7 re-synced | Phase B (Auth readiness) → Phase C (scaffold) |
-| 2026-08-06 (4) | **Phase B deferred (user decision):** no Cert data baked into Auth seeders/database.sql — `CertReadinessSeeder` attempt reverted; groups to be created **manually** at deploy-time. Wrote **`cert-readiness.md` (Draft v0.1)** runbook in `assemblies/loa-auth-platform/` on new branch **`docs/cert-readiness-runbook`** (loa tenant + redirect_origins, 48-endpoint Appendix A payload, groups, 48-row grant matrix, verification); payload + matrix parity-checked vs `api-endpoints.md` Appendix A | Review + promote `cert-readiness.md` → Final → deploy Auth → provision per runbook → Phase C (Cert scaffold) |
-| 2026-08-06 (5) | **`cert-readiness.md` promoted to Final v0.1** (Phase B readiness runbook; payload + matrix verified 48/48) | Deploy Auth → provision per runbook → Phase C (Cert scaffold) |
-| 2026-08-06 (6) | **`cert-readiness.md` → Final v0.2:** added **§8 Local Development** (Docker Compose) — local admin UI at `localhost:8080`, local origin/CORS/redirect table, optional ad-hoc tinker fast path for tenant+groups (not in any seeder), local verification; §3 cross-ref; References + Doc Control renumbered to §9–§11 | Deploy Auth → provision per runbook → Phase C (Cert scaffold) |
-| 2026-08-06 (7) | **Decision #20 (2026-08-06):** no auth on Cert API endpoints for now — Phase C = unauth domain CRUD slice; SSO + `jwt.auth`/`jwt.endpoint` deferred to a later **C-Auth** phase. `legacy-e-cert-integration.md` → **Final v2.1** (D9, C-Auth row, side-note refactor of Auth-provisioning sections). `api-endpoints.md` → **Final v1.4** (decision #20, §13 inventory annotated). `README.md` → Draft v1.1 (§11.8 side-note). | Phase C scaffold (unauth core slice) |
-| 2026-08-06 (8) | **Phase C scaffold created** — Laravel 12 app at `assemblies/loa-cert-platform/cert-app/` (directory structure, composer.json, app config, core models `Organization`/`Event`/`CertificateTemplate`/`Certificate`/`EventAttendee` + migrations) | Implement the unauth domain CRUD slice (events/attendees/templates/certificates + tests) |
-| 2026-08-07 | Reconciled the local Docker path: documented **`LocalCertReadinessSeeder`** (auto-runs on local `db:seed` via `DatabaseSeeder` non-prod guard; `cert-app` tenant @ `localhost:9001` + groups) as the sanctioned local provisioning in `cert-readiness.md` → **Final v0.4**. Production seeding stays manual-only per the 2026-08-06 decision. | Implement the unauth domain CRUD slice |
-| 2026-08-07 (2) | **User Account Activation spec** written + promoted to **Final v1.0** (`user-account-activation.md`): replaces self-registration with backend-provisioned activation flow (pending status, activation tokens, admin resend). Committed + pushed. | Implement user account activation per spec |
-| 2026-08-08 | Added centralized Seq log server (datalust/seq) to root docker-compose.yml; both Auth and Cert app services now emit structured logs to Seq on port 5341. Created config/logging.php in both assemblies with a seq channel activated when SEQ_URL env var is present. Auth platform runbook updated with Seq instructions. | Verify Seq integration logs flow correctly; update Cert runbook |
-| 2026-08-10 | **Events & Attendees complete** (unauth CRUD slice): 13 event + 8 attendee endpoints (incl. stats, clone-template, bulk-issue, reissue, issue-completed, revoke-expired, import, destroy-with-cert, delete-preview, file-data), routes, OpenAPI, feature tests. Full suite green (91/334). Fixed seq/PDF/delete/expire/scope bugs surfaced by tests; added composer dev deps; renamed `database/Migrations`→`database/migrations`; removed dead Api controller. NOT committed. | Commit Events/Attendees work; remove `cert-app/` leftover |
-| 2026-08-11 | **Auth platform SSO implemented** (`/sso/login`, `/sso/register`, `/redirect`); fixed `EncryptionService::decrypt()` padding bug; `SsoAuthTest` (15 tests); full auth suite 210/498 green. FRONTEND-INTEGRATION.md updated. **Cert endpoint verification:** 48/50 domain endpoints fully implemented; 2 stubs (QR), 1 missing (email). |
-| 2026-08-24 | **Admin UI overhaul + docs/prod wiring (auth)**: breadcrumbs everywhere, link-text actions, quick-action tiles (`4ed2e80`,`8d40f6b`); password API auth model documented; JWT TTL reverted to 15m per policy (`37fcbb7`); cPanel DB names/users wired (`d031994`); DEPLOY.md hardened; HeidiSQL §14; `.env.cpanel` templates gitignored. **Cert/e-cert:** runtime cache shards untracked; template visibility spec authored, reviewed, promoted to **Final v1.1** in e-cert repo. | Implement template visibility in loa-cert-platform |
-| 2026-08-24 (2) | **Template visibility IMPLEMENTED** (`9904746`): migration + model owner-set helpers; templates store/update/index/show per spec; clone endpoints + event references guarded; 23 new tests; fixed latent `jwt_claims.sub` bug + inverted endpoint-policy unit test. Suite 168/557 green. Swagger regenerated. Trackers updated. | Phase D e-cert auth swap; e-cert UI badge/toggle with Phase E/F |
-| 2026-08-24 (3) | **Post-reset redirect implemented (auth)** per web-ui.md v1.3 §4.3a: forgot-password web+API accept allowlisted `redirect` → emailed link → hidden field → success redirects to tenant app (fallback `/login`); shared `safeRedirectUrl()` on base Controller (WebAuthController delegates). 9 new tests; suite 219/528 green, committed `28f152e`. **Tracker correction:** e-cert retrofit D–H already complete (stale notes said "Phase D next") — source of truth `D:\loa\e-cert\whats-next.md`; open gap = cert org seeder | Cert org seeder; auth/cert deploy |
-| 2026-08-24 (4) | **Admin UI rename (`9dde135`):** "Effective Permissions" → "SSO Platform Permissions" on user detail + tenant group detail pages; permission checkboxes now show key + seeded description (fallback "No description available."); `group-permission-management.md` synced. **Spec wording fix:** `permission-resolution.md` rule 2 corrected from "deny wins *within* a group" to **deny wins *across* groups** — matches `AuthorizationService::getPermissions()` (granted minus denied, any applicable group deny strips the key) | Auth/cert deploy |
-| 2026-08-24 (5) | **Platform-admin semantics documented** (`web-ui.md` §4.1): admin = membership in `loa-auth-admin` only (no privileged email; `ADMIN_EMAIL` seeding is bootstrap); any active user incl. tenant users can be promoted via Admin UI. Added /login vs /sso/login admission matrix. Corrected stale claim "/login is admin-only": code (`WebAuthController::login`) actually admits non-admin tenant members with valid tenant `?redirect=` via token-delivery flow; §16.3 verification rows synced. Verified live DB: `alamoninofrancisco@gmail.com` = cert-admin only, NOT platform-admin | Auth/cert deploy |
-| 2026-08-24 (6) | **/login admission tests added** (`SsoAuthTest`, 4 new): admin → web session + refresh-token revocation; tenant member + valid `?redirect=` → splash delivery without web session; no redirect / unknown origin → rejected with tokens revoked. Full suite 228/563 green | Auth/cert deploy |
-| 2026-08-24 (7) | **cPanel SMTP wired locally for BOTH apps**: removed hardcoded cert-app `MAIL_*` from root compose (mail now driven by each app's bind-mounted `.env`, matching auth); both local `.env` → `mail.lyceumalabang.edu.ph:587` as `noreply@` (untracked). **Bug fix:** auth `config/mail.php` mapped legacy `MAIL_ENCRYPTION` into the mailer `scheme` key — `tls` is invalid there (auth send FAILED; cert worked via framework default). Config now reads only `MAIL_SCHEME`; STARTTLS auto on 587. Both apps verified SENT end-to-end. `.env.example`s default to Mailpit; DEPLOY.md + web-ui.md §7 updated (no `MAIL_ENCRYPTION`) | Auth/cert deploy |
-| 2026-08-24 (8) | **Refresh-token flow verified live + 2 bugs fixed (cert):** probing `/api/v1/auth/refresh` exposed `JsonResponse->cookies` crash in ALL branches of `AuthRefreshController` (500 on logout/refresh paths; same bug in `AuthLogoutController`) — rewritten with `Cookie::queue()`; local config gap: cert `.env` had no `AUTH_BASE_URL` → defaulted to undeployed prod host → now `http://auth-nginx` (+ example note). E2E verified: auth-issued refresh via cookie → proxy → rotation → new access token. Suite 168/557 green. e-cert SPA: stale-token clear on refresh-fail (`6af8b0d`); forgot/reset back-link now "Back to referrer" with HTTP-referer fallback | Auth/cert deploy |
-| 2026-08-24 (9) | **419 "Page Expired" eliminated on auth forms** (user-reported nuisance): `bootstrap/app.php` render handler converts expired-CSRF POSTs into fresh-form redirects with "Your session has expired" flash — per-route re-render map (`/login`, `/sso/*`, `/forgot-password`, `/reset-password` carrying `token`+`email`; admin forms → back()). Framework quirk: TokenMismatchException is converted to `HttpException(419)` BEFORE render callbacks → must type-hint the latter. Spec'd web-ui.md §4.0; new `CsrfExpiryTest` (4 tests, CSRF enabled). Suite 234/583 green | Auth/cert deploy |
-| 2026-08-24 (10) | **Parametrized dist builds**: rewrote auth `generate-dist.ps1` + new cert twin — both take mandatory `-Path` (destination created on demand), emit `<app>-dist\` folder + `.zip`, self-locating via `$PSScriptRoot`. Excludes git/vendor/node_modules/docker/compose/cert-app leftover, phpunit caches, `tmp/`, stray `loa_auth` sqlite, self; strips `.env*`/tests/docs (README only) and empties `storage/framework/{cache,sessions,views,logs}`. Verified clean output both apps | Auth/cert deploy |
-| 2026-08-26 | **Admin dashboard home implemented** per `admin-dashboard-home.md` v1.0 Final: controller data assembly (stat cards, attention queue, activity feed), admin-zone Blade partial, `?status=pending` fix, dashboard `@include`. Zero-JS, H4 fail-degrade | Run tests + lint; Phase D e-cert auth swap |
-| 2026-08-26 (2) | **§12 Group-Permission-Management implemented** (auth): spec promoted to Final v3.0; I1/M8 guards on AuthorizationService; 5 new routes (tenant group members search/add/remove/confirm + platform-permissions toggle), 2 old user-detail routes removed; 6 new controller methods, 2 modified with M6 guards; user detail rewrote to read-only, group-members rewrote with two-tier search, new member-remove-confirm interstitial, platform group show scoped; `auth:repair-i1-violations` artisan command; 25 new tests; fixed search table name + M6 guards + audit test routes | Run tests + lint; Phase D e-cert auth swap |
+- [ ] Tenant rollout finish (user runs): real `.env` `TENANT_SLUG=loa-consultation` → Auth re-provisioning (tenant + aces-* + 104+5 catalog/grants) → consult suite re-green paste → Auth JSON regen 118→104+5 at deploy time
+- [ ] P6 PARKED items only (DEC-5 + Phase E + §8 provisioning — see TODO PLANNED). Planning FLUSHED 2026-09-23; runbooks Final v1.0 2026-09-24; drift fixes done green (120 passed).

@@ -552,7 +552,116 @@ No lower-level document may contradict the rules defined in this specification.
 
 ---
 
+# 15b. LOA Platform Notes (merged 2026-09-22 from AI-GUIDE)
+
+> `AGENTS.md` is the lean entry; this section holds LOA-specific architecture and gotchas.
+
+## App topology
+
+| App | Subdomain | Database | Purpose |
+|-----|-----------|----------|---------|
+| Auth | auth.lyceumalabang.edu.ph | loa_auth | JWT service, users, admin dashboard |
+| Consult | aces-api.lyceumalabang.edu.ph | loa_consult | Booking + evaluation |
+| Cert API | cert-api.lyceumalabang.edu.ph | loa_cert | Issuance, verification, PDF/QR/email |
+| e-cert UI | e-cert.vercel.app | — (Vercel) | Next.js consumer of Auth + Cert APIs |
+
+JWT: shared HMAC-SHA256 secret, HS256, `type=access`, local validation, no HTTP per request. Cross-app identity via Auth API / JWT claims only — no shared DB reads. See `PROJECT.md` for live status.
+
+## Laravel assembly scaffolding checklist
+
+All of these must exist or artisan breaks silently: `artisan`, `public/index.php`, `bootstrap/app.php` (NO `providers` array — Laravel 11+ auto-registers), quoted-space `.env`, `config/app.php` (NO `providers` array), `routes/api.php` (must exist even if empty).
+
+## Recurring gotchas (full)
+
+- **`.env` quoting:** quote every value with spaces (`APP_NAME="LOA Cert Platform"`), or dotenv fails to parse.
+- **Apache strips `Authorization` on cPanel:** `public/.htaccess` MUST forward it BEFORE the front-controller rule:
+  `RewriteCond %{HTTP:Authorization} .` + `RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]`. Without it, JWT endpoints 401 in prod while passing locally (Docker uses nginx).
+- **`.env.cpanel` secret parity:** `JWT_SECRET` and `ENCRYPTION_KEY` byte-identical across Auth ↔ consumers; tenant slug must match Auth DB `tenants.slug`. Verify via `php artisan tinker --execute="echo config('jwt.secret');"` post-deploy; never commit secrets.
+- **Layer map for LOA work:** Product Assemblies (`assemblies/`) → Business Contexts (`business-contexts/`) → Industry Domains (`domains/`) → Platform Services (`services/`) → Platform Kernels (`kernels/`). Assemblies contain no business logic; contexts collaborate via events only.
+
+---
+
+# 15c. The Grander Scheme — Three Shelves, One Platform (2026-09-22)
+
+The folders below are not filing categories. They are **underlying plans of a single scheme**: a long-lived reusable platform (kernels → domains → services → contexts) composed into independently-shippable products (assemblies), bound by joint contracts (integration), advanced by governed agents, kept alive by operations. Each shelf draws the same scheme at a different altitude:
+
+| Shelf | Question | Folders | Altitude |
+|-------|----------|---------|----------|
+| **Build** (vision made concrete) | What do we build? | `kernels/` → `domains/` → `services/` → `business-contexts/` → `assemblies/` → `integration/` | Ordered by stability: reusable foundations first, deployables last, handshakes between deployables after both sides exist |
+| **Govern** (conduct) | How do we work? | `AGENTS.md` → `principles.md` / `platform.md` → `PROJECT.md` → `PROJECT_UPDATES.md` | Entry → rules → status → record. Describes agent behavior, never product behavior |
+| **Operate** (execution) | How does it run? | `docs/`, `SSO-SETUP.md`, `LOCAL-DEV-RUNBOOK.md`, `CLI-COMMANDS.md`, per-assembly `DEPLOY.md` | Human operators + pipelines. Workspace operations: specs + runbooks for running, not building |
+
+Traversing the repo means zooming through the scheme: a task arrives at govern (what are we doing?), descends the build shelf by dependency direction (where does this concept belong?), and lands on operate when it must run somewhere. A file's address should always answer *which plan, at which altitude* — never just *which topic*.
+
+## Independence yet correlation (law, 2026-09-22)
+
+Applies to every folder holding specs:
+
+- **Independent plans:** a shared layer never names an assembly to *define* itself. Cross-links may point *down* to implementations (informational), never *up* for meaning. Verified: `domains/` and `business-contexts/` name no assembly; `kernels/identity/` links point down only.
+- **Correlation at composition:** every spec folder declares its correlation in a fixed block — shared layers list `Composes` (what they wire from below) and informational consumers; assemblies list exactly what they compose (`Included` sections); joint contracts list `Parties` and each side's owned half.
+- **Convention:** `## Correlation (independent yet correlated)` in folder READMEs (`Composes` / `Consumed by` / `Contracts`); `Parties` header block in `integration/specs/` files. Assemblies satisfy it via their existing `Included` sections.
+
+---
+
 # 16. Guiding Principle
+
+The Automotive Business Platform is a platform—not a collection of applications.
+
+---
+
+# 17. Layer Diagram — Services vs Domains vs Contexts (2026-09-22)
+
+```
+┌─ Product Assemblies ──────────────── What SHIPS (no logic) ──┐
+│  auth-app · cert-app · consult-app     deployables            │
+└────────────────────── ▲ ─────────────────────────────────────┘
+                         │ composes
+┌─ Business Contexts ────┴───────────── What HAPPENS ──────────┐
+│  Consultation ──events──▶ Evaluation    lifecycles,          │
+│  Certificate                            aggregates, events    │
+└────────────────────── ▲ ─────────────────────────────────────┘
+                         │ references by ID
+┌─ Industry Domains ─────┴───────────── What things MEAN ──────┐
+│  education: Student, Faculty, Semester  concepts + rules,    │
+│  Subject, Enrollment…                   tech-agnostic         │
+└────────────────────── ▲ ─────────────────────────────────────┘
+                         │ uses (no entities owned)
+┌─ Platform Services ────┴───────────── What WORK gets done ───┐
+│  qrcode · (pdf, mail candidates)        replaceable,          │
+│                                         entity-free           │
+└────────────────────── ▲ ─────────────────────────────────────┘
+                         │ stands on
+┌─ Platform Kernels ─────┴───────────── What things ARE ───────┐
+│  identity: User, groups, tokens…        entities + lifecycles│
+│                                         most stable           │
+└──────────────────────────────────────────────────────────────┘
+
+Arrows point DOWN only. Nothing points up; contexts never
+point sideways (events, not calls).
+```
+
+## Three jobs
+
+- **Domains own knowledge** — what things are and their rules, shared across apps, no workflows, no tech.
+  `domains/education/student.md`: what a student is, SSO-upsert rule. Never mentions MySQL, HTTP, or bookings.
+- **Contexts own workflows** — what happens: aggregates, state machines, events.
+  `business-contexts/consultation/`: booking lifecycle PENDING→COMPLETED, conflict detection, publishes
+  `AppointmentCompleted`. References domain entities by ID; never redefines them.
+- **Services own technical work** — how something gets done, no business entities, replaceable.
+  `services/qrcode/`: bytes into a QR image. Doesn't know what a certificate *is*; cert calls it during issuance.
+
+## Telling them apart
+
+If it has a lifecycle or state machine → context. If it's meaning/rules reused across apps → domain.
+If the implementation could be swapped (QR lib, PDF engine, mailer) without the business noticing → service.
+
+## Placed example (consult)
+
+`appointments` table + booking rules → Context. `Student` meaning → Domains. `loa_consult` DDL + migration
+order (`assemblies/loa-consult-platform/data-model.md`) → Assemblies (composition no lower layer describes).
+Login identity → Kernels. QR rendering → Services.
+
+---
 
 The Automotive Business Platform is a platform—not a collection of applications.
 

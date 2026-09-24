@@ -17,8 +17,8 @@ Paste this block into the first message of a new session:
 ```
 Read these files IN ORDER and report your understanding of where we left off:
 
-1. AI-RULES.md                       - mandatory spec-first rules (Rule 0: no code without a Final spec)
-2. AI-GUIDE.md                       - architecture + Step 0 (spec check)
+1. AGENTS.md                        - sole agent entry (SDD+TDD, Rule 0/0.5, No Auto-Pilot)
+2. principles.md + platform.md      - coding detail + LOA architecture/gotchas
 3. PROJECT.md                        - repo tracker: Phase 1 "Auth Service" = this platform's status
 4. PROJECT_UPDATES.md (root)         - repo-wide cross-boundary tracker: decisions/design/changes per platform
 5. assemblies/loa-auth-platform/README.md   - assembly scope + API surface
@@ -91,6 +91,7 @@ Then:
 | 2026-08-27 | **auth-tenant.md spec promoted to Final v1.0**: auth tenant (slug `auth`, read-only, badge), search-first Add Member (multi-select, batch add) on all surfaces, CSV import (editable preview, tenant-scoped groups), Create User + set-password email flow, Platform Groups dashboard shortcut | Implement auth-tenant.md per Final spec |
 | 2026-08-27 (2) | **auth-tenant.md fully implemented** (all 8 items): LocalAuthTenantSeeder, Tenant.isPlatform() helper, auth tenant read-only (UI + server guards), "Platform" badge, CSV multi-group support, Create User + set-password flow (migration, model, controller, mail, views, routes), multi-select search on all 3 surfaces, dashboard Platform Groups shortcut. SQL scripts created/updated (migration + consolidated cPanel install + local dev seed). | Run tests + lint |
 | 2026-08-27 (3) | **Test fixes** (4 failures): AdminAuditLogTest flash message, TenantGroupMembershipTest duplicate error, TenantMemberImportTest additive behavior, TenantMemberPickerTest button text. **PasswordSetToken HasUuids fix** (missing trait caused SQL 1364 on create). **SQL consolidation**: merged cpanel-auth-db-install-fixed.sql → cpanel-auth-db-install.sql (single file, upfront DROP pattern); fixed auth tenant INSERT (status enum, not is_active). **User Management improvements**: removed Import Users button, added "Pending" to status filter, added Groups column with linked badges, eager-loaded userGroups. | Run tests + lint; commit + push |
+| 2026-09-23 | **Consult endpoints catalog JSON** (`database/json/consult-endpoints-catalog.json` v1.0, 118 entries): faithful transcription of consult `api-endpoints.md` Final v1.0 §5 / `config/consult-endpoints.php` for deploy-time TenantAppEndpoint provisioning (cert-file precedent). Includes catalog-listed paths consult deliberately does not serve (admin-users writes, users/reference, audit-logs) — grants provisioning decides; unserved paths stay 404/closed-by-default. | Provision `loa` tenant consult groups/grants at deploy time per consult-readiness Final v1.4 |
 
 ---
 
@@ -101,5 +102,5 @@ Then:
 | No consumer app code here | Cert/Consult implementations belong to their own assemblies |
 | No direct consumer DB access | Consumer apps own their DB; Auth data is consumed via Auth API / JWT claims only |
 | No business logic in the assembly | Auth Platform wires identity/auth/admin; domain logic lives in `kernels/`, `domains/`, `business-contexts/` |
-| Specs before code, always | No implementation until the governing spec is Final (AI-RULES.md Rule 0) |
-| No auto-pilot | Confirm every significant action with the user (AI-RULES.md §13, AI-GUIDE.md) |
+| Specs before code, always | No implementation until the governing spec is Final (AGENTS.md Rule 0) |
+| No auto-pilot | Confirm every significant action with the user (AGENTS.md) |

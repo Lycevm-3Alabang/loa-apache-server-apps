@@ -482,7 +482,63 @@ $response->assertStatus(403)
             ->assertJsonPath('message', 'You do not have access to this certificate.');
     }
 
-    public function test_get_certificate_allows_admin(): void
+    public function test_pdf_blocks_non_recipient(): void
+    {
+        $certificate = Certificate::create([
+            'organization_id' => $this->organization->id,
+            'event_id' => $this->event->id,
+            'template_id' => $this->template->id,
+            'recipient_name' => 'Maria Santos',
+            'recipient_email' => 'maria@example.com',
+            'certificate_number' => 'CERT-0001',
+        ]);
+
+        $response = $this->actingAsJwt(['email' => 'other@example.com'])
+            ->getJson("/api/v1/certificates/{$certificate->id}/pdf");
+
+        $response->assertStatus(403)
+            ->assertJsonPath('message', 'You do not have access to this certificate.');
+    }
+
+    public function test_download_blocks_non_recipient(): void
+    {
+        $certificate = Certificate::create([
+            'organization_id' => $this->organization->id,
+            'event_id' => $this->event->id,
+            'template_id' => $this->template->id,
+            'recipient_name' => 'Maria Santos',
+            'recipient_email' => 'maria@example.com',
+            'certificate_number' => 'CERT-0001',
+        ]);
+
+        $response = $this->actingAsJwt(['email' => 'other@example.com'])
+            ->getJson("/api/v1/certificates/{$certificate->id}/download");
+
+        $response->assertStatus(403)
+            ->assertJsonPath('message', 'You do not have access to this certificate.');
+    }
+
+    public function test_pdf_non_recipient_revoked_returns_403_not_410(): void
+    {
+        $certificate = Certificate::create([
+            'organization_id' => $this->organization->id,
+            'event_id' => $this->event->id,
+            'template_id' => $this->template->id,
+            'recipient_name' => 'Maria Santos',
+            'recipient_email' => 'maria@example.com',
+            'certificate_number' => 'CERT-0001',
+            'revoked_at' => now(),
+        ]);
+
+        // Owner check runs before the revoked/expired check: no state leak.
+        $response = $this->actingAsJwt(['email' => 'other@example.com'])
+            ->getJson("/api/v1/certificates/{$certificate->id}/pdf");
+
+        $response->assertStatus(403)
+            ->assertJsonPath('message', 'You do not have access to this certificate.');
+    }
+
+    public function test_pdf_allows_admin(): void
     {
         $certificate = Certificate::create([
             'organization_id' => $this->organization->id,
@@ -494,9 +550,9 @@ $response->assertStatus(403)
         ]);
 
         $response = $this->actingAsJwt(['email' => 'admin@lyceumalabang.edu.ph', 'groups' => ['cert-admin']])
-            ->getJson("/api/v1/certificates/{$certificate->id}");
+            ->getJson("/api/v1/certificates/{$certificate->id}/pdf");
 
-        $response->assertStatus(200)
-            ->assertJsonPath('data.id', $certificate->id);
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/pdf');
     }
 }

@@ -8,9 +8,12 @@ use Illuminate\Http\Response;
 interface CertificateStorage
 {
     /**
-     * Store a certificate PDF to persistent storage.
+     * Generate and store a certificate PDF.
+     * Decides generation mode from attendee metadata:
+     *   - 'file': decode base64 file_data from metadata
+     *   - 'template': render HTML via PdfService
      */
-    public function store(Certificate $certificate, string $decodedPdf): void;
+    public function store(Certificate $certificate, array $metadata = []): void;
 
     /**
      * Delete a certificate PDF from persistent storage.

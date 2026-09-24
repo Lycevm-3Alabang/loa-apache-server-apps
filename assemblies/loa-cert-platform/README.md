@@ -767,6 +767,8 @@ AUTH_PLATFORM_BASE_URL=https://auth.lyceumalabang.edu.ph
 ENCRYPTION_KEY=<same_key_as_auth_platform>
 ENCRYPTION_KEY_PREVIOUS=
 CERT_TENANT_SLUG=loa-e-cert
+CERT_ORGANIZATION_ID=00000000-0000-0000-0000-000000000001
+CERT_USE_METADATA_SERVING=true
 ```
 
 ```php
@@ -781,6 +783,8 @@ return [
 // config/cert-platform.php
 return [
     'tenant_slug' => env('CERT_TENANT_SLUG', 'loa-e-cert'),
+    'organization_id' => env('CERT_ORGANIZATION_ID', '00000000-0000-0000-0000-000000000001'),
+    'use_metadata_serving' => env('CERT_USE_METADATA_SERVING', true),
 ];
 ```
 

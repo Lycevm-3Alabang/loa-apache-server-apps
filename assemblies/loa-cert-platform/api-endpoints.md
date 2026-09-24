@@ -1,7 +1,7 @@
 # LOA Cert Platform — API Endpoints
 ## Product Assembly Component Specification
 
-**Version:** 1.6
+**Version:** 1.8
 **Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -84,7 +84,7 @@ https://cert-api.lyceumalabang.edu.ph/api/v1
 - LOA runs a **single organization**. The `organizations` table is kept and seeded with one row (`Lyceum of Alabang`, `website=https://staging-loa-vericert.vercel.app`), matching `CERT_TENANT_SLUG=loa-e-cert` — via `DatabaseSeeder`, or `database/sql/cpanel-cert-db-seed.sql` for SQL imports.
 - The current organization is **resolved server-side** from the authenticated JWT `tenant` claim via `config/cert-platform.php` (`tenant_slug` → organization). Clients never send `organization_id`.
 - Every query is implicitly filtered to the resolved organization. Cross-organization access is impossible by construction.
-- Tenant mismatch (token `tenant.slug` ≠ configured `loa`) → `403`.
+- Tenant mismatch (token `tenant.slug` ≠ configured `loa-e-cert`) → `403`.
 
 ## 3.4 Response Envelope
 
@@ -155,11 +155,11 @@ The Cert Platform has **no local role model and no users table**. Runtime access
 | Level | Ordinal | Meaning | Example grants |
 |-------|---------|---------|----------------|
 | `deny` | -1 | Explicit block; wins on group-priority ties | — |
-| `admin` | 98 | Destructive / sensitive operations | revoke, delete, reissue, expire, audit logs |
-| `write` | 99 | Create / update / state actions | create event, import attendees, issue certificate, send email |
-| `read` | 100 | View / read-only | list events, view certificates, dashboard stats |
+| `read` | 1 | View / read-only | list events, view certificates, dashboard stats |
+| `write` | 2 | Create / update / state actions | create event, import attendees, issue certificate, send email |
+| `admin` | 3 | Destructive / sensitive operations | revoke, delete, reissue, expire, audit logs |
 
-> `admin` (ordinal 98) is lower than `write` (99) and `read` (100). Any higher level covers lower levels — e.g., an `admin` grant satisfies a `read`-required endpoint. The distinction is **operational**: `required_level=admin` endpoints are granted only to the admin group; `write`-granted staff do not receive grants on `admin` paths. `admin` is never auto-derived from `write`.
+> Ordinals as implemented in `EndpointPolicyMiddleware::levelOrdinal` (`deny=-1`, `read=1`, `write=2`, `admin=3`); ALLOW iff granted ≥ required. `admin` is **operational**: `required_level=admin` endpoints are granted only to the admin group; `write`-granted staff do not receive grants on `admin` paths. `admin` is never auto-derived from `write`. Level *labels* are the cross-platform contract (Auth publishes `<level>:<path>`); Auth owns grant *resolution* per `tenant-group-endpoint-grants.md`.
 
 ## 4.3 JWT `permissions` Claim
 
@@ -185,7 +185,7 @@ The e-cert admin/staff/participant vocabulary maps to **groups granted levels in
 | `admin` | `admin` on every cataloged path (Appendix A). Bypasses the owner rule (§9.6). |
 | `staff` | `write` on management paths (events, attendees, templates, certificates issue/email), `read` on read paths. No grants on `admin` paths (revoke, delete, reissue, expire, audit, with-cert). |
 | `staff` (author-scoped) | `read`/`write` on **item paths only** (`/api/v1/events/{id}`, `/api/v1/templates/{id}`) + `read` on `/api/v1/me/events` and `/api/v1/me/templates`. **Not** granted the unscoped collection reads (`/api/v1/events`, `/api/v1/templates`). Author scope enforced in controllers (§9.6). |
-| `participant` | `read` on participant paths only: `/api/v1/me/certificates`, `/api/v1/me/certificates/{id}`, `/api/v1/certificates/{id}`, `/api/v1/certificates/{id}/pdf`, `/api/v1/certificates/{id}/download`, `/api/v1/events/{id}`, `/api/v1/certificates/qr`. Subject to the owner rule (§9.6). |
+| `participant` | `read` on participant paths only: `/api/v1/me/certificates`, `/api/v1/me/certificates/{id}`, `/api/v1/certificates/{id}`, `/api/v1/certificates/{id}/pdf`, `/api/v1/certificates/{id}/download`, `/api/v1/events/{id}`, `/api/v1/certificates/{certificateNumber}/qr`. Subject to the owner rule (§9.6). |
 
 ### 4.4.1 Minimum Required Grants per Group
 
@@ -199,7 +199,7 @@ The table below lists the **exact `<level>:<path>` grants** each seed group must
 | | `read:/api/v1/certificates/{id}/pdf` |
 | | `read:/api/v1/certificates/{id}/download` |
 | | `read:/api/v1/events/{id}` |
-| | `read:/api/v1/certificates/qr` |
+| | `read:/api/v1/certificates/{certificateNumber}/qr` |
 | `cert-staff` | `read`/`write` on management paths (events, attendees, templates, certificates) **excluding** admin paths (revoke, delete, reissue, expire, audit, with-cert). Plus `read` on `/api/v1/me/events` and `/api/v1/me/templates` for author-scoped staff. |
 | `cert-admin` | `admin` on every cataloged path (Appendix A). |
 
@@ -919,16 +919,18 @@ Auto-revoke all expired certificates and notify recipients nearing expiry.
 
 **Errors:** 401, 403, 500.
 
-### `GET /api/v1/certificates/qr`
-Generate a QR data URL for a certificate's public verification URL.
+### `GET /api/v1/certificates/{certificateNumber}/qr`
+Generate a QR data URL for a certificate's public verification URL. Path-param form as implemented and as the UI calls it (`getQrCode` → `/certificates/${n}/qr`, typed `{ data_url }`).
 
 **Auth:** `read`
 
-**Query:** `certificate_number` (required).
+**Path:** `certificateNumber` (required, `[A-Za-z0-9\-]+`).
 
-**Response 200:** `{ "data": { "certificate_number": "CERT-0001", "qr_data_url": "data:image/png;base64,..." } }`
+**Response 200:** `{ "certificate_number": "CERT-0001", "data_url": "data:image/png;base64,..." }` (bare shape, no `data` envelope; key is `data_url`, not `qr_data_url`).
 
-**Errors:** 401, 403, 404, 422 (missing number).
+**Errors:** 401, 403, 404.
+
+> DEFERRED improvement: none scheduled — UI and API agree on this shape (dashboard tolerates both keys). The query-param form (`/certificates/qr?certificate_number=`) documented in v1.8 does not exist in code; do not reintroduce without a spec.
 
 ---
 
@@ -956,7 +958,7 @@ Get one of the caller's own certificates.
 
 ## 5.6 Public Verification & View
 
-No authentication. Public responses must **never** expose email addresses, internal ids beyond the certificate id, or `html_content`.
+No authentication. Public responses SHOULD NOT expose email addresses, internal ids beyond the certificate id, or `html_content` — as implemented, `verify` currently returns `recipient_email` (DEFERRED improvement: remove it; `PublicCertificateTest` asserts its absence after removal).
 
 ### `GET /api/v1/verify/{certificate_number}`
 Verify a certificate by its public number.
@@ -1015,6 +1017,11 @@ Public read-only certificate viewer data.
 ```
 
 **Errors:** 404 (not found), 410 (revoked).
+
+### `GET /api/v1/public/certificates/{id}/download`
+Public PDF download (attachment, no auth).
+
+**Response 200:** PDF binary, `Content-Disposition: attachment; filename="<certificate_number>.pdf"`. **Errors:** 404 (not found), 410 (revoked).
 
 ---
 
@@ -1166,11 +1173,13 @@ All domain routes under `/api/v1`. `required_level` refers to the endpoint catal
 | DELETE | `/attendees/{id}/with-cert` | `admin` |
 | GET | `/attendees/{id}/delete-preview` | `read` |
 | GET | `/attendees/{id}/file-data` | `read` |
+| GET | `/attendees/lookup` | `read` |
 | GET | `/templates` | `read` |
 | POST | `/templates` | `write` |
 | GET | `/templates/{id}` | `read` |
 | PATCH | `/templates/{id}` | `write` |
 | DELETE | `/templates/{id}` | `write` |
+| GET | `/templates/{id}/certificate-count` | `read` |
 | POST | `/certificates` | `write` |
 | POST | `/certificates/bulk` | `write` |
 | POST | `/certificates/upload` | `write` |
@@ -1184,19 +1193,35 @@ All domain routes under `/api/v1`. `required_level` refers to the endpoint catal
 | GET | `/certificates/{id}/email-logs` | `read` |
 | POST | `/certificates/{id}/reissue` | `admin` |
 | POST | `/certificates/expire` | `admin` |
-| GET | `/certificates/qr` | `read` |
+| GET | `/certificates/{certificateNumber}/qr` | `read` |
 | GET | `/me/certificates` | `read` + owner |
 | GET | `/me/certificates/{id}` | `read` + owner |
 | GET | `/me/events` | `read` + author |
 | GET | `/me/templates` | `read` + author |
+| GET | `/dashboard/stats` | `read` |
+| GET | `/dashboard/activity` | `read` |
+| GET | `/admin/audit-logs` | `admin` |
+| GET | `/admin/audit-logs/export` | `admin` |
+| GET | `/service/users` | `read` |
+| GET | `/service/users/{id}` | `read` |
+| PATCH | `/service/users/{id}/status` | `admin` |
+| GET | `/service/users/{id}/groups` | `read` |
+| POST | `/service/users/{id}/groups` | `admin` |
+| DELETE | `/service/users/{id}/groups/{groupId}` | `admin` |
+| GET | `/service/groups` | `read` |
+| GET | `/service/members` | `read` |
+| POST | `/service/members` | `admin` |
+| DELETE | `/service/members/{userId}` | `admin` |
+| POST | `/service/members/invite` | `admin` |
 | GET | `/verify/{certificate_number}` | public |
 | GET | `/view/{id}` | public |
+| GET | `/public/certificates/{id}/download` | public |
 | GET | `/dashboard/stats` | `read` |
 | GET | `/dashboard/activity` | `read` |
 | GET | `/admin/audit-logs` | `admin` |
 | GET | `/admin/audit-logs/export` | `admin` |
 
-Total: **59 domain endpoints** (57 JWT-gated + 2 public).
+Total: **64 domain endpoints** (61 JWT-gated + 3 public).
 
 Auth group (public, §9):
 
@@ -1298,7 +1323,7 @@ Re-issuing after revocation reuses the same number (the generated column becomes
 | 12 | Template locking when referenced | Prevents breaking issued certificates |
 | 13 | Runtime authorization is **level-based** (`<level>:<path>`), not `cert.*` keys | Matches `tenant-group-endpoint-grants.md` — levels are the tenant-app model; `cert.*` keys are not enforced by Cert (§4.5) |
 | 14 | Cert keeps a **local mirror** of the endpoint catalog for enforcement | No DB/HTTP per request; Auth Platform remains the source of truth for granting |
-| 15 | `admin` (ordinal 98) is lower than `write` (99) and `read` (100); admin is an operational label | Mirrors the Auth Platform model; admin-only paths are granted only to the admin group |
+| 15 | `admin` is an operational label (ordinals `read=1`, `write=2`, `admin=3` per middleware) | Admin-only paths are granted only to the admin group |
 | 16 | JWT validated with **no local user lookup** (no users table) | Account state is enforced by Auth at issuance; cert trusts the signed claims |
 | 17 | Refresh/logout are **proxied by Cert** using the httpOnly refresh cookie | Keeps the refresh token out of JS (XSS risk); refines README §11.5–11.6. **Confirmed 2026-08-06** alongside the CSR decision — the frontend holds the access token in memory only and relies on the Cert-proxied `loa_cert_refresh` cookie (§9.3, §9.7). |
 | 18 | Owner rule enforced in the controller using the middleware-resolved granted level | `read` on certificate paths is necessary but not sufficient for participant access |
@@ -1372,8 +1397,8 @@ Processes the encrypted SSO payload and establishes the Cert session.
 
 1. Payload field present and decrypts → else `400` (missing/malformed/tampered).
 2. `exp` not in the past → else `400` (stale payload).
-3. JWT `access_token` validates locally (HS256 signature, `type=access`, `exp`, `tenant.slug=loa`) → else `401`.
-4. `tenant.slug` matches `config('cert-platform.tenant_slug')` (`loa`) → else `403` (tenant mismatch). Because Auth issued the token for the `loa` tenant, the tenant claim is authoritative for membership — no separate membership lookup (deviation from README §11.3 step 5, which suggested an Auth API call).
+3. JWT `access_token` validates locally (HS256 signature, `type=access`, `exp`, `tenant.slug=loa-e-cert`) → else `401`.
+4. `tenant.slug` matches `config('cert-platform.tenant_slug')` (`loa-e-cert`) → else `403` (tenant mismatch). Because Auth issued the token for the `loa-e-cert` tenant, the tenant claim is authoritative for membership — no separate membership lookup (deviation from README §11.3 step 5, which suggested an Auth API call).
 5. Nonce/anti-replay: payloads are single-use via `exp`; an application-level cache of recently seen `jti`-like payloads is optional and not required.
 
 **Success 200:**
@@ -1383,6 +1408,7 @@ Processes the encrypted SSO payload and establishes the Cert session.
   "status": "success",
   "data": {
     "access_token": "eyJ...",
+    "refresh_token": "eyJ...",
     "token_type": "Bearer",
     "expires_in": 900,
     "user": { "id": "...", "email": "...", "name": "..." },
@@ -1391,7 +1417,8 @@ Processes the encrypted SSO payload and establishes the Cert session.
 }
 ```
 
-- `refresh_token` is **not** returned in the body. It is set as an **httpOnly, SameSite=Lax, Secure** cookie `loa_cert_refresh` (`HttpOnly; Path=/api/v1/auth; SameSite=Lax; Secure`) so it is invisible to JS.
+- `refresh_token` is returned in the body **and** set as an **httpOnly, SameSite=Lax, Secure** cookie `loa_cert_refresh` (`HttpOnly; Path=/api/v1/auth; SameSite=Lax; Secure`).
+- DEFERRED improvement: stop returning `refresh_token` in the body (cookie-only, XSS posture); callers must migrate to cookie-first reads before removal.
 - **Errors:** `400` (missing/malformed/expired/tampered payload), `401` (invalid token), `403` (tenant mismatch), `429` (rate limit).
 - **Throttle:** `10/min` per IP (`ThrottleRequests`).
 - **Audit:** log `auth.sso_callback` (user_email, source, IP) after success.
@@ -1421,7 +1448,7 @@ Cert mirror of Auth's `ClaimPolicyMiddleware::handleLevelBased` (the `RoutePolic
 6. `ordinal(granted_level) < ordinal(required_level)` → `403` (`reason: insufficient_level`).
 7. Store the granted level as request attribute `jwt_endpoint_level` so controllers can apply the owner rule (§9.6).
 
-**Ordinals:** `deny=-1`, `admin=98`, `write=99`, `read=100`.
+**Ordinals:** `deny=-1`, `read=1`, `write=2`, `admin=3` (as implemented in `EndpointPolicyMiddleware`).
 
 **Catalog sync:** the local mirror is a deployment artifact generated from the same catalog imported into Auth (Appendix A). Auth is authoritative for grants; the local copy only mirrors `required_level` and paths for matching. Add the `permissions:sync-cert-catalog` artisan command to re-generate the mirror during deploys.
 
@@ -1435,12 +1462,13 @@ Levels decide *whether* a caller may invoke an endpoint; **scope** decides *whic
 | `author` | `/api/v1/events/{id}`, `/api/v1/events/{id}/*`, `/api/v1/templates/{id}`, `/api/v1/me/events`, `/api/v1/me/templates` | Caller created the record: `jwt.sub === record.created_by` |
 | `unscoped` | any | No filter |
 
-**Rule selection:**
+**Rule selection (as implemented — group check, not level check):**
 
-1. If `jwt_endpoint_level === 'admin'` → **unscoped** (no record filter).
+1. If caller holds the `cert-admin` Auth tenant group → **unscoped** (no record filter).
 2. Certificate item endpoints (detail/pdf/download) with granted level `read` → **recipient** scope.
 3. Event/template item operations (detail, PATCH, DELETE) and event sub-resource actions with granted level `read` or `write` (i.e., non-admin) → **author** scope.
 4. `/me/*` endpoints (`/me/certificates`, `/me/events`, `/me/templates`) are **always** scoped to the caller regardless of level — recipient for certificates, author for events/templates.
+- DEFERRED improvement: select rule 1 on `jwt_endpoint_level === 'admin'` (covers per-user `admin` overrides, not just group members).
 
 **Grant patterns (author-scoped staff):**
 
@@ -1454,7 +1482,8 @@ Levels decide *whether* a caller may invoke an endpoint; **scope** decides *whic
 
 - Reads the `loa_cert_refresh` httpOnly cookie → else `401`.
 - Calls Auth `POST https://auth.lyceumalabang.edu.ph/api/v1/auth/refresh` server-to-server with `{ "refresh_token": "<cookie>" }`.
-- On success: re-issues the refresh cookie (rotated by Auth), returns `{ "data": { "access_token", "token_type", "expires_in" } }`.
+- On success: re-issues the refresh cookie (rotated by Auth), returns `{ "data": { "access_token", "refresh_token", "token_type", "expires_in" } }` (body carries the rotated `refresh_token` as implemented).
+- DEFERRED improvement: drop `refresh_token` from the refresh body (cookie-only); same caller migration as §9.3.
 - On Auth failure: clears the cookie, `401`.
 - **Throttle:** `10/min` per IP.
 - Refines README §11.5 (previously the frontend called Auth directly; now Cert proxies so the refresh token stays in the httpOnly cookie).
@@ -1462,7 +1491,9 @@ Levels decide *whether* a caller may invoke an endpoint; **scope** decides *whic
 ## 9.8 Logout — `POST /api/v1/auth/logout`
 
 - Reads the `loa_cert_refresh` cookie; if present, calls Auth `POST /api/v1/auth/logout` server-to-server with the refresh token.
-- Clears the cookie; returns `204`.
+- Clears the cookie with `Secure=true` hardcoded (as implemented — http-local clear fails without HTTPS).
+- DEFERRED improvement: drive `Secure` from `cert-platform.refresh_cookie_secure` like callback/refresh.
+- Returns `204`.
 - Frontend also discards its in-memory access token (`legacy-e-cert-integration.md` §6.3).
 - Refines README §11.6.
 
@@ -1620,7 +1651,7 @@ The import payload for Auth `POST /api/v1/admin/tenants/{tenant}/endpoints/bulk`
     { "method": "GET",    "path": "/api/v1/certificates/{id}/email-logs", "label": "Certificate email logs",            "required_level": "read" },
     { "method": "POST",   "path": "/api/v1/certificates/{id}/reissue",    "label": "Reissue certificate",               "required_level": "admin" },
     { "method": "POST",   "path": "/api/v1/certificates/expire",          "label": "Expire certificates",               "required_level": "admin" },
-    { "method": "GET",    "path": "/api/v1/certificates/qr",              "label": "Certificate QR code",               "required_level": "read" },
+    { "method": "GET",    "path": "/api/v1/certificates/{certificateNumber}/qr", "label": "Certificate QR code", "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/me/certificates",              "label": "My certificates",                   "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/me/certificates/{id}",         "label": "My certificate",                    "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/me/events",                    "label": "My authored events",                "required_level": "read" },
@@ -1632,20 +1663,24 @@ The import payload for Auth `POST /api/v1/admin/tenants/{tenant}/endpoints/bulk`
     { "method": "GET",    "path": "/api/v1/templates/{id}/certificate-count", "label": "Template certificate count",  "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/attendees/lookup",             "label": "Lookup attendee",                   "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/service/users",                "label": "List auth users",                   "required_level": "read" },
-    { "method": "PATCH",  "path": "/api/v1/service/users/{id}/status",    "label": "Update user status",               "required_level": "write" },
+    { "method": "GET",    "path": "/api/v1/service/users/{id}",            "label": "Get auth user",                     "required_level": "read" },
+    { "method": "PATCH",  "path": "/api/v1/service/users/{id}/status",    "label": "Update user status",               "required_level": "admin" },
+    { "method": "GET",    "path": "/api/v1/service/users/{id}/groups",    "label": "List user groups",                  "required_level": "read" },
+    { "method": "POST",   "path": "/api/v1/service/users/{id}/groups",    "label": "Add user to group",                 "required_level": "admin" },
+    { "method": "DELETE", "path": "/api/v1/service/users/{id}/groups/{groupId}", "label": "Remove user from group",    "required_level": "admin" },
     { "method": "GET",    "path": "/api/v1/service/groups",               "label": "List auth groups",                  "required_level": "read" },
     { "method": "GET",    "path": "/api/v1/service/members",              "label": "List tenant members",              "required_level": "read" },
-    { "method": "POST",   "path": "/api/v1/service/members",              "label": "Add tenant member",                "required_level": "write" },
+    { "method": "POST",   "path": "/api/v1/service/members",              "label": "Add tenant member",                "required_level": "admin" },
     { "method": "DELETE", "path": "/api/v1/service/members/{userId}",     "label": "Remove tenant member",             "required_level": "admin" },
-    { "method": "POST",   "path": "/api/v1/service/members/invite",       "label": "Invite tenant member",             "required_level": "write" }
+    { "method": "POST",   "path": "/api/v1/service/members/invite",       "label": "Invite tenant member",             "required_level": "admin" }
   ]
 }
 ```
 
-> `verify/{certificate_number}` and `view/{id}` are **public** — no catalog entry, no JWT. The `auth/*` routes are public but not cataloged (cookie/payload flow, §9). The `service/*` routes are JWT-gated and require `jwt.auth` + `jwt.endpoint` middleware.
+> `verify/{certificate_number}`, `view/{id}` and `public/certificates/{id}/download` are **public** — no catalog entry, no JWT. The `auth/*` routes are public but not cataloged (cookie/payload flow, §9). The `service/*` routes are JWT-gated and require `jwt.auth` + `jwt.endpoint` middleware.
 
 ---
 
 ## Document Control
 
-- **Status:** Final v1.7 — 2026-09-07: **Certificate rules spec** (`certificate-rules-spec.md` Final v1.0): template lock check on issuance (Gap 1), upload disk unification (Gap 5), file cleanup on delete (Gap 7). Endpoint catalog expanded from 48 to 57 entries (added `templates/{id}/certificate-count`, `attendees/lookup`, 7 `service/*` routes). v1.6 (2026-08-24): **Template visibility** (governing spec: e-cert repo `specs/components/template-visibility.md` Final v1.1). Templates gain `visibility` (`public`|`private`, default private on API create) + `updated_by`; list/show masked to owners/cert-admin (404 masking); PATCH `visibility` gated owner-or-admin (403); clone endpoints return 404 for non-visible sources and attribute clones to the cloner; event template references validated (422). Implementation commit `9904746`. v1.5 (2026-08-11): **C-Auth implemented** (§13 items marked done). Auth endpoints (callback/refresh/logout) live; `jwt.auth` + `jwt.endpoint` middleware enforced on all non-public routes; 126 tests green. v1.4 (2026-08-06): decision #20 — auth deferred. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`.
+- **Status:** Final v1.7 — 2026-09-07: **Certificate rules spec** (`certificate-rules-spec.md` Final v1.0): template lock check on issuance (Gap 1), upload disk unification (Gap 5), file cleanup on delete (Gap 7). Endpoint catalog expanded from 48 to 57 entries (added `templates/{id}/certificate-count`, `attendees/lookup`, 7 `service/*` routes). v1.6 (2026-08-24): **Template visibility** (governing spec: e-cert repo `specs/components/template-visibility.md` Final v1.1). Templates gain `visibility` (`public`|`private`, default private on API create) + `updated_by`; list/show masked to owners/cert-admin (404 masking); PATCH `visibility` gated owner-or-admin (403); clone endpoints return 404 for non-visible sources and attribute clones to the cloner; event template references validated (422). Implementation commit `9904746`. v1.5 (2026-08-11): **C-Auth implemented** (§13 items marked done). Auth endpoints (callback/refresh/logout) live; `jwt.auth` + `jwt.endpoint` middleware enforced on all non-public routes; 126 tests green. v1.4 (2026-08-06): decision #20 — auth deferred. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`. v1.8 (2026-09-18): **Code-alignment audit** — ordinals corrected to middleware (`read=1`, `write=2`, `admin=3`); tenant slug fixed to `loa-e-cert`; added `GET /public/certificates/{id}/download` (§5.6, §6); §6 completed (lookup, certificate-count, dashboard, audit-logs, 11 `service/*`); Appendix A fixed to 61 entries (service status/members/invite `write`→`admin` per config; added `service/users/{id}` + `service/users/{id}/groups` trio); totals corrected to 64 domain (61 gated + 3 public).

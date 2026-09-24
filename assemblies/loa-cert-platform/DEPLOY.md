@@ -155,6 +155,7 @@ php artisan l5-swagger:generate
 | `CORS_ALLOWED_ORIGINS` | `https://auth.lyceumalabang.edu.ph,https://e-cert.vercel.app` | Yes |
 | `CERT_TENANT_SLUG` | `loa-e-cert` | Yes |
 | `CERT_ORGANIZATION_ID` | `00000000-0000-0000-0000-000000000001` | Yes |
+| `CERT_USE_METADATA_SERVING` | `true` = metadata-based PDF serving (default), `false` = disk-based | Yes |
 | `CERT_REFRESH_COOKIE` | `loa_cert_refresh` | Yes |
 | `CERT_REFRESH_COOKIE_SECURE` | `true` | Yes |
 | `CERT_REFRESH_COOKIE_TTL` | `10080` (7 days) | Yes |
@@ -173,9 +174,11 @@ The template editor allows base64-encoded images in HTML/CSS content. Large temp
 | Layer | Config | Status |
 |-------|--------|--------|
 | Apache `LimitRequestBody` | `public/.htaccess` (10 MB) | ✅ Committed |
-| PHP `post_max_size` | `public/.user.ini` (10M) | ✅ Committed |
-| PHP `upload_max_filesize` | `public/.user.ini` (10M) | ✅ Committed |
-| Laravel 413 handler | `bootstrap/app.php` | ✅ Committed |
+| PHP `post_max_size` | `public/.user.ini` (50M as committed) | ✅ Committed |
+| PHP `upload_max_filesize` | `public/.user.ini` (50M as committed) | ✅ Committed |
+| Laravel 413 handler | `bootstrap/app.php` (10 MB effective cap) | ✅ Committed |
+
+> Effective body cap is 10 MB (Apache + app handler); `.user.ini` 50M is permissive but non-binding. DEFERRED cleanup: align `.user.ini` to 10M to match `body-size-limits.md`.
 
 **Note:** `.user.ini` works with PHP-FPM (standard on cPanel). If your host uses mod_php, add `php_value post_max_size 10M` and `php_value upload_max_filesize 10M` to `public/.htaccess` instead.
 
