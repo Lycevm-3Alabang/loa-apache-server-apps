@@ -171,6 +171,8 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | `test-suite.md` spec | ✅ Final v1.1 | Test contract (v2.0 pointers); MySQL `loa_consult_test`, JWT helper, user-run sequential |
 | `docker-compose-spec.md` spec | ✅ Final v1.0 | Root-stack `consult-*` blocks port 9002, `loa_consult` init |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Draft v0.1 | Shared root-stack pattern, wiring gate + checklist |
+| `DEPLOY.md` spec | ✅ Draft v0.1 | Deployment (per TODO SPEC STATUS; promotion PARKED) |
+| `FRONTEND-INTEGRATION.md` spec | ✅ Draft v0.1 | Cutover phase (per TODO SPEC STATUS; promotion PARKED) |
 | `consult-readiness.md` spec | ✅ Final v1.5 | Provisioning checklist (aces-* + linkage, 104+5 pointer, v2.0 pointers) |
 | First migration(s) + baseline deltas | ✅ Done 2026-09-22 | `000001-000010` academic + `000011` academic baseline + `000012` appointment-family + `000013` section-link + `000014` evaluation tables; per data-model Final v1.3 §3/§7 |
 | JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa`, `consult_user`; Unit tests green. **Gated in Step 7** |
@@ -200,6 +202,8 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Deploy to aces-api.lyceumalabang.edu.ph | ⬜ Not started | |
 
 ## Phase 3: Cert App
+
+> NOTE 2026-09-23: table below is stale — Cert is working (C-Auth complete, retrofit A–H COMPLETE per PROJECT_UPDATES; suite 249 passed 2026-09-23 per TODO DONE). Full Phase 3 resync deferred (Auth + Cert deferred, consult active).
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -363,3 +367,9 @@ loa-apache-server-apps/
 | 2026-09-22 | Consult: `data-model.md` Final = shape ≠ codeable | User decision (Option A): §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); `audit_logs` not codeable until migration lands |
 | 2026-09-22 | Consult: Step 2 services trio landed | `JWTService`/`EncryptionService`/`AuditLogger` verbatim from cert; HealthTest green. `AuditLogger` residual (no model/table, org-FK vs L109) opens at Step 6 |
 | 2026-09-22 | Consult: Step 3 JwtMiddleware landed | Cert port with consult re-points only; 401/403 shapes verbatim; Unit tests green. Routes remain open until Step 7 gate |
+| 2026-09-23 | Consult: URL flattening F1+F2 green 104+5 | Flat routes + single scoped results surface; 113+5 was F2 intermediate; ResultsTest scoping green (user) |
+| 2026-09-23 | Consult: Phase D baselines green | Link-reads 3 + import-domain 10 + data-audit 4 served; audit-logs 2 pending by gate; UserLink/Import/DataAudit tests green (user) |
+| 2026-09-23 | Consult: counts reconciled to 104+5 | `api-endpoints.md` v2.0 §5 Total + ACC-2 normative; 118+5 = v1.0 history; drift fix (AGENTS §4, url-flattening Doc Control, admin-import Refs, config audit-logs flat); suite 120 passed |
+| 2026-09-23 | Consult: Docker pipelines wired | `generate-dist.ps1` + build-all/reset-all/run-tests/dump/mega consult blocks; `loa_consult_test` added to init.sql; `mega.ps1` end-to-end green (user-reported) |
+| 2026-09-23 | Consult: planning FLUSHED, P6 PARKED | P0–P5 done; P6 = runbooks + DEC-5 + Phase E + §8 provisioning (see TODO PLANNED) |
+| 2026-09-23 | Cert: PDF 500 fixed | `PdfService::streamCertificatePdf()` `$pdf->inline()` → `$pdf->stream()`; suite 249 passed (738 assertions) |

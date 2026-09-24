@@ -8,7 +8,7 @@
 
 ---
 
-## NOW (in progress)
+## NOW (closed — all checked 2026-09-23)
 
 - [x] 2026-09-19 — Academic slice partial — migrations 000001-000009 (departments, department_courses, subjects, sections, students, employees, semesters, faculty_subjects, student_enrollments) + 000010 audit → 9 models → `AcademicController` + `SemesterController` → ~24 routes (no auth middleware yet; stubs pass-through)
 
@@ -68,6 +68,8 @@
 ---
 
 ## DONE
+
+- [x] 2026-09-23 — `mega.ps1` re-run green (user-reported): tests green → dumps in progress (auth zipped, cert in progress, consult queued) → **all 3 zipped successfully**.
 
 - [x] 2026-09-23 — Cert `test_pdf_allows_admin` 500 fixed (user-approved): `PdfService::streamCertificatePdf()` called non-existent `$pdf->inline()` (installed barryvdh exposes `stream/download/output/save` only) → one-line fix to `$pdf->stream()`; probe added + reverted byte-identical. **Full cert suite green: 249 passed (738 assertions)**
 
