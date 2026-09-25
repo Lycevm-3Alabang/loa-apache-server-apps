@@ -110,6 +110,7 @@ pattern (404-masking, seed-immutable). Identity referenced by JWT claims + `crea
 - **2026-09-22 — Assembly contract created.** This `AGENTS.md` (wise_wallet format); referenced from root `AGENTS.md`.
 - **2026-09-22 — Spec-mirror pass (cert).** Specs rewritten to match working code, improvements filed DEFERRED: QR path-param + `data_url` (UI-verified), callback/refresh body token + Secure-note, group-check owner rule, verify email note, `loa-e-cert` slug, number_active + app-check uniqueness, proxy checklist closed, test-suite MySQL, `.user.ini` 50M note.
 - **2026-09-24 — Public view file-mode.** `/view/{id}` + `/verify/{n}` return `generation_mode`; `publicDownload` → `CertificateStorage`; storage file-mode serves upload bytes (email parity) with disk fallback; e-cert `/view/[id]` uses public download blob when `file`; e-cert verify hides Preview Certificate when `file`. Specs `api-endpoints.md` v1.9 + `certificate-rules-spec.md` v1.1; `PublicCertificateTest` +2 (user-run).
+- **2026-09-25 — Certificate source filter (CERT-SOURCE-001 v1.1).** Gated list/show return additive `generation_mode: file|template` via single `App\Services\CertificateSource` (attendee first, standalone `certificates.metadata` fallback); list filters `?source=uploaded|system-generated` (AND-combined, `meta.total` reflects conjunction, invalid → 422); `upload()` stamps `metadata.generation_mode=file`. Specs `api-endpoints.md` v1.10 + `certificate-rules-spec.md` v1.2 + `certificate-source-spec.md` v1.1 (CON-6/D-3 corrected to `php vendor/bin/phpunit` — `php artisan test` absent in cert-app). Tests: new `CertificateSourceTest` (11 behaviors); full suite user-green **263 passed (787 assertions)** via `.\scripts\run-tests.ps1 -Target cert`.
 
 ---
 
@@ -121,10 +122,11 @@ pattern (404-masking, seed-immutable). Identity referenced by JWT claims + `crea
 
 | Spec | Status |
 |---|---|
-| `api-endpoints.md` | FINAL v1.9 (61 gated + 3 domain-public + 3 SSO; tenant slug `loa-e-cert`) |
+| `api-endpoints.md` | FINAL v1.10 (gated list/show `generation_mode` + `?source=` filter 2026-09-25; tenant slug `loa-e-cert`) |
 | `legacy-e-cert-integration.md` | FINAL v2.2 |
 | `authenticated-endpoints-spec.md` | FINAL v1.2 |
-| `certificate-rules-spec.md` | FINAL v1.1 (public view `generation_mode` + public download file-mode parity 2026-09-24) |
+| `certificate-rules-spec.md` | FINAL v1.2 (§3.9 gated source 2026-09-25) |
+| `certificate-source-spec.md` | FINAL v1.1 (CERT-SOURCE-001; CON-6/D-3 phpunit runner correction) |
 | `body-size-limits.md` | FINAL (10M effective; `.user.ini` 50M note) |
 | `queue-infrastructure-spec.md` | FINAL |
 | `auth-proxy.md` | DRAFT v1.0 (11 routes live; §9 checklist closed this pass) |

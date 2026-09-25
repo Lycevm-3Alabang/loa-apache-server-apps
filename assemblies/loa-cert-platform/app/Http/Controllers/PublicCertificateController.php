@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Interfaces\CertificateStorage;
 use App\Models\AuditLog;
 use App\Models\Certificate;
-use App\Models\EventAttendee;
 use App\Services\QrCodeService;
 use App\Models\Organization;
 use App\Services\AuditLogger;
+use App\Services\CertificateSource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -35,6 +35,7 @@ class PublicCertificateController extends Controller
         private readonly AuditLogger $auditLogger,
         private readonly QrCodeService $qrCodeService,
         private readonly CertificateStorage $certificateStorage,
+        private readonly CertificateSource $certificateSource,
     ) {
     }
 
@@ -234,11 +235,7 @@ class PublicCertificateController extends Controller
 
     private function resolveGenerationMode(Certificate $certificate): string
     {
-        $attendee = EventAttendee::where('certificate_id', $certificate->id)->first();
-        $metadata = $attendee?->metadata ?? [];
-        $mode = $metadata['generation_mode'] ?? 'template';
-
-        return in_array($mode, ['template', 'file'], true) ? $mode : 'template';
+        return $this->certificateSource->resolve($certificate);
     }
 
     private function resolveOrganizationName(): string

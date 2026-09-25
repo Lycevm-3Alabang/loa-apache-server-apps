@@ -1,6 +1,6 @@
 # Certificate Platform Rules — Template Locking, Visibility, File Storage & Issuance Invariants
 
-**Version:** 1.1
+**Version:** 1.2
 **Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Engineers, AI Development Agents
@@ -475,6 +475,10 @@ Set `CERT_USE_METADATA_SERVING=false` in `.env` -> `DiskCertificateStorage` beco
 | `app/Models/Certificate.php` | **Modify** -- remove `file_data` from `$fillable` |
 | `database/migrations/` | **Create** -- drop `file_data` column |
 | `e-cert/src/app/view/[id]/page.tsx` | **Modify** -- check `metadata.generation_mode` |
+
+### 3.9 Gated list/show source (CERT-SOURCE-001 v1.0)
+
+Gated `GET /api/v1/certificates` items and `GET /api/v1/certificates/{id}` include additive `generation_mode: file | template` resolved by the single `App\Services\CertificateSource` helper: linked `EventAttendee` (`certificate_id`) `metadata.generation_mode` first, else standalone fallback `certificates.metadata.generation_mode`, default/unknown → `template`. Never inferred from `file_path`/`template_id`. List accepts OPTIONAL `?source=uploaded | system-generated` (≡ `file` | `template`, AND-combined with existing filters, `meta.total` reflects the conjunction, invalid → 422). Standalone file-mode is two-step canonical: `POST /certificates` (no `event_id`, `metadata: {generation_mode: file}` declaration) then `POST /certificates/upload` (bytes; stamps `certificates.metadata.generation_mode=file`).
 
 ---
 

@@ -1,7 +1,7 @@
 # LOA Cert Platform — API Endpoints
 ## Product Assembly Component Specification
 
-**Version:** 1.9
+**Version:** 1.10
 **Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -809,7 +809,7 @@ Upload a pre-rendered certificate PDF file for a certificate number.
 | `certificate_number` | string | target certificate number |
 | `file` | file | PDF source file |
 
-**Response 200:** `{ "data": { "certificate_id": "uuid", "file_path": "certificates/CERT-0001.pdf" } }`
+**Response 200:** `{ "data": { "certificate_id": "uuid", "file_path": "certificates/CERT-0001.pdf" } }` — server additionally stamps `certificates.metadata.generation_mode=file` (merged) so gated list/show resolve `generation_mode=file` even when the standalone `POST /certificates` omitted the `metadata` declaration.
 
 **Errors:** 401, 403, 404 (number not found), 422.
 
@@ -818,18 +818,18 @@ List certificates.
 
 **Auth:** `read`
 
-**Query:** `event_id`, `recipient_email`, `status` (`active` \| `revoked` \| `expired`), `search` (name/number), `from`, `to` (issued_at range), `limit`, `offset`.
+**Query:** `event_id`, `recipient_email`, `status` (`active` \| `revoked` \| `expired`), `search` (name/number), `from`, `to` (issued_at range), `source` (`uploaded` \| `system-generated`, OPTIONAL — maps to `generation_mode` `file` \| `template`; invalid → 422; omitted → both), `limit`, `offset`.
 
-**Response 200:** paginated list of certificate resources (list shape omits `html` metadata).
+**Response 200:** paginated list of certificate resources (list shape omits `html` metadata). Each item includes additive `generation_mode: file | template` resolved via `CertificateSource` (attendee `metadata.generation_mode` first, standalone fallback `certificates.metadata.generation_mode`, default `template`; never inferred from `file_path`).
 
-**Errors:** 401, 403.
+**Errors:** 401, 403, 422 (invalid `source`).
 
 ### `GET /api/v1/certificates/{id}`
 Get a single certificate (full, including email logs summary).
 
 **Auth:** `read` + owner rule (§9.6).
 
-**Response 200:** certificate resource. **Errors:** 401, 403, 404.
+**Response 200:** certificate resource, including additive `generation_mode: file | template` (same `CertificateSource` resolution as list). **Errors:** 401, 403, 404.
 
 ### `GET /api/v1/certificates/{id}/pdf`
 Stream the PDF (inline view).

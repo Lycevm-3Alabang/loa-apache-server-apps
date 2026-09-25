@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class Certificate extends Model
@@ -69,6 +70,11 @@ class Certificate extends Model
     public function emails(): HasMany
     {
         return $this->hasMany(CertificateEmail::class);
+    }
+
+    public function attendee(): HasOne
+    {
+        return $this->hasOne(EventAttendee::class, 'certificate_id');
     }
 
     public function getStatusAttribute(): string

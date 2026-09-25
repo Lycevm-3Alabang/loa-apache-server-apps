@@ -11,6 +11,7 @@ use App\Models\CertificateSequence;
 use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Services\AuditLogger;
+use App\Services\CertificateSource;
 use App\Services\CertUserChecker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,6 +36,7 @@ use OpenApi\Attributes as OA;
     new OA\Property(property: "event_id", type: "string", format: "uuid", nullable: true),
     new OA\Property(property: "template_id", type: "string", format: "uuid", nullable: true),
     new OA\Property(property: "file_path", type: "string", nullable: true),
+    new OA\Property(property: "generation_mode", type: "string", enum: ["template", "file"]),
     new OA\Property(property: "created_at", type: "string", format: "date-time"),
 ])]
 #[OA\Schema(schema: "CertificateListResponse", properties: [
@@ -95,6 +97,7 @@ class CertificateController extends Controller
         private readonly AuditLogger $auditLogger,
         private readonly QrCodeService $qrCodeService,
         private readonly CertUserChecker $userChecker,
+        private readonly CertificateSource $certificateSource,
     ) {
     }
 
@@ -109,6 +112,7 @@ class CertificateController extends Controller
             new OA\Parameter(name: "search", in: "query", schema: new OA\Schema(type: "string")),
             new OA\Parameter(name: "from", in: "query", schema: new OA\Schema(type: "string", format: "date")),
             new OA\Parameter(name: "to", in: "query", schema: new OA\Schema(type: "string", format: "date")),
+            new OA\Parameter(name: "source", in: "query", schema: new OA\Schema(type: "string", enum: ["uploaded", "system-generated"])),
             new OA\Parameter(name: "limit", in: "query", schema: new OA\Schema(type: "integer", default: 25)),
             new OA\Parameter(name: "offset", in: "query", schema: new OA\Schema(type: "integer", default: 0)),
         ],
@@ -122,7 +126,7 @@ class CertificateController extends Controller
         // Note: event visibility (is_public) applies to events only, not
         // certificates. Certificate access stays level-gated (read) with no
         // per-event scoping here.
-        $query = Certificate::with(['event', 'template']);
+        $query = Certificate::with(['event', 'template', 'attendee']);
 
         if ($eventId = $request->query('event_id')) {
             if ($eventId === 'none') {
@@ -167,6 +171,16 @@ class CertificateController extends Controller
 
         if ($to = $request->query('to')) {
             $query->where('issued_at', '<=', $to);
+        }
+
+        if ($source = $request->query('source')) {
+            if (!in_array($source, [CertificateSource::SOURCE_UPLOADED, CertificateSource::SOURCE_SYSTEM_GENERATED], true)) {
+                throw ValidationException::withMessages([
+                    'source' => ['The selected source is invalid.'],
+                ]);
+            }
+
+            $this->certificateSource->applySourceFilter($query, $source);
         }
 
         $limit = min((int) $request->query('limit', 25), 100);
@@ -373,7 +387,7 @@ class CertificateController extends Controller
             $attendee->update(['certificate_id' => $certificate->id, 'certificate_number' => $certificateNumber]);
         }
 
-        $formatted = $this->formatCertificate($certificate->fresh(['event', 'template']));
+        $formatted = $this->formatCertificate($certificate->fresh(['event', 'template', 'attendee']));
         $formatted['email_sent'] = $emailSent;
 
         return response()->json([
@@ -676,7 +690,13 @@ class CertificateController extends Controller
         $filePath = 'certificates/' . $certificate->certificate_number . '.pdf';
         $file->storeAs('local', $filePath);
 
-        $certificate->update(['file_path' => $filePath]);
+        $metadata = $certificate->metadata ?? [];
+        if (!is_array($metadata)) {
+            $metadata = [];
+        }
+        $metadata['generation_mode'] = CertificateSource::MODE_FILE;
+
+        $certificate->update(['file_path' => $filePath, 'metadata' => $metadata]);
 
         $this->auditLogger->record('certificate.uploaded', 'api', 'certificate', $certificate->id, [
             'certificate_number' => $certificate->certificate_number,
@@ -706,7 +726,7 @@ class CertificateController extends Controller
     )]
     public function show(Request $request, string $id): JsonResponse
     {
-        $certificate = Certificate::with(['event', 'template', 'emails'])->find($id);
+        $certificate = Certificate::with(['event', 'template', 'emails', 'attendee'])->find($id);
 
         if (!$certificate) {
             return response()->json([
@@ -1305,6 +1325,7 @@ class CertificateController extends Controller
             ] : null,
             'template_id' => $certificate->template_id,
             'file_path' => $certificate->file_path,
+            'generation_mode' => $this->certificateSource->resolve($certificate),
             'created_at' => $certificate->created_at?->toIso8601String(),
         ];
     }
