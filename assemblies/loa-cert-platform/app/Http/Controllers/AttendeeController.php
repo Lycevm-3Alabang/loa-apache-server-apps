@@ -24,6 +24,11 @@ use OpenApi\Attributes as OA;
     new OA\Property(property: "completed_at", type: "string", format: "date-time", nullable: true),
     new OA\Property(property: "certificate_id", type: "string", format: "uuid", nullable: true),
     new OA\Property(property: "certificate_number", type: "string", nullable: true),
+    new OA\Property(property: "certificate", type: "object", nullable: true, properties: [
+        new OA\Property(property: "id", type: "string", format: "uuid"),
+        new OA\Property(property: "revoked_at", type: "string", format: "date-time", nullable: true),
+        new OA\Property(property: "expires_at", type: "string", format: "date-time", nullable: true),
+    ]),
     new OA\Property(property: "metadata", type: "object", nullable: true),
     new OA\Property(property: "created_at", type: "string", format: "date-time"),
     new OA\Property(property: "updated_at", type: "string", format: "date-time"),
@@ -124,7 +129,11 @@ class AttendeeController extends Controller
             ], 404);
         }
 
-        $query = EventAttendee::where('event_attendees.event_id', $eventId);
+        // Eager-load the linked certificate's revocation status for the roster
+        // (CERT-SOURCE-001 §12 DEC-12). Runs as a separate whereIn query — it
+        // does not touch the ?status= join/select below; count/pagination unchanged.
+        $query = EventAttendee::with('certificate:id,revoked_at,expires_at')
+            ->where('event_attendees.event_id', $eventId);
 
         // Preserve filter params for links
         $params = $request->only(['search', 'attended', 'completed', 'status']);

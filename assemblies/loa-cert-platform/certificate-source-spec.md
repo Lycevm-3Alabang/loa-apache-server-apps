@@ -4,10 +4,10 @@
 |---|---|
 | ID | CERT-SOURCE-001 |
 | Title | Certificates — expose accurate source (`generation_mode`) + server-side `source` filter |
-| Status | Final v1.3 (approved — §11 participant-endpoints amendment Final; §1–§10 history preserved) |
+| Status | Final v1.4 (§12 attendee-list `certificate` amendment approved Final; §§1–11 history preserved) |
 | Owner | LOA Cert Platform |
-| Version | 1.3 Final (v1.2 Final 2026-09-25; v1.3 Final adds `generation_mode` on participant `GET /me/certificates` list + detail) |
-| Scope | `GET /api/v1/certificates` (list) + `GET /api/v1/certificates/{id}` (show): additive `generation_mode` field + optional `source` query filter; `POST /api/v1/certificates` (`store`) file-mode contract clarification; `POST /api/v1/certificates/upload` interaction clarification |
+| Version | 1.4 Final (v1.3 Final 2026-09-25; v1.4 Final adds `certificate` object on `GET /api/v1/events/{id}/attendees` list) |
+| Scope | `GET /api/v1/certificates` (list) + `GET /api/v1/certificates/{id}` (show): additive `generation_mode` field + optional `source` query filter; `POST /api/v1/certificates` (`store`) file-mode contract clarification; `POST /api/v1/certificates/upload` interaction clarification; §12 (Final): `GET /api/v1/events/{id}/attendees` list gains additive `certificate` object |
 | Non-goals | No schema migration; no route-path changes; no response-key removals/renames; no `{error}` shape change; no numbering change; no bulk-issue contract change; no email/PDF serving change; no frontend change (frontend consumes only) |
 | Layer | Product Assembly (`assemblies/loa-cert-platform`) |
 
@@ -77,22 +77,22 @@ Mapping is fixed: `generation_mode=file` = "uploaded", `generation_mode=template
 
 ### 4.1 Decisions
 
-- **DEC-1 — Response field: `generation_mode: file | template` (PROPOSED, needs Final).** Both `GET /api/v1/certificates` items and `GET /api/v1/certificates/{id}` **SHALL** include an additive bare key `generation_mode` with exactly two values: `file` (uploaded) or `template` (system-generated). The key name is `generation_mode` (not `source`, not `is_uploaded`) to match the existing public `view`/`verify` contract (`certificate-rules-spec.md` §7.4) and the `metadata.generation_mode` storage vocabulary. `file_path` and `template_id` stay as-is for download/debug use but are **NOT** source signals.
-- **DEC-2 — Filter param: `?source=uploaded | system-generated` (PROPOSED, needs Final).** The list endpoint **SHALL** accept one **OPTIONAL** query param `source` with exactly two values: `uploaded` (≡ `generation_mode=file`) and `system-generated` (≡ `generation_mode=template`). Rationale: frontend already speaks "uploaded vs system-generated"; backend already speaks `file vs template`; the param translates once at the boundary so neither side renames its vocabulary. `source` omitted → both modes (current behaviour + additive field).
-- **DEC-3 — Invalid `source` → `422` (PROPOSED, needs Final — open).** An unrecognised `source` value (anything other than `uploaded | system-generated`) **SHALL** return `422` with the standard error shape (`{status: "error", message, errors: {source: [...]}}` via `ValidationException`), consistent with `store()`/`upload()` validation behaviour. **Alternative REJECTED (recorded):** silently ignoring invalid values — rejected because it hides frontend typos (`uploadedd`) and makes `meta.total` misleading. Final approver confirms 422 vs ignore; default if no objection is **422**.
-- **DEC-4 — Resolution order incl. standalone fallback (PROPOSED, needs Final).** `generation_mode` for a certificate **SHALL** resolve as:
+- **DEC-1 — Response field: `generation_mode: file | template` (Final (approved 2026-09-25)).** Both `GET /api/v1/certificates` items and `GET /api/v1/certificates/{id}` **SHALL** include an additive bare key `generation_mode` with exactly two values: `file` (uploaded) or `template` (system-generated). The key name is `generation_mode` (not `source`, not `is_uploaded`) to match the existing public `view`/`verify` contract (`certificate-rules-spec.md` §7.4) and the `metadata.generation_mode` storage vocabulary. `file_path` and `template_id` stay as-is for download/debug use but are **NOT** source signals.
+- **DEC-2 — Filter param: `?source=uploaded | system-generated` (Final (approved 2026-09-25)).** The list endpoint **SHALL** accept one **OPTIONAL** query param `source` with exactly two values: `uploaded` (≡ `generation_mode=file`) and `system-generated` (≡ `generation_mode=template`). Rationale: frontend already speaks "uploaded vs system-generated"; backend already speaks `file vs template`; the param translates once at the boundary so neither side renames its vocabulary. `source` omitted → both modes (current behaviour + additive field).
+- **DEC-3 — Invalid `source` → `422` (Final (approved 2026-09-25) — open).** An unrecognised `source` value (anything other than `uploaded | system-generated`) **SHALL** return `422` with the standard error shape (`{status: "error", message, errors: {source: [...]}}` via `ValidationException`), consistent with `store()`/`upload()` validation behaviour. **Alternative REJECTED (recorded):** silently ignoring invalid values — rejected because it hides frontend typos (`uploadedd`) and makes `meta.total` misleading. Final approver confirms 422 vs ignore; default if no objection is **422**.
+- **DEC-4 — Resolution order incl. standalone fallback (Final (approved 2026-09-25)).** `generation_mode` for a certificate **SHALL** resolve as:
   1. Find `EventAttendee::where('certificate_id', $certificate->id)->first()`. If found, `$mode = $attendee->metadata['generation_mode'] ?? 'template'`.
   2. Else (no attendee row — standalone), `$mode = $certificate->metadata['generation_mode'] ?? 'template'`.
   3. `return in_array($mode, ['template','file'], true) ? $mode : 'template'`.
   
   This is `resolveGenerationMode()` extracted verbatim + step 2 added. Unknown/missing/odd types (e.g. `File`, `UPLOADED`, `null`) → `template`.
-- **DEC-5 — `store()` + `upload()` file-mode contract (PROPOSED, needs Final — open).** Canonical contract:
+- **DEC-5 — `store()` + `upload()` file-mode contract (Final (approved 2026-09-25) — open).** Canonical contract:
   - **Event-linked file-mode (single-step, declarative):** caller ensures the attendee row carries `metadata.generation_mode=file` (+ `file_data` as today via CSV-import/attendee paths) **before** issuance; `store()`/`bulk()`/`issueCompleted` then resolve `file` via DEC-4 step 1. No `file` bytes are posted to `store()` itself.
   - **Standalone file-mode (two-step, canonical for bytes):** (1) `POST /api/v1/certificates` **without** `event_id`, with `metadata: {generation_mode: "file"}` to declare intent (persisted to `certificates.metadata`; validator already allows `metadata: array` — no new top-level field); (2) `POST /api/v1/certificates/upload` (`multipart/form-data`, existing `certificate_number + file` contract) delivers the bytes and sets `file_path`. `upload()` **SHALL** additionally stamp `certificate.metadata.generation_mode=file` (merge, preserving other keys) so DEC-4 step 2 resolves `file` even if step 1 omitted the declaration. Direct `file_path` in `store()` JSON remains **REJECTED** (multipart bytes cannot ride JSON; validator stays closed).
   
   **Alternative RECORDED:** single-step `store()` with base64 `metadata.file_data` for standalone — rejected for Phase 1 because it duplicates the attendee `file_data` path, risks 10M body-limit interaction (`body-size-limits.md`), and bypasses the existing `upload()` virus/size (`pdf|max:10240`) gate. May be revisited in a later spec.
-- **DEC-6 — Filtering semantics (PROPOSED, needs Final).** `?source=` **SHALL** combine with **AND** against all existing list filters (`event_id` incl. `none`, `recipient_email`, `status`, `search`, `from`, `to`) with `meta.total` reflecting the **filtered** count (not the unfiltered table count) and `has_more` computed from it. Pagination (`limit` cap 100, `offset`) applies **after** filtering. Because `generation_mode` derives from a related JSON field, the implementation **SHALL** filter server-side (subquery/`whereHas` on `event_attendees.metadata` + `certificates.metadata` fallback — exact query shape is implementation detail) — it **MUST NOT** fetch-then-slice in PHP in a way that breaks `meta.total`.
-- **DEC-7 — Helper home (PROPOSED, needs Final — open).** The single helper **SHOULD** live as a small injectable service or model-adjacent resolver (e.g. `App\Services\CertificateSource::resolve(Certificate $c): string` or `Certificate::getGenerationModeAttribute()` delegating to one private resolver), with `PublicCertificateController::resolveGenerationMode()` refactored to call it (no behaviour change on public endpoints). Exact class name is implementation detail; the spec constrains only: one owner, constructor-injected (no static business logic per `principles.md` coding detail), covered by the TDD plan. Final approver confirms the home; default if no objection is a `CertificateSource` service.
+- **DEC-6 — Filtering semantics (Final (approved 2026-09-25)).** `?source=` **SHALL** combine with **AND** against all existing list filters (`event_id` incl. `none`, `recipient_email`, `status`, `search`, `from`, `to`) with `meta.total` reflecting the **filtered** count (not the unfiltered table count) and `has_more` computed from it. Pagination (`limit` cap 100, `offset`) applies **after** filtering. Because `generation_mode` derives from a related JSON field, the implementation **SHALL** filter server-side (subquery/`whereHas` on `event_attendees.metadata` + `certificates.metadata` fallback — exact query shape is implementation detail) — it **MUST NOT** fetch-then-slice in PHP in a way that breaks `meta.total`.
+- **DEC-7 — Helper home (Final (approved 2026-09-25) — open).** The single helper **SHOULD** live as a small injectable service or model-adjacent resolver (e.g. `App\Services\CertificateSource::resolve(Certificate $c): string` or `Certificate::getGenerationModeAttribute()` delegating to one private resolver), with `PublicCertificateController::resolveGenerationMode()` refactored to call it (no behaviour change on public endpoints). Exact class name is implementation detail; the spec constrains only: one owner, constructor-injected (no static business logic per `principles.md` coding detail), covered by the TDD plan. Final approver confirms the home; default if no objection is a `CertificateSource` service.
 
 ### 4.2 Acceptance criteria (objective, machine-checkable)
 
@@ -314,3 +314,65 @@ Full item shape becomes: `id`, `certificate_number`, `recipient_name`, `issued_a
 **Status:** §11 is Final. Phase 2 implementation exactly to §11 + TDD (ACC-17–ACC-19) may proceed.
 
 **Sign-off 2026-09-25:** frontend source contract verified against current code (9/9 PASS — admin list/show, store, upload, resend-email, Me list/detail with `generation_mode`, attendee writes, public verify/view/download); no GAPs, no frontend work open.
+
+---
+
+## 12. Amendment v1.4 Final — Linked-certificate status in attendee list
+
+> **Status:** Final (approved 2026-09-25). Phase 1 delivered this spec text only — no code, migration, config edit, or test touched.
+
+### 12.1 Context
+
+The event roster UI must badge each attendee whose linked certificate is revoked and disable resend for those rows. Frontend (e-cert repo) is already shipped: it reads `certificate?.revoked_at ?? certificates?.revoked_at` (either key) and degrades to binary Yes/No (issued vs not) when the object is absent. Today `GET /api/v1/events/{id}/attendees` never returns the linked certificate, so revoked rows are indistinguishable from active ones.
+
+Concerned endpoint (only this one — nothing else in this task):
+
+- `GET /api/v1/events/{id}/attendees` → `AttendeeController::index:116-209`
+
+It serializes Eloquent models directly (`'data' => $attendees`, `:199-200`) under the `Attendee` OA schema (`AttendeeController.php:15-30`, served via `AttendeeListResponse:31-39`). Note: `AttendeeDeletePreviewResponse:77-82` already carries `linked_certificate` (uuid string) + `deletes_certificate` (bool) — that shape belongs to the destroy-preview endpoint only and is **NOT** the canonical key here; the canonical key for this amendment is the `certificate` relation object (see DEC-12).
+
+### 12.2 Investigation findings (verified, read-only)
+
+- **I1 — Eager load does not interfere with the status-filter join/select in any filter mode.** Base query is `EventAttendee::where('event_attendees.event_id', $eventId)` (`:127`). The `?status=` branch (`:151-182`) adds `select('event_attendees.*')` (collision guard, `:153-157`) + `leftJoin('certificates', 'event_attendees.certificate_id', '=', 'certificates.id')` (`:158`) on the **base** query. A `with('certificate:id,revoked_at,expires_at')` eager load runs as a **separate** `whereIn` query on `certificates.id` — it touches neither the base `select` nor the join, so it is safe in all five modes (no filter + `not_issued` / `issued` / `revoked` / `expired`). The FK it needs (`event_attendees.certificate_id`) is present in both modes (full model by default; `event_attendees.*` under `?status=`). The count (`(clone $query)->count()`, `:189`) is an aggregate — eager loads do not alter it — and pagination (`limit` cap 100, `offset`, `:185-193`) plus `links`/`meta` are untouched.
+- **I2 — Relation serializes as `certificate` (singular).** `EventAttendee::certificate(): BelongsTo` exists (`EventAttendee.php:58-61`, FK `certificate_id`). Eloquent serializes an eager-loaded relation under the method name, so the key is `certificate`; frontend also tolerates `certificates`, so either is consumable — this spec picks **ONE** canonical key, `certificate`, and documents it (see DEC-12).
+- **I3 — No N+1; pagination/counts untouched.** One eager load serves the whole page (single extra query regardless of page size). No per-row query is added; `total`/`has_more`/`limit`/`offset`/`links` behaviour is unchanged (per I1).
+
+### 12.3 Expected schema — frontend contract (normative)
+
+Request: **UNCHANGED.** `GET /api/v1/events/{id}/attendees?search=&attended=&completed=&status=&limit=&offset=` behaves exactly as today; the frontend sends nothing new.
+
+Response: each item in list `data[]` gains one **REQUIRED** key:
+
+```json
+{ "certificate": { "id": "uuid", "revoked_at": "2026-09-01T00:00:00Z", "expires_at": null } }
+{ "certificate": null }
+```
+
+`certificate` is `null` when the attendee's `certificate_id` is null (unissued). When linked, it carries exactly `id` (reference/link), `revoked_at` (drives the Revoked badge + resend disable), `expires_at` (informational). Frontend mapping (informational — backend only returns the object): `certificate.revoked_at` non-null → Revoked badge + disable resend; `certificate: null` → binary not-issued state.
+
+### 12.4 Additional constraints (normative)
+
+- **CON-11 — Additive only.** The implementation **MUST NOT** change route paths, remove/rename any existing attendee key, change any filter (`search` / `attended` / `completed` / `status`), alter pagination (`limit` cap 100, `offset`), `links`/`meta` shape, guards (`401` unauthenticated, `404` unknown event), the `{status: error, message}` error shape, or the `loa_cert` schema (no migration). The change is one additive **REQUIRED** key `certificate` per list item (object or `null`). OpenAPI: the `Attendee` schema (`AttendeeController.php:15-30`) gains **one** nullable object property; `config/cert-endpoints.php` **MUST NOT** change (catalog keys on method+path+level only — response fields are not catalogued); `api-endpoints.md` v-next **MUST** document the new field so the mirror stays accurate.
+
+### 12.5 Additional decisions (normative — Final (approved 2026-09-25))
+
+- **DEC-12 — List items gain REQUIRED `certificate: { id, revoked_at, expires_at } | null` (Final (approved 2026-09-25)).** `AttendeeController::index` **SHALL** eager-load `with('certificate:id,revoked_at,expires_at')` on the base query (applies uniformly — no per-filter branching), and the existing model-to-JSON serialization **SHALL** carry it through with no manual mapping. Canonical key is `certificate` (singular, the Eloquent default — matches the relation name and one of the two frontend-tolerated keys). Column subset is exactly `id, revoked_at, expires_at` — the implementation **MUST NOT** select broader certificate columns (minimal additive surface; no audit/noise leakage). `certificate_id` null → `certificate: null`.
+
+### 12.6 Additional acceptance criteria (objective, machine-checkable)
+
+- **ACC-20 — Field present in both states; agrees with `?status=` filter.** Seeded fixture: ≥1 attendee linked to a revoked certificate + ≥1 attendee with `certificate_id` null. `GET /api/v1/events/{id}/attendees` returns the revoked row with `certificate` object and `certificate.revoked_at` non-null (with matching `id` passthrough), and the unissued row with `certificate: null`. Cross-agreement: `?status=revoked` rows and rows with `certificate.revoked_at != null` are the same set; `?status=not_issued` rows all carry `certificate: null`.
+- **ACC-21 — User-run green.** User runs from the **repo root** (`loa-platform` project, never the assembly-level compose file), suites **sequentially**: `docker compose exec cert-app php artisan test` (full cert suite) + one new request-level test in the existing suite style asserting the field in both states (revoked-linked object + unissued `null`) — one behavior per test, `RefreshDatabase`, self-seeded org row, JWT via test helper (never hardcoded tokens). No change is complete until the user pastes green results. (Runner note: v1.1 CON-6/D-3 records cert-app historically required `php vendor/bin/phpunit` via `.\scripts\run-tests.ps1 -Target cert` — user confirms the working runner at verification time and pastes green output.)
+
+### 12.7 Deliverables
+
+- **D-8 — This spec amendment (Phase 1, this phase only).** `assemblies/loa-cert-platform/certificate-source-spec.md` §12 + metadata bump to v1.4 Final. No code, migration, config, or test touched.
+- **D-9 — Future implementation (now approved — implement exactly to §12).**
+  - `app/Http/Controllers/AttendeeController.php` — `index()` gains `with('certificate:id,revoked_at,expires_at')` + `OA\Property(property: "certificate", nullable object with `id`/`revoked_at`/`expires_at`)` on the `Attendee` schema (`:15-30`).
+  - Attendee OA schema mirror only (no `config/cert-endpoints.php` change per CON-11) + `api-endpoints.md` v-next field documentation.
+  - Tests: new request-level case(s) in the existing suite style covering ACC-20 (revoked object + unissued null + `?status=` agreement).
+
+### 12.8 Open DECs — RESOLVED (Final 2026-09-25)
+
+1. **DEC-12:** list items gain REQUIRED `certificate: { id, revoked_at, expires_at } | null` (null when `certificate_id` null); canonical key `certificate` — **APPROVED Final**.
+
+**Status:** §12 is Final. Phase 2 implementation exactly to §12 + TDD (ACC-20–ACC-21) may proceed.

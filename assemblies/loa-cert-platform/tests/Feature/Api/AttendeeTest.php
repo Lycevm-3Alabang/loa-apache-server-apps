@@ -402,4 +402,106 @@ class AttendeeTest extends TestCase
         $this->assertDatabaseMissing('event_attendees', ['email' => 'old@example.com']);
         $this->assertDatabaseHas('event_attendees', ['email' => 'new@example.com']);
     }
+
+    public function test_list_attendees_includes_linked_certificate_status(): void
+    {
+        $certificate = Certificate::create([
+            'organization_id' => $this->organization->id,
+            'event_id' => $this->event->id,
+            'template_id' => $this->template->id,
+            'recipient_name' => 'Revoked User',
+            'recipient_email' => 'revoked@example.com',
+            'certificate_number' => 'CERT-0901',
+            'revoked_at' => now(),
+        ]);
+
+        EventAttendee::create([
+            'event_id' => $this->event->id,
+            'organization_id' => $this->organization->id,
+            'name' => 'Revoked User',
+            'email' => 'revoked@example.com',
+            'certificate_id' => $certificate->id,
+            'certificate_number' => 'CERT-0901',
+        ]);
+
+        EventAttendee::create([
+            'event_id' => $this->event->id,
+            'organization_id' => $this->organization->id,
+            'name' => 'Unissued User',
+            'email' => 'unissued@example.com',
+        ]);
+
+        $response = $this->actingAsJwt()->getJson("/api/v1/events/{$this->event->id}/attendees");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(['data' => ['*' => ['certificate']]])
+            ->assertJsonPath('meta.total', 2);
+
+        $byEmail = collect($response->json('data'))->keyBy('email');
+
+        $this->assertSame($certificate->id, $byEmail['revoked@example.com']['certificate']['id']);
+        $this->assertNotNull($byEmail['revoked@example.com']['certificate']['revoked_at']);
+        $this->assertNull($byEmail['unissued@example.com']['certificate']);
+    }
+
+    public function test_list_attendees_certificate_agrees_with_status_filter(): void
+    {
+        $revoked = Certificate::create([
+            'organization_id' => $this->organization->id,
+            'event_id' => $this->event->id,
+            'template_id' => $this->template->id,
+            'recipient_name' => 'Revoked User',
+            'recipient_email' => 'revoked@example.com',
+            'certificate_number' => 'CERT-0902',
+            'revoked_at' => now(),
+        ]);
+
+        EventAttendee::create([
+            'event_id' => $this->event->id,
+            'organization_id' => $this->organization->id,
+            'name' => 'Revoked User',
+            'email' => 'revoked@example.com',
+            'certificate_id' => $revoked->id,
+            'certificate_number' => 'CERT-0902',
+        ]);
+
+        $active = Certificate::create([
+            'organization_id' => $this->organization->id,
+            'event_id' => $this->event->id,
+            'template_id' => $this->template->id,
+            'recipient_name' => 'Active User',
+            'recipient_email' => 'active@example.com',
+            'certificate_number' => 'CERT-0903',
+        ]);
+
+        EventAttendee::create([
+            'event_id' => $this->event->id,
+            'organization_id' => $this->organization->id,
+            'name' => 'Active User',
+            'email' => 'active@example.com',
+            'certificate_id' => $active->id,
+            'certificate_number' => 'CERT-0903',
+        ]);
+
+        EventAttendee::create([
+            'event_id' => $this->event->id,
+            'organization_id' => $this->organization->id,
+            'name' => 'Unissued User',
+            'email' => 'unissued@example.com',
+        ]);
+
+        $revokedResponse = $this->actingAsJwt()->getJson("/api/v1/events/{$this->event->id}/attendees?status=revoked");
+
+        $revokedResponse->assertStatus(200)->assertJsonPath('meta.total', 1);
+        foreach ($revokedResponse->json('data') as $row) {
+            $this->assertNotNull($row['certificate']['revoked_at']);
+        }
+
+        $unissuedResponse = $this->actingAsJwt()->getJson("/api/v1/events/{$this->event->id}/attendees?status=not_issued");
+
+        $unissuedResponse->assertStatus(200)->assertJsonPath('meta.total', 1);
+        foreach ($unissuedResponse->json('data') as $row) {
+            $this->assertNull($row['certificate']);
+        }
+    }
 }
