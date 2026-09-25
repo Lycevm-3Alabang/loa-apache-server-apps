@@ -116,7 +116,7 @@ Mapping is fixed: `generation_mode=file` = "uploaded", `generation_mode=template
 
 ## 5. Deliverables
 
-- **D-1 — This spec file (Phase 1, only deliverable).** `assemblies/loa-cert-platform/certificate-source-spec.md` (this file), Status `DRAFT`. No other file is created or modified in this phase.
+- **D-1 — This spec file.** `assemblies/loa-cert-platform/certificate-source-spec.md` (this file), Status `Final` v1.1. Phase 1 delivered the DRAFT; Phase 2 implemented exactly to it (see §9 resolutions).
 - **D-2 — Future implementation (DEFERRED, listed WITHOUT touching — needs Final first).**
   - `app/Http/Controllers/CertificateController.php` — `index()` (`source` validation + AND-filter + eager-load for resolution), `show()`/`formatCertificate()` (additive `generation_mode`), `store()` (document/keep `metadata.generation_mode=file` declaration path), `upload()` (stamp `certificate.metadata.generation_mode=file` on success), plus `OA\Parameter(source)` + `OA\Property(generation_mode)` blocks.
   - Shared helper (per DEC-7) + refactor of `PublicCertificateController::resolveGenerationMode()` to call it (public `view`/`verify` behaviour unchanged).
@@ -178,7 +178,13 @@ One behavior per test, `RefreshDatabase`, self-seed org row in `setUp` (pattern 
 
 ---
 
-## 9. Open decisions for Final approval (STOP — do not implement)
+## 9. Open decisions — RESOLVED (Final 2026-09-25, implemented Phase 2)
+
+1. **DEC-3:** locked to **422** on invalid `?source=` (ignore alternative rejected).
+2. **DEC-5:** locked to **declare-via-`metadata` + two-step `upload()` bytes** canonical; `upload()` stamps `certificate.metadata.generation_mode=file`.
+3. **DEC-7:** locked to **`App\Services\CertificateSource`** helper home; `PublicCertificateController::resolveGenerationMode()` delegates to it.
+
+**Status:** Phase 2 implemented exactly to these resolutions; full suite user-green 263 passed (787 assertions) via `.\scripts\run-tests.ps1 -Target cert`. The pre-approval proposal text below is superseded history.
 
 1. **DEC-3:** invalid `?source=` → **422** (proposed) vs silently ignore. Approver strikes one; ACC-6 follows.
 2. **DEC-5:** canonical standalone file-mode = **declare-via-`metadata` + two-step `upload()` bytes** (proposed) vs single-step base64. Approver confirms; `upload()` metadata-stamping follows.

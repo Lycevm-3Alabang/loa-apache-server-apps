@@ -1,6 +1,6 @@
 ﻿# LOA Cert Platform — Test Suite Specification
 
-**Version:** 1.1
+**Version:** 1.2
 **Status:** Draft
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** AI Development Agents
@@ -22,17 +22,20 @@ This document defines the current automated test baseline for the LOA Cert Platf
 
 ## 3. How to run tests
 
-From the assembly directory:
+> Cert-app's vendored framework ships **no `php artisan test` command** (proven 2026-09-25 — only `make:test` exists). Run PHPUnit directly; the repo runner also ensures the `loa_cert_test` database exists.
 
-```bash
-php artisan test
+From the repo root (`loa-platform` project), suites sequentially:
+
+```powershell
+.\scripts\run-tests.ps1 -Target cert -CertFilter CertificateSourceTest
+.\scripts\run-tests.ps1 -Target cert
 ```
 
-From the shared Docker stack:
+Equivalent direct form (test DB must already exist):
 
 ```bash
-cd /path/to/loa-apache-server-apps
-docker compose exec cert-app php artisan test
+docker compose exec cert-app php vendor/bin/phpunit --filter=CertificateSourceTest
+docker compose exec cert-app php vendor/bin/phpunit
 ```
 
 ## 4. Test layout
