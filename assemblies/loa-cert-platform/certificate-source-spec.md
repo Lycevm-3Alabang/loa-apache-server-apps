@@ -4,9 +4,9 @@
 |---|---|
 | ID | CERT-SOURCE-001 |
 | Title | Certificates — expose accurate source (`generation_mode`) + server-side `source` filter |
-| Status | Final |
+| Status | Final v1.3 (approved — §11 participant-endpoints amendment Final; §1–§10 history preserved) |
 | Owner | LOA Cert Platform |
-| Version | 1.1 (Final — v1.0 approved 2026-09-25; v1.1 amends CON-6/D-3 test runner to `php vendor/bin/phpunit` after user-proven `php artisan test` undefined in cert-app) |
+| Version | 1.3 Final (v1.2 Final 2026-09-25; v1.3 Final adds `generation_mode` on participant `GET /me/certificates` list + detail) |
 | Scope | `GET /api/v1/certificates` (list) + `GET /api/v1/certificates/{id}` (show): additive `generation_mode` field + optional `source` query filter; `POST /api/v1/certificates` (`store`) file-mode contract clarification; `POST /api/v1/certificates/upload` interaction clarification |
 | Non-goals | No schema migration; no route-path changes; no response-key removals/renames; no `{error}` shape change; no numbering change; no bulk-issue contract change; no email/PDF serving change; no frontend change (frontend consumes only) |
 | Layer | Product Assembly (`assemblies/loa-cert-platform`) |
@@ -191,3 +191,126 @@ One behavior per test, `RefreshDatabase`, self-seed org row in `setUp` (pattern 
 3. **DEC-7:** helper home = **`App\Services\CertificateSource`** (proposed) vs model accessor. Approver confirms name; CON-2 (single owner) holds either way.
 
 **Requested action:** mark this spec **Final** (or comment edits). On Final, Phase 2 (implementation exactly to this spec + TDD per §6 + user-run tests per D-3) may be proposed — never auto-started.
+
+---
+
+## 10. Amendment v1.2 Final — Certificate source save fix (Phase 1 complete, approved 2026-09-25)
+
+> **Status:** Final approved 2026-09-25. Phase 1 delivered this spec text only — no code, migration, config edit, or test touched.
+
+### 10.1 Context delta (verified write-path breakage — do not re-derive)
+
+Read path works: `app/Services/CertificateSource.php` (`resolve()` attendee.metadata → certificate.metadata fallback; `applySourceFilter()` same two branches) + `CertificateController::formatCertificate:1328` returns `generation_mode` + `index:176-184` `?source=uploaded|system-generated` (422 invalid). Frontend `e-cert` already filters/displays on it.
+
+Write path is broken in two places:
+
+(a) Event issuance never stamps the cert row: `EventController::issueCertificates:792-800` `Certificate::create()` has no `metadata`; `CertificateController::store:300-309` writes `metadata=request.metadata`, not the attendee's; `bulk:459+` same pattern. Attendee roster writes ARE correct (`AttendeeController::store:268-273`, `update:328-330`, `import:498-507` persist metadata verbatim; frontend sends `generation_mode` correctly). Consequence: `resolve()`/filter depend 100% on the attendee row — `AttendeeController::destroy:398-410` keeps the cert, which then falls back to null → `template` (uploaded misclassified). The `applySourceFilter` no-attendee branch on `certificates.metadata` can never match.
+
+(b) Standalone upload never saves as file: e-cert `issue-form.tsx` sends `file_path`, no `metadata`; `store:227-235` validator has no `file_path`, `create` ignores it, storage runs with `[]` → template PDF. `/upload:663-691` sets only `file_path`, not `certificate.metadata.generation_mode`. Net: standalone upload resolves `template`. Dead code: `store:356` reads `$certificate->file_data` (column dropped in `2026_09_18_071347`).
+
+Frontend fix (separate repo, already spec'd): `issue-form.tsx` will send `metadata: { generation_mode: "file"|"template" }` by mode; pre-upload `file_path` flow stays.
+
+### 10.2 Additional constraints (normative)
+
+- **CON-7 — Additive only; precedence and mirrors preserved.** The implementation **MUST NOT** change route paths, remove/rename any existing response key, change the `{status: error, message, errors?}` error shape, or alter certificate-numbering atomicity. `CertificateSource::resolve()` precedence is **UNCHANGED**: (1) attendee.metadata when event-linked → (2) `certificates.metadata` fallback → (3) `template` default. `CON-2` (single helper, no duplicated branching) still holds — stamping call-sites **MUST** delegate mode computation to the helper where a helper is needed, not re-branch. OpenAPI (`OA\Parameter`/`OA\Property` for any new/clarified input) + `config/cert-endpoints.php` mirror **MUST** be updated if the contract surface changes, otherwise left untouched per CON-5. Schema migration is **PREFERABLY NONE** — `certificates.metadata` JSON column already exists; if a migration proves needed it **MUST** be specified separately with rollback noted before any code.
+
+### 10.3 Additional decisions (normative — Final 2026-09-25)
+
+- **DEC-8 — Single writer rule: stamp `certificates.metadata.generation_mode` on every create/reissue (Final).** At every certificate create/reissue the implementation **SHALL** stamp `certificates.metadata.generation_mode` from the authoritative mode: `attendee.metadata.generation_mode` when event-linked, `request.metadata.generation_mode` when standalone (allow-listed `file|template`, default `template` for missing/invalid). Attendee row remains the primary read; cert metadata is the durable fallback that survives attendee delete. `POST /api/v1/certificates/upload` **SHALL** stamp `file` by merging `generation_mode=file` into the existing `certificates.metadata` JSON, preserving all other keys. Reissue **SHALL** re-stamp from the current attendee/request mode. A post-issuance roster mode edit **without** reissue **SHALL NOT** change served bytes — this is stated explicitly; silent backfill is **FORBIDDEN**. Affected create/reissue call-sites: `EventController::issueCertificates` create (+ reissue path), `CertificateController::store`, `CertificateController::bulk`.
+- **DEC-9 — `store()` accepts and validates `metadata.generation_mode`; `file_path` top-level is rejected (Final).** `store()` **SHALL** accept `metadata.generation_mode=file|template`, validate it (`in:file,template` or equivalent → invalid mode returns `422` with the standard error shape), and persist it to `certificates.metadata`. Top-level `file_path` input on `store()` JSON **SHALL** be **REJECTED with 422** (explicit `errors.file_path`), consistent with DEC-5/CON-4 (multipart bytes cannot ride JSON; validator stays closed for bytes). Silent drop of `file_path` is **FORBIDDEN** — either documented 422 (chosen) or accept+honor; this spec chooses 422. **Alternative RECORDED and REJECTED:** accept+honor `file_path` on `store()` — rejected because an unvalidated path write risks path-injection, bypasses the `upload()` virus/size (`pdf|max:10240`) gate, and conflicts with the canonical two-step upload contract (DEC-5). Canonical standalone file-mode remains: declare via `metadata` on `store()` + deliver bytes via `upload()`.
+- **DEC-10 — Remove dead `file_data` read at `store:356` (Final).** The `$certificate->file_data` read at `CertificateController::store:356` **SHALL** be removed or replaced — the column was dropped in migration `2026_09_18_071347` so the read is dead. If file bytes are needed there, they **MUST** come from `metadata.file_data` via the established attendee/storage path, not a column read. No behaviour change beyond eliminating the dead read.
+
+### 10.4 Additional acceptance criteria (objective, machine-checkable)
+
+- **ACC-11 — Event file-mode survives attendee delete.** Issue event-linked cert with attendee `metadata.generation_mode=file` → cert row `certificates.metadata.generation_mode=file`; delete the attendee row (cert kept per `AttendeeController::destroy:398-410`) → list/show still resolve `generation_mode=file` and `?source=uploaded` still matches.
+- **ACC-12 — Event template-mode.** Issue event-linked cert with `template` mode → cert row `metadata.generation_mode=template` (or absent→default), resolves `template`, matched by `?source=system-generated`, not by `?source=uploaded`.
+- **ACC-13 — Standalone file-mode (both paths).** (i) With new frontend `metadata: {generation_mode: "file"}` on `store()` → cert row stamped `file`, resolves `file`; (ii) via `/upload` alone (no metadata declaration) → `upload()` merges `generation_mode=file` into `certificates.metadata` preserving other keys, resolves `file`, matched by `?source=uploaded`.
+- **ACC-14 — Invalid mode → 422.** `store()` (and bulk/reissue where applicable) with `metadata.generation_mode=bogus` returns `422` with `{status: "error", ...}`; top-level `file_path` on `store()` JSON returns `422` with `errors.file_path` (no silent drop).
+- **ACC-15 — Roster edit without reissue is inert.** Post-issuance edit of attendee `metadata.generation_mode` without reissue does **NOT** change served bytes for the already-issued cert (reissue required per DEC-8); test asserts bytes/mode stable until reissue, then re-stamped after reissue.
+- **ACC-16 — User-run green.** User runs from repo root, suites sequentially: `docker compose exec cert-app php artisan test` (full cert suite) + affected suite `CertificateSourceTest` additions — all green, pasted results. (Runner note: assembly contract specifies `php artisan test`; v1.1 CON-6/D-3 records cert-app historically required `php vendor/bin/phpunit` via `.\scripts\run-tests.ps1 -Target cert` — user confirms the working runner at verification time and pastes green output.)
+
+### 10.5 Deliverables
+
+- **D-4 — This spec amendment (Phase 1, this phase only).** `assemblies/loa-cert-platform/certificate-source-spec.md` §10 + metadata bump to v1.2 DRAFT. No code, migration, config, or test touched.
+- **D-5 — Future implementation (DEFERRED — listed WITHOUT touching, needs Final first).**
+  - `app/Http/Controllers/CertificateController.php` — `store()` validator (`metadata.generation_mode` `in:file,template`; reject top-level `file_path` 422) + `create` stamping + dead `file_data` removal at `:356` + `upload()` metadata-merge stamp + `formatCertificate` OA updates.
+  - `app/Http/Controllers/EventController.php` — `issueCertificates` create + reissue stamping from attendee mode.
+  - `app/Services/CertificateSource.php` — helper if needed for stamping/resolution (CON-2 single-owner holds).
+  - `api-endpoints.md` v-next + `certificate-rules-spec.md` v-next mirrors.
+  - `tests/Feature/Api/CertificateSourceTest.php` additions covering ACC-11–ACC-15.
+
+### 10.6 Open DECs — RESOLVED (Final 2026-09-25)
+
+1. **DEC-8:** single writer rule + merge-preserve on `/upload` + reissue re-stamp + no silent backfill — **APPROVED Final**.
+2. **DEC-9:** `store()` validates `metadata.generation_mode` (`in:file,template` → 422 invalid); top-level `file_path` → 422 (not silent drop, not accept+honor) — **APPROVED Final**.
+3. **DEC-10:** remove/replace dead `$certificate->file_data` read at `store:356` — **APPROVED Final**.
+
+**Status:** §10 is Final. Phase 2 implementation exactly to §10 + TDD (ACC-11–ACC-16) may be proposed — never auto-started.
+
+---
+
+## 11. Amendment v1.3 Final — `generation_mode` on participant endpoints (approved)
+
+> **Status:** Final approved. Phase 1 delivered this spec text only — no code, migration, config edit, or test touched.
+
+### 11.1 Context
+
+Participant "My Certificates" pages must correctly show whether each certificate is Uploaded or System-generated — on BOTH the list and the detail view. Frontend (e-cert repo) is already done and waiting: it reads `generation_mode` per item (`"file"` → Uploaded badge, `"template"` → System-generated badge, `file_path` heuristic only as fallback when the field is absent). Today both pages always render "System-generated" because the endpoints below never return the field. This amendment unblocks that UI with a single additive response field. No new filters, no new routes, no email changes, no migrations.
+
+Concerned endpoints (only these two — nothing else in this task):
+
+- `GET /api/v1/me/certificates` → `MeController::certificates:55-99`
+- `GET /api/v1/me/certificates/{id}` → `MeController::certificate:115-140`
+
+Both serialize via `MeController::formatCertificate:254-269`, which today returns: `id`, `certificate_number`, `recipient_name`, `issued_at`, `expires_at`, `revoked_at`, `revoke_reason`, `status`, `event_id`, `event_name`, `created_at`. No `generation_mode`, no `file_path`, no `template_id`.
+
+### 11.2 Investigation findings (verified, read-only)
+
+- **I1 — Canonical resolver confirmed, reuse as-is.** `CertificateSource::resolve()` (`app/Services/CertificateSource.php:17-28`) resolves attendee.metadata → certificate.metadata fallback → `template` default via `modeFromMetadata()` allow-list, and is already consumed by `CertificateController::formatCertificate:1346` (and by `PublicCertificateController::resolveGenerationMode:238` delegation). The amendment **REQUIRES** reuse of `resolve()` with no new resolution logic. (`CertificateSource` gains no new methods in this task.)
+- **I2 — N+1 risk confirmed, eager-load fix available.** Both Me endpoints load `Certificate::with(['event'])` only (`MeController.php:60`, `:120`). `resolve()` uses the loaded `attendee` relation when present (`CertificateSource.php:19-20`), else issues one query per certificate — on the LIST endpoint that is one extra query per row. `Certificate::attendee(): HasOne` exists (`app/Models/Certificate.php:75-78`) and **CAN** be added to both `with()` clauses (`with(['event', 'attendee'])`). The amendment **REQUIRES** this eager load.
+- **I3 — No filter wanted here.** The admin list already owns `?source=`; the participant list stays unfiltered and the frontend does not send it. This amendment adds **NO** query param to either Me endpoint.
+
+### 11.3 Expected schema — frontend contract (normative)
+
+Request: **UNCHANGED.** `GET /api/v1/me/certificates?status=&limit=&offset=` and `GET /api/v1/me/certificates/{id}` behave exactly as today; the frontend sends nothing new.
+
+Response: each item in list `data[]` AND the single `data` object gain one **REQUIRED** field:
+
+```json
+{ "generation_mode": "file" }
+{ "generation_mode": "template" }
+```
+
+Full item shape becomes: `id`, `certificate_number`, `recipient_name`, `issued_at`, `expires_at`, `revoked_at`, `revoke_reason`, `status`, `event_id`, `event_name`, `generation_mode`, `created_at`. Frontend mapping (informational — backend only returns the mode): `file` → "Uploaded", anything else → "System-generated". `file_path` inclusion is **OPTIONAL** (frontend fallback only); the implementation **SHALL NOT** add it unless free.
+
+### 11.4 Additional constraints (normative)
+
+- **CON-8 — Additive only.** The implementation **MUST NOT** change route paths, existing response keys, the owner guards (`403` not-owner, `404` unknown id), the `status` filter, or the `data`/`meta` pagination shape on either Me endpoint. The change is one additive **REQUIRED** key `generation_mode` per item.
+- **CON-9 — Reuse resolver; eager-load attendee.** The implementation **MUST** call `CertificateSource::resolve()` (constructor-injected into `MeController`, per `principles.md` coding detail) and **MUST NOT** add duplicated `metadata['generation_mode']` branching. Both queries **MUST** eager-load the relation (`with(['event', 'attendee'])`) so the list issues no per-row attendee query.
+- **CON-10 — OpenAPI + catalog mirror.** The implementation **MUST** add `OA\Property(property: "generation_mode", enum: ["template", "file"])` to the `MyCertificate` schema (which serves both `MyCertificateListResponse` and `MyCertificateSingleResponse` items). `config/cert-endpoints.php` **MUST** change only if the catalog enumerates response fields — it keys on method+path+level only (verified: `GET /api/v1/me/certificates` + `GET /api/v1/me/certificates/{id}` at `:56-57`), so the expected change is **none**; `api-endpoints.md` v-next **MUST** document the new field.
+
+### 11.5 Additional decisions (normative — Final)
+
+- **DEC-11 — `generation_mode` required on both Me endpoints (Final).** Both `GET /api/v1/me/certificates` items and `GET /api/v1/me/certificates/{id}` **SHALL** include `generation_mode: file | template` resolved by `CertificateSource::resolve()` exactly as the admin list/show resolve it. Absent-attendee + null/invalid `certificates.metadata` resolves `template` (existing default, unchanged). No `?source=` param is added to either endpoint (I3).
+
+### 11.6 Additional acceptance criteria (objective, machine-checkable)
+
+- **ACC-17 — List exposes source without N+1.** Seeded fixture (JWT owner): ≥1 `file`-mode cert + ≥1 `template`-mode cert for the caller. `GET /api/v1/me/certificates` returns the file item with `generation_mode=file` and the template item with `generation_mode=template`; the implementation asserts no per-row attendee query (query-count assertion or eager-load presence on the list query).
+- **ACC-18 — Detail exposes source; guards unchanged.** Detail for the caller's own uploaded cert returns `200` with `generation_mode=file`; another owner's id returns `403` (`not_owner`) as today; unknown id returns `404` as today.
+- **ACC-19 — User-run green.** User runs from repo root, suites sequentially: `docker compose exec cert-app php artisan test` (full cert suite) + new request-level test in the existing source-suite style (`CertificateSourceTest`, one behavior per test, `RefreshDatabase`, self-seeded org) — all green, pasted results. (Runner note: v1.1 CON-6/D-3 records cert-app historically required `php vendor/bin/phpunit` via `.\scripts\run-tests.ps1 -Target cert` — user confirms the working runner at verification time and pastes green output.)
+
+### 11.7 Deliverables
+
+- **D-6 — This spec amendment (Phase 1, this phase only).** `assemblies/loa-cert-platform/certificate-source-spec.md` §11 + metadata bump to v1.3 DRAFT. No code, migration, config, or test touched.
+- **D-7 — Future implementation (DEFERRED — listed WITHOUT touching, needs Final first).**
+  - `app/Http/Controllers/MeController.php` — constructor-inject `CertificateSource`; `certificates()` + `certificate()` `with(['event', 'attendee'])`; `formatCertificate()` additive `generation_mode`; `MyCertificate` OA property.
+  - `api-endpoints.md` v-next (§5 Me group: document `generation_mode` on both endpoints; no route/catalog change).
+  - Tests: new request-level cases in source-suite style covering ACC-17–ACC-18 (list both modes + no-N+1, detail 200/403/404).
+
+### 11.8 Open DECs — RESOLVED (Final)
+
+1. **DEC-11:** `generation_mode` required on both Me endpoints via `resolve()` reuse + attendee eager load; no `?source=` filter; absent/invalid metadata → `template` — **APPROVED Final**.
+
+**Status:** §11 is Final. Phase 2 implementation exactly to §11 + TDD (ACC-17–ACC-19) may proceed.
+
+**Sign-off 2026-09-25:** frontend source contract verified against current code (9/9 PASS — admin list/show, store, upload, resend-email, Me list/detail with `generation_mode`, attendee writes, public verify/view/download); no GAPs, no frontend work open.

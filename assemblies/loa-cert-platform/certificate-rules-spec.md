@@ -1,6 +1,6 @@
 # Certificate Platform Rules — Template Locking, Visibility, File Storage & Issuance Invariants
 
-**Version:** 1.2
+**Version:** 1.3
 **Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Engineers, AI Development Agents
@@ -178,7 +178,7 @@ The `api-endpoints.md` spec (§5.4, §9.6) declares an **owner rule** for certif
 
 ## 3.1 Rule
 
-> Certificates support two generation modes: **template** (system-generated from HTML/CSS template via DomPDF) and **file** (user-uploaded PDF). The `generation_mode` is stored in `event_attendees.metadata.generation_mode` and determines which PDF is used as the certificate. **Primary path: metadata-based serving.** Template-generated PDFs are rendered on-the-fly by DomPDF. Uploaded PDFs are decoded from `event_attendees.metadata.file_data` (base64). **Existing disk storage code is retained as fallback** — if metadata-based serving fails, the system falls back to the original file_path/disk approach. Certificates are always tied to an event-attendee; when the attendee is deleted, the certificate is deleted too.
+> Certificates support two generation modes: **template** (system-generated from HTML/CSS template via DomPDF) and **file** (user-uploaded PDF). The authoritative `generation_mode` is stored in `event_attendees.metadata.generation_mode` when event-linked and **stamped to `certificates.metadata.generation_mode` on every create/reissue** (single writer rule, CERT-SOURCE-001 v1.2 DEC-8 — durable fallback that survives attendee delete). It determines which PDF is used as the certificate. **Primary path: metadata-based serving.** Template-generated PDFs are rendered on-the-fly by DomPDF. Uploaded PDFs are decoded from `event_attendees.metadata.file_data` (base64). **Existing disk storage code is retained as fallback** — if metadata-based serving fails, the system falls back to the original file_path/disk approach. When the attendee row is deleted the certificate row is kept (see `AttendeeController::destroy`) and source resolves via the stamped `certificates.metadata` fallback.
 
 ## 3.2 Generation Modes
 
@@ -241,8 +241,9 @@ Backend stores metadata as JSONB in `event_attendees.metadata`. **No disk write 
 `EventController::issueCertificates()` iterates attendees and for each:
 
 1. Checks `attendee->metadata['generation_mode']`
-2. **If `file`:** creates certificate record. **Primary:** no disk write — `metadata.file_data` is the source of truth. **Fallback:** also writes to disk via existing code path (retained for safety).
-3. **If `template`:** creates certificate record. **Primary:** no disk write — PDF rendered on-the-fly when needed. **Fallback:** also writes to disk via `PdfService::generateCertificatePdf()` (retained for safety).
+2. **If `file`:** creates certificate record, **stamps `certificates.metadata.generation_mode=file` via `CertificateSource::stamp()` (durable fallback)**. **Primary:** no disk write — `metadata.file_data` is the source of truth. **Fallback:** also writes to disk via existing code path (retained for safety).
+3. **If `template`:** creates certificate record, **stamps `certificates.metadata.generation_mode=template`**. **Primary:** no disk write — PDF rendered on-the-fly when needed. **Fallback:** also writes to disk via `PdfService::generateCertificatePdf()` (retained for safety).
+4. Reissue re-stamps from the current attendee mode; roster edit without reissue does not backfill (no silent update).
 
 ### Step 3: Serving the PDF
 
@@ -304,6 +305,8 @@ email attachment():
   }
 }
 ```
+
+Server additionally stamps `certificates.metadata.generation_mode=file` via `CertificateSource::stampFile()` (merge into existing JSON, preserving other keys) so gated list/show resolve `file` even when standalone `POST /certificates` omitted the declaration.
 
 ### `GET /api/v1/certificates/{id}/pdf` — Stream PDF
 

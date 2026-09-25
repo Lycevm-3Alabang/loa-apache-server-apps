@@ -111,6 +111,8 @@ pattern (404-masking, seed-immutable). Identity referenced by JWT claims + `crea
 - **2026-09-22 — Spec-mirror pass (cert).** Specs rewritten to match working code, improvements filed DEFERRED: QR path-param + `data_url` (UI-verified), callback/refresh body token + Secure-note, group-check owner rule, verify email note, `loa-e-cert` slug, number_active + app-check uniqueness, proxy checklist closed, test-suite MySQL, `.user.ini` 50M note.
 - **2026-09-24 — Public view file-mode.** `/view/{id}` + `/verify/{n}` return `generation_mode`; `publicDownload` → `CertificateStorage`; storage file-mode serves upload bytes (email parity) with disk fallback; e-cert `/view/[id]` uses public download blob when `file`; e-cert verify hides Preview Certificate when `file`. Specs `api-endpoints.md` v1.9 + `certificate-rules-spec.md` v1.1; `PublicCertificateTest` +2 (user-run).
 - **2026-09-25 — Certificate source filter (CERT-SOURCE-001 v1.1).** Gated list/show return additive `generation_mode: file|template` via single `App\Services\CertificateSource` (attendee first, standalone `certificates.metadata` fallback); list filters `?source=uploaded|system-generated` (AND-combined, `meta.total` reflects conjunction, invalid → 422); `upload()` stamps `metadata.generation_mode=file`. Specs `api-endpoints.md` v1.10 + `certificate-rules-spec.md` v1.2 + `certificate-source-spec.md` v1.1 (CON-6/D-3 corrected to `php vendor/bin/phpunit` — `php artisan test` absent in cert-app). Tests: new `CertificateSourceTest` (11 behaviors); full suite user-green **263 passed (787 assertions)** via `.\scripts\run-tests.ps1 -Target cert`.
+- **2026-09-25 — Certificate source save fix (CERT-SOURCE-001 v1.2, pending user-green).** Every create/reissue stamps `certificates.metadata.generation_mode` (attendee mode event-linked, request mode standalone) via `CertificateSource::stamp()/stampFile()`; `store()` validates `metadata.generation_mode=in:file,template`, rejects top-level `file_path` 422; dead `$certificate->file_data` reads replaced with `certificateStorage->emailAttachment()`. Specs `certificate-source-spec.md` v1.2 + `api-endpoints.md` v1.11 + `certificate-rules-spec.md` v1.3. Tests: `CertificateSourceTest` +7 (ACC-11–15; one test-fixture fix: standalone case uses unlocked template).
+- **2026-09-25 — Participant source (CERT-SOURCE-001 v1.3, pending user-green).** `GET /me/certificates` + `GET /me/certificates/{id}` return additive `generation_mode` via `CertificateSource::resolve()` with `with(['event','attendee'])` (no N+1); guards/pagination unchanged; `MyCertificate` OA property. Specs `certificate-source-spec.md` v1.3 + `api-endpoints.md` v1.12. Tests: `CertificateSourceTest` +2 (ACC-17 list both modes + 1 attendee query; ACC-18 detail 200/403/404).
 
 ---
 
@@ -122,11 +124,11 @@ pattern (404-masking, seed-immutable). Identity referenced by JWT claims + `crea
 
 | Spec | Status |
 |---|---|
-| `api-endpoints.md` | FINAL v1.10 (gated list/show `generation_mode` + `?source=` filter 2026-09-25; tenant slug `loa-e-cert`) |
+| `api-endpoints.md` | FINAL v1.12 (Me list/detail `generation_mode` 2026-09-25; gated list/show `generation_mode` + `?source=` filter 2026-09-25; tenant slug `loa-e-cert`) |
 | `legacy-e-cert-integration.md` | FINAL v2.2 |
 | `authenticated-endpoints-spec.md` | FINAL v1.2 |
 | `certificate-rules-spec.md` | FINAL v1.2 (§3.9 gated source 2026-09-25) |
-| `certificate-source-spec.md` | FINAL v1.1 (CERT-SOURCE-001; CON-6/D-3 phpunit runner correction) |
+| `certificate-source-spec.md` | FINAL v1.3 (CERT-SOURCE-001; v1.2 save-fix stamp rule; v1.3 Me `generation_mode`) |
 | `body-size-limits.md` | FINAL (10M effective; `.user.ini` 50M note) |
 | `queue-infrastructure-spec.md` | FINAL |
 | `auth-proxy.md` | DRAFT v1.0 (11 routes live; §9 checklist closed this pass) |

@@ -58,6 +58,9 @@ use OpenApi\Attributes as OA;
     new OA\Property(property: "recipient_email", type: "string", format: "email"),
     new OA\Property(property: "expires_at", type: "string", format: "date-time"),
     new OA\Property(property: "send_email", type: "boolean", default: false),
+    new OA\Property(property: "metadata", type: "object", properties: [
+        new OA\Property(property: "generation_mode", type: "string", enum: ["template", "file"]),
+    ], nullable: true),
 ])]
 #[OA\Schema(schema: "CertificateBulkRequest", required: ["event_id", "recipients"], properties: [
     new OA\Property(property: "event_id", type: "string", format: "uuid"),
@@ -232,6 +235,8 @@ class CertificateController extends Controller
             'expires_at' => 'nullable|date',
             'send_email' => 'boolean',
             'metadata' => 'nullable|array',
+            'metadata.generation_mode' => 'nullable|string|in:file,template',
+            'file_path' => 'prohibited',
         ]);
 
         if ($validator->fails()) {
@@ -297,6 +302,11 @@ class CertificateController extends Controller
 
         $certificateNumber = $this->generateCertificateNumber($organizationId, $eventId ? ($event->certificate_number_pattern ?? 'CERT-####') : 'CERT-####');
 
+        $requestMetadata = $request->input('metadata');
+        if (!is_array($requestMetadata)) {
+            $requestMetadata = [];
+        }
+
         $certificate = Certificate::create([
             'organization_id' => $organizationId,
             'event_id' => $eventId,
@@ -305,7 +315,7 @@ class CertificateController extends Controller
             'recipient_email' => $request->input('recipient_email'),
             'certificate_number' => $certificateNumber,
             'expires_at' => $request->input('expires_at') ?? ($eventId ? ($event->valid_until ?? null) : null),
-            'metadata' => $request->input('metadata'),
+            'metadata' => $requestMetadata,
         ]);
 
         $attendee = $eventId
@@ -313,7 +323,9 @@ class CertificateController extends Controller
                 ->where('email', $request->input('recipient_email'))
                 ->first()
             : null;
-        $metadata = $attendee?->metadata ?? [];
+        $authoritativeMetadata = $attendee?->metadata ?? $requestMetadata;
+        $this->certificateSource->stamp($certificate, $authoritativeMetadata);
+        $metadata = $authoritativeMetadata;
 
         try {
             $this->certificateStorage->store($certificate, $metadata);
@@ -333,6 +345,7 @@ class CertificateController extends Controller
             try {
                 $certificate->load(['event', 'template', 'organization']);
                 $pdfPath = $certificate->file_path;
+                $pdfBinary = $this->certificateStorage->emailAttachment($certificate);
 
                 $website = $certificate->organization?->website ?? config('app.url');
                 $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
@@ -353,7 +366,7 @@ class CertificateController extends Controller
                     verifyUrl: $verifyUrl,
                     isRegistered: $isRegistered,
                     activateUrl: $activateUrl,
-                    fileData: $certificate->file_data,
+                    fileData: $pdfBinary,
                 ));
 
                 CertificateEmailModel::create([
@@ -521,6 +534,7 @@ class CertificateController extends Controller
                         ->where('email', $recipient['email'])
                         ->first();
                     $attMeta = $attendeeMeta?->metadata ?? [];
+                    $this->certificateSource->stamp($certificate, $attMeta);
 
                     try {
                         $this->certificateStorage->store($certificate, $attMeta);
@@ -571,6 +585,7 @@ class CertificateController extends Controller
 
                 try {
                     $pdfPath = $certificate->file_path;
+                    $pdfBinary = $this->certificateStorage->emailAttachment($certificate);
                     $website = $certificate->organization?->website ?? config('app.url');
                     $downloadUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
                     $verifyUrl = $website ? $website . '/verify/' . $certificate->certificate_number : null;
@@ -590,7 +605,7 @@ class CertificateController extends Controller
                         verifyUrl: $verifyUrl,
                         isRegistered: $isRegistered,
                         activateUrl: $activateUrl,
-                        fileData: $certificate->file_data,
+                        fileData: $pdfBinary,
                     ));
 
                     CertificateEmailModel::create([
@@ -690,13 +705,8 @@ class CertificateController extends Controller
         $filePath = 'certificates/' . $certificate->certificate_number . '.pdf';
         $file->storeAs('local', $filePath);
 
-        $metadata = $certificate->metadata ?? [];
-        if (!is_array($metadata)) {
-            $metadata = [];
-        }
-        $metadata['generation_mode'] = CertificateSource::MODE_FILE;
-
-        $certificate->update(['file_path' => $filePath, 'metadata' => $metadata]);
+        $certificate->update(['file_path' => $filePath]);
+        $this->certificateSource->stampFile($certificate->fresh());
 
         $this->auditLogger->record('certificate.uploaded', 'api', 'certificate', $certificate->id, [
             'certificate_number' => $certificate->certificate_number,
@@ -1015,6 +1025,14 @@ class CertificateController extends Controller
                 'certificate_number' => $certificateNumber,
                 'expires_at' => $certificate->expires_at,
             ]);
+
+            $reissueAttendee = $certificate->event_id
+                ? EventAttendee::where('certificate_id', $certificate->id)->first()
+                : null;
+            $this->certificateSource->stamp(
+                $newCertificate,
+                $reissueAttendee?->metadata ?? $certificate->metadata ?? []
+            );
 
             if ($certificate->event_id) {
                 EventAttendee::where('certificate_id', $certificate->id)

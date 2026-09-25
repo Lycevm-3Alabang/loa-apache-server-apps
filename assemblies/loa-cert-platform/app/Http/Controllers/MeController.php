@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Certificate;
 use App\Models\CertificateTemplate;
 use App\Models\Event;
+use App\Services\CertificateSource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -21,6 +22,7 @@ use OpenApi\Attributes as OA;
     new OA\Property(property: "status", type: "string", enum: ["active", "revoked", "expired"]),
     new OA\Property(property: "event_id", type: "string", format: "uuid", nullable: true),
     new OA\Property(property: "event_name", type: "string", nullable: true),
+    new OA\Property(property: "generation_mode", type: "string", enum: ["template", "file"]),
     new OA\Property(property: "created_at", type: "string", format: "date-time"),
 ])]
 #[OA\Schema(schema: "MyCertificateListResponse", properties: [
@@ -37,6 +39,10 @@ use OpenApi\Attributes as OA;
 ])]
 class MeController extends Controller
 {
+    public function __construct(
+        private readonly CertificateSource $certificateSource,
+    ) {
+    }
     #[OA\Get(
         path: "/api/v1/me/certificates",
         summary: "List the caller's own certificates",
@@ -57,7 +63,7 @@ class MeController extends Controller
         $claims = $request->attributes->get('jwt_claims') ?? [];
         $email = $claims['email'] ?? null;
 
-        $query = Certificate::with(['event'])
+        $query = Certificate::with(['event', 'attendee'])
             ->where('recipient_email', $email);
 
         if ($status = $request->query('status')) {
@@ -117,7 +123,7 @@ class MeController extends Controller
         $claims = $request->attributes->get('jwt_claims') ?? [];
         $email = $claims['email'] ?? null;
 
-        $certificate = Certificate::with(['event'])->find($id);
+        $certificate = Certificate::with(['event', 'attendee'])->find($id);
 
         if (!$certificate) {
             return response()->json([
@@ -264,6 +270,7 @@ class MeController extends Controller
             'status' => $certificate->status,
             'event_id' => $certificate->event_id,
             'event_name' => $certificate->event?->name,
+            'generation_mode' => $this->certificateSource->resolve($certificate),
             'created_at' => $certificate->created_at?->toIso8601String(),
         ];
     }

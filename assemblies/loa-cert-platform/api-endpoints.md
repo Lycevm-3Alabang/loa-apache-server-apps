@@ -1,7 +1,7 @@
 # LOA Cert Platform — API Endpoints
 ## Product Assembly Component Specification
 
-**Version:** 1.10
+**Version:** 1.12
 **Status:** Final
 **Layer:** Product Assembly (`loa-cert-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
@@ -750,9 +750,10 @@ Issue a single certificate.
 | `recipient_email` | string | yes | |
 | `expires_at` | timestamp | no | defaults to event `valid_until` (or null) |
 | `send_email` | bool | no | default false |
-| `metadata` | object | no | `{ generation_mode, file_name, file_type }` when issuing from an uploaded file |
+| `metadata` | object | no | `{ generation_mode: file|template, file_name?, file_type? }` — `generation_mode` validated `in:file,template` (invalid → 422); persisted to `certificates.metadata` then re-stamped from the authoritative mode (attendee `metadata` when event-linked, request `metadata` when standalone) via `CertificateSource::stamp()` |
+| `file_path` | — | no | top-level `file_path` on `store()` JSON is **rejected with 422** (`errors.file_path`); bytes ride only via `POST /certificates/upload` multipart |
 
-**Behavior:** atomic certificate number generation (§7.4); enforces one active certificate per `(event_id, recipient_email)`.
+**Behavior:** atomic certificate number generation (§7.4); enforces one active certificate per `(event_id, recipient_email)`. Single writer rule (CERT-SOURCE-001 v1.2 DEC-8): every create stamps `certificates.metadata.generation_mode` from the authoritative mode so the cert survives attendee delete; `/upload` merges `generation_mode=file` preserving other keys; reissue re-stamps; roster edit without reissue does not backfill.
 
 **Response 201:**
 
@@ -945,12 +946,14 @@ List the caller's own certificates.
 
 **Query:** `status`, `limit`, `offset`.
 
-**Response 200:** paginated certificate list (own only). **Errors:** 401, 403.
+**Response 200:** paginated certificate list (own only). Each item includes `generation_mode: file | template` (resolved via `CertificateSource`: attendee `metadata.generation_mode` first, `certificates.metadata` fallback, default `template`). **Errors:** 401, 403.
 
 ### `GET /api/v1/me/certificates/{id}`
 Get one of the caller's own certificates.
 
 **Auth:** `read` + owner scoping.
+
+**Response 200:** own certificate, including `generation_mode: file | template` (same resolution as the list).
 
 **Errors:** 401, 403 (not the owner), 404.
 
@@ -1688,4 +1691,4 @@ The import payload for Auth `POST /api/v1/admin/tenants/{tenant}/endpoints/bulk`
 
 ## Document Control
 
-- **Status:** Final v1.9 — 2026-09-24: public `GET /verify/{n}` and `GET /view/{id}` return `generation_mode`; public download serves uploaded file bytes via `CertificateStorage` (file mode = email attachment source); e-cert hides Preview Certificate on verify for `file` mode. v1.7 — 2026-09-07: **Certificate rules spec** (`certificate-rules-spec.md` Final v1.0): template lock check on issuance (Gap 1), upload disk unification (Gap 5), file cleanup on delete (Gap 7). Endpoint catalog expanded from 48 to 57 entries (added `templates/{id}/certificate-count`, `attendees/lookup`, 7 `service/*` routes). v1.6 (2026-08-24): **Template visibility** (governing spec: e-cert repo `specs/components/template-visibility.md` Final v1.1). Templates gain `visibility` (`public`|`private`, default private on API create) + `updated_by`; list/show masked to owners/cert-admin (404 masking); PATCH `visibility` gated owner-or-admin (403); clone endpoints return 404 for non-visible sources and attribute clones to the cloner; event template references validated (422). Implementation commit `9904746`. v1.5 (2026-08-11): **C-Auth implemented** (§13 items marked done). Auth endpoints (callback/refresh/logout) live; `jwt.auth` + `jwt.endpoint` middleware enforced on all non-public routes; 126 tests green. v1.4 (2026-08-06): decision #20 — auth deferred. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`. v1.8 (2026-09-18): **Code-alignment audit** — ordinals corrected to middleware (`read=1`, `write=2`, `admin=3`); tenant slug fixed to `loa-e-cert`; added `GET /public/certificates/{id}/download` (§5.6, §6); §6 completed (lookup, certificate-count, dashboard, audit-logs, 11 `service/*`); Appendix A fixed to 61 entries (service status/members/invite `write`→`admin` per config; added `service/users/{id}` + `service/users/{id}/groups` trio); totals corrected to 64 domain (61 gated + 3 public).
+- **Status:** Final v1.12 — 2026-09-25: CERT-SOURCE-001 v1.3 — `GET /me/certificates` + `GET /me/certificates/{id}` return additive `generation_mode: file|template` via `CertificateSource::resolve()` with `attendee` eager load. Final v1.11 — 2026-09-25: CERT-SOURCE-001 v1.2 save fix — `POST /certificates` validates `metadata.generation_mode=in:file,template` (422 invalid), rejects top-level `file_path` with 422, stamps `certificates.metadata.generation_mode` on every create/reissue (attendee mode when event-linked, request mode when standalone); dead `$certificate->file_data` reads removed. Final v1.9 — 2026-09-24: public `GET /verify/{n}` and `GET /view/{id}` return `generation_mode`; public download serves uploaded file bytes via `CertificateStorage` (file mode = email attachment source); e-cert hides Preview Certificate on verify for `file` mode. v1.7 — 2026-09-07: **Certificate rules spec** (`certificate-rules-spec.md` Final v1.0): template lock check on issuance (Gap 1), upload disk unification (Gap 5), file cleanup on delete (Gap 7). Endpoint catalog expanded from 48 to 57 entries (added `templates/{id}/certificate-count`, `attendees/lookup`, 7 `service/*` routes). v1.6 (2026-08-24): **Template visibility** (governing spec: e-cert repo `specs/components/template-visibility.md` Final v1.1). Templates gain `visibility` (`public`|`private`, default private on API create) + `updated_by`; list/show masked to owners/cert-admin (404 masking); PATCH `visibility` gated owner-or-admin (403); clone endpoints return 404 for non-visible sources and attribute clones to the cloner; event template references validated (422). Implementation commit `9904746`. v1.5 (2026-08-11): **C-Auth implemented** (§13 items marked done). Auth endpoints (callback/refresh/logout) live; `jwt.auth` + `jwt.endpoint` middleware enforced on all non-public routes; 126 tests green. v1.4 (2026-08-06): decision #20 — auth deferred. v1.3 (2026-08-06): SSO URL → `/sso/login`, §9.9 `/access` optional, §5.7 dashboard ownership note, decision #17 confirmed, example cert numbers → `CERT-0001`. v1.8 (2026-09-18): **Code-alignment audit** — ordinals corrected to middleware (`read=1`, `write=2`, `admin=3`); tenant slug fixed to `loa-e-cert`; added `GET /public/certificates/{id}/download` (§5.6, §6); §6 completed (lookup, certificate-count, dashboard, audit-logs, 11 `service/*`); Appendix A fixed to 61 entries (service status/members/invite `write`→`admin` per config; added `service/users/{id}` + `service/users/{id}/groups` trio); totals corrected to 64 domain (61 gated + 3 public).

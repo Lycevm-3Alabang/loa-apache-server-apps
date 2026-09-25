@@ -11,6 +11,7 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Services\AuditLogger;
 use App\Services\CertificateNumberService;
+use App\Services\CertificateSource;
 use App\Services\CertUserChecker;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -138,6 +139,7 @@ class EventController extends Controller
         private readonly CertificateStorage $certificateStorage,
         private readonly AuditLogger $auditLogger,
         private readonly CertUserChecker $userChecker,
+        private readonly CertificateSource $certificateSource,
     ) {
     }
 
@@ -799,6 +801,8 @@ class EventController extends Controller
                         'expires_at' => $event->valid_until,
                     ]);
 
+                    $this->certificateSource->stamp($certificate, $attendee->metadata ?? []);
+
                     $this->auditLogger->record('certificate.issued', 'api', 'certificate', $certificate->id, [
                         'certificate_number' => $certificateNumber,
                         'event_id' => $event->id,
@@ -1026,6 +1030,8 @@ class EventController extends Controller
                     'certificate_number' => $certificateNumber,
                     'expires_at' => $event->valid_until,
                 ]);
+
+                $this->certificateSource->stamp($certificate, $attendee->metadata ?? []);
 
                 $attendee->update([
                     'certificate_id' => $certificate->id,
