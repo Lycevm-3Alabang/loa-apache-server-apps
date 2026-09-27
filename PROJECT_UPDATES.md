@@ -83,7 +83,7 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 ### Consult — `assemblies/loa-consult-platform/` (spec program **ACTIVE** 2026-09-24)
 
 - **Status:** scaffold done + auth-layer port COMPLETE (§11 Steps 1–7 green 2026-09-22) + slices B/C COMPLETE (B1–B5 academic/appointments, C1–C4 evaluations green 2026-09-22) + Phase D link-reads + import-domain + data/audit green 2026-09-23 (`UserLinkTest` 8/8, `ImportTest` 7/7, `DataAuditTest` 8/8 user) + URL-flattening F1+F2 green (flat 104+5 normative, scoped results). Planning FLUSHED 2026-09-23 (P0–P5 done, P6 parked — see TODO AFTER FINAL).
-- **Specs:** `api-endpoints.md` Final v2.1 (flat 104+5 green, tenant `loa-consultation`), `auth-integration.md` Final v1.5 (§11 Steps 1–7 landed, port COMPLETE; tenant `loa-consultation`), 3 endpoint modules Final v1.0–v1.1 (academic/evaluations v1.1 flat green), `endpoints-admin-import.md` Final v1.1 (Phase D baselines green 2026-09-23; DEC-5 proxy OPEN), `url-flattening.md` Final v1.1 (flat 104+5 per ACC-2), `docker-compose-spec.md` Final v1.1 (tenant `loa-consultation`), `data-model.md` Final v1.3 (shape contract + §3 Status gate 6/3/17); `test-suite.md` Final v1.2; `consult-readiness.md` Final v1.6 (104+5 pointer, tenant `loa-consultation`); runbooks Final v1.0.
+- **Specs:** `api-endpoints.md` Final v2.1 (flat 104+5 green, tenant `loa-consultation`), `auth-integration.md` Final v1.5 (§11 Steps 1–7 landed, port COMPLETE; tenant `loa-consultation`), 3 endpoint modules Final v1.0–v1.1 (academic/evaluations v1.1 flat green), `endpoints-admin-import.md` Final v1.1 (Phase D baselines green 2026-09-23; DEC-5 proxy OPEN), `url-flattening.md` Final v1.1 (flat 104+5 per ACC-2), `docker-compose-spec.md` Final v1.1 (tenant `loa-consultation`), `data-model.md` Final v1.3 (shape contract + §3 Status gate 6/3/17); `test-suite.md` Final v1.3 (CON-11 bypass, re-green 2026-09-26); `consult-readiness.md` Final v1.6 (104+5 pointer, tenant `loa-consultation`); runbooks Final v1.0.
 - **Next:** P6 cutover/Phase E BLOCKED (frontend decision, reports 7 types, §8 provisioning under new `loa-consultation` tenant); DEC-5 proxy OPEN; runbooks Final v1.0 (promotion complete); tenant code rollout done, suite re-green + Auth re-provisioning pending (user runs). Auth JSON regen 118→104+5 deferred to deploy-time. See TODO AFTER FINAL (planning FLUSHED 2026-09-23).
 
 ---
@@ -112,6 +112,17 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 - [ ] Cert: frontend switch — e-cert `certificate-detail.tsx:137` `file_path` heuristic → backend `generation_mode`; verify Uploaded/System-generated list filter against `?source=`; e-cert `npm run lint` / `npm run test`
 - [ ] Tenant rollout finish (user runs): real `.env` `TENANT_SLUG=loa-consultation` → Auth re-provisioning (tenant + aces-* + 104+5 catalog/grants) → consult suite re-green paste → Auth JSON regen 118→104+5 at deploy time
 - [ ] P6 PARKED items only (DEC-5 + Phase E + §8 provisioning — see TODO PLANNED). Planning FLUSHED 2026-09-23; runbooks Final v1.0 2026-09-24; drift fixes done green (120 passed).
+
+### Date: 2026-09-26
+
+### Completed
+- **Consult throttle re-green (user-green):** `test-suite.md` Final v1.3 CON-11 + `tests/TestCase.php` bypass verified; 120 WARN triaged to missing host `.env` (bind-mount → `/var/www/html/.env`); `.env` created from `.env.example`; suite re-green pasted; trackers reconciled (TODO SPEC STATUS + PROJECT Phase 2 v1.2→v1.3). P6 left: DEC-5 + Phase E + §8.
+- **Consult Phase E opened 2026-09-26 (user-approved, scan-first):** `e-consultation` re-verified (112 route.ts, no `app/api/reports/**`); `endpoints-reports.md` v0.1 Draft written (7 families + 2 sentiment writes, §1.9 template, NOT Final — promotion gates code per Rule 0).
+- **Consult Phase E spec Final 2026-09-26 (user-approved `final`):** `endpoints-reports.md` v0.1 Draft → **Final v1.0** (no normative change); D-1–D-4 implementation gates open (per-step yes, TDD per §1.10).
+- **Consult frontend transition Draft 2026-09-26 (user-requested):** `frontend-transition.md` v0.1 Draft (T0 topology → T1 auth → T2 areas → T3 gate → T4 decommission → T5 E2E; surface-mapped from `e-consultation` reads; NOT Final — promotion gates frontend code; D-1 ReportService study parked intact).
+- **Consult frontend transition Final 2026-09-26 (user-approved `final`):** `frontend-transition.md` v0.1 Draft → **Final v1.0** (no normative change); D-1–D-6 transition gates open (per-area yes + pasted gates).
+- **Consult T0 topology DECIDED 2026-09-26 (user: Vercel + cert-actual strategy):** Option B direct + CORS recorded (DEC-2/ACC-1); no frontend code touched; cookie flags verified at T1 E2E.
+- **Consult T1-a JWT seam 2026-09-26 (user-approved `go`):** new `e-consultation/lib/jwt-context.tsx` + 6 client files on `useJwt` (bridge mirrors next-auth, runtime unchanged); `SessionProvider` stays until T1-b; gate: user `npm run lint`.
 
 ### Date: 2026-09-25
 

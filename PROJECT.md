@@ -2,7 +2,7 @@
 ## Project Tracker
 
 **Started:** 2026-07-30
-**Last Updated:** 2026-09-23
+**Last Updated:** 2026-09-26
 **Target:** cPanel (PHP 8.3+ / MySQL 8 / Laravel 12)
 
 ---
@@ -168,11 +168,12 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | `endpoints-admin-import.md` spec | ✅ Final v1.1 | Phase D contract (v2.1 pointers); baselines green 2026-09-23 (link-reads / import-domain / data-audit); DEC-5 `/service/*` proxy still OPEN |
 | `url-flattening.md` spec | ✅ Final v1.1 | Flat URL scheme (104+5 actual per ACC-2 + `api-endpoints.md` v2.1 §5 Total; 113+5 was F2 intermediate; single scoped results, in-place v1 rename; F2 green) |
 | URL flattening (F1+F2) | ✅ Done 2026-09-23 | Flat routes + scoped results + catalog/JSON regen (104+5 normative; 113+5 reported at F2 was intermediate) + ResultsTest scoping; suite green (user) |
-| `test-suite.md` spec | ✅ Final v1.2 | Test contract (v2.1 pointers, tenant `loa-consultation`); MySQL `loa_consult_test`, JWT helper, user-run sequential |
+| `test-suite.md` spec | ✅ Final v1.3 | Test contract (v2.1 pointers, tenant `loa-consultation`, CON-11 throttle bypass); MySQL `loa_consult_test`, JWT helper, user-run sequential; re-green 2026-09-26 |
 | `docker-compose-spec.md` spec | ✅ Final v1.1 | Root-stack `consult-*` blocks port 9002, `loa_consult` init, tenant `loa-consultation` |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Final v1.0 | Shared root-stack pattern, wiring gate MET, no-seed, test-DB pin |
 | `DEPLOY.md` spec | ✅ Final v1.0 | Cert-patterned cPanel deploy (PHP 8.3, dist, no-seed, slug checklist, cron) |
 | `FRONTEND-INTEGRATION.md` spec | ✅ Final v1.0 | Backend-done cutover handoff (topology OPEN until cutover) |
+| `frontend-transition.md` spec | ✅ Final v1.0 2026-09-26 | Cutover sequencing T0→T5 (transition gates open, per-area yes) |
 | `consult-readiness.md` spec | ✅ Final v1.6 | Provisioning checklist (aces-* + linkage, 104+5 pointer, v2.1 pointers, tenant `loa-consultation`) |
 | First migration(s) + baseline deltas | ✅ Done 2026-09-22 | `000001-000010` academic + `000011` academic baseline + `000012` appointment-family + `000013` section-link + `000014` evaluation tables; per data-model Final v1.3 §3/§7 |
 | JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa-consultation`, `consult_user`; Unit tests green. **Gated in Step 7** |
@@ -196,7 +197,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | User link reads (Phase D) | ✅ Done 2026-09-23 | `UserLinkController` (primary/attendees/related-data via email link) + 3 gated reads + `UserLinkTest` 8/8 green (user); writes absent per DEC-1 |
 | Import domain (Phase D) | ✅ Done 2026-09-23 | `ImportController` (preview + references + idempotent writes) + 10 gated routes + `ImportTest` 7/7 green (user); users/reference absent per DEC-2 |
 | Data/audit (Phase D) | ✅ Done 2026-09-23 | `DataController` (delete-students/reset-db/export/mappings) + 4 gated routes + `DataAuditTest` 8/8 green (user); per-resource DELETE on owners; audit-logs absent by gate |
-| Report endpoints (7 types) | ⬜ Deferred to Phase E | No REST routes exist; Server Components compute directly |
+| Report endpoints (7 types) | ✅ Final v1.0 2026-09-26 | `endpoints-reports.md` Final (D-1–D-4 implementation pending, per-step yes); no REST routes exist yet; Server Components compute directly |
 | CSV import | ⬜ Not started | |
 | Email notifications | ⬜ Not started | |
 | Deploy to aces-api.lyceumalabang.edu.ph | ⬜ Not started | |

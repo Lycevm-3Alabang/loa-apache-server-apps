@@ -2,7 +2,7 @@
 
 > **ACTIVE 2026-09-24** — Consult spec program resumed (spec-first); Auth + Cert deferred (working, no changes). Reconciled 2026-09-24: SPEC STATUS matches assembly Finals (104+5, tenant `loa-consultation`); Phase D deferred markers superseded by Final v1.1 + baselines green. Boundary decision: ONE assembly, two contexts (Consultation + Evaluation, no split).
 
-**Updated:** 2026-09-24
+**Updated:** 2026-09-26
 **Scope:** `assemblies/loa-consult-platform/` specs, with Auth + Cert as reference/basis.
 **Rule:** No implementation code until the relevant spec `.md` file is Final (AGENTS.md Rule 0).
 
@@ -34,7 +34,7 @@
 
 - [x] SUPERSEDED 2026-09-23 — Phase D spec slice (was DEFERRED with admin+import above): `endpoints-admin-import.md` Final v1.1 covers admin-users + import + data-audit; `/service/*` proxy decision still OPEN per DEC-5 (no proxy code until recorded)
 
-- [ ] PARKED 2026-09-23 — get back later — Phase E: reports as Laravel API + cutover (frontend rewrite decision: Vercel rewrite vs direct+CORS)
+- [x] COMPLETE 2026-09-26 — Phase E spec: `endpoints-reports.md` v0.1 Draft → **Final v1.0** (user-approved, no normative change; scan-verified 112 route.ts, 7 families); implementation D-1–D-4 gates open (needs per-step yes); cutover topology DECIDED 2026-09-26: Option B direct + CORS (cert-actual strategy; cookie flags verified at T1)
 
 - [ ] PARKED 2026-09-23 — get back later — Auth provisioning per `auth-integration.md` §8 at deploy time (tenant, groups, catalog import, grants, secrets)
 
@@ -42,7 +42,7 @@
 
 - [ ] PARKED 2026-09-23 — get back later — DEC-5 `/service/*` proxy decision (record before any proxy code)
 
-- [ ] PARKED 2026-09-24 — get back later — Throttle-fix verification: `test-suite.md` Final v1.3 (CON-11) + base `TestCase` bypass landed; suite re-green paste pending (user runs `php artisan test`, expect 120 passed; 5 red were timing-flake 429s on `throttle:10,1` routes, prod throttle untouched)
+- [x] COMPLETE 2026-09-26 — Throttle-fix verification: `test-suite.md` Final v1.3 (CON-11) + base `TestCase` bypass landed; suite re-green pasted green (user); first re-run showed 120 WARN (missing host `.env` → container `file_get_contents(/var/www/html/.env)`); fixed by creating `.env` from `.env.example`; prod `throttle:10,1` untouched
 
 ---
 
@@ -58,18 +58,33 @@
 | `endpoints-evaluations.md` | v1.1 | **Final** | flat paths + scoped results (green) |
 | `endpoints-admin-import.md` | v1.1 | **Final** | Phase D contract (v2.0 pointers); baselines green 2026-09-23 (link-reads / import-domain / data-audit); DEC-5 `/service/*` proxy still OPEN |
 | `url-flattening.md` | v1.1 | **Final** | Flat URL scheme (104+5 actual per ACC-2 + `api-endpoints.md` v2.0 §5 Total; 113+5 was F2 intermediate, superseded; single scoped results, cert/auth deny, in-place v1 rename) |
-| `test-suite.md` | v1.2 | **Final** | test contract for auth-layer + B/C (CON/DEC/ACC/D); user-run sequential; v2.1 pointers; tenant `loa-consultation` |
+| `test-suite.md` | v1.3 | **Final** | test contract for auth-layer + B/C (CON/DEC/ACC/D + CON-11 throttle bypass); user-run sequential; v2.1 pointers; tenant `loa-consultation`; re-green 2026-09-26 |
 | `docker-compose-spec.md` | v1.1 | **Final** | — (root stack wiring: §2 blocks + §3 init + §4 secrets + §7 scripts; tenant `loa-consultation`) |
 | `LOCAL-DEV-RUNBOOK.md` | v1.0 | **Final** | local dev setup (wired + green 2026-09-23) |
 | `DEPLOY.md` | v1.0 | **Final** | deployment (cert-patterned, deploys on approval) |
 | `FRONTEND-INTEGRATION.md` | v1.0 | **Final** | cutover phase (backend green; topology OPEN until cutover) |
 | `consult-readiness.md` | v1.6 | **Final** | provisioning checklist (aces-* + linkage, pointer-only 104+5, v2.1 pointers, tenant `loa-consultation`) |
+| `frontend-transition.md` | v1.0 | **Final** | cutover sequencing (T0 topology → T1 auth → T2 areas → T3 gate → T4 decommission → T5 E2E); transition gates open (per-area yes) |
 | `AGENTS.md` (assembly contract) | v1.0 | **Final** | — (working agreements, scaffold, status, spec pointers) |
 | `student.md` / `faculty.md` / `faculty-loading.md` (education domains) | v1.1 | **Final** | — (first-class cache via SSO upsert, FK to domain IDs; unblock data-model Final) |
 
 ---
 
 ## DONE
+
+- [x] 2026-09-26 — T1-a JWT seam landed (user-approved, `e-consultation`): new `lib/jwt-context.tsx` (`JwtProvider`/`useJwt`, JWT shape + next-auth bridge, token null until T1-b) + 6 files swapped (Providers/Navbar/NavigationBar/Sidebar/dean-departments/faculty-availability); `SessionProvider` stays mounted until T1-b; gate: user runs `npm run lint` in `e-consultation` (runtime unchanged by design)
+
+- [x] 2026-09-26 — T0 topology DECIDED (user: Vercel host + cert-actual strategy): Option B direct + CORS recorded in `frontend-transition.md` DEC-2/ACC-1; no frontend code touched (T0-first-only); cookie flags verified at T1 E2E
+
+- [x] 2026-09-26 — Frontend transition spec Final (user-approved `final`): `frontend-transition.md` v0.1 Draft → **Final v1.0** (no normative change); D-1–D-6 transition gates open (per-area yes + pasted gates)
+
+- [x] 2026-09-26 — Frontend transition spec Draft (user-requested): `frontend-transition.md` v0.1 Draft (T0→T5 cutover sequencing, surface-mapped from `e-consultation` reads; NOT Final — promotion gates frontend code; D-1 ReportService study parked intact)
+
+- [x] 2026-09-26 — Phase E spec Final (user-approved `final`): `endpoints-reports.md` v0.1 Draft → **Final v1.0** (no normative change); D-1–D-4 implementation gates open (per-step yes)
+
+- [x] 2026-09-26 — Phase E opened (user-approved, scan-first): `e-consultation` re-verified (112 route.ts, no `app/api/reports/**`); `endpoints-reports.md` v0.1 Draft written (7 families + sentiment writes, §1.9 template, NOT Final — promotion gates code)
+
+- [x] 2026-09-26 — Throttle re-green COMPLETE (user-green): `test-suite.md` Final v1.3 CON-11 + `tests/TestCase.php` bypass verified; 120 WARN triaged to missing host `.env` (bind-mount `docker-compose.yml` consult-app volume → `/var/www/html`); `.env` created from `.env.example` (file tool, no CLI); suite re-green pasted; SPEC STATUS v1.2→v1.3 reconciled (P6 left: DEC-5 + Phase E + §8)
 
 - [x] 2026-09-24 — Runbook promotions to Final (user-approved): `LOCAL-DEV-RUNBOOK.md` v0.1 → **v1.0** (wiring gate MET, no-seed, test-DB pin), `DEPLOY.md` v0.1 → **v1.0** (cert-patterned cPanel guide: PHP 8.3, dist, no-seed migrate, slug checklist, cron), `FRONTEND-INTEGRATION.md` v0.1 → **v1.0** (backend-done state, topology OPEN until cutover); consult spec program now 100% Final (P6 left: DEC-5 + Phase E + §8)
 
