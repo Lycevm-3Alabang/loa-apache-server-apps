@@ -72,6 +72,8 @@
 
 ## DONE
 
+- [x] 2026-09-26 — T1-b SSO flow landed (user-approved, `e-consultation`): `jwt-context` re-sourced to Auth SSO (login/refresh/logout/apiFetch, groups decoded from claims, legacy display labels); `api/client` Bearer mirror; new `/auth/callback` fragment page; login → SSO button; `proxy.ts` pass-through (legacy sessions still checked); no `signIn`/`useSession` left in `app/`; gate: user lint + SSO E2E
+
 - [x] 2026-09-26 — e-consultation AGENTS.md spec guideline (user-requested): appended Working-with-Specs lifecycle + Spec Authoring Guideline (§1.9-style template) + Consult Backend Awareness (reference-only); existing guide preserved; living template, may change
 
 - [x] 2026-09-26 — T1-a JWT seam landed (user-approved, `e-consultation`): new `lib/jwt-context.tsx` (`JwtProvider`/`useJwt`, JWT shape + next-auth bridge, token null until T1-b) + 6 files swapped (Providers/Navbar/NavigationBar/Sidebar/dean-departments/faculty-availability); `SessionProvider` stays mounted until T1-b; gate: user runs `npm run lint` in `e-consultation` (runtime unchanged by design)

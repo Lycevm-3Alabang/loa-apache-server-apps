@@ -123,6 +123,7 @@ Prod DBs/users provisioned in cPanel 2026-08-24 (user `lyceumalabang_auth_admin`
 - **Consult frontend transition Final 2026-09-26 (user-approved `final`):** `frontend-transition.md` v0.1 Draft → **Final v1.0** (no normative change); D-1–D-6 transition gates open (per-area yes + pasted gates).
 - **Consult T0 topology DECIDED 2026-09-26 (user: Vercel + cert-actual strategy):** Option B direct + CORS recorded (DEC-2/ACC-1); no frontend code touched; cookie flags verified at T1 E2E.
 - **Consult T1-a JWT seam 2026-09-26 (user-approved `go`):** new `e-consultation/lib/jwt-context.tsx` + 6 client files on `useJwt` (bridge mirrors next-auth, runtime unchanged); `SessionProvider` stays until T1-b; gate: user `npm run lint`.
+- **Consult T1-b SSO flow 2026-09-26 (user-approved):** `jwt-context` re-sourced (callback login, silent + proactive refresh, logout, `apiFetch`, claim-groups decode); `api/client` Bearer mirror; `/auth/callback` fragment page; login → SSO button; `proxy.ts` pass-through; `app/` free of next-auth reads; gate: user lint + SSO E2E (login → token → refresh → logout).
 
 ### Date: 2026-09-25
 
