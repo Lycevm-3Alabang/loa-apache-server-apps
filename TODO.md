@@ -72,6 +72,8 @@
 
 ## DONE
 
+- [x] 2026-09-26 — e-consultation AGENTS.md spec guideline (user-requested): appended Working-with-Specs lifecycle + Spec Authoring Guideline (§1.9-style template) + Consult Backend Awareness (reference-only); existing guide preserved; living template, may change
+
 - [x] 2026-09-26 — T1-a JWT seam landed (user-approved, `e-consultation`): new `lib/jwt-context.tsx` (`JwtProvider`/`useJwt`, JWT shape + next-auth bridge, token null until T1-b) + 6 files swapped (Providers/Navbar/NavigationBar/Sidebar/dean-departments/faculty-availability); `SessionProvider` stays mounted until T1-b; gate: user runs `npm run lint` in `e-consultation` (runtime unchanged by design)
 
 - [x] 2026-09-26 — T0 topology DECIDED (user: Vercel host + cert-actual strategy): Option B direct + CORS recorded in `frontend-transition.md` DEC-2/ACC-1; no frontend code touched (T0-first-only); cookie flags verified at T1 E2E
