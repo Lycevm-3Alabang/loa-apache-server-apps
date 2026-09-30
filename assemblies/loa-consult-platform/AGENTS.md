@@ -241,7 +241,7 @@ envelope migration without a spec.
 | `test-suite.md` v1.3 | FINAL — auth + B/C contract (CON/ACC/D), user-run sequential, v2.1 pointers, tenant `loa-consultation`, CON-11 throttle bypass |
 | `LOCAL-DEV-RUNBOOK.md` v1.0 | FINAL — local dev setup (wired + green) |
 | `DEPLOY.md` v1.0 | FINAL — deployment guide (cert-patterned) |
-| `FRONTEND-INTEGRATION.md` v1.1 | FINAL — cutover checklist (backend green; topology DECIDED Option B = same-origin BFF passthrough) |
+| `FRONTEND-INTEGRATION.md` v1.2 | FINAL — cutover checklist (backend green; topology DECIDED Option B = same-origin BFF passthrough; env block: Consult API host server-only, `NEXT_PUBLIC_CONSULT_API_URL` removed) |
 | `consult-readiness.md` v1.6 | FINAL — provisioning checklist (aces-* + linkage, 104+5 pointer, v2.1 pointers, tenant `loa-consultation`) |
 | `endpoints-admin-import.md` v1.1 | FINAL — Phase D (v2.0 pointers) |
 | `url-flattening.md` v1.1 | FINAL — flat scheme (104+5 per ACC-2, scoped results, F2 green) |

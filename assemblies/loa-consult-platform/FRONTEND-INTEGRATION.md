@@ -1,6 +1,6 @@
 # LOA Consult Platform — Frontend Integration Guide (cutover)
 
-**Version:** 1.1
+**Version:** 1.2
 **Status:** Final (backend built + green 2026-09-23; activates at cutover; topology DECIDED 2026-09-26)
 **Layer:** Product Assembly (`loa-consult-platform`)
 
@@ -35,11 +35,22 @@
 
 ## Environment (cutover)
 
+Frontend env after the BFF lands (per `e-consultation/specs/services/platform.md` `EC-PLAT-001` Final v1.0 DEC-3). The Consult API host is **server-only** — it must not be a `NEXT_PUBLIC_*` variable, because the BFF keeps the browser same-origin and the upstream host out of the bundle.
+
 ```env
-NEXT_PUBLIC_CONSULT_API_URL=https://aces-api.lyceumalabang.edu.ph
+# Public — URLs and tenant slug only
 NEXT_PUBLIC_AUTH_URL=https://auth.lyceumalabang.edu.ph
 NEXT_PUBLIC_CONSULT_TENANT_SLUG=loa-consultation
+
+# Server-only — Route Handler only, never shipped to the browser.
+# Unset on Vercel; the BFF falls back to the production hosts in code.
+CONSULT_API_URL=http://localhost:9002
+AUTH_API_URL=http://localhost:8080
 ```
+
+> **`NEXT_PUBLIC_CONSULT_API_URL` removed 2026-09-30 (user-approved).** This file previously listed it as a public variable set to the Laravel host, which contradicted the BFF topology in `frontend-transition.md` Final v1.1 DEC-2 — a public API host is exactly what the BFF exists to prevent. Removed alongside `e-consultation/specs/cutover-headline.md` → v1.1 DEC-5 and `EC-PLAT-001` → Final v1.0 DEC-6. The browser base is a same-origin relative-path constant, not a variable.
+>
+> **What this means for the Laravel host:** no CORS allowlist is needed, and the `loa_connect_refresh` cookie stays same-origin with `SameSite=Lax` per `auth-integration.md` v1.6 §3. Local dev still uses `:9002` (Consult) and `:8080` (Auth) per `docker-compose-spec.md` v1.1 — those are the BFF's local targets, not browser-visible values.
 
 ## Decommission at Cutover (TODO — mirrors consult-readiness §11)
 
@@ -71,6 +82,9 @@ NEXT_PUBLIC_CONSULT_TENANT_SLUG=loa-consultation
 
 ## Document Control
 
-- **Status:** Final v1.1 (backend green; topology DECIDED 2026-09-26)
-- **Reconciled 2026-09-30 (twice, no normative change):** (a) `test-suite.md` pointer v1.2 → v1.3, and the topology section updated to record the decision; (b) topology mechanism re-stated as **same-origin BFF passthrough with no CORS**, correcting the earlier "direct cross-origin + CORS" wording that this file had adopted and that v1.0's DEC-2 carried — verified against `D:\loa\e-cert\src\app\api\v1\[...path]\route.ts` (a server-side passthrough handler, not cross-origin calls). The decision, host, and cookie posture are unchanged; only the mechanism and its CORS implication were wrong. See `frontend-transition.md` Final v1.1 DEC-2 for the corrected record.
+- **Status:** Final v1.2 — backend green; topology DECIDED 2026-09-26.
+- **Revision history:**
+  - **v1.2 (2026-09-30):** env block corrected — `NEXT_PUBLIC_CONSULT_API_URL` removed; `CONSULT_API_URL`/`AUTH_API_URL` marked server-only; noted that no CORS allowlist is needed and the refresh cookie stays same-origin `SameSite=Lax`. Normative, and coordinated with `e-consultation/specs/cutover-headline.md` → v1.1 DEC-5 and `e-consultation/specs/services/platform.md` → Final v1.0 DEC-6. **No change to any Laravel contract** — callback/refresh/logout, cookie path, and flags are untouched.
+  - **v1.1 (2026-09-30):** topology mechanism re-stated as **same-origin BFF passthrough with no CORS**, retracting this file's earlier "direct cross-origin + CORS" wording (inherited from v1.0's DEC-2, which was an inference from the e-cert *docs*). Verified against `D:\loa\e-cert\src\app\api\v1\[...path]\route.ts` — a server-side passthrough handler, not cross-origin calls. `test-suite.md` pointer v1.2 → v1.3. Decision, host, and cookie posture unchanged; only the mechanism and its CORS implication were wrong. See `frontend-transition.md` Final v1.1 DEC-2.
 - Cutover execution is sequenced by `frontend-transition.md` (T0–T5) — this file is the handoff checklist it sequences.
+- Frontend-side counterpart: `e-consultation/specs/cutover-headline.md` Final v1.1 (`EC-CUTOVER-001`), `specs/services/{api-client,auth,platform}.md` (`EC-API-001`/`EC-AUTH-001`/`EC-PLAT-001`, all Final v1.0).

@@ -172,9 +172,10 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | `docker-compose-spec.md` spec | ✅ Final v1.1 | Root-stack `consult-*` blocks port 9002, `loa_consult` init, tenant `loa-consultation` |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Final v1.0 | Shared root-stack pattern, wiring gate MET, no-seed, test-DB pin |
 | `DEPLOY.md` spec | ✅ Final v1.0 | Cert-patterned cPanel deploy (PHP 8.3, dist, no-seed, slug checklist, cron) |
-| `FRONTEND-INTEGRATION.md` spec | ✅ Final v1.1 | Backend-done cutover handoff; **topology DECIDED = Option B same-origin BFF passthrough, no CORS** (v1.0 said "direct cross-origin + CORS" — corrected 2026-09-30) |
+| `FRONTEND-INTEGRATION.md` spec | ✅ Final v1.2 | Backend-done cutover handoff; topology DECIDED = Option B same-origin BFF passthrough, no CORS; env block v1.2 — `NEXT_PUBLIC_CONSULT_API_URL` removed, `CONSULT_API_URL`/`AUTH_API_URL` server-only |
 | `frontend-transition.md` spec | ✅ Final v1.1 2026-09-30 | Cutover sequencing T0→T5; T0 + T1-a + T1-b done 2026-09-26, **T2–T5 open** (T2-reports blocked on Phase E); DEC-2 mechanism corrected to BFF passthrough |
 | `endpoints-reports.md` spec | ✅ Final v1.0 | Phase E reports contract (7 flat reads + 2 sentiment writes); **implementation D-1–D-4 NOT STARTED** — no `ReportService`/`ReportController`/routes/catalog rows/`ReportsTest` |
+| e-consultation service specs (external repo) | ✅ Final v1.0 2026-09-30 | `EC-API-001` / `EC-AUTH-001` / `EC-PLAT-001` + `EC-D1`–`EC-D3`; `EC-CUTOVER-001` → v1.1 (DEC-5 env: `NEXT_PUBLIC_CONSULT_API_URL` removed). **BFF handler (`app/api/v1/[...path]/route.ts`) not yet built — blocks all T2 areas** |
 | `consult-readiness.md` spec | ✅ Final v1.6 | Provisioning checklist (aces-* + linkage, 104+5 pointer, v2.1 pointers, tenant `loa-consultation`) |
 | First migration(s) + baseline deltas | ✅ Done 2026-09-22 | `000001-000010` academic + `000011` academic baseline + `000012` appointment-family + `000013` section-link + `000014` evaluation tables; per data-model Final v1.3 §3/§7 |
 | JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa-consultation`, `consult_user`; Unit tests green. **Gated in Step 7** |
