@@ -17,7 +17,7 @@ The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RE
 
 ## Context
 
-Consult assembly is Laravel 12 + PHP 8.3 + MySQL 8 (`loa_consult`), thin product assembly owning routing/middleware/JWT-validation/RBAC only. Normative behavior lives in `api-endpoints.md` Final v2.1 (104 gated + 5 public), `auth-integration.md` Final v1.5 §11 (Steps 1–7), `data-model.md` Final v1.3 (shape contract; §3 Status gates implementability), `endpoints-academic/appointments/evaluations.md` Final v1.0–v1.1, `docker-compose-spec.md` Final v1.1 (root-stack `:9002`).
+Consult assembly is Laravel 12 + PHP 8.3 + MySQL 8 (`loa_consult`), thin product assembly owning routing/middleware/JWT-validation/RBAC only. Normative behavior lives in `api-endpoints.md` Final v2.1 (104 gated + 5 public), `auth-integration.md` Final v1.6 §11 (Steps 1–7), `data-model.md` Final v1.3 (shape contract; §3 Status gates implementability), `endpoints-academic/appointments/evaluations.md` Final v1.0–v1.1, `docker-compose-spec.md` Final v1.1 (root-stack `:9002`).
 
 Slices B (appointments/academic) and C (evaluations) plus auth-layer port are landed with green pastes 2026-09-22 (Jwt 6, Policy 5, AuthTrio 16, RouteGating 5, Availability 10/10, Appointment 12/12, EvaluationTables 4/4, PeriodsRubrics 16, Flow + Results). This spec codifies the test contract so TDD can interrogate those Final specs without inventing behavior. Per assembly `AGENTS.md` §1.3/§1.7: agent NEVER runs tests; USER runs sequentially from repo root; nothing breaks HealthTest; no change complete until green pasted.
 

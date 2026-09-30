@@ -114,7 +114,7 @@ Dedicated `loa_consult_test` (never the app database). `tests/bootstrap.php` pin
 - [Multi-app spec](../../docs/local-dev-multi-app-spec.md) (shared-infra rules + acceptance criteria)
 - [MySQL init](../../docker/mysql/init.sql) (`loa_consult` lines added at wiring time)
 - [Auth runbook](../loa-auth-platform/LOCAL-DEV-RUNBOOK.md) · [Cert runbook](../loa-cert-platform/LOCAL-DEV-RUNBOOK.md)
-- [API Endpoints](api-endpoints.md) (Final v2.1) · [Auth Integration](auth-integration.md) (Final v1.5) · [Data Model](data-model.md) (Final v1.3)
+- [API Endpoints](api-endpoints.md) (Final v2.1) · [Auth Integration](auth-integration.md) (Final v1.6) · [Data Model](data-model.md) (Final v1.3)
 
 ---
 

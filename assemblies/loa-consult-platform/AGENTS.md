@@ -75,23 +75,45 @@ availability rules · academic CRUD + semesters + impacts/count-active · evalua
 ratings/comments + rubric seed/lock + lazy `computeAll` results · audit logs · (deferred: admin+import contracts,
 Phase E reports, cutover).
 
-**Scaffold:**
+**Scaffold (reconciled 2026-09-30 — file-tree facts only, no normative change):**
 
 ```
 assemblies/loa-consult-platform/
-├── app/Http/Controllers/   # Health, Semester, Academic (Appointment/Availability/Evaluation/Auth = slices B/C)
-├── app/Http/Middleware/    # JwtMiddleware (ported ✓ Step 3) + EndpointPolicyMiddleware (stub until Step 5)
-├── app/Models/ (9)         # Department, DepartmentCourse, Subject, Section, Student, Employee,
-│                           # Semester, FacultySubject, StudentEnrollment
-├── routes/api.php          # v1 + health + semesters*8 + admin/*16 (~24 routes)
-├── config/                 # stock Laravel (jwt/auth-platform/consult-*.php pending per auth-integration §5)
-├── database/migrations/    # cache/jobs + 000001-000009 academic + 000010 audit
-├── database/seeders/       # DatabaseSeeder (BROKEN: refs missing App\Models\User)
-├── tests/                  # Feature/Api/HealthTest (1/1 green) + empty Unit
-├── docker/                 # php/Dockerfile + nginx/default.conf (cert-identical)
-├── *.md specs              # all Final (api-endpoints, auth-integration, 3 modules, docker-compose, data-model);
-│                           # test-suite + runbooks (Draft)
-└── AGENTS.md               # this file
+├── app/Http/Controllers/ (16)  # Health, Semester, Academic, Appointment, AvailabilityRule, Evaluation,
+│                               # EvaluationPeriod, EvaluationResult, RubricGroup, UserLink, Import, Data,
+│                               # AuthCallback, AuthRefresh, AuthLogout (+ stock Controller)
+│                               # NOT YET: ReportController (Phase E, endpoints-reports.md D-2)
+├── app/Http/Middleware/ (2)    # JwtMiddleware ✓ Step 3 + EndpointPolicyMiddleware ✓ Step 5 (both live)
+├── app/Services/ (4)           # JWTService, EncryptionService, AuditLogger (fail-soft, audit_logs unmigrated),
+│                               # ResultsService. NOT YET: ReportService (Phase E, endpoints-reports.md D-1)
+├── app/Jobs/AnalyzeSentiment.php
+├── app/Models/ (24)            # 9 academic (Department…StudentEnrollment) + 5 appointment-family
+│                               # (Appointment, AppointmentTimeSlot, AppointmentAttendee, AppointmentFile,
+│                               # FacultyAvailabilityRule) + 10 evaluation (Evaluation, EvaluationPeriod,
+│                               # RatingScale, RubricGroup, RubricCategory, RubricItem,
+│                               # RubricGroupSnapshot, EvaluationRating, EvaluationComment, EvaluationResult)
+├── routes/api.php              # 107 route calls = 5 public (health, semesters/count-active, auth trio)
+│                               #   + 102 JWT-gated served. Catalog `config/consult-endpoints.php` = 104 rows
+│                               #   = 102 served + 2 `/audit-logs` unserved by the data-model §3 gate.
+│                               #   NOT YET: /reports/* (Phase E D-2)
+├── config/                     # stock Laravel + jwt.php, auth-platform.php, consult-platform.php,
+│                               # consult-endpoints.php (104 rows; no `reports` rows until D-2)
+├── database/migrations/        # cache/jobs + 000001-000009 academic + 000010 audit fields +
+│                               # 000011 academic delta + 000012 appointment family + 000013 FS-section link +
+│                               # 000014 evaluation tables. NOT migrated: audit_logs, bug_reports
+├── database/seeders/           # DatabaseSeeder (stock; refs App\Models\User which does not exist —
+│                               # DO NOT seed; no-seed per docker-compose-spec.md §7)
+├── tests/ (17 test files)      # Feature/Api: Health, RouteGating, AuthTrio, AcademicDelta, AcademicHardening,
+│                               # AppointmentTables, Appointment, Availability, EvaluationTables,
+│                               # PeriodsRubrics, EvaluationFlow, Results, UserLink, Import, DataAudit;
+│                               # Unit: JwtMiddleware, EndpointPolicyMiddleware (+ bootstrap.php, TestCase.php)
+│                               # NOT YET: ReportsTest (Phase E D-3)
+├── docker/                     # php/Dockerfile + nginx/default.conf (cert-identical)
+├── *.md specs                  # api-endpoints v2.1, auth-integration v1.6, data-model v1.3, 3 module specs,
+│                               # endpoints-admin-import v1.1, endpoints-reports v1.0, url-flattening v1.1,
+│                               # test-suite v1.3, docker-compose-spec v1.1, consult-readiness v1.6,
+│                               # frontend-transition v1.1, runbooks + DEPLOY + FRONTEND-INTEGRATION v1.1
+└── AGENTS.md                   # this file
 ```
 
 **Architecture notes:** Eloquent models stay thin persistence (fillable/casts/relations, `HasUuids`, zero logic);
@@ -212,15 +234,17 @@ envelope migration without a spec.
 | Spec | Status |
 |---|---|
 | `api-endpoints.md` v2.1 | FINAL — flat 104+5, ground truth (tenant `loa-consultation`) |
-| `auth-integration.md` v1.5 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Steps 1–7 ✓ suite green 2026-09-22, port COMPLETE; tenant `loa-consultation`) |
+| `auth-integration.md` v1.6 | FINAL — SSO/JWT/middleware/provisioning + §11 port plan (Steps 1–7 ✓ suite green 2026-09-22, port COMPLETE; tenant `loa-consultation`; §2 Option B = same-origin BFF passthrough, no CORS) |
 | `endpoints-academic/appointments/evaluations.md` v1.0–v1.1 | FINAL — module contracts (academic/evaluations v1.1 flat) |
 | `docker-compose-spec.md` v1.1 | FINAL — root-stack wiring `:9002` (tenant `loa-consultation`) |
 | `data-model.md` v1.3 | FINAL — shape contract (source-verified M17/M19/M21/M26/M27/M30/M31); §3 Status column gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
 | `test-suite.md` v1.3 | FINAL — auth + B/C contract (CON/ACC/D), user-run sequential, v2.1 pointers, tenant `loa-consultation`, CON-11 throttle bypass |
 | `LOCAL-DEV-RUNBOOK.md` v1.0 | FINAL — local dev setup (wired + green) |
 | `DEPLOY.md` v1.0 | FINAL — deployment guide (cert-patterned) |
-| `FRONTEND-INTEGRATION.md` v1.0 | FINAL — cutover checklist (backend green; topology OPEN) |
+| `FRONTEND-INTEGRATION.md` v1.1 | FINAL — cutover checklist (backend green; topology DECIDED Option B = same-origin BFF passthrough) |
 | `consult-readiness.md` v1.6 | FINAL — provisioning checklist (aces-* + linkage, 104+5 pointer, v2.1 pointers, tenant `loa-consultation`) |
 | `endpoints-admin-import.md` v1.1 | FINAL — Phase D (v2.0 pointers) |
 | `url-flattening.md` v1.1 | FINAL — flat scheme (104+5 per ACC-2, scoped results, F2 green) |
+| `endpoints-reports.md` v1.0 | FINAL — Phase E reports contract (7 reads + 2 sentiment writes); **implementation D-1–D-4 NOT STARTED** |
+| `frontend-transition.md` v1.1 | FINAL — cutover sequencing T0→T5 (T0 + T1-a + T1-b ✓ 2026-09-26; T2–T5 open; DEC-2 = same-origin BFF passthrough) |
 | `README.md` v1.0 | DRAFT — assembly composition (see §2) |

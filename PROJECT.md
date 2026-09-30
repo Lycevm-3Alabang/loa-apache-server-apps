@@ -160,7 +160,7 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | Implementation phase planning | ✅ Flushed 2026-09-23 | P0 scaffold + P1 C-Auth (§11) + P2 Slice B + P3 Slice C + P4 Slice D baselines + P5 flatten 104+5 done; P6 cutover/Phase E BLOCKED (runbooks Draft, frontend decision, reports, §8 provisioning); see TODO AFTER FINAL |
 | Laravel project scaffold | ✅ Done | 2026-09-18: Laravel 12.12 via composer, swagger + phpunit 12, PHP 8.3 pinned, HealthTest green in Docker |
 | `api-endpoints.md` spec | ✅ Final v2.1 | Flat 104+5 root spec (F1/F2 green); tenant `loa-consultation` (own-tenant cert pattern, 2026-09-24) |
-| `auth-integration.md` spec | ✅ Final v1.5 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed — suite green 2026-09-22, port COMPLETE; tenant `loa-consultation` (2026-09-24) |
+| `auth-integration.md` spec | ✅ Final v1.6 | SSO contract, cookie, middleware, 14-item port inventory, students/employees first-class; §11 Steps 1–7 landed — suite green 2026-09-22, port COMPLETE; tenant `loa-consultation` (2026-09-24); §2 Option B corrected 2026-09-30 = same-origin BFF passthrough, no CORS |
 | `data-model.md` spec | ✅ Final v1.3 | Shape contract (M17/M19/M21/M26/M27/M30/M31); §3 Status gates implementability (6 Implemented / 3 Delta pending / 17 Specified—not migrated); §7 baseline delta |
 | `endpoints-academic.md` spec | ✅ Final v1.1 | Flat paths (green) |
 | `endpoints-appointments.md` spec | ✅ Final v1.0 | 12 combos: booking model, batch, action dispatch |
@@ -172,8 +172,9 @@ These pre-existing bugs were discovered during Docker testing and fixed in this 
 | `docker-compose-spec.md` spec | ✅ Final v1.1 | Root-stack `consult-*` blocks port 9002, `loa_consult` init, tenant `loa-consultation` |
 | `LOCAL-DEV-RUNBOOK.md` spec | ✅ Final v1.0 | Shared root-stack pattern, wiring gate MET, no-seed, test-DB pin |
 | `DEPLOY.md` spec | ✅ Final v1.0 | Cert-patterned cPanel deploy (PHP 8.3, dist, no-seed, slug checklist, cron) |
-| `FRONTEND-INTEGRATION.md` spec | ✅ Final v1.0 | Backend-done cutover handoff (topology OPEN until cutover) |
-| `frontend-transition.md` spec | ✅ Final v1.0 2026-09-26 | Cutover sequencing T0→T5 (transition gates open, per-area yes) |
+| `FRONTEND-INTEGRATION.md` spec | ✅ Final v1.1 | Backend-done cutover handoff; **topology DECIDED = Option B same-origin BFF passthrough, no CORS** (v1.0 said "direct cross-origin + CORS" — corrected 2026-09-30) |
+| `frontend-transition.md` spec | ✅ Final v1.1 2026-09-30 | Cutover sequencing T0→T5; T0 + T1-a + T1-b done 2026-09-26, **T2–T5 open** (T2-reports blocked on Phase E); DEC-2 mechanism corrected to BFF passthrough |
+| `endpoints-reports.md` spec | ✅ Final v1.0 | Phase E reports contract (7 flat reads + 2 sentiment writes); **implementation D-1–D-4 NOT STARTED** — no `ReportService`/`ReportController`/routes/catalog rows/`ReportsTest` |
 | `consult-readiness.md` spec | ✅ Final v1.6 | Provisioning checklist (aces-* + linkage, 104+5 pointer, v2.1 pointers, tenant `loa-consultation`) |
 | First migration(s) + baseline deltas | ✅ Done 2026-09-22 | `000001-000010` academic + `000011` academic baseline + `000012` appointment-family + `000013` section-link + `000014` evaluation tables; per data-model Final v1.3 §3/§7 |
 | JWT middleware | ✅ Step 3 done | Cert port: `consult-platform.tenant_slug=loa-consultation`, `consult_user`; Unit tests green. **Gated in Step 7** |
@@ -375,3 +376,5 @@ loa-apache-server-apps/
 | 2026-09-23 | Consult: planning FLUSHED, P6 PARKED | P0–P5 done; P6 = runbooks + DEC-5 + Phase E + §8 provisioning (see TODO PLANNED) |
 | 2026-09-23 | Cert: PDF 500 fixed | `PdfService::streamCertificatePdf()` `$pdf->inline()` → `$pdf->stream()`; suite 249 passed (738 assertions) |
 | 2026-09-24 | Consult: tenant rename `loa` → `loa-consultation` | User decision (own-tenant cert pattern, like `loa-e-cert`): 5 specs re-versioned to Final (api-endpoints v2.1, auth-integration v1.5, readiness v1.6, test-suite v1.2, docker-compose v1.1); code/config/tests/runbooks updated; Auth re-provisioning + suite re-green pending (user runs) |
+| 2026-09-30 | Consult: topology corrected to BFF passthrough | User-approved. e-cert *code* read (not docs): `vercel.json` `{}` / no rewrites is explained by `src/app/api/v1/[...path]/route.ts` (175-line server-side passthrough), not cross-origin calls. "Option B = direct cross-origin + CORS" was wrong and would have forced CORS + a cross-site cookie. `auth-integration.md` v1.6, `frontend-transition.md` v1.1, `FRONTEND-INTEGRATION.md` v1.1, `endpoints-reports.md` DEC-9, pointers re-synced. Laravel contract unchanged; frontend-side `EC-CUTOVER-001` CON-8 was already correct |
+| 2026-09-30 | Consult: two implementation gates surfaced | Phase E reports D-1–D-4 NOT STARTED (spec Final, code absent) and frontend cutover T2–T5 open (T2-reports blocked on Phase E) were both untracked; `e-consultation` D-2/D-3 gaps filed (no `specs/services/`, no `specs/decisions/`, no BFF handler while T1-b landed a direct client). `AGENTS.md` §2 scaffold reconciled to file-tree facts |

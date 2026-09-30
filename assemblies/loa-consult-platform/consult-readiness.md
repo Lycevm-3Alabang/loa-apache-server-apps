@@ -7,7 +7,7 @@
 | Status | Final v1.6 (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24) |
 | Owner | Consult Platform assembly |
 | Version | 1.6 Final |
-| Scope | Deploy-time Auth provisioning checklist for consult (tenant, groups, catalog import, grants, secrets) + historical Next.js notes; normative auth = `auth-integration.md` Final v1.5 |
+| Scope | Deploy-time Auth provisioning checklist for consult (tenant, groups, catalog import, grants, secrets) + historical Next.js notes; normative auth = `auth-integration.md` Final v1.6 |
 | Non-goals | Redefining SSO/JWT/levels/shapes (owned by `auth-integration.md`, `api-endpoints.md`, `data-model.md`); duplicating the endpoint catalog; Auth-side specs |
 | Layer | Product Assembly (`assemblies/loa-consult-platform/`) |
 
@@ -17,13 +17,13 @@ The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RE
 
 ## Context
 
-Consult backend is the active `loa-consult-platform` Laravel assembly (mirroring cert), frontend Next.js 16 on Vercel. Normative auth behavior (SSO flow, JWT validation, endpoints, port plan) lives in `auth-integration.md` Final v1.5 §2–§11. This doc is provisioning checklist + historical context only and MUST NOT redefine normative behavior.
+Consult backend is the active `loa-consult-platform` Laravel assembly (mirroring cert), frontend Next.js 16 on Vercel. Normative auth behavior (SSO flow, JWT validation, endpoints, port plan) lives in `auth-integration.md` Final v1.6 §2–§11. This doc is provisioning checklist + historical context only and MUST NOT redefine normative behavior.
 
 Source reconciliation: `api-endpoints.md` Final v2.0 §5 + `config/consult-endpoints.php` define public 5 (health, count-active, auth trio) + catalog 104 gated (flat resources; Auth-owned users writes + users/reference dropped; gate-blocked audit-logs retained pending). Prior v1.2 figures (`~130`, 8-entry public list, `/api/*` paths, full 118-row tables) are stale/duplicated and superseded — retained in git history v1.2, not repeated here per Ownership (reference by ID, never duplicate). Auth JSON counterpart deferred to deploy-time per user choice (Step 4).
 
 ## Constraints
 
-- **CON-1** — Normative auth MUST be `auth-integration.md` Final v1.5. On conflict this doc loses.
+- **CON-1** — Normative auth MUST be `auth-integration.md` Final v1.6. On conflict this doc loses.
 - **CON-2** — Paths/levels MUST match `api-endpoints.md` Final v2.0 §5 + `config/consult-endpoints.php` (public 5 + 104). This doc MUST NOT duplicate the catalog.
 - **CON-3** — Tenant MUST be slug `loa-consultation`, `active`, with `redirect_origins` including the consult frontend (`https://aces.lyceumalabang.edu.ph`). Groups MUST be `aces-admin` / `aces-dean` / `aces-faculty` / `aces-user` (student), tenant-scoped to `loa-consultation`, and MUST come from JWT `groups` claim only; never add local roles.
 - **CON-4** — `JWT_SECRET`/`ENCRYPTION_KEY` MUST be byte-identical with Auth. Secrets MUST NOT be committed.
@@ -83,7 +83,7 @@ Source reconciliation: `api-endpoints.md` Final v2.0 §5 + `config/consult-endpo
 
 ## References
 
-- `auth-integration.md` Final v1.5 §2–§11 (normative SSO/JWT/provisioning/port plan)
+- `auth-integration.md` Final v1.6 §2–§11 (normative SSO/JWT/provisioning/port plan)
 - `api-endpoints.md` Final v2.1 §5 + `config/consult-endpoints.php` (public 5 + 104)
 - `data-model.md` Final v1.3 §3.1/§4 (students/employees upsert; dropped tables)
 - `test-suite.md` Final v1.0 (ACC-2–ACC-5 verification)

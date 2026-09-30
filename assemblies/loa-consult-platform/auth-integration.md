@@ -1,8 +1,8 @@
 # LOA Consult Platform — Auth Integration
 ## Product Assembly Component Specification
 
-**Version:** 1.5
-**Status:** Final (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24)
+**Version:** 1.6
+**Status:** Final (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24; §2 Option B corrected to code-verified BFF passthrough, user-approved 2026-09-30)
 **Layer:** Product Assembly (`loa-consult-platform`)
 **Audience:** Architects, Engineers, AI Development Agents
 
@@ -37,11 +37,11 @@ The Consult Platform **never issues tokens, stores passwords, or manages session
 
 Browser-to-Laravel wiring (cutover decision — no frontend change now):
 
-- Option A (recommended, cert-docs pattern): Vercel rewrite keeps the refresh cookie same-origin:
+- Option A: Vercel rewrite keeps the refresh cookie same-origin without any app code:
   ```json
   { "rewrites": [{ "source": "/api/v1/:path*", "destination": "https://aces-api.lyceumalabang.edu.ph/api/v1/:path*" }] }
   ```
-- Option B (what e-cert actually does): no rewrite — e-cert's `vercel.json` is `{}` and its `next.config.ts` has no `rewrites()`; the frontend calls the API host directly cross-origin with CORS. The cert docs describe Option A, but e-cert code uses Option B.
+- Option B (what e-cert **actually** does — code-verified 2026-09-30): no rewrite, but **not** direct cross-origin calls. e-cert's `vercel.json` is `{}` and `next.config.ts` has no `rewrites()` because it proxies in app code: a catch-all BFF Route Handler `src/app/api/v1/[...path]/route.ts` receives same-origin browser calls and forwards them **server-side** to `CERT_API_URL` / `AUTH_API_URL` (auth routes except the callback/refresh/logout trio split to the Auth host; cookies forwarded only for refresh/logout; `authorization`, `content-type`, `accept`, `x-requested-with`, `x-forwarded-for`, `user-agent` forwarded; body streamed for non-GET/HEAD; upstream `content-type`/`content-disposition`/`content-length`/`set-cookie` passed through; `redirect: "manual"`; empty path → 400, upstream unreachable → 502). The browser therefore only ever talks same-origin, **no CORS is required**, and the httpOnly refresh cookie rides same-origin. The cert *docs* describe Option A, but cert *code* uses Option B — the correction matters because "Option B" was previously mislabelled as cross-origin, which would have forced CORS plus a cross-site cookie (`SameSite=None`) that the verified pattern does not need.
 
 The frontend team chooses at cutover; the Laravel contract (callback sets httpOnly cookie, refresh reads it) is unchanged either way. Cookie `Secure` + `SameSite` settings must match the chosen topology.
 
@@ -170,6 +170,6 @@ DO NOT PORT: `AuthProxyController.php` (deferred with the `/service/*` decision,
 
 ## Document Control
 
-- **Status:** Final v1.5 (tenant rename `loa` → `loa-consultation`, user-approved 2026-09-24; gates code/config/test slug updates + Auth re-provisioning)
+- **Status:** Final v1.6 (user-approved 2026-09-30; **§2 Option B corrected to the code-verified BFF-passthrough pattern** — e-cert's `vercel.json` `{}` / no `next.config.ts` rewrites is explained by its `src/app/api/v1/[...path]/route.ts` BFF Route Handler forwarding server-side, NOT by direct cross-origin + CORS as previously stated. Verified against `D:\loa\e-cert` 2026-09-30. No Laravel contract change: callback/refresh/logout, cookie, and `SameSite=Lax` stay as specified; the correction only removes a false CORS/cross-site-cookie implication. v1.5 = tenant rename `loa` → `loa-consultation` (2026-09-24))
 - **Created:** 2026-09-18
-- **Next:** auth-layer port per §10–§11 (Steps 1–3 ✓ suite green; Step 4 `config/consult-endpoints.php` catalog next — awaiting user yes)
+- **Next:** auth-layer port Steps 1–7 COMPLETE (suite green 2026-09-22); outstanding work is deploy-time Auth provisioning per §8

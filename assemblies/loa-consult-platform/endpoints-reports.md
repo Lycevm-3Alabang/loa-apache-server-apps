@@ -43,7 +43,7 @@ Reports exist today only as Next.js Server Components computing directly against
 - **DEC-6** — Distribution returns `{entries[] (with recalculated departmentShare), departmentTotal, departmentName, totalConsultations, completedConsultations, pendingConsultations}`.
 - **DEC-7** — Responsiveness returns `{stats:{averageHours, medianHours, fastestHours, slowestHours, totalResponded}, byFaculty[], distribution[], departmentName}` with weighted-average merge when unscoped.
 - **DEC-8** — Sentiment read returns stored `{score, label, analyzedAt}` per comment; `analyze` recomputes one comment (write); `batch` analyzes up to 50 unanalyzed (write, returns `{analyzed}`).
-- **DEC-9** — Topology decision (Vercel rewrite vs direct+CORS) stays OPEN until cutover per `FRONTEND-INTEGRATION.md`; the Laravel contract here is topology-independent.
+- **DEC-9** — Topology: **DECIDED — Option B same-origin BFF passthrough** (2026-09-26 decision, 2026-09-30 mechanism correction) per `frontend-transition.md` Final v1.1 DEC-2 and `auth-integration.md` Final v1.6 §2; the browser is same-origin only, so no CORS is required and the report contract here is topology-independent.
 
 ### Acceptance — Objective (machine-checkable)
 
@@ -80,11 +80,11 @@ Reports exist today only as Next.js Server Components computing directly against
 ## References
 
 - `api-endpoints.md` Final v2.1 §2.2 (reports deferred, no REST routes), §5 (104+5 catalog conventions)
-- `auth-integration.md` Final v1.5 §2 (topology A/B), §9 (group matrices), §11 (port pattern)
+- `auth-integration.md` Final v1.6 §2 (topology A/B, BFF passthrough), §9 (group matrices), §11 (port pattern)
 - `data-model.md` Final v1.3 (shape contract; appointments/evaluations/academic tables reports aggregate)
 - `url-flattening.md` Final v1.1 (flat scheme, in-place v1)
 - `test-suite.md` Final v1.3 (CON-11 bypass, sequential user-run contract)
-- `FRONTEND-INTEGRATION.md` Final v1.0 (cutover handoff; topology OPEN)
+- `FRONTEND-INTEGRATION.md` Final v1.1 (cutover handoff; topology DECIDED — Option B same-origin BFF passthrough, no CORS)
 - Legacy ground truth (read-only): `features/reports/{backlog,coverage,demand,distribution,responsiveness,admin-reports}.controller.ts`, `reports.service.ts`, `sentiment.service.ts`, `reports.repository.ts`, 20 `app/*/reports/**/page.tsx`
 - Root `AGENTS.md` (Rule 0/0.5, No Auto-Pilot) + assembly `AGENTS.md` §1.9–§1.10 (spec format, behavioral coverage)
 
