@@ -1,7 +1,7 @@
 # LOA Consult Platform — Frontend Integration Guide (cutover)
 
-**Version:** 1.2
-**Status:** Final (backend built + green 2026-09-23; activates at cutover; topology DECIDED 2026-09-26)
+**Version:** 1.3
+**Status:** Final (backend built + green 2026-09-23; activates at cutover; topology DECIDED 2026-09-26; frontend transport built 2026-09-30)
 **Layer:** Product Assembly (`loa-consult-platform`)
 
 > Follows `../loa-cert-platform/FRONTEND-INTEGRATION.md` as pattern. This is a handoff doc for the cutover phase. The Next.js frontend changes NOTHING until cutover.
@@ -17,11 +17,12 @@
 
 ## What the Frontend Builds at Cutover (TODO each)
 
-- [ ] SSO fragment handler: extract `#payload=` from Auth redirect hash → `POST /api/v1/auth/callback`
-- [ ] In-memory token store (never localStorage); `Authorization: Bearer` on every call
-- [ ] Silent refresh on load/expiry (`POST /api/v1/auth/refresh`, cookie auto-sent)
-- [ ] Logout (`POST /api/v1/auth/logout`, 204) + clear store + redirect to SSO
-- [ ] Client auth guard (token → refresh attempt → SSO redirect)
+- [ ] SSO fragment handler: extract `#payload=` from Auth redirect hash → `POST /api/v1/auth/callback` — **built 2026-09-30** (`app/auth/callback/page.tsx`, `history.replaceState` per `EC-AUTH-001` DEC-1), awaiting the user's lint/typecheck gates
+- [x] Same-origin BFF passthrough: `app/api/v1/[...path]/route.ts` forwards to `CONSULT_API_URL` (prod fallback in code), cookie forwarding scoped to `auth/refresh`+`auth/logout`, `400` empty path, `502` upstream down, `204` bodyless with `set-cookie` preserved — **built 2026-09-30**, awaiting gates
+- [ ] In-memory token store (never localStorage); `Authorization: Bearer` on every call — store done at T1-b; the `window.fetch` patch in `lib/api/client.ts` still duplicates the token and is removed at `EC-API-001` D-2
+- [ ] Silent refresh on load/expiry (`POST /api/v1/auth/refresh`, cookie auto-sent) — same-origin + single-flight guard done 2026-09-30
+- [ ] Logout (`POST /api/v1/auth/logout`, 204) + clear store + redirect to SSO — same-origin done 2026-09-30
+- [ ] Client auth guard (token → refresh attempt → SSO redirect) — `proxy.ts` still runs a legacy server gate; retired at T3 per `frontend-transition.md` DEC-6
 - [ ] Permission gating from JWT `groups` claim (Auth vocabulary — no local roles; see `api-endpoints.md` §4.0)
 - [ ] Keep the 403-lock pattern (`setLockedEndpoint`, `LockedTab`, `POST /api/audit/forbidden` telemetry) — backend guarantees JSON 403, never redirects (§7 #19)
 
@@ -82,9 +83,10 @@ AUTH_API_URL=http://localhost:8080
 
 ## Document Control
 
-- **Status:** Final v1.2 — backend green; topology DECIDED 2026-09-26.
+- **Status:** Final v1.3 — backend green; topology DECIDED 2026-09-26; frontend transport built 2026-09-30 (pending the frontend's own gates).
 - **Revision history:**
-  - **v1.2 (2026-09-30):** env block corrected — `NEXT_PUBLIC_CONSULT_API_URL` removed; `CONSULT_API_URL`/`AUTH_API_URL` marked server-only; noted that no CORS allowlist is needed and the refresh cookie stays same-origin `SameSite=Lax`. Normative, and coordinated with `e-consultation/specs/cutover-headline.md` → v1.1 DEC-5 and `e-consultation/specs/services/platform.md` → Final v1.0 DEC-6. **No change to any Laravel contract** — callback/refresh/logout, cookie path, and flags are untouched.
+  - **v1.3 (2026-09-30):** cutover checklist annotated with what the frontend has actually built. The BFF passthrough row was missing entirely and is added; the fragment handler, refresh, logout, and token-store rows now record 2026-09-30 progress. Frontend spec pointers advanced to `EC-API-001` v1.1 / `EC-AUTH-001` v1.1 / `EC-CUTOVER-001` v1.3. **No Laravel contract change** — this file is the backend's view of frontend progress, and nothing here alters a route, shape, or flag.
+- **v1.2 (2026-09-30):** env block corrected — `NEXT_PUBLIC_CONSULT_API_URL` removed; `CONSULT_API_URL`/`AUTH_API_URL` marked server-only; noted that no CORS allowlist is needed and the refresh cookie stays same-origin `SameSite=Lax`. Normative, and coordinated with `e-consultation/specs/cutover-headline.md` → v1.1 DEC-5 and `e-consultation/specs/services/platform.md` → Final v1.0 DEC-6. **No change to any Laravel contract** — callback/refresh/logout, cookie path, and flags are untouched.
   - **v1.1 (2026-09-30):** topology mechanism re-stated as **same-origin BFF passthrough with no CORS**, retracting this file's earlier "direct cross-origin + CORS" wording (inherited from v1.0's DEC-2, which was an inference from the e-cert *docs*). Verified against `D:\loa\e-cert\src\app\api\v1\[...path]\route.ts` — a server-side passthrough handler, not cross-origin calls. `test-suite.md` pointer v1.2 → v1.3. Decision, host, and cookie posture unchanged; only the mechanism and its CORS implication were wrong. See `frontend-transition.md` Final v1.1 DEC-2.
 - Cutover execution is sequenced by `frontend-transition.md` (T0–T5) — this file is the handoff checklist it sequences.
 - Frontend-side counterpart: `e-consultation/specs/cutover-headline.md` Final v1.1 (`EC-CUTOVER-001`), `specs/services/{api-client,auth,platform}.md` (`EC-API-001`/`EC-AUTH-001`/`EC-PLAT-001`, all Final v1.0).
