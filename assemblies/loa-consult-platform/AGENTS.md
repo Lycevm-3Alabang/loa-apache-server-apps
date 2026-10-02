@@ -247,4 +247,5 @@ envelope migration without a spec.
 | `url-flattening.md` v1.1 | FINAL — flat scheme (104+5 per ACC-2, scoped results, F2 green) |
 | `endpoints-reports.md` v1.0 | FINAL — Phase E reports contract (7 reads + 2 sentiment writes); **implementation D-1–D-4 NOT STARTED** |
 | `frontend-transition.md` v1.1 | FINAL — cutover sequencing T0→T5 (T0 + T1-a + T1-b ✓ 2026-09-26; T2–T5 open; DEC-2 = same-origin BFF passthrough) |
+| `endpoints-frontend-map.md` v1.1 | FINAL — frontend-facing per-table request/response projection, wire↔frontend field mapping, 24 table sections + §4 pointer rows + §5 status-code appendix. Not normative for backend behavior; cites `api-endpoints.md` §5 + `data-model.md` §3 |
 | `README.md` v1.0 | DRAFT — assembly composition (see §2) |
