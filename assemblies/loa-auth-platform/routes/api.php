@@ -1,7 +1,20 @@
 <?php
 
 use App\Http\Controllers\EndpointGrantController;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+
+// NOTE: named limiter registration lives here (not AppServiceProvider) because
+// this assembly does not have bootstrap/providers.php loading the provider by
+// default. Runs whenever the route file is loaded.
+RateLimiter::for('mail-relay', function (Request $request): Limit {
+    $token = (string) $request->bearerToken();
+    $key = $token !== '' ? sha1($token) : (string) $request->ip();
+
+    return Limit::perMinute(60)->by($key);
+});
 
 Route::prefix('v1')->group(function () {
     Route::prefix('auth')->group(function () {
@@ -100,7 +113,11 @@ Route::prefix('v1')->group(function () {
         Route::delete('/{tenant}/api-keys/{keyId}', [App\Http\Controllers\TenantApiKeyController::class, 'destroy']);
     });
 
-    Route::prefix('tenant')->middleware(['api.key.auth', 'throttle:60,1'])->group(function () {
+    // Mail relay (local in-host delivery for ACES/Vercel). Throttled + secret-gated.
+Route::post('/mail/send', [App\Http\Controllers\LocalEmailController::class, 'send'])
+    ->middleware(['throttle:mail-relay', 'relay.secret']);
+
+Route::prefix('tenant')->middleware(['api.key.auth', 'throttle:60,1'])->group(function () {
         Route::get('/members', [App\Http\Controllers\TenantMemberApiController::class, 'index']);
         Route::post('/members', [App\Http\Controllers\TenantMemberApiController::class, 'store']);
         Route::delete('/members/{userId}', [App\Http\Controllers\TenantMemberApiController::class, 'destroy']);

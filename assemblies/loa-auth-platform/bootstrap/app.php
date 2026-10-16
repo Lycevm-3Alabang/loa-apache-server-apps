@@ -4,6 +4,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         api: __DIR__.'/../routes/api.php',
@@ -13,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
+            'relay.secret' => \App\Http\Middleware\RelaySecretMiddleware::class,
             'jwt.auth' => \App\Http\Middleware\JwtMiddleware::class,
             'jwt.permission' => \App\Http\Middleware\PermissionMiddleware::class,
             'jwt.claim-policy' => \App\Http\Middleware\ClaimPolicyMiddleware::class,
@@ -64,4 +67,17 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->withInput($request->except('password', 'password_confirmation', '_token'))
                 ->withErrors(['session' => 'Your session has expired. Please try again.']);
         });
-    })->create();
+        $exceptions->render(function (ThrottleRequestsException $e, Illuminate\Http\Request $request) {
+        if (! $request->is('api/v1/mail/*')) {
+            return null;
+        }
+
+        $retry = (int) (($e->getHeaders()['Retry-After'] ?? 60));
+
+        return response()->json([
+            'ok' => false,
+            'error' => 'Rate limit exceeded.',
+            'retry_after' => $retry,
+        ], 429)->header('Retry-After', (string) $retry);
+    });
+})->create();

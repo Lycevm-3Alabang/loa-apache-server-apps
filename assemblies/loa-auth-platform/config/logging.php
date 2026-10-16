@@ -30,6 +30,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'mail-relay' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/mail-relay.log'),
+            'level' => env('LOG_LEVEL', 'info'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
         'stderr' => [
             'driver' => 'monolog',
             'level' => env('LOG_LEVEL', 'debug'),

@@ -28,6 +28,16 @@ class PostResetRedirectTest extends TestCase
 
         // Per-process cache so the password-reset throttle never leaks between tests.
         config(['cache.default' => 'array']);
+        app()->forgetInstance('cache');
+        app()->forgetInstance('cache.store');
+        app()->forgetInstance('ratelimiter');
+
+        $email = strtolower(trim(self::USER_EMAIL));
+        foreach (['127.0.0.1'] as $ip) {
+            \Illuminate\Support\Facades\RateLimiter::clear(
+                'password-reset:'.hash('sha256', $email.'|'.$ip)
+            );
+        }
 
         Tenant::create([
             'slug' => 'app',
