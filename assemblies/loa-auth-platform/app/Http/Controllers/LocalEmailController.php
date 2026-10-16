@@ -57,7 +57,10 @@ class LocalEmailController extends Controller
                 if (count($bcc) > 0) {
                     $message->bcc($bcc);
                 }
-                $message->from('noreply@lyceumalabang.edu.ph', 'ACES');
+                $message->from(
+                    (string) config('mail.from.address', 'noreply@lyceumalabang.edu.ph'),
+                    'ACES'
+                );
                 $message->subject($subject);
             });
 
